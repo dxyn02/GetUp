@@ -47,7 +47,7 @@ task는 관련 구현보다 먼저 작성하고 실패를 확인한다.
 - [x] T010 [P] `Weekday`, `TimeOfDay`, `RadiusOption`, `ReferenceLocation`, `RestrictionRuleSnapshot`을 `GetUp/Core/Models/RestrictionRuleModels.swift`에 구현한다
 - [x] T011 [P] `LocationConditionSnapshot`, `AuthorizationSnapshot`, `RestrictionPresentationState`를 `GetUp/Core/Models/RuntimeStateModels.swift`에 구현한다
 - [x] T012 [P] `Clock`, `RuleRepository`, `LocationConditionRepository`, `AuthorizationProviding`, `ScheduleManaging`, `LocationMonitoring`, `RestrictionApplying` 계약을 `GetUp/Core/Contracts/PlatformContracts.swift`에 정의한다
-- [ ] T013 [P] `EvaluationInput`, `EvaluationDecision`, `RestrictionEffect`, `EvaluationReason`을 `GetUp/Core/Evaluation/RestrictionEvaluationModels.swift`에 정의한다
+- [x] T013 [P] `EvaluationInput`, `EvaluationDecision`, `RestrictionEffect`, `EvaluationReason`을 `GetUp/Core/Evaluation/RestrictionEvaluationModels.swift`에 정의한다
 - [ ] T014 [P] 고정 clock, calendar, rule, 위치, 권한 fake를 `GetUpTests/Support/TestFixtures.swift`에 구현한다
 - [ ] T015 제한 상태 전체 행렬, 시간 종료 우선순위, 위치 `unavailable` 보존, idempotency의 실패 테스트를 `GetUpTests/Core/RestrictionStateMachineTests.swift`에 작성한다
 - [ ] T016 T015를 통과하도록 순수 `RestrictionStateMachine`을 `GetUp/Core/StateMachine/RestrictionStateMachine.swift`에 구현한다
