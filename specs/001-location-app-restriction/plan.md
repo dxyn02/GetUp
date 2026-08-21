@@ -31,7 +31,7 @@ ManagedSettingsUI, DeviceActivity, CoreLocation, Foundation; 외부 패키지 �
 **Testing**: Swift Testing 기반 도메인·저장소 테스트, XCTest 기반 UI·성능·시스템 통합 테스트,
 실기기 위치·권한·재부팅 인수 테스트, SC-001·SC-007을 측정하는 사용자 사용성 평가
 
-**Target Platform**: iPhone, iOS 17 이상; 실제 제한·위치·재부팅 검증에는 물리 기기 필요
+**Target Platform**: iPhone, iOS 26 이상; 실제 제한·위치·재부팅 검증에는 물리 기기 필요
 
 **Project Type**: SwiftUI iOS 앱 + Device Activity Monitor, Shield Configuration,
 Shield Action 확장

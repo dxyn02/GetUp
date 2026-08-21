@@ -6,7 +6,7 @@
 ## Prerequisites
 
 - Xcode 26.6 이상
-- iOS 17 이상을 실행하는 테스트 iPhone
+- iOS 26 이상을 실행하는 테스트 iPhone
 - 앱과 세 Screen Time 확장에 사용할 App ID
 - 공통 App Group capability
 - 앱과 각 Screen Time 확장의 Family Controls 개발 entitlement

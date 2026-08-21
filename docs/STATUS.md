@@ -4,7 +4,7 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 2 공통 기반 완료 — Phase 3 사용자 스토리 1 로우파이 준비
+Phase 2 공통 기반 완료 — iOS 26 최소 지원 기준 반영 완료 및 Phase 3 사용자 스토리 1 로우파이 준비
 
 ## 진행 중
 없음
@@ -141,3 +141,11 @@ Simulator SDK와 macOS host에서 Swift 6 strict concurrency warning을 error로
 머신·저장소 회귀를 합친 3개 suite의 23개 테스트가 모두 통과함. 실제 unified logging 수집 결과의
 통합 개인정보 검사는 T079에서 수행하며, 전체 Xcode test 실행은 app entry point가 구현되는 T037
 전까지 실행할 수 없어 미검증 상태임. T020 완료로 Phase 2 공통 기반을 완료 처리함.
+iOS 26 최소 지원 변경으로 `Configuration/Base.xcconfig`의
+`IPHONEOS_DEPLOYMENT_TARGET = 26.0`을 앱·세 extension·두 테스트 target이 Debug 구성에서 모두
+상속하는지 `xcodebuild -showBuildSettings`로 확인함. `project.pbxproj` plist 문법을 재검증하고,
+공통 production source를 `arm64-apple-ios26.0-simulator`, Swift 6 strict concurrency 및 warning-as-error
+조건으로 type-check함. 첫 type-check는 오래된 입력 경로, 두 번째는 sandbox의 기본 module cache
+쓰기 제한 때문에 실패했으며, 실제 source와 writable 임시 module cache를 지정한 최종 검사는
+통과함. CoreSimulatorService 및 로컬 provisioning profile 경고는 build setting 출력에 영향을
+주지 않았으며 실제 iOS 26 Simulator 실행·실기기 검증은 관련 app entry point와 UI 구현 이후 수행함.

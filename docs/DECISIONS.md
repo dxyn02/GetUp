@@ -23,6 +23,8 @@
 
 **날짜**: 2026-08-20
 
+**상태**: 2026-08-21에 `DEC-014`로 대체됨
+
 **결정**: iOS 17 이상, Swift 6.3 및 SwiftUI를 target으로 한다. 단일 Xcode project에서 하나의
 app target과 Device Activity Monitor, Shield Configuration, Shield Action extension을 사용한다.
 
@@ -158,3 +160,20 @@ process마다 하나의 `SharedSnapshotRepository` actor를 생성해 `RuleRepos
 앱 선택 payload가 의도치 않게 로그에 포함될 수 있다. 모든 값을 private OSLog로 숨기는 방식도
 민감 데이터 수집 자체를 막지 못하므로 선택하지 않는다. 필요한 운영 진단은 안정적인 operation과
 오류 분류만으로 수행하고 상세 개인정보는 처음부터 event에 포함하지 않는다.
+
+## DEC-014 — 최소 지원 운영체제를 iOS 26으로 상향
+
+**날짜**: 2026-08-21
+
+**결정**: 앱과 `GetUpDeviceActivityMonitor`, `GetUpShieldConfiguration`, `GetUpShieldAction`, 테스트
+target의 deployment target을 iOS 26 이상으로 통일한다. 이 결정은 `DEC-003`의 iOS 17 이상 지원
+범위를 대체하며 Swift 6.3, SwiftUI 및 기존 target 구성은 유지한다.
+
+**근거**: 초기 제품 검증 대상을 최신 운영체제로 한정해 iOS 26 SwiftUI API와 Apple의 공식
+`iOS and iPadOS 26` design resource를 호환성 분기 없이 사용할 수 있게 한다. iOS 17 이상 지원은
+설치 가능 기기 범위가 넓지만, 최신 UI와 API를 도입할 때 별도 fallback과 추가 테스트 행렬이
+필요하므로 현재 MVP에서는 제외한다.
+
+**영향 범위**: `Configuration/Base.xcconfig`, 기능 spec·plan·research·quickstart·tasks의 플랫폼
+기준, 이후 로우파이·하이파이 설계와 실기기 검증 환경에 적용된다. 기존 iOS 17 기준 테스트 기록은
+당시 실행 증거로 보존하며, 현재 완료 판단에는 iOS 26 기준 검증을 사용한다.

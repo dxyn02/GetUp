@@ -24,7 +24,7 @@ task는 관련 구현보다 먼저 작성하고 실패를 확인한다.
 
 **목적**: iOS 앱, 시스템 확장, 테스트 및 디자인 산출물의 기본 구조를 만든다.
 
-- [x] T001 `GetUp.xcodeproj/project.pbxproj`에 iOS 17+ 앱, `GetUpDeviceActivityMonitor`, `GetUpShieldConfiguration`, `GetUpShieldAction`, `GetUpTests`, `GetUpUITests` target과 scheme을 생성한다
+- [x] T001 `GetUp.xcodeproj/project.pbxproj`에 iOS 26+ 앱, `GetUpDeviceActivityMonitor`, `GetUpShieldConfiguration`, `GetUpShieldAction`, `GetUpTests`, `GetUpUITests` target과 scheme을 생성한다
 - [x] T002 [P] Swift 6.3, deployment target, bundle identifier 상속 규칙을 `Configuration/Base.xcconfig`, `Configuration/Debug.xcconfig`, `Configuration/Release.xcconfig`에 설정한다
 - [x] T003 [P] Family Controls와 App Group capability를 `GetUp/GetUp.entitlements`, `GetUpDeviceActivityMonitor/GetUpDeviceActivityMonitor.entitlements`, `GetUpShieldConfiguration/GetUpShieldConfiguration.entitlements`, `GetUpShieldAction/GetUpShieldAction.entitlements`에 구성한다
 - [x] T004 [P] 위치 권한 설명과 extension principal class를 `GetUp/Resources/Info.plist`, `GetUpDeviceActivityMonitor/Info.plist`, `GetUpShieldConfiguration/Info.plist`, `GetUpShieldAction/Info.plist`에 구성하고, region monitoring 외 지속적인 background location update 및 일반 background processing mode는 활성화하지 않는다
