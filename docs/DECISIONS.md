@@ -92,3 +92,17 @@ required-reason API 사유는 `1C8F.1`로 선언한다. 이후 데이터 수집�
 **근거**: GetUp은 기준 좌표와 앱 선택 token을 기기 밖으로 전송하지 않으며, 공유
 `UserDefaults` 접근은 동일 App Group의 앱과 extension 사이로 제한된다. Apple은 required-reason
 API를 사용하는 각 실행 bundle에 정확한 사유가 포함된 privacy manifest를 요구한다.
+
+## DEC-010 — FamilyActivitySelection의 동시성 경계
+
+**날짜**: 2026-08-21
+
+**결정**: `RestrictionRuleSnapshot`은 `FamilyActivitySelection`을 불투명 값으로 직접 보존하고
+`@unchecked Sendable`을 선언한다. 앱 선택 token을 해석하거나 snapshot 외부에서 내부 collection을
+공유하지 않으며, snapshot은 생성 후 변경하지 않는 값으로 사용한다.
+
+**근거**: 현재 iOS SDK의 `FamilyActivitySelection`은 `Codable`·`Equatable` 값 타입이지만
+`Sendable` conformance를 제공하지 않는다. 선택 결과의 공식 Codable 표현을 유지하면서 앱과
+extension의 비동기 경계를 통과하려면 해당 immutable aggregate에만 명시적인 동시성 책임을
+부여해야 한다. 향후 SDK가 `Sendable`을 제공하면 `@unchecked` 선언을 제거하고 compiler 검사를
+사용한다.
