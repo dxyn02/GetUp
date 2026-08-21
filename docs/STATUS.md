@@ -7,14 +7,14 @@
 Phase 2 공통 기반 진행 중
 
 ## 진행 중
-없음
+T017 — 공유 snapshot 저장소의 정상·실패 경계 테스트를 작성하고 red 상태를 확인함
 
 ## 마지막 완료 작업
 T016 — 순수 `RestrictionStateMachine`을 구현하고 T015의 제한 상태 전체 행렬·우선순위·보존·
 idempotency 테스트를 통과시킴
 
 ## 다음 작업
-T017 — 공유 저장소의 round-trip·파일 없음·손상 JSON·미지원 schema version·원자 교체 실패 테스트를 작성함
+T018 — 단일 writer atomic 저장과 `completeUntilFirstUserAuthentication` 보호를 구현해 T017 테스트를 통과시킴
 
 ## 차단 상태
 없음
@@ -111,3 +111,11 @@ type-check함. 실제 구현을 import한 T015 Swift Testing source가 compile �
 보존, apply/remove idempotency, 필수 권한 결합과 자정 초과 일정의 시작 요일 귀속 assertion을 모두
 통과함. `BackgroundRefreshStatus`는 진단 정보로 유지하고 신규 shield 적용의 필수 권한 집합에서는
 제외함. 전체 Xcode test 실행은 app entry point가 구현되는 T037 전까지 실행할 수 없어 미검증 상태임.
+T017에서 규칙·위치 JSON의 별도 파일 round-trip과 `completeUntilFirstUserAuthentication` 보호,
+파일 없음의 `nil` 처리, 두 파일의 손상 JSON·미지원 schema, rule revision 불일치, 두 파일의 atomic
+write 실패 시 이전 snapshot 보존을 Swift Testing으로 작성함. 임시 compile stub을 포함하면 테스트
+source가 iOS 17 Simulator SDK와 Swift 6 strict concurrency에서 type-check되며, 실제 source만 사용한
+검사에서는 아직 구현되지 않은 `SharedSnapshotRepository`, `SharedSnapshotRepositoryError`,
+`SnapshotFileWriting`을 찾을 수 없어 의도한 red 상태가 발생함. 실패한 관련 테스트가 있으므로
+T017은 완료 체크하지 않았고 T018 구현·통과 후 함께 완료 처리해야 함. 전체 Xcode test 실행은 app
+entry point 구현 전까지 실행할 수 없는 상태임.
