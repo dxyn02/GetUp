@@ -54,6 +54,7 @@
 
 /* Begin PBXFileReference section */
 		A134A1A530374EBC007C79FB /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		A234A1A530374EBC007C79FB /* GetUp.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = GetUp.xctestplan; sourceTree = "<group>"; };
 		B10000000000000000000001 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
 		B10000000000000000000002 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		B10000000000000000000003 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
@@ -123,6 +124,7 @@
 			isa = PBXGroup;
 			children = (
 				A134A1A530374EBC007C79FB /* .gitignore */,
+				A234A1A530374EBC007C79FB /* GetUp.xctestplan */,
 				B10000000000000000000010 /* Configuration */,
 				BB0000000000000000000010 /* GetUp */,
 				BB0000000000000000000011 /* GetUpDeviceActivityMonitor */,

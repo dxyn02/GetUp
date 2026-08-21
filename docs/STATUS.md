@@ -10,12 +10,12 @@ Phase 1 프로젝트 설정 진행 중
 없음
 
 ## 마지막 완료 작업
-T004 — 앱 `Info.plist`에 When In Use 및 Always 위치 사용 목적을 한국어로 구성하고, 세 Screen
-Time extension의 `Info.plist`에 Xcode 26.6 템플릿 기준 extension point identifier와 principal
-class를 설정함. 지속 위치 업데이트 및 일반 background processing mode는 추가하지 않음
+T005 — `GetUp.xctestplan`에 `GetUpTests`와 `GetUpUITests`를 순서대로 등록하고 target 병렬 실행을
+끄며, 공유 `GetUp` scheme의 기본 test plan으로 연결함. unit·integration 검증 뒤 UI 검증이
+실행되도록 테스트 bundle 순서를 구성함
 
 ## 다음 작업
-T005 — unit·integration·UI test bundle과 실행 순서를 `GetUp.xctestplan` 및 공유 scheme에 구성함
+T006 — 로우파이·하이파이 설계 기록용 README와 template를 생성함
 
 ## 차단 상태
 없음
@@ -42,3 +42,8 @@ Debug·Release의 네 target에서 수동 `INFOPLIST_FILE` 경로와 version 상
 `UIBackgroundModes`, `BGTaskSchedulerPermittedIdentifiers` 및 관련 build setting이 없음을 검증함.
 principal class의 실제 로딩은 각 extension source 구현 후 build 및 실기기 테스트 전까지 미검증
 상태임.
+T005 검증으로 `GetUp.xctestplan` JSON과 공유 scheme XML 문법을 확인하고,
+`GetUpTests` → `GetUpUITests` 순서 및 두 target의 `parallelizable = false`를 확인함.
+`xcodebuild -showTestPlans`에서 공유 scheme이 `GetUp` test plan을 인식하는 것을 검증함. 아직 앱과
+테스트 source가 없으므로 실제 test 실행 결과는 없으며, 최초 실행은 관련 source task 완료 뒤
+수행해야 함.
