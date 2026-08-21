@@ -29,7 +29,7 @@ task는 관련 구현보다 먼저 작성하고 실패를 확인한다.
 - [x] T003 [P] Family Controls와 App Group capability를 `GetUp/GetUp.entitlements`, `GetUpDeviceActivityMonitor/GetUpDeviceActivityMonitor.entitlements`, `GetUpShieldConfiguration/GetUpShieldConfiguration.entitlements`, `GetUpShieldAction/GetUpShieldAction.entitlements`에 구성한다
 - [x] T004 [P] 위치 권한 설명과 extension principal class를 `GetUp/Resources/Info.plist`, `GetUpDeviceActivityMonitor/Info.plist`, `GetUpShieldConfiguration/Info.plist`, `GetUpShieldAction/Info.plist`에 구성하고, region monitoring 외 지속적인 background location update 및 일반 background processing mode는 활성화하지 않는다
 - [x] T005 [P] unit·integration·UI test bundle과 실행 순서를 `GetUp.xctestplan` 및 `GetUp.xcodeproj/xcshareddata/xcschemes/GetUp.xcscheme`에 구성한다
-- [ ] T006 [P] 로우파이·하이파이 링크, 화면 상태, 접근성, 검토 결과를 기록할 `design/README.md`, `design/low-fidelity/TEMPLATE.md`, `design/high-fidelity/TEMPLATE.md`를 생성한다
+- [x] T006 [P] 로우파이·하이파이 링크, 화면 상태, 접근성, 검토 결과를 기록할 `design/README.md`, `design/low-fidelity/TEMPLATE.md`, `design/high-fidelity/TEMPLATE.md`를 생성한다
 - [ ] T007 [P] required-reason API와 수집 데이터 없음 정책을 `GetUp/Resources/PrivacyInfo.xcprivacy` 및 각 extension의 `PrivacyInfo.xcprivacy`에 초기 구성한다
 - [ ] T008 [P] 색상·아이콘·문자열 resource scaffold를 `GetUp/Resources/Assets.xcassets`와 `GetUp/Resources/Localizable.xcstrings`에 생성한다
 

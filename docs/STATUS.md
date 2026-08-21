@@ -10,12 +10,13 @@ Phase 1 프로젝트 설정 진행 중
 없음
 
 ## 마지막 완료 작업
-T005 — `GetUp.xctestplan`에 `GetUpTests`와 `GetUpUITests`를 순서대로 등록하고 target 병렬 실행을
-끄며, 공유 `GetUp` scheme의 기본 test plan으로 연결함. unit·integration 검증 뒤 UI 검증이
-실행되도록 테스트 bundle 순서를 구성함
+T006 — `design/README.md`, `design/low-fidelity/TEMPLATE.md`,
+`design/high-fidelity/TEMPLATE.md`에 로우파이 승인 후 하이파이, 하이파이 승인 후 구현으로 이어지는
+검토 게이트와 화면 상태·접근성·검토 결과 기록 형식을 구성함
 
 ## 다음 작업
-T006 — 로우파이·하이파이 설계 기록용 README와 template를 생성함
+T007 — required-reason API와 수집 데이터 없음 정책을 앱과 extension의 `PrivacyInfo.xcprivacy`에
+초기 구성함
 
 ## 차단 상태
 없음
@@ -47,3 +48,7 @@ T005 검증으로 `GetUp.xctestplan` JSON과 공유 scheme XML 문법을 확인�
 `xcodebuild -showTestPlans`에서 공유 scheme이 `GetUp` test plan을 인식하는 것을 검증함. 아직 앱과
 테스트 source가 없으므로 실제 test 실행 결과는 없으며, 최초 실행은 관련 source task 완료 뒤
 수행해야 함.
+T006 검증으로 세 UI 설계 문서가 존재하며 Figma node 링크, 화면 상태, 접근성, 검토 기록과 승인
+게이트 항목을 포함하는지 확인함. 이 task는 문서 scaffold 작업이므로 실행할 code test는 없음.
+실제 사용자 스토리 설계는 아직 작성·승인되지 않았으며 관련 UI 구현 전에 각 문서에서 별도로
+검토해야 함.
