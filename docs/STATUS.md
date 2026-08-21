@@ -10,12 +10,11 @@ Phase 2 공통 기반 진행 중
 없음
 
 ## 마지막 완료 작업
-T010 — `Weekday`, `TimeOfDay`, `RadiusOption`, `ReferenceLocation`과 immutable
-`RestrictionRuleSnapshot`을 Codable·Equatable·Sendable 값으로 정의하고 `radiusMeters` 저장 key를
-공유 저장 contract와 일치시킴
+T011 — 위치 조건, 권한 및 제한 표시 상태 runtime 모델과 위치 확인 불가 시 실제 제한 적용 여부를
+보존하는 상태를 정의하고 앱과 세 extension target에서 공유하도록 구성함
 
 ## 다음 작업
-T011 — 위치 조건, 권한 및 사용자 표시 상태 runtime 모델을 구현함
+T012 — clock, 위치, 권한, 제한 적용 및 rule repository platform contract를 정의함
 
 ## 차단 상태
 없음
@@ -78,3 +77,8 @@ app-extension-only 설정에서 warning을 error로 처리해 type-check함. 모
 500m·1,000m raw value와 `radiusMeters` CodingKey를 확인하고 같은 source가 앱과 세 extension에 한
 번씩 포함되는지 검증함. 시간·좌표·revision·요일·앱 선택의 유효성 및 JSON round-trip 자동 테스트는
 계획된 T025·T017에서 수행하기 전까지 미검증 상태임.
+T011 검증으로 `RuntimeStateModels.swift`를 iOS Simulator SDK와 Swift 6 strict concurrency,
+app-extension-only 설정에서 warning을 error로 처리해 type-check함. 위치 상태·관측 source·권한 상태의
+stable raw value, 위치 snapshot schema version 및 필드, 제한 표시 상태의 associated value를 확인하고
+같은 source가 앱과 세 extension에 한 번씩 포함되는지 검증함. 권한·시간·위치 조합의 상태 전이와 JSON
+round-trip 자동 테스트는 계획된 T015·T017에서 수행하기 전까지 미검증 상태임.

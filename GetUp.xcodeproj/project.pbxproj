@@ -24,6 +24,10 @@
 		AA0000000000000000000042 /* RestrictionRuleModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000002 /* RestrictionRuleModels.swift */; };
 		AA0000000000000000000043 /* RestrictionRuleModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000002 /* RestrictionRuleModels.swift */; };
 		AA0000000000000000000044 /* RestrictionRuleModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000002 /* RestrictionRuleModels.swift */; };
+		AA0000000000000000000051 /* RuntimeStateModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000003 /* RuntimeStateModels.swift */; };
+		AA0000000000000000000052 /* RuntimeStateModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000003 /* RuntimeStateModels.swift */; };
+		AA0000000000000000000053 /* RuntimeStateModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000003 /* RuntimeStateModels.swift */; };
+		AA0000000000000000000054 /* RuntimeStateModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000003 /* RuntimeStateModels.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -88,6 +92,7 @@
 		B30000000000000000000022 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		B40000000000000000000001 /* SharedIdentifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedIdentifiers.swift; sourceTree = "<group>"; };
 		B40000000000000000000002 /* RestrictionRuleModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionRuleModels.swift; sourceTree = "<group>"; };
+		B40000000000000000000003 /* RuntimeStateModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuntimeStateModels.swift; sourceTree = "<group>"; };
 		BA0000000000000000000001 /* GetUp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GetUp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000002 /* GetUpDeviceActivityMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpDeviceActivityMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000003 /* GetUpShieldConfiguration.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpShieldConfiguration.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -267,6 +272,7 @@
 			isa = PBXGroup;
 			children = (
 				B40000000000000000000002 /* RestrictionRuleModels.swift */,
+				B40000000000000000000003 /* RuntimeStateModels.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -493,6 +499,7 @@
 			files = (
 				AA0000000000000000000031 /* SharedIdentifiers.swift in Sources */,
 				AA0000000000000000000041 /* RestrictionRuleModels.swift in Sources */,
+				AA0000000000000000000051 /* RuntimeStateModels.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -502,6 +509,7 @@
 			files = (
 				AA0000000000000000000032 /* SharedIdentifiers.swift in Sources */,
 				AA0000000000000000000042 /* RestrictionRuleModels.swift in Sources */,
+				AA0000000000000000000052 /* RuntimeStateModels.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -511,6 +519,7 @@
 			files = (
 				AA0000000000000000000033 /* SharedIdentifiers.swift in Sources */,
 				AA0000000000000000000043 /* RestrictionRuleModels.swift in Sources */,
+				AA0000000000000000000053 /* RuntimeStateModels.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -520,6 +529,7 @@
 			files = (
 				AA0000000000000000000034 /* SharedIdentifiers.swift in Sources */,
 				AA0000000000000000000044 /* RestrictionRuleModels.swift in Sources */,
+				AA0000000000000000000054 /* RuntimeStateModels.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
