@@ -10,12 +10,12 @@ Phase 1 프로젝트 설정 진행 중
 없음
 
 ## 마지막 완료 작업
-T002 — `Configuration/Base.xcconfig`, `Debug.xcconfig`, `Release.xcconfig`에 Swift 6 언어 모드,
-Swift 6.3 toolchain 기준, iOS 17 deployment target 및 공통 prefix·타깃별 suffix 기반 bundle
-identifier 상속 규칙을 구성하고 모든 project·target build configuration에 연결함
+T003 — 앱과 세 Screen Time 확장의 entitlements에 Family Controls와 공통 App Group capability를
+구성하고, `group.com.getup.GetUp`을 `Configuration/Base.xcconfig`의 단일 build setting으로 정의해
+모든 target이 상속하도록 `CODE_SIGN_ENTITLEMENTS`를 연결함
 
 ## 다음 작업
-T003 — 앱과 세 Screen Time 확장에 Family Controls 및 App Group entitlement를 구성함
+T004 — 위치 권한 설명과 세 extension의 principal class를 각 `Info.plist`에 구성함
 
 ## 차단 상태
 없음
@@ -31,3 +31,8 @@ Debug/Release 구성, 6개 target과 6개 scheme 인식을 확인함. Simulator 
 settings에서 `SWIFT_VERSION = 6.0`, `SWIFT_STRICT_CONCURRENCY = complete`,
 `IPHONEOS_DEPLOYMENT_TARGET = 17.0` 및 기대한 bundle identifier 상속 결과를 확인함. 로컬
 Simulator service와 일부 provisioning profile 경고가 있었으나 build settings 검증은 성공함.
+T003 검증으로 네 entitlements와 `project.pbxproj`의 plist 문법을 확인하고, Family Controls 값이
+모두 `true`이며 App Group 항목이 공통 `GETUP_APP_GROUP_IDENTIFIER` build setting을 참조하는지
+검증함. Debug·Release의 앱과 세 확장 build settings에서 각 `CODE_SIGN_ENTITLEMENTS` 경로와
+`GETUP_APP_GROUP_IDENTIFIER = group.com.getup.GetUp` 상속을 확인함. 실제 개발·배포 서명 및
+entitlement 승인은 T080과 실기기 검증 전까지 미검증 상태임.

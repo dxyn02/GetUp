@@ -57,6 +57,10 @@
 		B10000000000000000000001 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
 		B10000000000000000000002 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		B10000000000000000000003 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
+		B20000000000000000000001 /* GetUp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GetUp.entitlements; sourceTree = "<group>"; };
+		B20000000000000000000002 /* GetUpDeviceActivityMonitor.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GetUpDeviceActivityMonitor.entitlements; sourceTree = "<group>"; };
+		B20000000000000000000003 /* GetUpShieldConfiguration.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GetUpShieldConfiguration.entitlements; sourceTree = "<group>"; };
+		B20000000000000000000004 /* GetUpShieldAction.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GetUpShieldAction.entitlements; sourceTree = "<group>"; };
 		BA0000000000000000000001 /* GetUp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GetUp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000002 /* GetUpDeviceActivityMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpDeviceActivityMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000003 /* GetUpShieldConfiguration.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpShieldConfiguration.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -152,6 +156,7 @@
 		BB0000000000000000000010 /* GetUp */ = {
 			isa = PBXGroup;
 			children = (
+				B20000000000000000000001 /* GetUp.entitlements */,
 			);
 			path = GetUp;
 			sourceTree = "<group>";
@@ -159,6 +164,7 @@
 		BB0000000000000000000011 /* GetUpDeviceActivityMonitor */ = {
 			isa = PBXGroup;
 			children = (
+				B20000000000000000000002 /* GetUpDeviceActivityMonitor.entitlements */,
 			);
 			path = GetUpDeviceActivityMonitor;
 			sourceTree = "<group>";
@@ -166,6 +172,7 @@
 		BB0000000000000000000012 /* GetUpShieldConfiguration */ = {
 			isa = PBXGroup;
 			children = (
+				B20000000000000000000003 /* GetUpShieldConfiguration.entitlements */,
 			);
 			path = GetUpShieldConfiguration;
 			sourceTree = "<group>";
@@ -173,6 +180,7 @@
 		BB0000000000000000000013 /* GetUpShieldAction */ = {
 			isa = PBXGroup;
 			children = (
+				B20000000000000000000004 /* GetUpShieldAction.entitlements */,
 			);
 			path = GetUpShieldAction;
 			sourceTree = "<group>";
@@ -490,6 +498,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = B10000000000000000000002 /* Debug.xcconfig */;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = GetUp/GetUp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = YES;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = "";
@@ -503,6 +512,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = B10000000000000000000003 /* Release.xcconfig */;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = GetUp/GetUp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = YES;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = "";
@@ -517,6 +527,7 @@
 			baseConfigurationReference = B10000000000000000000002 /* Debug.xcconfig */;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = GetUpDeviceActivityMonitor/GetUpDeviceActivityMonitor.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = YES;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = .DeviceActivityMonitor;
@@ -532,6 +543,7 @@
 			baseConfigurationReference = B10000000000000000000003 /* Release.xcconfig */;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = GetUpDeviceActivityMonitor/GetUpDeviceActivityMonitor.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = YES;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = .DeviceActivityMonitor;
@@ -547,6 +559,7 @@
 			baseConfigurationReference = B10000000000000000000002 /* Debug.xcconfig */;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = GetUpShieldConfiguration/GetUpShieldConfiguration.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = YES;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = .ShieldConfiguration;
@@ -562,6 +575,7 @@
 			baseConfigurationReference = B10000000000000000000003 /* Release.xcconfig */;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = GetUpShieldConfiguration/GetUpShieldConfiguration.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = YES;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = .ShieldConfiguration;
@@ -577,6 +591,7 @@
 			baseConfigurationReference = B10000000000000000000002 /* Debug.xcconfig */;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = GetUpShieldAction/GetUpShieldAction.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = YES;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = .ShieldAction;
@@ -592,6 +607,7 @@
 			baseConfigurationReference = B10000000000000000000003 /* Release.xcconfig */;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = GetUpShieldAction/GetUpShieldAction.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = YES;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = .ShieldAction;

@@ -26,7 +26,7 @@ task는 관련 구현보다 먼저 작성하고 실패를 확인한다.
 
 - [x] T001 `GetUp.xcodeproj/project.pbxproj`에 iOS 17+ 앱, `GetUpDeviceActivityMonitor`, `GetUpShieldConfiguration`, `GetUpShieldAction`, `GetUpTests`, `GetUpUITests` target과 scheme을 생성한다
 - [x] T002 [P] Swift 6.3, deployment target, bundle identifier 상속 규칙을 `Configuration/Base.xcconfig`, `Configuration/Debug.xcconfig`, `Configuration/Release.xcconfig`에 설정한다
-- [ ] T003 [P] Family Controls와 App Group capability를 `GetUp/GetUp.entitlements`, `GetUpDeviceActivityMonitor/GetUpDeviceActivityMonitor.entitlements`, `GetUpShieldConfiguration/GetUpShieldConfiguration.entitlements`, `GetUpShieldAction/GetUpShieldAction.entitlements`에 구성한다
+- [x] T003 [P] Family Controls와 App Group capability를 `GetUp/GetUp.entitlements`, `GetUpDeviceActivityMonitor/GetUpDeviceActivityMonitor.entitlements`, `GetUpShieldConfiguration/GetUpShieldConfiguration.entitlements`, `GetUpShieldAction/GetUpShieldAction.entitlements`에 구성한다
 - [ ] T004 [P] 위치 권한 설명과 extension principal class를 `GetUp/Resources/Info.plist`, `GetUpDeviceActivityMonitor/Info.plist`, `GetUpShieldConfiguration/Info.plist`, `GetUpShieldAction/Info.plist`에 구성하고, region monitoring 외 지속적인 background location update 및 일반 background processing mode는 활성화하지 않는다
 - [ ] T005 [P] unit·integration·UI test bundle과 실행 순서를 `GetUp.xctestplan` 및 `GetUp.xcodeproj/xcshareddata/xcschemes/GetUp.xcscheme`에 구성한다
 - [ ] T006 [P] 로우파이·하이파이 링크, 화면 상태, 접근성, 검토 결과를 기록할 `design/README.md`, `design/low-fidelity/TEMPLATE.md`, `design/high-fidelity/TEMPLATE.md`를 생성한다

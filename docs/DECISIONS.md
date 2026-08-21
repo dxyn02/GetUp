@@ -34,7 +34,8 @@ app target과 Device Activity Monitor, Shield Configuration, Shield Action exten
 **날짜**: 2026-08-20
 
 **결정**: 단일 규칙과 최신 위치 조건을 별도의 versioned Codable JSON 파일로 App Group container에
-저장한다. atomic replacement와 첫 잠금 해제까지의 파일 보호를 사용한다.
+저장한다. 공통 App Group identifier는 `group.com.getup.GetUp`으로 정의하고 앱과 세 Screen Time
+확장이 동일하게 상속한다. atomic replacement와 첫 잠금 해제까지의 파일 보호를 사용한다.
 
 **근거**: MVP는 작은 aggregate 두 개만 저장하므로 database가 필요하지 않다. 분리된 single-writer
 파일은 위치 데이터를 보호하고 extension의 읽기를 허용하면서 process 간 쓰기 충돌을 줄인다.
