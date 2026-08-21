@@ -10,11 +10,11 @@ Phase 2 공통 기반 진행 중
 없음
 
 ## 마지막 완료 작업
-T011 — 위치 조건, 권한 및 제한 표시 상태 runtime 모델과 위치 확인 불가 시 실제 제한 적용 여부를
-보존하는 상태를 정의하고 앱과 세 extension target에서 공유하도록 구성함
+T012 — clock, 공유 snapshot 저장소, 권한 조회, 일정·위치 monitoring 및 제한 적용을 `Sendable`
+platform contract로 분리하고 앱과 세 extension target에서 공유하도록 구성함
 
 ## 다음 작업
-T012 — clock, 위치, 권한, 제한 적용 및 rule repository platform contract를 정의함
+T013 — 제한 평가 입력·결정·effect·reason 모델을 정의함
 
 ## 차단 상태
 없음
@@ -82,3 +82,9 @@ app-extension-only 설정에서 warning을 error로 처리해 type-check함. 위
 stable raw value, 위치 snapshot schema version 및 필드, 제한 표시 상태의 associated value를 확인하고
 같은 source가 앱과 세 extension에 한 번씩 포함되는지 검증함. 권한·시간·위치 조합의 상태 전이와 JSON
 round-trip 자동 테스트는 계획된 T015·T017에서 수행하기 전까지 미검증 상태임.
+T012 검증으로 기존 모델과 `PlatformContracts.swift`를 iOS Simulator SDK와 Swift 6 strict
+concurrency, app-extension-only 설정에서 warning을 error로 처리해 type-check함. 일곱 platform
+contract의 `Sendable` 경계, repository CRUD, 일정·위치 lifecycle, 권한 snapshot 조회 및 제한 적용
+상태의 원자적 조회 signature를 확인하고 같은 source가 앱과 세 extension에 한 번씩 포함되는지
+검증함. 실제 adapter의 protocol 준수와 오류·취소 동작은 T018·T046·T048·T049·T073 구현 전까지
+미검증 상태임.

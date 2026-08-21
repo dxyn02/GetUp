@@ -106,3 +106,17 @@ API를 사용하는 각 실행 bundle에 정확한 사유가 포함된 privacy m
 extension의 비동기 경계를 통과하려면 해당 immutable aggregate에만 명시적인 동시성 책임을
 부여해야 한다. 향후 SDK가 `Sendable`을 제공하면 `@unchecked` 선언을 제거하고 compiler 검사를
 사용한다.
+
+## DEC-011 — 플랫폼 adapter의 비동기 계약 경계
+
+**날짜**: 2026-08-21
+
+**결정**: 시간, 공유 저장소, 권한, 일정, 위치 monitoring 및 제한 적용 기능을 `Sendable` protocol로
+분리한다. process·actor 경계를 통과할 수 있는 작업은 명시적인 `async` API로 제공하고, 저장·등록·
+시스템 제한 변경처럼 실패 가능한 작업은 `throws`로 노출한다. 제한 적용 상태는 적용 여부와 rule
+revision을 하나의 `AppliedRestrictionState`로 조회한다.
+
+**근거**: 앱과 extension이 동일한 core 판정 로직을 사용하면서 실제 Apple framework와 파일 I/O를
+fake로 교체하려면 안정적인 의존성 경계가 필요하다. 적용 여부와 revision을 따로 읽으면 두 조회
+사이에 시스템 상태가 바뀔 수 있으므로 하나의 snapshot으로 제공해야 idempotency 판정의 일관성을
+유지할 수 있다.

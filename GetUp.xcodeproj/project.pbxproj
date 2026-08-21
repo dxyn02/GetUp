@@ -28,6 +28,10 @@
 		AA0000000000000000000052 /* RuntimeStateModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000003 /* RuntimeStateModels.swift */; };
 		AA0000000000000000000053 /* RuntimeStateModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000003 /* RuntimeStateModels.swift */; };
 		AA0000000000000000000054 /* RuntimeStateModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000003 /* RuntimeStateModels.swift */; };
+		AA0000000000000000000061 /* PlatformContracts.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000004 /* PlatformContracts.swift */; };
+		AA0000000000000000000062 /* PlatformContracts.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000004 /* PlatformContracts.swift */; };
+		AA0000000000000000000063 /* PlatformContracts.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000004 /* PlatformContracts.swift */; };
+		AA0000000000000000000064 /* PlatformContracts.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000004 /* PlatformContracts.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -93,6 +97,7 @@
 		B40000000000000000000001 /* SharedIdentifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedIdentifiers.swift; sourceTree = "<group>"; };
 		B40000000000000000000002 /* RestrictionRuleModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionRuleModels.swift; sourceTree = "<group>"; };
 		B40000000000000000000003 /* RuntimeStateModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuntimeStateModels.swift; sourceTree = "<group>"; };
+		B40000000000000000000004 /* PlatformContracts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlatformContracts.swift; sourceTree = "<group>"; };
 		BA0000000000000000000001 /* GetUp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GetUp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000002 /* GetUpDeviceActivityMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpDeviceActivityMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000003 /* GetUpShieldConfiguration.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpShieldConfiguration.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -256,6 +261,7 @@
 			children = (
 				B40000000000000000000011 /* Configuration */,
 				B40000000000000000000012 /* Models */,
+				B40000000000000000000013 /* Contracts */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -275,6 +281,14 @@
 				B40000000000000000000003 /* RuntimeStateModels.swift */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		B40000000000000000000013 /* Contracts */ = {
+			isa = PBXGroup;
+			children = (
+				B40000000000000000000004 /* PlatformContracts.swift */,
+			);
+			path = Contracts;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -500,6 +514,7 @@
 				AA0000000000000000000031 /* SharedIdentifiers.swift in Sources */,
 				AA0000000000000000000041 /* RestrictionRuleModels.swift in Sources */,
 				AA0000000000000000000051 /* RuntimeStateModels.swift in Sources */,
+				AA0000000000000000000061 /* PlatformContracts.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -510,6 +525,7 @@
 				AA0000000000000000000032 /* SharedIdentifiers.swift in Sources */,
 				AA0000000000000000000042 /* RestrictionRuleModels.swift in Sources */,
 				AA0000000000000000000052 /* RuntimeStateModels.swift in Sources */,
+				AA0000000000000000000062 /* PlatformContracts.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -520,6 +536,7 @@
 				AA0000000000000000000033 /* SharedIdentifiers.swift in Sources */,
 				AA0000000000000000000043 /* RestrictionRuleModels.swift in Sources */,
 				AA0000000000000000000053 /* RuntimeStateModels.swift in Sources */,
+				AA0000000000000000000063 /* PlatformContracts.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -530,6 +547,7 @@
 				AA0000000000000000000034 /* SharedIdentifiers.swift in Sources */,
 				AA0000000000000000000044 /* RestrictionRuleModels.swift in Sources */,
 				AA0000000000000000000054 /* RuntimeStateModels.swift in Sources */,
+				AA0000000000000000000064 /* PlatformContracts.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
