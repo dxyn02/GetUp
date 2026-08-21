@@ -4,18 +4,18 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 1 프로젝트 설정 진행 중
+Phase 1 프로젝트 설정 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T007 — 앱과 세 extension의 `PrivacyInfo.xcprivacy`에 tracking·off-device 수집 데이터 없음과
-App Group `UserDefaults` 접근 사유 `1C8F.1`을 선언하고, 각 target의 Resources phase에 연결함
+T008 — `Assets.xcassets`에 실제 디자인 값이 없는 `AppIcon`·`AccentColor` scaffold를 만들고,
+한국어를 source language로 사용하는 빈 `Localizable.xcstrings`를 앱 target에 연결함
 
 ## 다음 작업
-T008 — 색상·아이콘·문자열 resource scaffold를 `Assets.xcassets`와
-`Localizable.xcstrings`에 생성함
+T009 — App Group, 공유 파일명, named Managed Settings store 및 activity name 규칙을
+`SharedIdentifiers.swift`에 정의함
 
 ## 차단 상태
 없음
@@ -57,3 +57,11 @@ T007 검증으로 네 `PrivacyInfo.xcprivacy`의 plist 문법과 root key type�
 문법과 각 manifest의 target별 Resources phase membership을 확인하고 `xcodebuild -list -json`으로
 프로젝트 인식을 재검증함. Simulator service와 로컬 provisioning profile 경고가 있었지만 명령은
 성공함. 실제 archive privacy report와 App Store Connect 검증은 배포 준비 전까지 미검증 상태임.
+T008 검증으로 asset catalog와 string catalog JSON 문법, `AppIcon`의 기본·Dark·Tinted slot,
+비어 있는 `AccentColor`, 한국어 `sourceLanguage` 및 빈 문자열 목록을 확인함. 두 resource의 앱 target
+Resources phase membership과 Debug·Release의 `ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon`,
+`ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor`를 확인하고 `xcodebuild -list -json`으로
+프로젝트 인식을 재검증함. `actool`과 `xcstringstool`이 빈 scaffold를 오류 없이 처리함. Simulator
+service와 로컬 provisioning profile 경고가 있었지만 관련 명령은 성공함. 실제 색상·아이콘·문구는
+사용자 스토리별 하이파이 승인 뒤 추가하며, 현재 빈 app icon과 accent color는 출시용 asset으로
+검증되지 않은 상태임.
