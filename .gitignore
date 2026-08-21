@@ -4,6 +4,16 @@
 
 ## User settings
 xcuserdata/
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+
+## Build output
+build/
+DerivedData/
+*.swiftpm/
+Packages/
+*.xcresult
 
 ## Obj-C/Swift specific
 *.hmap
@@ -60,3 +70,11 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+# macOS and editors
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/
