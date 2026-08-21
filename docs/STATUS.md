@@ -10,12 +10,12 @@ Phase 1 프로젝트 설정 진행 중
 없음
 
 ## 마지막 완료 작업
-T003 — 앱과 세 Screen Time 확장의 entitlements에 Family Controls와 공통 App Group capability를
-구성하고, `group.com.getup.GetUp`을 `Configuration/Base.xcconfig`의 단일 build setting으로 정의해
-모든 target이 상속하도록 `CODE_SIGN_ENTITLEMENTS`를 연결함
+T004 — 앱 `Info.plist`에 When In Use 및 Always 위치 사용 목적을 한국어로 구성하고, 세 Screen
+Time extension의 `Info.plist`에 Xcode 26.6 템플릿 기준 extension point identifier와 principal
+class를 설정함. 지속 위치 업데이트 및 일반 background processing mode는 추가하지 않음
 
 ## 다음 작업
-T004 — 위치 권한 설명과 세 extension의 principal class를 각 `Info.plist`에 구성함
+T005 — unit·integration·UI test bundle과 실행 순서를 `GetUp.xctestplan` 및 공유 scheme에 구성함
 
 ## 차단 상태
 없음
@@ -36,3 +36,9 @@ T003 검증으로 네 entitlements와 `project.pbxproj`의 plist 문법을 확�
 검증함. Debug·Release의 앱과 세 확장 build settings에서 각 `CODE_SIGN_ENTITLEMENTS` 경로와
 `GETUP_APP_GROUP_IDENTIFIER = group.com.getup.GetUp` 상속을 확인함. 실제 개발·배포 서명 및
 entitlement 승인은 T080과 실기기 검증 전까지 미검증 상태임.
+T004 검증으로 앱과 세 extension `Info.plist`, `project.pbxproj`의 plist 문법을 확인하고 위치 권한
+문구, `NSExtensionPointIdentifier`, `NSExtensionPrincipalClass` 값을 Xcode 26.6 템플릿과 대조함.
+Debug·Release의 네 target에서 수동 `INFOPLIST_FILE` 경로와 version 상속을 확인했으며,
+`UIBackgroundModes`, `BGTaskSchedulerPermittedIdentifiers` 및 관련 build setting이 없음을 검증함.
+principal class의 실제 로딩은 각 extension source 구현 후 build 및 실기기 테스트 전까지 미검증
+상태임.

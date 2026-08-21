@@ -61,6 +61,10 @@
 		B20000000000000000000002 /* GetUpDeviceActivityMonitor.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GetUpDeviceActivityMonitor.entitlements; sourceTree = "<group>"; };
 		B20000000000000000000003 /* GetUpShieldConfiguration.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GetUpShieldConfiguration.entitlements; sourceTree = "<group>"; };
 		B20000000000000000000004 /* GetUpShieldAction.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GetUpShieldAction.entitlements; sourceTree = "<group>"; };
+		B30000000000000000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B30000000000000000000002 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B30000000000000000000003 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B30000000000000000000004 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		BA0000000000000000000001 /* GetUp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GetUp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000002 /* GetUpDeviceActivityMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpDeviceActivityMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000003 /* GetUpShieldConfiguration.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpShieldConfiguration.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -157,6 +161,7 @@
 			isa = PBXGroup;
 			children = (
 				B20000000000000000000001 /* GetUp.entitlements */,
+				B30000000000000000000010 /* Resources */,
 			);
 			path = GetUp;
 			sourceTree = "<group>";
@@ -165,6 +170,7 @@
 			isa = PBXGroup;
 			children = (
 				B20000000000000000000002 /* GetUpDeviceActivityMonitor.entitlements */,
+				B30000000000000000000002 /* Info.plist */,
 			);
 			path = GetUpDeviceActivityMonitor;
 			sourceTree = "<group>";
@@ -173,6 +179,7 @@
 			isa = PBXGroup;
 			children = (
 				B20000000000000000000003 /* GetUpShieldConfiguration.entitlements */,
+				B30000000000000000000003 /* Info.plist */,
 			);
 			path = GetUpShieldConfiguration;
 			sourceTree = "<group>";
@@ -181,6 +188,7 @@
 			isa = PBXGroup;
 			children = (
 				B20000000000000000000004 /* GetUpShieldAction.entitlements */,
+				B30000000000000000000004 /* Info.plist */,
 			);
 			path = GetUpShieldAction;
 			sourceTree = "<group>";
@@ -197,6 +205,14 @@
 			children = (
 			);
 			path = GetUpUITests;
+			sourceTree = "<group>";
+		};
+		B30000000000000000000010 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				B30000000000000000000001 /* Info.plist */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -500,8 +516,9 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = GetUp/GetUp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = "";
+				INFOPLIST_FILE = GetUp/Resources/Info.plist;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				TARGETED_DEVICE_FAMILY = 1;
@@ -514,8 +531,9 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = GetUp/GetUp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = "";
+				INFOPLIST_FILE = GetUp/Resources/Info.plist;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				TARGETED_DEVICE_FAMILY = 1;
@@ -529,8 +547,9 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = GetUpDeviceActivityMonitor/GetUpDeviceActivityMonitor.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = .DeviceActivityMonitor;
+				INFOPLIST_FILE = GetUpDeviceActivityMonitor/Info.plist;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -545,8 +564,9 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = GetUpDeviceActivityMonitor/GetUpDeviceActivityMonitor.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = .DeviceActivityMonitor;
+				INFOPLIST_FILE = GetUpDeviceActivityMonitor/Info.plist;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -561,8 +581,9 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = GetUpShieldConfiguration/GetUpShieldConfiguration.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = .ShieldConfiguration;
+				INFOPLIST_FILE = GetUpShieldConfiguration/Info.plist;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -577,8 +598,9 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = GetUpShieldConfiguration/GetUpShieldConfiguration.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = .ShieldConfiguration;
+				INFOPLIST_FILE = GetUpShieldConfiguration/Info.plist;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -593,8 +615,9 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = GetUpShieldAction/GetUpShieldAction.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = .ShieldAction;
+				INFOPLIST_FILE = GetUpShieldAction/Info.plist;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -609,8 +632,9 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = GetUpShieldAction/GetUpShieldAction.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = .ShieldAction;
+				INFOPLIST_FILE = GetUpShieldAction/Info.plist;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
