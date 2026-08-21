@@ -7,14 +7,14 @@
 Phase 2 공통 기반 진행 중
 
 ## 진행 중
-T015 — 제한 상태 전체 행렬과 우선순위·보존·idempotency 실패 테스트를 작성하고 red 상태를 확인함
+없음
 
 ## 마지막 완료 작업
-T014 — 월요일 07:00 UTC 고정 clock·Gregorian calendar와 override 가능한 규칙·위치·권한·현재
-제한 적용 상태 fixture를 test target에 구성함
+T016 — 순수 `RestrictionStateMachine`을 구현하고 T015의 제한 상태 전체 행렬·우선순위·보존·
+idempotency 테스트를 통과시킴
 
 ## 다음 작업
-T016 — 순수 `RestrictionStateMachine`을 구현해 T015 테스트를 통과시킴
+T017 — 공유 저장소의 round-trip·파일 없음·손상 JSON·미지원 schema version·원자 교체 실패 테스트를 작성함
 
 ## 차단 상태
 없음
@@ -101,7 +101,13 @@ clock의 `Clock` 준수, UTC Gregorian calendar, factory override와 test target
 T025 validation 테스트에서 별도 검증할 예정임.
 T015에서 시간 2상태 × 위치 3상태 × 권한 2상태 × 현재 shield 2상태의 24개 조합과 시간 종료
 우선순위, 위치 `unavailable` 보존, rule revision 불일치, apply/remove idempotency를 Swift Testing으로
-작성함. 임시 compile stub을 사용하면 테스트 source가 Swift 6 strict concurrency에서 type-check되며,
-stub 없이 검사하면 아직 구현되지 않은 `RestrictionStateMachine`을 찾을 수 없어 의도한 red 상태가
-발생함. 실패한 관련 테스트가 있으므로 T015는 완료 체크하지 않았고 T016 구현·통과 후 함께 완료
-처리해야 함. 전체 Xcode test 실행은 app entry point 구현 전까지 실행할 수 없는 상태임.
+작성함. 구현 전 임시 compile stub을 사용하면 테스트 source가 Swift 6 strict concurrency에서
+type-check되었고, stub 없이 검사하면 `RestrictionStateMachine`을 찾을 수 없어 의도한 red 상태가
+발생했음. 이후 T016 구현과 실행 검증을 통과해 T015를 함께 완료 처리함.
+T016 검증으로 `RestrictionStateMachine.swift`를 앱과 세 extension Sources phase에 포함하고 iOS 17
+Simulator SDK, Swift 6 strict concurrency 및 app-extension-only 설정에서 warning을 error로 처리해
+type-check함. 실제 구현을 import한 T015 Swift Testing source가 compile 검사를 통과했으며, 동일 구현을
+링크한 자동 실행 harness에서 24개 상태 조합, 시간 종료 우선순위, 위치 `unavailable`·revision 불일치
+보존, apply/remove idempotency, 필수 권한 결합과 자정 초과 일정의 시작 요일 귀속 assertion을 모두
+통과함. `BackgroundRefreshStatus`는 진단 정보로 유지하고 신규 shield 적용의 필수 권한 집합에서는
+제외함. 전체 Xcode test 실행은 app entry point가 구현되는 T037 전까지 실행할 수 없어 미검증 상태임.
