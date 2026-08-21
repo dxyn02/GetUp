@@ -10,11 +10,11 @@ Phase 2 공통 기반 진행 중
 없음
 
 ## 마지막 완료 작업
-T013 — 제한 평가의 명시적 입력과 화면 상태·목표 제한 상태·실행 effect·판정 reason 출력을
-immutable `Equatable`·`Sendable` 값으로 정의하고 앱과 세 extension target에서 공유하도록 구성함
+T014 — 월요일 07:00 UTC 고정 clock·Gregorian calendar와 override 가능한 규칙·위치·권한·현재
+제한 적용 상태 fixture를 test target에 구성함
 
 ## 다음 작업
-T014 — 고정 clock·calendar·규칙·위치·권한 test fixture를 구현함
+T015 — 제한 상태 전체 행렬과 우선순위·보존·idempotency 실패 테스트를 작성함
 
 ## 차단 상태
 없음
@@ -93,3 +93,9 @@ Swift 6 strict concurrency 및 app-extension-only 설정에서 warning을 error�
 평가 입력이 전역 상태 대신 규칙·시각·달력·시간대·위치·권한·현재 제한 상태를 명시적으로 받으며,
 결정이 presentation·desired restriction·effect·reason을 모두 포함하는지 확인함. 전체 상태 행렬과
 우선순위·idempotency 동작은 계획된 T015·T016 전까지 미검증 상태임.
+T014 검증으로 기존 core source를 `GetUp` testable module로 compile한 뒤 `TestFixtures.swift`를
+iOS Simulator SDK와 Swift 6 strict concurrency에서 warning을 error로 처리해 type-check함. 고정
+clock의 `Clock` 준수, UTC Gregorian calendar, factory override와 test target Sources membership을
+확인함. fixture는 테스트 보조 코드이므로 독립 assertion은 없으며 실제 상태 행렬 실행은 T015에서
+시작함. 기본 `FamilyActivitySelection`은 opaque token을 위조하지 않은 빈 선택으로, 앱 선택 유효성은
+T025 validation 테스트에서 별도 검증할 예정임.
