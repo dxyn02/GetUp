@@ -10,13 +10,12 @@ Phase 1 프로젝트 설정 진행 중
 없음
 
 ## 마지막 완료 작업
-T006 — `design/README.md`, `design/low-fidelity/TEMPLATE.md`,
-`design/high-fidelity/TEMPLATE.md`에 로우파이 승인 후 하이파이, 하이파이 승인 후 구현으로 이어지는
-검토 게이트와 화면 상태·접근성·검토 결과 기록 형식을 구성함
+T007 — 앱과 세 extension의 `PrivacyInfo.xcprivacy`에 tracking·off-device 수집 데이터 없음과
+App Group `UserDefaults` 접근 사유 `1C8F.1`을 선언하고, 각 target의 Resources phase에 연결함
 
 ## 다음 작업
-T007 — required-reason API와 수집 데이터 없음 정책을 앱과 extension의 `PrivacyInfo.xcprivacy`에
-초기 구성함
+T008 — 색상·아이콘·문자열 resource scaffold를 `Assets.xcassets`와
+`Localizable.xcstrings`에 생성함
 
 ## 차단 상태
 없음
@@ -52,3 +51,9 @@ T006 검증으로 세 UI 설계 문서가 존재하며 Figma node 링크, 화면
 게이트 항목을 포함하는지 확인함. 이 task는 문서 scaffold 작업이므로 실행할 code test는 없음.
 실제 사용자 스토리 설계는 아직 작성·승인되지 않았으며 관련 UI 구현 전에 각 문서에서 별도로
 검토해야 함.
+T007 검증으로 네 `PrivacyInfo.xcprivacy`의 plist 문법과 root key type을 확인하고, 모든 manifest가
+`NSPrivacyAccessedAPICategoryUserDefaults`의 `1C8F.1`, 빈 `NSPrivacyCollectedDataTypes`,
+`NSPrivacyTracking = false`, 빈 `NSPrivacyTrackingDomains`를 선언하는지 확인함. `project.pbxproj`
+문법과 각 manifest의 target별 Resources phase membership을 확인하고 `xcodebuild -list -json`으로
+프로젝트 인식을 재검증함. Simulator service와 로컬 provisioning profile 경고가 있었지만 명령은
+성공함. 실제 archive privacy report와 App Store Connect 검증은 배포 준비 전까지 미검증 상태임.

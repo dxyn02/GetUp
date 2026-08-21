@@ -79,3 +79,16 @@ XCTest를 사용한다. 위치, 종료된 앱, 권한 및 재부팅 동작에는
 
 **근거**: 정보 구조와 사용자 흐름을 코드 작성 전에 검증하고, 확정된 화면 상태·접근성·시각
 규격을 구현 기준으로 사용해 UI 재작업을 줄인다.
+
+## DEC-009 — Privacy manifest 기본 정책
+
+**날짜**: 2026-08-21
+
+**결정**: 앱과 세 extension의 `PrivacyInfo.xcprivacy`에 tracking 및 off-device 데이터 수집이
+없음을 선언한다. App Group 구성원 사이에서 재생성 가능한 운영 표식만 공유하는 `UserDefaults`의
+required-reason API 사유는 `1C8F.1`로 선언한다. 이후 데이터 수집이나 required-reason API 사용이
+추가되면 해당 기능과 같은 변경 단위에서 각 실행 bundle의 manifest를 갱신한다.
+
+**근거**: GetUp은 기준 좌표와 앱 선택 token을 기기 밖으로 전송하지 않으며, 공유
+`UserDefaults` 접근은 동일 App Group의 앱과 extension 사이로 제한된다. Apple은 required-reason
+API를 사용하는 각 실행 bundle에 정확한 사유가 포함된 privacy manifest를 요구한다.
