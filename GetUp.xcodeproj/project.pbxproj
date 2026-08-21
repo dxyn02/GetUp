@@ -37,6 +37,7 @@
 		AA0000000000000000000073 /* RestrictionEvaluationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000005 /* RestrictionEvaluationModels.swift */; };
 		AA0000000000000000000074 /* RestrictionEvaluationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000005 /* RestrictionEvaluationModels.swift */; };
 		AA0000000000000000000081 /* TestFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000001 /* TestFixtures.swift */; };
+		AA0000000000000000000082 /* RestrictionStateMachineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000002 /* RestrictionStateMachineTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -105,6 +106,7 @@
 		B40000000000000000000004 /* PlatformContracts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlatformContracts.swift; sourceTree = "<group>"; };
 		B40000000000000000000005 /* RestrictionEvaluationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionEvaluationModels.swift; sourceTree = "<group>"; };
 		B50000000000000000000001 /* TestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFixtures.swift; sourceTree = "<group>"; };
+		B50000000000000000000002 /* RestrictionStateMachineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStateMachineTests.swift; sourceTree = "<group>"; };
 		BA0000000000000000000001 /* GetUp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GetUp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000002 /* GetUpDeviceActivityMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpDeviceActivityMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000003 /* GetUpShieldConfiguration.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpShieldConfiguration.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -242,6 +244,7 @@
 			isa = PBXGroup;
 			children = (
 				B50000000000000000000010 /* Support */,
+				B50000000000000000000011 /* Core */,
 			);
 			path = GetUpTests;
 			sourceTree = "<group>";
@@ -252,6 +255,14 @@
 				B50000000000000000000001 /* TestFixtures.swift */,
 			);
 			path = Support;
+			sourceTree = "<group>";
+		};
+		B50000000000000000000011 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				B50000000000000000000002 /* RestrictionStateMachineTests.swift */,
+			);
+			path = Core;
 			sourceTree = "<group>";
 		};
 		BB0000000000000000000015 /* GetUpUITests */ = {
@@ -585,6 +596,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA0000000000000000000081 /* TestFixtures.swift in Sources */,
+				AA0000000000000000000082 /* RestrictionStateMachineTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

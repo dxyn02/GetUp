@@ -7,14 +7,14 @@
 Phase 2 공통 기반 진행 중
 
 ## 진행 중
-없음
+T015 — 제한 상태 전체 행렬과 우선순위·보존·idempotency 실패 테스트를 작성하고 red 상태를 확인함
 
 ## 마지막 완료 작업
 T014 — 월요일 07:00 UTC 고정 clock·Gregorian calendar와 override 가능한 규칙·위치·권한·현재
 제한 적용 상태 fixture를 test target에 구성함
 
 ## 다음 작업
-T015 — 제한 상태 전체 행렬과 우선순위·보존·idempotency 실패 테스트를 작성함
+T016 — 순수 `RestrictionStateMachine`을 구현해 T015 테스트를 통과시킴
 
 ## 차단 상태
 없음
@@ -99,3 +99,9 @@ clock의 `Clock` 준수, UTC Gregorian calendar, factory override와 test target
 확인함. fixture는 테스트 보조 코드이므로 독립 assertion은 없으며 실제 상태 행렬 실행은 T015에서
 시작함. 기본 `FamilyActivitySelection`은 opaque token을 위조하지 않은 빈 선택으로, 앱 선택 유효성은
 T025 validation 테스트에서 별도 검증할 예정임.
+T015에서 시간 2상태 × 위치 3상태 × 권한 2상태 × 현재 shield 2상태의 24개 조합과 시간 종료
+우선순위, 위치 `unavailable` 보존, rule revision 불일치, apply/remove idempotency를 Swift Testing으로
+작성함. 임시 compile stub을 사용하면 테스트 source가 Swift 6 strict concurrency에서 type-check되며,
+stub 없이 검사하면 아직 구현되지 않은 `RestrictionStateMachine`을 찾을 수 없어 의도한 red 상태가
+발생함. 실패한 관련 테스트가 있으므로 T015는 완료 체크하지 않았고 T016 구현·통과 후 함께 완료
+처리해야 함. 전체 Xcode test 실행은 app entry point 구현 전까지 실행할 수 없는 상태임.
