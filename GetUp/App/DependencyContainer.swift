@@ -1,12 +1,13 @@
 import Foundation
 
-enum DependencyContainerError: Error, Equatable {
+enum DependencyContainerError: Error, Equatable, Sendable {
     case missingAppGroupIdentifier
     case appGroupContainerUnavailable
 }
 
 struct DependencyContainer: Sendable {
     let sharedSnapshotRepository: SharedSnapshotRepository
+    let diagnostics: any DiagnosticsLogging
 
     var ruleRepository: any RuleRepository {
         sharedSnapshotRepository
@@ -18,12 +19,14 @@ struct DependencyContainer: Sendable {
 
     init(
         containerURL: URL,
-        fileWriter: any SnapshotFileWriting = AtomicSnapshotFileWriter()
+        fileWriter: any SnapshotFileWriting = AtomicSnapshotFileWriter(),
+        diagnostics: any DiagnosticsLogging = DiagnosticsLogger()
     ) {
         sharedSnapshotRepository = SharedSnapshotRepository(
             containerURL: containerURL,
             fileWriter: fileWriter
         )
+        self.diagnostics = diagnostics
     }
 
     static func live(

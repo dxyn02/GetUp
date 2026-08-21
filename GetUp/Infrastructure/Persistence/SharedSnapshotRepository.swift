@@ -1,6 +1,6 @@
 import Foundation
 
-enum SharedSnapshotRepositoryError: Error, Equatable {
+enum SharedSnapshotRepositoryError: Error, Equatable, Sendable {
     case encodingFailed(fileName: String)
     case decodingFailed(fileName: String)
     case unsupportedSchema(fileName: String, found: Int, supported: Int)

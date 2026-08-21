@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 2 공통 기반 진행 중
+Phase 2 공통 기반 완료 — Phase 3 사용자 스토리 1 로우파이 준비
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T019 — 앱과 세 extension이 같은 App Group 기반 core 저장소를 조립하는 `DependencyContainer`를 구현함
+T020 — 좌표·앱 token·임의 오류 문자열을 기록하지 않는 진단 event와 오류 분류를 구현함
 
 ## 다음 작업
-T020 — 좌표·앱 token을 기록하지 않는 진단 event와 오류 분류를 구현함
+T021 — 규칙 설정 전체 흐름의 로우파이를 제작하고 Figma 링크와 상태 설명을 기록함
 
 ## 차단 상태
 없음
@@ -133,3 +133,11 @@ Simulator SDK 및 macOS host에서 Swift 6 strict concurrency warning을 error�
 사용하게 조정했으며 기존 2개 suite의 20개 회귀 테스트도 모두 통과함. 실제
 `DependencyContainer.live()`의 App Group container URL 획득은 entitlement가 적용된 서명 target
 실행 전까지 미검증 상태임.
+T020 검증으로 `DiagnosticsLogger.swift`를 앱과 세 extension Sources phase에 포함하고 iOS 17
+Simulator SDK와 macOS host에서 Swift 6 strict concurrency warning을 error로 처리해 type-check함.
+저장소 오류 7종과 App Group 조립 오류 2종을 안정적인 code로 분류하고, file name·schema 값·revision
+값과 알 수 없는 오류 설명을 event에서 폐기하도록 Swift Testing 3개 테스트로 검증함. 좌표와 불투명
+앱 token을 포함한 임의 오류 문자열이 최종 `logMessage`에 포함되지 않음을 확인했으며, 기존 상태
+머신·저장소 회귀를 합친 3개 suite의 23개 테스트가 모두 통과함. 실제 unified logging 수집 결과의
+통합 개인정보 검사는 T079에서 수행하며, 전체 Xcode test 실행은 app entry point가 구현되는 T037
+전까지 실행할 수 없어 미검증 상태임. T020 완료로 Phase 2 공통 기반을 완료 처리함.

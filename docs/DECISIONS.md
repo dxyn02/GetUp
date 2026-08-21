@@ -143,3 +143,18 @@ process마다 하나의 `SharedSnapshotRepository` actor를 생성해 `RuleRepos
 발생할 수 있다. 전역 singleton은 테스트용 container와 실패 writer 주입을 어렵게 하므로 사용하지
 않는다. 공통 조립 source와 명시적 initializer를 사용하면 실행 target은 같은 영속성 경계를 유지하고
 테스트는 실제 App Group entitlement 없이 임시 container를 사용할 수 있다.
+
+## DEC-013 — 개인정보 안전 진단 event
+
+**날짜**: 2026-08-21
+
+**결정**: 진단 로그는 닫힌 집합인 `DiagnosticOperation`과 `DiagnosticErrorCode`만 기록한다. 저장소
+오류의 file name·schema 값·revision 값과 알 수 없는 `Error`의 설명은 분류 과정에서 폐기하며, 좌표,
+거리, 정확도, `FamilyActivitySelection`, 앱 token 또는 임의 metadata 문자열을 진단 event API가
+받지 않도록 한다. `DiagnosticsLogger`는 안전한 고정 code만 OSLog에 public 값으로 기록하고
+`DependencyContainer`를 통해 주입한다.
+
+**근거**: `Error.localizedDescription`이나 자유 형식 dictionary를 직접 기록하면 파일 경로, 좌표,
+앱 선택 payload가 의도치 않게 로그에 포함될 수 있다. 모든 값을 private OSLog로 숨기는 방식도
+민감 데이터 수집 자체를 막지 못하므로 선택하지 않는다. 필요한 운영 진단은 안정적인 operation과
+오류 분류만으로 수행하고 상세 개인정보는 처음부터 event에 포함하지 않는다.

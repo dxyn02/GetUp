@@ -48,9 +48,14 @@
 		AA0000000000000000000112 /* DependencyContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000008 /* DependencyContainer.swift */; };
 		AA0000000000000000000113 /* DependencyContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000008 /* DependencyContainer.swift */; };
 		AA0000000000000000000114 /* DependencyContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000008 /* DependencyContainer.swift */; };
+		AA0000000000000000000121 /* DiagnosticsLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000009 /* DiagnosticsLogger.swift */; };
+		AA0000000000000000000122 /* DiagnosticsLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000009 /* DiagnosticsLogger.swift */; };
+		AA0000000000000000000123 /* DiagnosticsLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000009 /* DiagnosticsLogger.swift */; };
+		AA0000000000000000000124 /* DiagnosticsLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000009 /* DiagnosticsLogger.swift */; };
 		AA0000000000000000000081 /* TestFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000001 /* TestFixtures.swift */; };
 		AA0000000000000000000082 /* RestrictionStateMachineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000002 /* RestrictionStateMachineTests.swift */; };
 		AA0000000000000000000083 /* SharedSnapshotRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */; };
+		AA0000000000000000000084 /* DiagnosticsLoggerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000004 /* DiagnosticsLoggerTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -121,9 +126,11 @@
 		B40000000000000000000006 /* RestrictionStateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStateMachine.swift; sourceTree = "<group>"; };
 		B40000000000000000000007 /* SharedSnapshotRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSnapshotRepository.swift; sourceTree = "<group>"; };
 		B40000000000000000000008 /* DependencyContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DependencyContainer.swift; sourceTree = "<group>"; };
+		B40000000000000000000009 /* DiagnosticsLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsLogger.swift; sourceTree = "<group>"; };
 		B50000000000000000000001 /* TestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFixtures.swift; sourceTree = "<group>"; };
 		B50000000000000000000002 /* RestrictionStateMachineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStateMachineTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSnapshotRepositoryTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000004 /* DiagnosticsLoggerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsLoggerTests.swift; sourceTree = "<group>"; };
 		BA0000000000000000000001 /* GetUp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GetUp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000002 /* GetUpDeviceActivityMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpDeviceActivityMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000003 /* GetUpShieldConfiguration.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpShieldConfiguration.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -265,6 +272,7 @@
 				B50000000000000000000010 /* Support */,
 				B50000000000000000000011 /* Core */,
 				B50000000000000000000012 /* Persistence */,
+				B50000000000000000000013 /* Infrastructure */,
 			);
 			path = GetUpTests;
 			sourceTree = "<group>";
@@ -291,6 +299,14 @@
 				B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */,
 			);
 			path = Persistence;
+			sourceTree = "<group>";
+		};
+		B50000000000000000000013 /* Infrastructure */ = {
+			isa = PBXGroup;
+			children = (
+				B50000000000000000000004 /* DiagnosticsLoggerTests.swift */,
+			);
+			path = Infrastructure;
 			sourceTree = "<group>";
 		};
 		BB0000000000000000000015 /* GetUpUITests */ = {
@@ -367,6 +383,7 @@
 		B40000000000000000000016 /* Infrastructure */ = {
 			isa = PBXGroup;
 			children = (
+				B40000000000000000000019 /* Diagnostics */,
 				B40000000000000000000017 /* Persistence */,
 			);
 			path = Infrastructure;
@@ -386,6 +403,14 @@
 				B40000000000000000000008 /* DependencyContainer.swift */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		B40000000000000000000019 /* Diagnostics */ = {
+			isa = PBXGroup;
+			children = (
+				B40000000000000000000009 /* DiagnosticsLogger.swift */,
+			);
+			path = Diagnostics;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -616,6 +641,7 @@
 				AA0000000000000000000091 /* RestrictionStateMachine.swift in Sources */,
 				AA0000000000000000000101 /* SharedSnapshotRepository.swift in Sources */,
 				AA0000000000000000000111 /* DependencyContainer.swift in Sources */,
+				AA0000000000000000000121 /* DiagnosticsLogger.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -631,6 +657,7 @@
 				AA0000000000000000000092 /* RestrictionStateMachine.swift in Sources */,
 				AA0000000000000000000102 /* SharedSnapshotRepository.swift in Sources */,
 				AA0000000000000000000112 /* DependencyContainer.swift in Sources */,
+				AA0000000000000000000122 /* DiagnosticsLogger.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -646,6 +673,7 @@
 				AA0000000000000000000093 /* RestrictionStateMachine.swift in Sources */,
 				AA0000000000000000000103 /* SharedSnapshotRepository.swift in Sources */,
 				AA0000000000000000000113 /* DependencyContainer.swift in Sources */,
+				AA0000000000000000000123 /* DiagnosticsLogger.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -661,6 +689,7 @@
 				AA0000000000000000000094 /* RestrictionStateMachine.swift in Sources */,
 				AA0000000000000000000104 /* SharedSnapshotRepository.swift in Sources */,
 				AA0000000000000000000114 /* DependencyContainer.swift in Sources */,
+				AA0000000000000000000124 /* DiagnosticsLogger.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -671,6 +700,7 @@
 				AA0000000000000000000081 /* TestFixtures.swift in Sources */,
 				AA0000000000000000000082 /* RestrictionStateMachineTests.swift in Sources */,
 				AA0000000000000000000083 /* SharedSnapshotRepositoryTests.swift in Sources */,
+				AA0000000000000000000084 /* DiagnosticsLoggerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
