@@ -29,16 +29,13 @@ struct AtomicSnapshotFileWriter: SnapshotFileWriting {
 actor SharedSnapshotRepository: RuleRepository, LocationConditionRepository {
     private let containerURL: URL
     private let fileWriter: any SnapshotFileWriting
-    private let fileManager: FileManager
 
     init(
         containerURL: URL,
-        fileWriter: any SnapshotFileWriting = AtomicSnapshotFileWriter(),
-        fileManager: FileManager = .default
+        fileWriter: any SnapshotFileWriting = AtomicSnapshotFileWriter()
     ) {
         self.containerURL = containerURL
         self.fileWriter = fileWriter
-        self.fileManager = fileManager
     }
 
     func loadRule() async throws -> RestrictionRuleSnapshot? {
@@ -101,7 +98,7 @@ actor SharedSnapshotRepository: RuleRepository, LocationConditionRepository {
         supportedSchemaVersion: Int
     ) throws -> Snapshot? {
         let fileURL = containerURL.appendingPathComponent(fileName)
-        guard fileManager.fileExists(atPath: fileURL.path) else {
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
             return nil
         }
 
@@ -158,12 +155,12 @@ actor SharedSnapshotRepository: RuleRepository, LocationConditionRepository {
 
     private func deleteSnapshot(fileName: String) throws {
         let fileURL = containerURL.appendingPathComponent(fileName)
-        guard fileManager.fileExists(atPath: fileURL.path) else {
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
             return
         }
 
         do {
-            try fileManager.removeItem(at: fileURL)
+            try FileManager.default.removeItem(at: fileURL)
         } catch {
             throw SharedSnapshotRepositoryError.deletionFailed(fileName: fileName)
         }

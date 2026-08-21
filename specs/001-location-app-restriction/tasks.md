@@ -53,7 +53,7 @@ task는 관련 구현보다 먼저 작성하고 실패를 확인한다.
 - [x] T016 T015를 통과하도록 순수 `RestrictionStateMachine`을 `GetUp/Core/StateMachine/RestrictionStateMachine.swift`에 구현한다
 - [x] T017 보호된 JSON round-trip, 파일 없음, 손상 JSON, 미지원 schema, revision 불일치, atomic write 실패의 실패 테스트를 `GetUpTests/Persistence/SharedSnapshotRepositoryTests.swift`에 작성한다
 - [x] T018 T017을 통과하도록 단일 writer atomic 저장과 `completeUntilFirstUserAuthentication` 보호를 `GetUp/Infrastructure/Persistence/SharedSnapshotRepository.swift`에 구현한다
-- [ ] T019 앱과 extension에서 동일한 core dependency를 조립하도록 `GetUp/App/DependencyContainer.swift`를 구현한다
+- [x] T019 앱과 extension에서 동일한 core dependency를 조립하도록 `GetUp/App/DependencyContainer.swift`를 구현한다
 - [ ] T020 좌표·앱 token을 기록하지 않는 진단 event와 오류 분류를 `GetUp/Infrastructure/Diagnostics/DiagnosticsLogger.swift`에 구현한다
 
 **Checkpoint**: Foundation 완료 — 상태 판정과 공유 저장을 fake dependency로 독립 검증할 수 있다.

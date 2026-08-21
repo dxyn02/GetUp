@@ -128,3 +128,18 @@ revision을 하나의 `AppliedRestrictionState`로 조회한다.
 fake로 교체하려면 안정적인 의존성 경계가 필요하다. 적용 여부와 revision을 따로 읽으면 두 조회
 사이에 시스템 상태가 바뀔 수 있으므로 하나의 snapshot으로 제공해야 idempotency 판정의 일관성을
 유지할 수 있다.
+
+## DEC-012 — 실행 target 공통 의존성 조립
+
+**날짜**: 2026-08-21
+
+**결정**: `DependencyContainer`를 앱과 세 extension target이 같은 source로 compile한다. live 조립은
+각 target의 `Info.plist`에 있는 `GetUpAppGroupIdentifier`를 읽어 App Group container URL을 구하고,
+process마다 하나의 `SharedSnapshotRepository` actor를 생성해 `RuleRepository`와
+`LocationConditionRepository` 계약으로 함께 노출한다. 아직 구현되지 않은 플랫폼 adapter는 해당
+구현 task에서 container에 추가한다.
+
+**근거**: target별로 App Group 경로와 repository 조립을 복제하면 설정 차이와 파일 계약 불일치가
+발생할 수 있다. 전역 singleton은 테스트용 container와 실패 writer 주입을 어렵게 하므로 사용하지
+않는다. 공통 조립 source와 명시적 initializer를 사용하면 실행 target은 같은 영속성 경계를 유지하고
+테스트는 실제 App Group entitlement 없이 임시 container를 사용할 수 있다.

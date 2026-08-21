@@ -10,10 +10,10 @@ Phase 2 공통 기반 진행 중
 없음
 
 ## 마지막 완료 작업
-T018 — 보호된 atomic JSON 공유 저장소를 구현하고 T017의 정상·실패 경계 테스트 10개를 통과시킴
+T019 — 앱과 세 extension이 같은 App Group 기반 core 저장소를 조립하는 `DependencyContainer`를 구현함
 
 ## 다음 작업
-T019 — 앱과 extension에서 동일한 core dependency를 조립하는 `DependencyContainer`를 구현함
+T020 — 좌표·앱 token을 기록하지 않는 진단 event와 오류 분류를 구현함
 
 ## 차단 상태
 없음
@@ -125,3 +125,11 @@ ISO-8601 날짜와 정렬된 key로 encoding하고, schema header 선검사, 현
 atomic write와 `completeUntilFirstUserAuthentication` 보호, 오류 분류 및 삭제의 멱등성을 구현함.
 기존 상태 머신 회귀 테스트까지 합친 2개 suite의 20개 테스트도 모두 통과함. 전체 Xcode test 실행은
 app entry point가 구현되는 T037 전까지 실행할 수 없어 미검증 상태임.
+T019 검증으로 `DependencyContainer.swift`를 앱과 세 extension Sources phase에 포함하고 iOS 17
+Simulator SDK 및 macOS host에서 Swift 6 strict concurrency warning을 error로 처리해 type-check함.
+실행 harness에서 한 container의 규칙·위치 계약이 동일 `SharedSnapshotRepository` actor를 노출하는지,
+앱과 extension을 모사한 별도 container 인스턴스가 같은 규칙·위치 파일을 읽는지 확인함. actor 밖의
+`FileManager` 인스턴스를 저장소로 전송하지 않도록 파일 작업은 actor 내부에서 생성한 인스턴스만
+사용하게 조정했으며 기존 2개 suite의 20개 회귀 테스트도 모두 통과함. 실제
+`DependencyContainer.live()`의 App Group container URL 획득은 entitlement가 적용된 서명 target
+실행 전까지 미검증 상태임.
