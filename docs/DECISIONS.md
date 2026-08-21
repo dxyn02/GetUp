@@ -35,6 +35,9 @@ app target과 Device Activity Monitor, Shield Configuration, Shield Action exten
 
 **날짜**: 2026-08-20
 
+**상태**: 단일 규칙 payload 범위는 2026-08-21에 `DEC-015`·`DEC-016`으로 대체됨. 보호된 App Group
+JSON, atomic replacement 및 파일 보호 원칙은 유지됨.
+
 **결정**: 단일 규칙과 최신 위치 조건을 별도의 versioned Codable JSON 파일로 App Group container에
 저장한다. 공통 App Group identifier는 `group.com.getup.GetUp`으로 정의하고 앱과 세 Screen Time
 확장이 동일하게 상속한다. atomic replacement와 첫 잠금 해제까지의 파일 보호를 사용한다.
@@ -49,6 +52,10 @@ write를 사용하고 테스트에서는 실패를 결정적으로 주입한다.
 먼저 검사한 뒤 전체 payload를 decode하며, 위치 snapshot은 현재 저장된 규칙 revision과 일치할 때만
 반환한다. 이 구조는 single-writer 책임과 이전 완전한 파일 보존을 유지하면서 오류 경로를 독립적으로
 검증하기 위한 것이다.
+
+다중 규칙 전환 전까지 이 구현은 기존 단일 규칙 schema를 유지한다. 후속 계획 갱신에서 규칙
+collection과 규칙별 위치 snapshot으로 migration하고 기존 단일 규칙 파일을 데이터 손실 없이
+읽어 들이는 경로를 정의해야 한다.
 
 ## DEC-005 — 순수 제한 state machine
 
@@ -177,3 +184,33 @@ target의 deployment target을 iOS 26 이상으로 통일한다. 이 결정은 `
 **영향 범위**: `Configuration/Base.xcconfig`, 기능 spec·plan·research·quickstart·tasks의 플랫폼
 기준, 이후 로우파이·하이파이 설계와 실기기 검증 환경에 적용된다. 기존 iOS 17 기준 테스트 기록은
 당시 실행 증거로 보존하며, 현재 완료 판단에는 iOS 26 기준 검증을 사용한다.
+
+## DEC-015 — MVP부터 여러 독립 제한 규칙 지원
+
+**날짜**: 2026-08-21
+
+**결정**: MVP부터 여러 독립 제한 규칙을 저장하고 추가·확인·수정한다. 홈 화면은 오늘 예정된
+규칙을 우선 표시하고, 오늘 일정이 없으면 다음날 예정된 규칙을 보여 주며 새 규칙 추가와 표시된
+규칙 편집 진입점을 제공한다. 이 결정은 기존 단일 규칙 범위를 대체한다.
+
+**근거**: 사용자는 취침과 외출처럼 서로 다른 시간·위치·제한 앱 조합을 함께 운용해야 하며,
+오늘 또는 다음 예정 규칙을 확인하는 홈 경험은 여러 규칙이 보존될 때 제품 의도와 일치한다.
+
+**영향 범위**: `RestrictionRuleSnapshot`의 식별자, 규칙 collection 저장과 migration, 일정·region
+등록, 상태 평가, 홈 화면, 기존 단일 규칙 테스트와 `plan.md`·`data-model.md`·`tasks.md`를 후속
+계획 갱신에서 변경해야 한다. 규칙 중첩 동작은 `DEC-016`의 합집합 규칙을 따른다.
+
+## DEC-016 — 동시에 활성화된 규칙의 제한 앱 합집합 적용
+
+**날짜**: 2026-08-21
+
+**결정**: 시간과 위치 조건을 모두 충족한 모든 규칙의 제한 앱을 합집합으로 적용한다. 일부 규칙이
+종료되면 남은 활성 규칙의 합집합을 다시 계산해 더 이상 어떤 활성 규칙도 요구하지 않는 앱만
+해제한다.
+
+**근거**: 여러 독립 규칙의 의도를 우선순위 없이 모두 보존하며, 규칙 하나가 끝났다는 이유로 다른
+활성 규칙이 제한 중인 앱을 잘못 해제하지 않는다. 시간 중첩을 금지하거나 임의 우선순위를 두는
+방식보다 사용자 예측 가능성이 높다.
+
+**영향 범위**: 제한 상태 계산은 단일 Boolean·revision 대신 활성 rule ID 집합과 앱 token 합집합을
+추적해야 한다. 규칙별 조건 평가, 부분 종료, 중복 앱 및 idempotency 테스트를 후속 계획에 추가한다.

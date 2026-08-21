@@ -144,3 +144,17 @@
 
 승인 상태가 `승인됨`이 되기 전에는 하이파이 작업을 시작하지 않는다. 이 문서만으로 관련 UI 구현을
 시작할 수 없다.
+
+## 앱 컨셉·onboarding·home 확장 후보
+
+다중 규칙과 home 요구사항이 추가되어 `T022` 검토 범위를 onboarding과 home 컨셉까지 확장했다.
+리서치와 선택 기준은 [alarm-focus-app-concept.md](../research/alarm-focus-app-concept.md)에 기록한다.
+
+- 전체 비교: [앱 컨셉 / Onboarding + Home 후보](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=16-340)
+- A — 침대에서 문까지: [onboarding](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=16-343), [home](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=16-344)
+- B — 문턱: [onboarding](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=16-347), [home](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=16-348)
+- C — 출발 티켓: [onboarding](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=16-351), [home](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=16-352)
+
+세 후보 모두 오늘 또는 다음날의 요일·시간·위치·반경·제한 앱 요약, 규칙 수정과 새 규칙 진입을
+포함한다. 현재 승인 상태는 `검토 대기`이며 사용자가 방향을 선택한 뒤 검토 기록과 변경 사항을
+반영한다.
