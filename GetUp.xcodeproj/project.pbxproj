@@ -40,6 +40,10 @@
 		AA0000000000000000000092 /* RestrictionStateMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000006 /* RestrictionStateMachine.swift */; };
 		AA0000000000000000000093 /* RestrictionStateMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000006 /* RestrictionStateMachine.swift */; };
 		AA0000000000000000000094 /* RestrictionStateMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000006 /* RestrictionStateMachine.swift */; };
+		AA0000000000000000000101 /* SharedSnapshotRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000007 /* SharedSnapshotRepository.swift */; };
+		AA0000000000000000000102 /* SharedSnapshotRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000007 /* SharedSnapshotRepository.swift */; };
+		AA0000000000000000000103 /* SharedSnapshotRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000007 /* SharedSnapshotRepository.swift */; };
+		AA0000000000000000000104 /* SharedSnapshotRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000007 /* SharedSnapshotRepository.swift */; };
 		AA0000000000000000000081 /* TestFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000001 /* TestFixtures.swift */; };
 		AA0000000000000000000082 /* RestrictionStateMachineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000002 /* RestrictionStateMachineTests.swift */; };
 		AA0000000000000000000083 /* SharedSnapshotRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */; };
@@ -111,6 +115,7 @@
 		B40000000000000000000004 /* PlatformContracts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlatformContracts.swift; sourceTree = "<group>"; };
 		B40000000000000000000005 /* RestrictionEvaluationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionEvaluationModels.swift; sourceTree = "<group>"; };
 		B40000000000000000000006 /* RestrictionStateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStateMachine.swift; sourceTree = "<group>"; };
+		B40000000000000000000007 /* SharedSnapshotRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSnapshotRepository.swift; sourceTree = "<group>"; };
 		B50000000000000000000001 /* TestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFixtures.swift; sourceTree = "<group>"; };
 		B50000000000000000000002 /* RestrictionStateMachineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStateMachineTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSnapshotRepositoryTests.swift; sourceTree = "<group>"; };
@@ -212,6 +217,7 @@
 			children = (
 				B20000000000000000000001 /* GetUp.entitlements */,
 				B40000000000000000000010 /* Core */,
+				B40000000000000000000016 /* Infrastructure */,
 				B30000000000000000000010 /* Resources */,
 			);
 			path = GetUp;
@@ -350,6 +356,22 @@
 				B40000000000000000000006 /* RestrictionStateMachine.swift */,
 			);
 			path = StateMachine;
+			sourceTree = "<group>";
+		};
+		B40000000000000000000016 /* Infrastructure */ = {
+			isa = PBXGroup;
+			children = (
+				B40000000000000000000017 /* Persistence */,
+			);
+			path = Infrastructure;
+			sourceTree = "<group>";
+		};
+		B40000000000000000000017 /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+				B40000000000000000000007 /* SharedSnapshotRepository.swift */,
+			);
+			path = Persistence;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -578,6 +600,7 @@
 				AA0000000000000000000061 /* PlatformContracts.swift in Sources */,
 				AA0000000000000000000071 /* RestrictionEvaluationModels.swift in Sources */,
 				AA0000000000000000000091 /* RestrictionStateMachine.swift in Sources */,
+				AA0000000000000000000101 /* SharedSnapshotRepository.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -591,6 +614,7 @@
 				AA0000000000000000000062 /* PlatformContracts.swift in Sources */,
 				AA0000000000000000000072 /* RestrictionEvaluationModels.swift in Sources */,
 				AA0000000000000000000092 /* RestrictionStateMachine.swift in Sources */,
+				AA0000000000000000000102 /* SharedSnapshotRepository.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -604,6 +628,7 @@
 				AA0000000000000000000063 /* PlatformContracts.swift in Sources */,
 				AA0000000000000000000073 /* RestrictionEvaluationModels.swift in Sources */,
 				AA0000000000000000000093 /* RestrictionStateMachine.swift in Sources */,
+				AA0000000000000000000103 /* SharedSnapshotRepository.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -617,6 +642,7 @@
 				AA0000000000000000000064 /* PlatformContracts.swift in Sources */,
 				AA0000000000000000000074 /* RestrictionEvaluationModels.swift in Sources */,
 				AA0000000000000000000094 /* RestrictionStateMachine.swift in Sources */,
+				AA0000000000000000000104 /* SharedSnapshotRepository.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

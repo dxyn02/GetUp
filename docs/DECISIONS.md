@@ -40,6 +40,14 @@ app target과 Device Activity Monitor, Shield Configuration, Shield Action exten
 **근거**: MVP는 작은 aggregate 두 개만 저장하므로 database가 필요하지 않다. 분리된 single-writer
 파일은 위치 데이터를 보호하고 extension의 읽기를 허용하면서 process 간 쓰기 충돌을 줄인다.
 
+**구현 메모 (2026-08-21)**: `SharedSnapshotRepository` actor가 `RuleRepository`와
+`LocationConditionRepository`를 함께 구현하며, 규칙과 위치 snapshot은 각각 고정된 별도 파일을
+사용한다. write 경계는 `SnapshotFileWriting`으로 분리해 실제 구현에서는 보호 옵션을 포함한 atomic
+write를 사용하고 테스트에서는 실패를 결정적으로 주입한다. read는 최소 `schemaVersion` header를
+먼저 검사한 뒤 전체 payload를 decode하며, 위치 snapshot은 현재 저장된 규칙 revision과 일치할 때만
+반환한다. 이 구조는 single-writer 책임과 이전 완전한 파일 보존을 유지하면서 오류 경로를 독립적으로
+검증하기 위한 것이다.
+
 ## DEC-005 — 순수 제한 state machine
 
 **날짜**: 2026-08-20

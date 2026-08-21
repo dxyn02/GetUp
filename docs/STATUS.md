@@ -7,14 +7,13 @@
 Phase 2 공통 기반 진행 중
 
 ## 진행 중
-T017 — 공유 snapshot 저장소의 정상·실패 경계 테스트를 작성하고 red 상태를 확인함
+없음
 
 ## 마지막 완료 작업
-T016 — 순수 `RestrictionStateMachine`을 구현하고 T015의 제한 상태 전체 행렬·우선순위·보존·
-idempotency 테스트를 통과시킴
+T018 — 보호된 atomic JSON 공유 저장소를 구현하고 T017의 정상·실패 경계 테스트 10개를 통과시킴
 
 ## 다음 작업
-T018 — 단일 writer atomic 저장과 `completeUntilFirstUserAuthentication` 보호를 구현해 T017 테스트를 통과시킴
+T019 — 앱과 extension에서 동일한 core dependency를 조립하는 `DependencyContainer`를 구현함
 
 ## 차단 상태
 없음
@@ -113,9 +112,16 @@ type-check함. 실제 구현을 import한 T015 Swift Testing source가 compile �
 제외함. 전체 Xcode test 실행은 app entry point가 구현되는 T037 전까지 실행할 수 없어 미검증 상태임.
 T017에서 규칙·위치 JSON의 별도 파일 round-trip과 `completeUntilFirstUserAuthentication` 보호,
 파일 없음의 `nil` 처리, 두 파일의 손상 JSON·미지원 schema, rule revision 불일치, 두 파일의 atomic
-write 실패 시 이전 snapshot 보존을 Swift Testing으로 작성함. 임시 compile stub을 포함하면 테스트
-source가 iOS 17 Simulator SDK와 Swift 6 strict concurrency에서 type-check되며, 실제 source만 사용한
-검사에서는 아직 구현되지 않은 `SharedSnapshotRepository`, `SharedSnapshotRepositoryError`,
-`SnapshotFileWriting`을 찾을 수 없어 의도한 red 상태가 발생함. 실패한 관련 테스트가 있으므로
-T017은 완료 체크하지 않았고 T018 구현·통과 후 함께 완료 처리해야 함. 전체 Xcode test 실행은 app
-entry point 구현 전까지 실행할 수 없는 상태임.
+write 실패 시 이전 snapshot 보존을 Swift Testing으로 작성함. 구현 전 임시 compile stub을 포함하면
+테스트 source가 iOS 17 Simulator SDK와 Swift 6 strict concurrency에서 type-check되었고, 실제
+source만 사용한 검사에서는 `SharedSnapshotRepository`, `SharedSnapshotRepositoryError`,
+`SnapshotFileWriting`을 찾을 수 없어 의도한 red 상태가 발생했음. 이후 T018 구현과 실행 검증을
+통과해 T017을 함께 완료 처리함.
+T018 검증으로 `SharedSnapshotRepository.swift`를 앱과 세 extension Sources phase에 포함하고 iOS 17
+Simulator SDK, Swift 6 strict concurrency 및 app-extension-only 설정에서 warning을 error로 처리해
+type-check함. 실제 T017 Swift Testing suite를 macOS host에서 같은 Foundation 구현과 불투명
+`FamilyActivitySelection` compile stub으로 실행해 1개 suite의 10개 테스트가 모두 통과함. JSON은
+ISO-8601 날짜와 정렬된 key로 encoding하고, schema header 선검사, 현재 rule revision 교차 검사,
+atomic write와 `completeUntilFirstUserAuthentication` 보호, 오류 분류 및 삭제의 멱등성을 구현함.
+기존 상태 머신 회귀 테스트까지 합친 2개 suite의 20개 테스트도 모두 통과함. 전체 Xcode test 실행은
+app entry point가 구현되는 T037 전까지 실행할 수 없어 미검증 상태임.
