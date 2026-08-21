@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 2 공통 기반 완료 — iOS 26 최소 지원 기준 반영 완료 및 Phase 3 사용자 스토리 1 로우파이 준비
+Phase 3 사용자 스토리 1 — 로우파이 검토 준비
 
 ## 진행 중
-없음
+T022 — US1 로우파이 사용자 검토 대기
 
 ## 마지막 완료 작업
-T020 — 좌표·앱 token·임의 오류 문자열을 기록하지 않는 진단 event와 오류 분류를 구현함
+T021 — US1 규칙 설정 흐름의 7개 로우파이 화면과 상태·접근성 가설을 작성함
 
 ## 다음 작업
-T021 — 규칙 설정 전체 흐름의 로우파이를 제작하고 Figma 링크와 상태 설명을 기록함
+T022 — US1 로우파이를 사용자와 검토하고 피드백·변경 사항·승인 여부를 기록함
 
 ## 차단 상태
 없음
@@ -149,3 +149,9 @@ iOS 26 최소 지원 변경으로 `Configuration/Base.xcconfig`의
 쓰기 제한 때문에 실패했으며, 실제 source와 writable 임시 module cache를 지정한 최종 검사는
 통과함. CoreSimulatorService 및 로컬 provisioning profile 경고는 build setting 출력에 영향을
 주지 않았으며 실제 iOS 26 Simulator 실행·실기기 검증은 관련 app entry point와 UI 구현 이후 수행함.
+T021 검증으로 Figma의 `US1 / 규칙 설정 흐름` section에 iPhone 393×852 기준 7개 frame을 작성하고,
+시간 프리셋·자정 초과·15분 미만 오류·지도 핀·현재 위치 권한 부족·시스템 앱 선택·저장 실패 상태를
+각각 확인함. 모든 화면이 Apple `iOS and iPadOS 26` 공식 library component와 `SF Pro`만 사용하는지,
+실제 좌표·주소·app token을 포함하지 않는지, frame 직접 링크와 접근성 가설이 설계 문서에 기록됐는지
+검증함. 이 task는 디자인·문서 작업이므로 code test는 실행하지 않았으며, 로우파이는 아직 사용자
+승인 전이라 T022 검토와 T023 하이파이 작업이 남아 있음.

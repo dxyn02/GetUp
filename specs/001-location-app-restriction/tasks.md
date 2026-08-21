@@ -70,7 +70,7 @@ task는 관련 구현보다 먼저 작성하고 실패를 확인한다.
 
 ### 로우파이 및 하이파이
 
-- [ ] T021 [US1] 규칙 편집, 시간 프리셋, 요일, 반경, 앱 선택, 지도 핀, 현재 위치, 저장 오류 흐름의 로우파이를 제작하고 Figma 링크와 상태 설명을 `design/low-fidelity/US1-rule-configuration.md`에 기록한다
+- [x] T021 [US1] 규칙 편집, 시간 프리셋, 요일, 반경, 앱 선택, 지도 핀, 현재 위치, 저장 오류 흐름의 로우파이를 제작하고 Figma 링크와 상태 설명을 `design/low-fidelity/US1-rule-configuration.md`에 기록한다
 - [ ] T022 [US1] US1 로우파이를 사용자와 검토해 피드백·변경 사항·승인 여부를 `design/low-fidelity/US1-rule-configuration.md`에 반영한다
 - [ ] T023 [US1] 승인된 로우파이를 기준으로 Dynamic Type, VoiceOver, 색상·간격·component 상태를 포함한 하이파이를 제작하고 Figma 링크와 규격을 `design/high-fidelity/US1-rule-configuration.md`에 기록한다
 - [ ] T024 [US1] US1 하이파이를 사용자와 검토해 구현 승인 상태와 최종 변경 사항을 `design/high-fidelity/US1-rule-configuration.md`에 기록한다
