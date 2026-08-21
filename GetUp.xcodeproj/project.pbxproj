@@ -16,6 +16,10 @@
 		AA0000000000000000000014 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000014 /* PrivacyInfo.xcprivacy */; };
 		AA0000000000000000000021 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000021 /* Assets.xcassets */; };
 		AA0000000000000000000022 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000022 /* Localizable.xcstrings */; };
+		AA0000000000000000000031 /* SharedIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000001 /* SharedIdentifiers.swift */; };
+		AA0000000000000000000032 /* SharedIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000001 /* SharedIdentifiers.swift */; };
+		AA0000000000000000000033 /* SharedIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000001 /* SharedIdentifiers.swift */; };
+		AA0000000000000000000034 /* SharedIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000001 /* SharedIdentifiers.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -78,6 +82,7 @@
 		B30000000000000000000014 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		B30000000000000000000021 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B30000000000000000000022 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		B40000000000000000000001 /* SharedIdentifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedIdentifiers.swift; sourceTree = "<group>"; };
 		BA0000000000000000000001 /* GetUp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GetUp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000002 /* GetUpDeviceActivityMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpDeviceActivityMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000003 /* GetUpShieldConfiguration.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpShieldConfiguration.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -175,6 +180,7 @@
 			isa = PBXGroup;
 			children = (
 				B20000000000000000000001 /* GetUp.entitlements */,
+				B40000000000000000000010 /* Core */,
 				B30000000000000000000010 /* Resources */,
 			);
 			path = GetUp;
@@ -233,6 +239,22 @@
 				B30000000000000000000022 /* Localizable.xcstrings */,
 			);
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		B40000000000000000000010 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				B40000000000000000000011 /* Configuration */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		B40000000000000000000011 /* Configuration */ = {
+			isa = PBXGroup;
+			children = (
+				B40000000000000000000001 /* SharedIdentifiers.swift */,
+			);
+			path = Configuration;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -455,6 +477,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000031 /* SharedIdentifiers.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -462,6 +485,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000032 /* SharedIdentifiers.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -469,6 +493,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000033 /* SharedIdentifiers.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -476,6 +501,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000034 /* SharedIdentifiers.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

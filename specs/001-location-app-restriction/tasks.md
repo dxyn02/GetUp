@@ -43,7 +43,7 @@ task는 관련 구현보다 먼저 작성하고 실패를 확인한다.
 
 **⚠️ 중요**: 이 phase가 완료되기 전에는 사용자 스토리 구현을 시작하지 않는다.
 
-- [ ] T009 [P] App Group, 파일명, named Managed Settings store, activity name 규칙을 `GetUp/Core/Configuration/SharedIdentifiers.swift`에 정의한다
+- [x] T009 [P] App Group, 파일명, named Managed Settings store, activity name 규칙을 `GetUp/Core/Configuration/SharedIdentifiers.swift`에 정의한다
 - [ ] T010 [P] `Weekday`, `TimeOfDay`, `RadiusOption`, `ReferenceLocation`, `RestrictionRuleSnapshot`을 `GetUp/Core/Models/RestrictionRuleModels.swift`에 구현한다
 - [ ] T011 [P] `LocationConditionSnapshot`, `AuthorizationSnapshot`, `RestrictionPresentationState`를 `GetUp/Core/Models/RuntimeStateModels.swift`에 구현한다
 - [ ] T012 [P] `Clock`, `RuleRepository`, `LocationConditionRepository`, `AuthorizationProviding`, `ScheduleManaging`, `LocationMonitoring`, `RestrictionApplying` 계약을 `GetUp/Core/Contracts/PlatformContracts.swift`에 정의한다

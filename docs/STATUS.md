@@ -4,18 +4,19 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 1 프로젝트 설정 완료
+Phase 2 공통 기반 진행 중
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T008 — `Assets.xcassets`에 실제 디자인 값이 없는 `AppIcon`·`AccentColor` scaffold를 만들고,
-한국어를 source language로 사용하는 빈 `Localizable.xcstrings`를 앱 target에 연결함
+T009 — `SharedIdentifiers.swift`에 공유 snapshot 파일명, named Managed Settings store 및 요일별
+Device Activity name 규칙을 정의하고, App Group identifier를 네 bundle의 build setting 기반
+`Info.plist` 값에서 읽도록 구성함
 
 ## 다음 작업
-T009 — App Group, 공유 파일명, named Managed Settings store 및 activity name 규칙을
-`SharedIdentifiers.swift`에 정의함
+T010 — 제한 규칙의 `Weekday`, `TimeOfDay`, `RadiusOption`, `ReferenceLocation`,
+`RestrictionRuleSnapshot` 모델을 구현함
 
 ## 차단 상태
 없음
@@ -65,3 +66,10 @@ Resources phase membership과 Debug·Release의 `ASSETCATALOG_COMPILER_APPICON_N
 service와 로컬 provisioning profile 경고가 있었지만 관련 명령은 성공함. 실제 색상·아이콘·문구는
 사용자 스토리별 하이파이 승인 뒤 추가하며, 현재 빈 app icon과 accent color는 출시용 asset으로
 검증되지 않은 상태임.
+T009 검증으로 `SharedIdentifiers.swift`를 Swift 6 strict concurrency 설정에서 type-check하고,
+두 공유 파일명과 store·activity name 규칙을 확인함. 네 `Info.plist`의
+`GetUpAppGroupIdentifier = $(GETUP_APP_GROUP_IDENTIFIER)` 선언과 plist 문법을 확인하고, 같은 source가
+앱과 세 extension Sources phase에 각각 한 번 포함되는지 검증함. 실제 App Group container 접근과
+typed `ManagedSettingsStore.Name`·`DeviceActivityName` 변환은 관련 adapter 구현 전까지 미검증
+상태임. `xcodebuild -showBuildSettings`는 Simulator service와 로컬 provisioning profile 경고를
+출력했지만 성공했으며 공통 App Group과 Swift 6 strict concurrency 설정을 확인함.
