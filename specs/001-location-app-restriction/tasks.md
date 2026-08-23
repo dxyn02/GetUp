@@ -24,14 +24,14 @@ task는 관련 구현보다 먼저 작성하고 실패를 확인한다.
 
 **목적**: iOS 앱, 시스템 확장, 테스트 및 디자인 산출물의 기본 구조를 만든다.
 
-- [x] T001 `GetUp.xcodeproj/project.pbxproj`에 iOS 17+ 앱, `GetUpDeviceActivityMonitor`, `GetUpShieldConfiguration`, `GetUpShieldAction`, `GetUpTests`, `GetUpUITests` target과 scheme을 생성한다
-- [ ] T002 [P] Swift 6.3, deployment target, bundle identifier 상속 규칙을 `Configuration/Base.xcconfig`, `Configuration/Debug.xcconfig`, `Configuration/Release.xcconfig`에 설정한다
-- [ ] T003 [P] Family Controls와 App Group capability를 `GetUp/GetUp.entitlements`, `GetUpDeviceActivityMonitor/GetUpDeviceActivityMonitor.entitlements`, `GetUpShieldConfiguration/GetUpShieldConfiguration.entitlements`, `GetUpShieldAction/GetUpShieldAction.entitlements`에 구성한다
-- [ ] T004 [P] 위치 권한 설명과 extension principal class를 `GetUp/Resources/Info.plist`, `GetUpDeviceActivityMonitor/Info.plist`, `GetUpShieldConfiguration/Info.plist`, `GetUpShieldAction/Info.plist`에 구성하고, region monitoring 외 지속적인 background location update 및 일반 background processing mode는 활성화하지 않는다
-- [ ] T005 [P] unit·integration·UI test bundle과 실행 순서를 `GetUp.xctestplan` 및 `GetUp.xcodeproj/xcshareddata/xcschemes/GetUp.xcscheme`에 구성한다
-- [ ] T006 [P] 로우파이·하이파이 링크, 화면 상태, 접근성, 검토 결과를 기록할 `design/README.md`, `design/low-fidelity/TEMPLATE.md`, `design/high-fidelity/TEMPLATE.md`를 생성한다
-- [ ] T007 [P] required-reason API와 수집 데이터 없음 정책을 `GetUp/Resources/PrivacyInfo.xcprivacy` 및 각 extension의 `PrivacyInfo.xcprivacy`에 초기 구성한다
-- [ ] T008 [P] 색상·아이콘·문자열 resource scaffold를 `GetUp/Resources/Assets.xcassets`와 `GetUp/Resources/Localizable.xcstrings`에 생성한다
+- [x] T001 `GetUp.xcodeproj/project.pbxproj`에 iOS 26+ 앱, `GetUpDeviceActivityMonitor`, `GetUpShieldConfiguration`, `GetUpShieldAction`, `GetUpTests`, `GetUpUITests` target과 scheme을 생성한다
+- [x] T002 [P] Swift 6.3, deployment target, bundle identifier 상속 규칙을 `Configuration/Base.xcconfig`, `Configuration/Debug.xcconfig`, `Configuration/Release.xcconfig`에 설정한다
+- [x] T003 [P] Family Controls와 App Group capability를 `GetUp/GetUp.entitlements`, `GetUpDeviceActivityMonitor/GetUpDeviceActivityMonitor.entitlements`, `GetUpShieldConfiguration/GetUpShieldConfiguration.entitlements`, `GetUpShieldAction/GetUpShieldAction.entitlements`에 구성한다
+- [x] T004 [P] 위치 권한 설명과 extension principal class를 `GetUp/Resources/Info.plist`, `GetUpDeviceActivityMonitor/Info.plist`, `GetUpShieldConfiguration/Info.plist`, `GetUpShieldAction/Info.plist`에 구성하고, region monitoring 외 지속적인 background location update 및 일반 background processing mode는 활성화하지 않는다
+- [x] T005 [P] unit·integration·UI test bundle과 실행 순서를 `GetUp.xctestplan` 및 `GetUp.xcodeproj/xcshareddata/xcschemes/GetUp.xcscheme`에 구성한다
+- [x] T006 [P] 로우파이·하이파이 링크, 화면 상태, 접근성, 검토 결과를 기록할 `design/README.md`, `design/low-fidelity/TEMPLATE.md`, `design/high-fidelity/TEMPLATE.md`를 생성한다
+- [x] T007 [P] required-reason API와 수집 데이터 없음 정책을 `GetUp/Resources/PrivacyInfo.xcprivacy` 및 각 extension의 `PrivacyInfo.xcprivacy`에 초기 구성한다
+- [x] T008 [P] 색상·아이콘·문자열 resource scaffold를 `GetUp/Resources/Assets.xcassets`와 `GetUp/Resources/Localizable.xcstrings`에 생성한다
 
 **Checkpoint**: 앱·확장·테스트·디자인 작업을 시작할 수 있는 프로젝트 구조가 준비된다.
 
@@ -43,18 +43,18 @@ task는 관련 구현보다 먼저 작성하고 실패를 확인한다.
 
 **⚠️ 중요**: 이 phase가 완료되기 전에는 사용자 스토리 구현을 시작하지 않는다.
 
-- [ ] T009 [P] App Group, 파일명, named Managed Settings store, activity name 규칙을 `GetUp/Core/Configuration/SharedIdentifiers.swift`에 정의한다
-- [ ] T010 [P] `Weekday`, `TimeOfDay`, `RadiusOption`, `ReferenceLocation`, `RestrictionRuleSnapshot`을 `GetUp/Core/Models/RestrictionRuleModels.swift`에 구현한다
-- [ ] T011 [P] `LocationConditionSnapshot`, `AuthorizationSnapshot`, `RestrictionPresentationState`를 `GetUp/Core/Models/RuntimeStateModels.swift`에 구현한다
-- [ ] T012 [P] `Clock`, `RuleRepository`, `LocationConditionRepository`, `AuthorizationProviding`, `ScheduleManaging`, `LocationMonitoring`, `RestrictionApplying` 계약을 `GetUp/Core/Contracts/PlatformContracts.swift`에 정의한다
-- [ ] T013 [P] `EvaluationInput`, `EvaluationDecision`, `RestrictionEffect`, `EvaluationReason`을 `GetUp/Core/Evaluation/RestrictionEvaluationModels.swift`에 정의한다
-- [ ] T014 [P] 고정 clock, calendar, rule, 위치, 권한 fake를 `GetUpTests/Support/TestFixtures.swift`에 구현한다
-- [ ] T015 제한 상태 전체 행렬, 시간 종료 우선순위, 위치 `unavailable` 보존, idempotency의 실패 테스트를 `GetUpTests/Core/RestrictionStateMachineTests.swift`에 작성한다
-- [ ] T016 T015를 통과하도록 순수 `RestrictionStateMachine`을 `GetUp/Core/StateMachine/RestrictionStateMachine.swift`에 구현한다
-- [ ] T017 보호된 JSON round-trip, 파일 없음, 손상 JSON, 미지원 schema, revision 불일치, atomic write 실패의 실패 테스트를 `GetUpTests/Persistence/SharedSnapshotRepositoryTests.swift`에 작성한다
-- [ ] T018 T017을 통과하도록 단일 writer atomic 저장과 `completeUntilFirstUserAuthentication` 보호를 `GetUp/Infrastructure/Persistence/SharedSnapshotRepository.swift`에 구현한다
-- [ ] T019 앱과 extension에서 동일한 core dependency를 조립하도록 `GetUp/App/DependencyContainer.swift`를 구현한다
-- [ ] T020 좌표·앱 token을 기록하지 않는 진단 event와 오류 분류를 `GetUp/Infrastructure/Diagnostics/DiagnosticsLogger.swift`에 구현한다
+- [x] T009 [P] App Group, 파일명, named Managed Settings store, activity name 규칙을 `GetUp/Core/Configuration/SharedIdentifiers.swift`에 정의한다
+- [x] T010 [P] `Weekday`, `TimeOfDay`, `RadiusOption`, `ReferenceLocation`, `RestrictionRuleSnapshot`을 `GetUp/Core/Models/RestrictionRuleModels.swift`에 구현한다
+- [x] T011 [P] `LocationConditionSnapshot`, `AuthorizationSnapshot`, `RestrictionPresentationState`를 `GetUp/Core/Models/RuntimeStateModels.swift`에 구현한다
+- [x] T012 [P] `Clock`, `RuleRepository`, `LocationConditionRepository`, `AuthorizationProviding`, `ScheduleManaging`, `LocationMonitoring`, `RestrictionApplying` 계약을 `GetUp/Core/Contracts/PlatformContracts.swift`에 정의한다
+- [x] T013 [P] `EvaluationInput`, `EvaluationDecision`, `RestrictionEffect`, `EvaluationReason`을 `GetUp/Core/Evaluation/RestrictionEvaluationModels.swift`에 정의한다
+- [x] T014 [P] 고정 clock, calendar, rule, 위치, 권한 fake를 `GetUpTests/Support/TestFixtures.swift`에 구현한다
+- [x] T015 제한 상태 전체 행렬, 시간 종료 우선순위, 위치 `unavailable` 보존, idempotency의 실패 테스트를 `GetUpTests/Core/RestrictionStateMachineTests.swift`에 작성한다
+- [x] T016 T015를 통과하도록 순수 `RestrictionStateMachine`을 `GetUp/Core/StateMachine/RestrictionStateMachine.swift`에 구현한다
+- [x] T017 보호된 JSON round-trip, 파일 없음, 손상 JSON, 미지원 schema, revision 불일치, atomic write 실패의 실패 테스트를 `GetUpTests/Persistence/SharedSnapshotRepositoryTests.swift`에 작성한다
+- [x] T018 T017을 통과하도록 단일 writer atomic 저장과 `completeUntilFirstUserAuthentication` 보호를 `GetUp/Infrastructure/Persistence/SharedSnapshotRepository.swift`에 구현한다
+- [x] T019 앱과 extension에서 동일한 core dependency를 조립하도록 `GetUp/App/DependencyContainer.swift`를 구현한다
+- [x] T020 좌표·앱 token을 기록하지 않는 진단 event와 오류 분류를 `GetUp/Infrastructure/Diagnostics/DiagnosticsLogger.swift`에 구현한다
 
 **Checkpoint**: Foundation 완료 — 상태 판정과 공유 저장을 fake dependency로 독립 검증할 수 있다.
 
@@ -62,24 +62,24 @@ task는 관련 구현보다 먼저 작성하고 실패를 확인한다.
 
 ## Phase 3: 사용자 스토리 1 — 제한 조건 설정 (Priority: P1)
 
-**목표**: 사용자가 요일, 15분 이상 시간대, 지도 핀 또는 현재 위치, 500m/1km 반경, 제한 앱을
-단일 규칙으로 저장하고 다시 확인한다.
+**목표**: 사용자가 규칙 이름, 요일, DatePicker에서 선택한 15분 이상 시간대, 저장 또는 재사용한
+장소, 500m/1km/2km/3km/4km/5km 반경, 제한 앱을 독립 규칙으로 저장하고 다시 확인한다.
 
-**독립 테스트**: 앱 제한을 실제 적용하지 않아도 프리셋·직접 시간·자정 초과·요일·지도 핀·현재
-위치·반경·앱 선택을 포함한 유효 규칙을 저장하고 재실행 후 동일하게 불러올 수 있다.
+**독립 테스트**: 앱 제한을 실제 적용하지 않아도 직접 시간·자정 초과·요일·지도 핀·현재 위치·
+저장 장소 재사용·반경·앱 선택을 포함한 유효 규칙을 저장하고 재실행 후 동일하게 불러올 수 있다.
 
 ### 로우파이 및 하이파이
 
-- [ ] T021 [US1] 규칙 편집, 시간 프리셋, 요일, 반경, 앱 선택, 지도 핀, 현재 위치, 저장 오류 흐름의 로우파이를 제작하고 Figma 링크와 상태 설명을 `design/low-fidelity/US1-rule-configuration.md`에 기록한다
-- [ ] T022 [US1] US1 로우파이를 사용자와 검토해 피드백·변경 사항·승인 여부를 `design/low-fidelity/US1-rule-configuration.md`에 반영한다
-- [ ] T023 [US1] 승인된 로우파이를 기준으로 Dynamic Type, VoiceOver, 색상·간격·component 상태를 포함한 하이파이를 제작하고 Figma 링크와 규격을 `design/high-fidelity/US1-rule-configuration.md`에 기록한다
-- [ ] T024 [US1] US1 하이파이를 사용자와 검토해 구현 승인 상태와 최종 변경 사항을 `design/high-fidelity/US1-rule-configuration.md`에 기록한다
+- [x] T021 [US1] 규칙 편집, 시간 입력, 요일, 반경, 앱 선택, 지도 핀, 현재 위치, 저장 오류 흐름의 로우파이를 제작하고 Figma 링크와 상태 설명을 `design/low-fidelity/US1-rule-configuration.md`에 기록한다
+- [x] T022 [US1] US1 로우파이를 사용자와 검토해 피드백·변경 사항·승인 여부를 `design/low-fidelity/US1-rule-configuration.md`에 반영한다
+- [x] T023 [US1] 승인된 로우파이를 기준으로 Dynamic Type, VoiceOver, 색상·간격·component 상태를 포함한 하이파이를 제작하고 Figma 링크와 규격을 `design/high-fidelity/US1-rule-configuration.md`에 기록한다
+- [x] T024 [US1] US1 하이파이를 사용자와 검토해 구현 승인 상태와 최종 변경 사항을 `design/high-fidelity/US1-rule-configuration.md`에 기록한다
 
 ### 테스트
 
-- [ ] T025 [P] [US1] 14/15분 경계, 프리셋, 선택 요일, 같은 날·자정 초과·DST 시간 계산을 `GetUpTests/Core/ScheduleEvaluatorTests.swift`에, 요일·좌표·반경·앱 token 누락과 같은 시작·종료 및 14/15분 validation 실패를 `GetUpTests/Core/RestrictionRuleValidatorTests.swift`에 먼저 작성한다
-- [ ] T026 [P] [US1] 지도 이동, 현재 위치 바로가기, When In Use 권한 없음, 확인·취소 상태와 현재 위치 조회 adapter의 실패 테스트를 `GetUpTests/Core/LocationPickerModelTests.swift`, `GetUpTests/Integration/CurrentLocationProviderTests.swift`에 작성한다
-- [ ] T027 [P] [US1] 규칙 입력, validation, 앱 선택, 저장 및 재로딩 흐름의 실패 UI test를 `GetUpUITests/UserStory1RuleConfigurationUITests.swift`에 작성한다
+- [x] T025 [P] [US1] DatePicker의 14/15분 선택 경계, 선택 요일, 같은 날·자정 초과·DST 시간 계산을 `GetUpTests/Core/ScheduleEvaluatorTests.swift`에, 요일·저장 장소·여섯 반경·앱 token 누락과 같은 시작·종료 validation 실패를 `GetUpTests/Core/RestrictionRuleValidatorTests.swift`에 먼저 작성한다
+- [x] T026 [P] [US1] 지도 이동, 현재 위치 바로가기, 저장 장소 생성·재사용, When In Use 권한 없음, 확인·취소 상태와 현재 위치 조회 adapter의 실패 테스트를 `GetUpTests/Core/LocationPickerModelTests.swift`, `GetUpTests/Integration/CurrentLocationProviderTests.swift`에 작성한다
+- [x] T027 [P] [US1] 규칙 입력, validation, 앱 선택, 저장·재로딩과 홈에서 모든 저장 규칙을 탐색하는 card swipe 흐름의 실패 UI test를 `GetUpUITests/UserStory1RuleConfigurationUITests.swift`에 작성한다
 
 ### 구현
 
@@ -88,11 +88,11 @@ task는 관련 구현보다 먼저 작성하고 실패를 확인한다.
 - [ ] T030 [P] [US1] T026을 통과하도록 지도 중심·핀 후보·현재 위치·When In Use 권한 없음 상태를 `GetUp/Features/LocationPicker/LocationPickerModel.swift`에 구현하고 현재 위치 바로가기용 단발성 위치·권한 adapter를 `GetUp/Infrastructure/Location/CurrentLocationProvider.swift`에 구현한다
 - [ ] T031 [US1] 승인된 하이파이와 `location-picker-ui-contract.md`에 맞춰 MapKit 지도 핀과 현재 위치 바로가기를 `GetUp/Features/LocationPicker/LocationPickerView.swift`에 구현한다
 - [ ] T032 [P] [US1] 개인용 Family Controls 승인과 `FamilyActivityPicker` 선택 결과를 `GetUp/Infrastructure/ScreenTime/FamilyActivitySelectionAdapter.swift`에 구현한다
-- [ ] T033 [P] [US1] 시간 프리셋, 요일, 반경 선택 component를 `GetUp/Features/RuleEditor/Components/TimeRangePicker.swift`, `WeekdayPicker.swift`, `RadiusPicker.swift`에 구현한다
-- [ ] T034 [US1] 편집 draft, validation, 단일 규칙 저장·불러오기를 `GetUp/Features/RuleEditor/RuleEditorModel.swift`에 구현한다
+- [ ] T033 [P] [US1] 시·분·AM/PM을 각각 조정하고 분을 1분 단위로 선택하며 15분 미만 구간을 막는 wheel time picker, 요일, 여섯 단계 slider 반경 component를 `GetUp/Features/RuleEditor/Components/TimeRangePicker.swift`, `WeekdayPicker.swift`, `RadiusPicker.swift`에 구현한다
+- [ ] T034 [US1] 편집 draft, validation, 규칙 이름, 여러 규칙과 저장 장소 선택·재사용을 `GetUp/Features/RuleEditor/RuleEditorModel.swift`에 구현한다
 - [ ] T035 [US1] 승인된 하이파이에 맞춰 규칙 편집과 기준 위치·앱 선택 진입을 `GetUp/Features/RuleEditor/RuleEditorView.swift`에 구현한다
-- [ ] T036 [US1] 규칙 aggregate 저장과 revision 증가를 `GetUp/Features/RuleEditor/RuleConfigurationService.swift`에 구현한다
-- [ ] T037 [US1] 앱 시작 시 저장된 단일 규칙을 불러오고 편집 화면으로 연결하도록 `GetUp/App/GetUpApp.swift`와 `GetUp/App/AppModel.swift`를 구현한다
+- [ ] T036 [US1] 규칙 collection·저장 장소 collection 저장과 revision 증가를 `GetUp/Features/RuleEditor/RuleConfigurationService.swift`에 구현한다
+- [ ] T037 [US1] 앱 시작 시 저장된 모든 규칙과 장소를 불러오고 오늘 적용 규칙 우선·다음 적용 시점 순으로 정렬한 swipeable 홈 pager 및 편집 화면으로 연결하도록 `GetUp/App/GetUpApp.swift`와 `GetUp/App/AppModel.swift`를 구현한다
 
 **Checkpoint**: US1을 독립 실행해 유효 규칙의 생성·저장·재로딩을 검증할 수 있다.
 
@@ -116,7 +116,7 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 ### 테스트
 
 - [ ] T042 [P] [US2] 선택 요일별 일정 등록, 15분 오류, 자정 초과, 기존 일정 교체의 실패 테스트를 `GetUpTests/Integration/DeviceActivityScheduleAdapterTests.swift`에 작성한다
-- [ ] T043 [P] [US2] 500m/1km 내부·경계·외부·오차 중첩 및 위치 snapshot 기록의 실패 테스트를 `GetUpTests/Integration/LocationMonitoringAdapterTests.swift`에 작성한다
+- [ ] T043 [P] [US2] 500m/1km/2km/3km/4km/5km 내부·경계·외부·오차 중첩 및 위치 snapshot 기록의 실패 테스트를 `GetUpTests/Integration/LocationMonitoringAdapterTests.swift`에 작성한다
 - [ ] T044 [P] [US2] 선택 앱만 shield 적용, 동일 revision 무효과, 다른 store 보존의 실패 테스트를 `GetUpTests/Integration/ManagedSettingsRestrictionAdapterTests.swift`에 작성한다
 - [ ] T045 [P] [US2] 시간 활성 × 위치 내부에서만 제한되고 비대상 앱은 열리는 실패 UI test를 `GetUpUITests/UserStory2RestrictionActivationUITests.swift`에 작성한다
 
@@ -210,7 +210,7 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 - [ ] T080 [P] Family Controls 배포 entitlement와 App Group 설정·승인 절차를 `docs/ENTITLEMENTS.md`에 한국어로 문서화하고 app 및 각 extension bundle ID의 신청·승인 상태와 확인 증적을 기록한다
 - [ ] T081 신뢰 가능한 event timestamp부터 실제 `ManagedSettingsStore` 반영 확인까지 활성화·해제 경로를 각각 100회 이상 계측해 활성화 p95 30초 이내와 모든 해제 사례 30초 이내를 판정하고, 자동 계측과 실기기 관찰을 구분한 결과 형식을 `GetUpTests/Performance/RestrictionLatencyTests.swift`, `docs/TEST_RESULTS.md`에 구현한다
 - [ ] T082 `GetUp.xctestplan`의 전체 Swift Testing·XCTest suite를 실행하고 실패·skip·미검증 동작을 `docs/STATUS.md`와 `docs/TEST_RESULTS.md`에 한국어로 기록한다
-- [ ] T083 `specs/001-location-app-restriction/quickstart.md`의 500m/1km, background/terminated, 재부팅 첫 잠금 해제, 권한 철회, 자정 초과 시나리오를 실기기에서 수행하고 결과를 `docs/TEST_RESULTS.md`에 기록한다
+- [ ] T083 `specs/001-location-app-restriction/quickstart.md`의 여섯 반경, 저장 장소 재사용, background/terminated, 재부팅 첫 잠금 해제, 권한 철회, 자정 초과 시나리오를 실기기에서 수행하고 결과를 `docs/TEST_RESULTS.md`에 기록한다
 - [ ] T084 구현과 설계 차이를 `design/high-fidelity/US1-rule-configuration.md`, `US2-active-restriction.md`, `US3-auto-release.md`, `US4-permission-location-errors.md`에서 대조하고 승인되지 않은 편차를 수정한다
 - [ ] T085 [P] 신규 사용자가 안내 없이 유효 규칙을 저장하는 과제의 참여자 기준·시작·종료·성공 정의와 3분 이내 완료율 측정 절차를 `docs/USABILITY_TEST_PLAN.md`에 작성하고 SC-001 결과를 `docs/USABILITY_TEST_RESULTS.md`에 기록한다
 - [ ] T086 [P] 제한 활성 여부와 권한·위치 문제 해결 방법을 첫 시도에 설명하는 상태별 과제와 85% 이해 기준을 `docs/USABILITY_TEST_PLAN.md`에 작성하고 SC-007 결과를 `docs/USABILITY_TEST_RESULTS.md`에 기록한다
@@ -243,7 +243,7 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 
 ### 사용자 스토리 의존성
 
-- **US1 (P1)**: 단일 규칙 설정·저장과 현재 위치 바로가기를 포함한 slice로 독립 검증 가능
+- **US1 (P1)**: 여러 규칙·저장 장소 설정과 현재 위치 바로가기를 포함한 slice로 독립 검증 가능
 - **US2 (P1)**: 제한 engine과 앱 비실행·첫 잠금 해제 이후 자동 복구를 검증할 수 있지만 실제 사용자 설정 통합은 US1에 의존
 - **US3 (P2)**: US2의 활성 제한을 해제하므로 US2에 의존
 - **US4 (P2)**: 안내 UI는 독립 검증 가능하며 전체 복구 wiring은 US1·US2에 의존

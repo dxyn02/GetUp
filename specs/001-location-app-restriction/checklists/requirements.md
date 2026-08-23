@@ -33,3 +33,5 @@
 
 - Validation iteration 1 passed all 16 checks on 2026-08-20.
 - No clarification markers or unresolved placeholders remain.
+- 2026-08-21 다중 규칙, home, onboarding 및 중첩 규칙 합집합 동작을 반영한 뒤 16/16개 항목을
+  재검증함.

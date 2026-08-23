@@ -1,0 +1,39 @@
+{
+  "configurations" : [
+    {
+      "id" : "4884C370-5DB3-49FE-8A2C-B55F25B4288C",
+      "name" : "기본 실행",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:GetUp.xcodeproj",
+      "identifier" : "D00000000000000000000001",
+      "name" : "GetUp"
+    },
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:GetUp.xcodeproj",
+        "identifier" : "D00000000000000000000005",
+        "name" : "GetUpTests"
+      }
+    },
+    {
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:GetUp.xcodeproj",
+        "identifier" : "D00000000000000000000006",
+        "name" : "GetUpUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

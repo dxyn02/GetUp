@@ -11,18 +11,19 @@ Apple 공식 문서, 현재 설치된 iOS SDK 인터페이스, 프로젝트 헌�
 
 ## R1. 플랫폼 기준과 타깃 구조
 
-**Decision**: iOS 17 이상, Swift 6.3, SwiftUI 앱과 Device Activity Monitor, Shield
+**Decision**: iOS 26 이상, Swift 6.3, SwiftUI 앱과 Device Activity Monitor, Shield
 Configuration, Shield Action 확장을 사용한다.
 
-**Rationale**: 개인 사용자의 Family Controls 승인은 iOS 16부터 가능하고, iOS 17부터 Observation을
-전 구간에서 사용할 수 있다. 신규 앱이므로 `@MainActor @Observable` 화면 모델과 Swift 6 동시성
-검사를 사용하되, 핵심 판정은 UI에 독립적인 Sendable 값과 순수 함수로 유지한다.
+**Rationale**: 제품의 초기 검증 대상을 iOS 26 이상으로 좁혀 최신 SwiftUI와 Apple의 iOS 26
+design resource를 호환성 분기 없이 사용한다. 신규 앱이므로 `@MainActor @Observable` 화면 모델과
+Swift 6 동시성 검사를 사용하되, 핵심 판정은 UI에 독립적인 Sendable 값과 순수 함수로 유지한다.
 
 **Alternatives considered**:
 
-- iOS 16 + ObservableObject: 더 넓은 지원 범위가 필요할 때 가능하지만 신규 코드의 관찰 모델이
+- iOS 17 이상: 더 넓은 기기 범위를 지원하지만 iOS 26 전용 설계·API를 사용할 때 호환성 분기가
+  필요하므로 초기 제품 범위에서 제외한다.
+- iOS 16 + ObservableObject: 지원 범위는 더 넓지만 신규 코드의 관찰 모델과 호환성 처리가
   복잡해진다.
-- iOS 18 이상: 필요한 기능 없이 지원 범위만 줄인다.
 - 외부 아키텍처 패키지: MVP에 불필요한 의존성과 구조를 추가한다.
 
 **Sources**: [Apple Observation migration](https://developer.apple.com/documentation/swiftui/migrating-from-the-observable-object-protocol-to-the-observable-macro), [Adopting Swift 6](https://developer.apple.com/documentation/swift/adoptingswift6), [WWDC22 Screen Time API](https://developer.apple.com/videos/play/wwdc2022/110336/)

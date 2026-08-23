@@ -2,7 +2,7 @@
 
 ## Purpose
 
-메인 앱과 시스템 확장이 하나의 규칙 및 최근 위치 판정을 안전하게 공유하는 파일 계약이다.
+메인 앱과 시스템 확장이 여러 규칙, 저장 장소 및 최근 위치 판정을 안전하게 공유하는 파일 계약이다.
 
 ## Container
 
@@ -12,27 +12,44 @@
 
 ## Files
 
-### restriction-rule.json
+### restriction-rules.json
 
 ```json
 {
-  "schemaVersion": 1,
-  "revision": 1,
-  "isEnabled": true,
-  "weekdays": ["monday", "tuesday"],
-  "startTime": { "hour": 6, "minute": 0 },
-  "endTime": { "hour": 9, "minute": 0 },
-  "referenceLocation": { "latitude": 0.0, "longitude": 0.0 },
-  "radiusMeters": 500,
-  "activitySelection": "opaque-codable-payload",
-  "createdAt": "ISO-8601 timestamp",
-  "updatedAt": "ISO-8601 timestamp"
+  "schemaVersion": 2,
+  "revision": 2,
+  "rules": [{
+    "id": "stable-rule-id",
+    "name": "출근 준비",
+    "isEnabled": true,
+    "weekdays": ["monday", "tuesday"],
+    "startTime": { "hour": 6, "minute": 0 },
+    "endTime": { "hour": 9, "minute": 0 },
+    "savedPlaceID": "stable-place-id",
+    "radiusMeters": 1000,
+    "activitySelection": "opaque-codable-payload"
+  }]
 }
 ```
 
 좌표와 `activitySelection` 예시는 형식만 나타내며 실제 값은 로그나 문서에 출력하지 않는다.
 
-### location-condition.json
+### saved-places.json
+
+```json
+{
+  "schemaVersion": 1,
+  "revision": 1,
+  "places": [{
+    "id": "stable-place-id",
+    "name": "집",
+    "latitude": 0.0,
+    "longitude": 0.0
+  }]
+}
+```
+
+### location-conditions.json
 
 ```json
 {
@@ -50,7 +67,7 @@
 
 - 메인 앱만 규칙 파일을 쓴다.
 - 메인 앱의 위치 adapter만 위치 판정 파일을 쓴다.
-- 확장은 두 파일을 읽기 전용으로 사용한다.
+- 확장은 규칙·장소·위치 판정 파일을 읽기 전용으로 사용한다.
 - write는 같은 디렉터리의 임시 파일을 완전히 기록한 뒤 atomic replace한다.
 - 파일 보호는 `completeUntilFirstUserAuthentication`을 사용한다.
 - 저장 성공 후에만 일정·위치 등록을 새 revision으로 교체한다.
@@ -71,4 +88,4 @@
 - 기준 좌표와 앱 선택 payload는 서버, analytics, 일반 로그에 기록하지 않는다.
 - 앱 선택 토큰을 bundle identifier나 앱 이름으로 역변환하지 않는다.
 - UserDefaults에는 전체 규칙이나 좌표를 저장하지 않는다.
-- 규칙 삭제 시 공유 파일과 관련 시스템 일정·위치 조건을 함께 제거한다.
+- 규칙 삭제 시 해당 규칙의 공유 데이터와 관련 시스템 일정·위치 조건을 함께 제거한다.
