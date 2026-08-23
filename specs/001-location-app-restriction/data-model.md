@@ -2,7 +2,7 @@
 
 ## Design Goals
 
-- 사용자 기기 안에서 단일 제한 규칙을 저장한다.
+- 사용자 기기 안에서 여러 제한 규칙과 재사용 가능한 저장 장소를 저장한다.
 - 앱과 확장이 동일한 규칙 및 최근 위치 판정을 읽는다.
 - 시간·위치·권한 판정을 순수 입력과 출력으로 표현해 결정론적으로 테스트한다.
 - 위치 좌표와 앱 선택 토큰을 서버로 전송하거나 사람이 해석할 수 있는 식별자로 변환하지 않는다.
@@ -11,18 +11,20 @@
 
 ### RestrictionRuleSnapshot
 
-저장 가능한 단일 규칙 aggregate다.
+저장 가능한 독립 규칙 aggregate다.
 
 | Field | Type | Rules |
 |-------|------|-------|
 | `schemaVersion` | Positive integer | 현재 스키마 버전과 일치해야 한다. |
 | `revision` | Monotonic integer | 규칙을 저장할 때마다 증가한다. |
+| `id` | Stable identifier | 규칙 collection 안에서 고유해야 한다. |
+| `name` | Optional string | 사용자가 지정한 규칙 이름이며 장소 이름과 분리한다. |
 | `isEnabled` | Boolean | 비활성 규칙은 일정과 위치 모니터링을 중단한다. |
 | `weekdays` | Set of `Weekday` | 1개 이상, 최대 7개다. |
 | `startTime` | `TimeOfDay` | 현지 시각 기준이다. |
 | `endTime` | `TimeOfDay` | 시작과 같을 수 없다. |
-| `referenceLocation` | `ReferenceLocation` | 유효한 위도·경도여야 한다. |
-| `radius` | `RadiusOption` | `500m` 또는 `1000m`다. |
+| `savedPlaceID` | Stable identifier | 존재하는 `SavedPlaceSnapshot`을 참조해야 한다. |
+| `radius` | `RadiusOption` | `500m`, `1km`, `2km`, `3km`, `4km`, `5km` 중 하나다. |
 | `activitySelection` | Opaque codable selection | 앱 토큰이 1개 이상이어야 한다. |
 | `createdAt` | Timestamp | 최초 생성 시각이다. |
 | `updatedAt` | Timestamp | 마지막 저장 시각이며 `createdAt`보다 빠를 수 없다. |
@@ -32,8 +34,11 @@
 - 현지 달력에서 계산한 시작부터 종료까지의 반복 구간은 15분 이상, 24시간 미만이어야 한다.
 - 종료 시각이 시작 시각보다 이르면 다음 날 종료로 계산한다.
 - 자정 초과 구간은 시작 시각의 `Weekday`에 귀속된다.
+- DST 전환으로 시작·종료 현지 시각이 존재하지 않으면 다음 유효 시각을 경계로 사용한다. 같은
+  현지 시각이 반복되면 시작은 첫 번째 발생, 종료는 두 번째 발생을 사용하며 구간은 시작 포함·종료
+  미포함이다.
 - `isEnabled == true`인 규칙은 요일, 위치, 반경, 앱 선택이 모두 유효해야 한다.
-- MVP 저장소에는 이 aggregate가 0개 또는 1개만 존재한다.
+- MVP 저장소에는 이 aggregate가 0개 이상 존재할 수 있다.
 - 활성 제한 중에는 aggregate를 수정하거나 삭제할 수 없다.
 
 ### Weekday
@@ -51,19 +56,24 @@
 초와 시간대는 저장하지 않는다. 평가 시점의 기기 현지 `Calendar`와 `TimeZone`을 명시적으로
 주입한다.
 
-### ReferenceLocation
+### SavedPlaceSnapshot
 
 | Field | Type | Rules |
 |-------|------|-------|
+| `id` | Stable identifier | 저장 장소 collection 안에서 고유해야 한다. |
+| `name` | Non-empty string | 사용자가 직접 입력한 장소 이름이다. |
 | `latitude` | Decimal degrees | -90...90 |
 | `longitude` | Decimal degrees | -180...180 |
+| `createdAt` | Timestamp | 최초 생성 시각이다. |
+| `updatedAt` | Timestamp | 마지막 저장 시각이다. |
 
 주소 문자열은 핵심 판정 데이터가 아니다. 표시용 장소 이름을 추가하더라도 좌표와 분리하고,
 판정은 좌표만 사용한다.
 
 ### RadiusOption
 
-허용 값이 `meters500`과 `meters1000`인 닫힌 집합이다. 임의 반경 입력은 지원하지 않는다.
+허용 값이 `meters500`, `meters1000`, `meters2000`, `meters3000`, `meters4000`, `meters5000`인
+닫힌 집합이다. slider는 이 여섯 단계에 snap하며 임의 반경 입력은 지원하지 않는다.
 
 ### LocationConditionSnapshot
 
@@ -144,8 +154,9 @@
 
 | Artifact | Writer | Readers | Protection |
 |----------|--------|---------|------------|
-| `restriction-rule.json` | Main app | Main app, Device Activity extension | Atomic replace + complete-until-first-unlock |
-| `location-condition.json` | Main app location adapter | Main app, Device Activity extension | Atomic replace + complete-until-first-unlock |
+| `restriction-rules.json` | Main app | Main app, Device Activity extension | Atomic replace + complete-until-first-unlock |
+| `saved-places.json` | Main app | Main app, Device Activity extension | Atomic replace + complete-until-first-unlock |
+| `location-conditions.json` | Main app location adapter | Main app, Device Activity extension | Atomic replace + complete-until-first-unlock |
 | Named Managed Settings store | Main app or Device Activity extension | Operating system | System-managed |
 | Regenerable flags | Owning target | App/extension as required | App Group UserDefaults |
 

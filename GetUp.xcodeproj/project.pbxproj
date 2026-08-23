@@ -56,6 +56,11 @@
 		AA0000000000000000000082 /* RestrictionStateMachineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000002 /* RestrictionStateMachineTests.swift */; };
 		AA0000000000000000000083 /* SharedSnapshotRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */; };
 		AA0000000000000000000084 /* DiagnosticsLoggerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000004 /* DiagnosticsLoggerTests.swift */; };
+		AA0000000000000000000085 /* ScheduleEvaluatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000005 /* ScheduleEvaluatorTests.swift */; };
+		AA0000000000000000000086 /* RestrictionRuleValidatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000006 /* RestrictionRuleValidatorTests.swift */; };
+		AA0000000000000000000087 /* LocationPickerModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000007 /* LocationPickerModelTests.swift */; };
+		AA0000000000000000000088 /* CurrentLocationProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000008 /* CurrentLocationProviderTests.swift */; };
+		AA0000000000000000000089 /* UserStory1RuleConfigurationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000001 /* UserStory1RuleConfigurationUITests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -79,6 +84,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = D00000000000000000000004;
 			remoteInfo = GetUpShieldAction;
+		};
+		AB0000000000000000000004 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D00000000000000000000001;
+			remoteInfo = GetUp;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -131,6 +143,11 @@
 		B50000000000000000000002 /* RestrictionStateMachineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStateMachineTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSnapshotRepositoryTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000004 /* DiagnosticsLoggerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsLoggerTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000005 /* ScheduleEvaluatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleEvaluatorTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000006 /* RestrictionRuleValidatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionRuleValidatorTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000007 /* LocationPickerModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPickerModelTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000008 /* CurrentLocationProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrentLocationProviderTests.swift; sourceTree = "<group>"; };
+		B60000000000000000000001 /* UserStory1RuleConfigurationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory1RuleConfigurationUITests.swift; sourceTree = "<group>"; };
 		BA0000000000000000000001 /* GetUp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GetUp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000002 /* GetUpDeviceActivityMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpDeviceActivityMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000003 /* GetUpShieldConfiguration.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpShieldConfiguration.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -273,6 +290,7 @@
 				B50000000000000000000011 /* Core */,
 				B50000000000000000000012 /* Persistence */,
 				B50000000000000000000013 /* Infrastructure */,
+				B50000000000000000000014 /* Integration */,
 			);
 			path = GetUpTests;
 			sourceTree = "<group>";
@@ -289,6 +307,9 @@
 			isa = PBXGroup;
 			children = (
 				B50000000000000000000002 /* RestrictionStateMachineTests.swift */,
+				B50000000000000000000005 /* ScheduleEvaluatorTests.swift */,
+				B50000000000000000000006 /* RestrictionRuleValidatorTests.swift */,
+				B50000000000000000000007 /* LocationPickerModelTests.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -309,9 +330,18 @@
 			path = Infrastructure;
 			sourceTree = "<group>";
 		};
+		B50000000000000000000014 /* Integration */ = {
+			isa = PBXGroup;
+			children = (
+				B50000000000000000000008 /* CurrentLocationProviderTests.swift */,
+			);
+			path = Integration;
+			sourceTree = "<group>";
+		};
 		BB0000000000000000000015 /* GetUpUITests */ = {
 			isa = PBXGroup;
 			children = (
+				B60000000000000000000001 /* UserStory1RuleConfigurationUITests.swift */,
 			);
 			path = GetUpUITests;
 			sourceTree = "<group>";
@@ -499,6 +529,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				AC0000000000000000000004 /* PBXTargetDependency */,
 			);
 			name = GetUpTests;
 			productName = GetUpTests;
@@ -701,6 +732,10 @@
 				AA0000000000000000000082 /* RestrictionStateMachineTests.swift in Sources */,
 				AA0000000000000000000083 /* SharedSnapshotRepositoryTests.swift in Sources */,
 				AA0000000000000000000084 /* DiagnosticsLoggerTests.swift in Sources */,
+				AA0000000000000000000085 /* ScheduleEvaluatorTests.swift in Sources */,
+				AA0000000000000000000086 /* RestrictionRuleValidatorTests.swift in Sources */,
+				AA0000000000000000000087 /* LocationPickerModelTests.swift in Sources */,
+				AA0000000000000000000088 /* CurrentLocationProviderTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -708,6 +743,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000089 /* UserStory1RuleConfigurationUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -728,6 +764,11 @@
 			isa = PBXTargetDependency;
 			target = D00000000000000000000004 /* GetUpShieldAction */;
 			targetProxy = AB0000000000000000000003 /* PBXContainerItemProxy */;
+		};
+		AC0000000000000000000004 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D00000000000000000000001 /* GetUp */;
+			targetProxy = AB0000000000000000000004 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
