@@ -4,10 +4,10 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 4 사용자 스토리 2 — T051 background·재부팅 복구 경로 구현 완료
+Phase 4 사용자 스토리 2 — T052 다중 규칙 shield 문구 결정 대기
 
 ## 진행 중
-없음
+T052 — 동일 앱에 여러 활성 규칙이 적용될 때 shield 해제 조건 표시 결정 대기
 
 ## 마지막 완료 작업
 T051 — Device Activity interval과 앱 lifecycle의 공통 복구 경로를 구현함
@@ -16,13 +16,21 @@ T051 — Device Activity interval과 앱 lifecycle의 공통 복구 경로를 �
 T052 — 승인된 하이파이에 맞는 restricted-app shield UI를 구현함
 
 ## 차단 상태
-없음. BLK-008은 사용자의 1안 선택으로 해결됨.
+BLK-009 미해결. 단일 조건으로 승인된 shield 하이파이와 여러 활성 규칙의 실제 결합 해제 조건이
+충돌해 다중 규칙용 표시 정책 결정이 필요하다.
 
 ## 계획 갱신 필요
-없음. `DEC-027`의 rule ID별 위치 condition collection, 활성 rule revision 집합, token 합집합과
-schema 1 안전 migration을 설계 문서·계약과 구현에 반영했다.
+BLK-009 결정 후 필요. 다중 규칙용 짧은 요약 또는 전체 조건 나열 정책을 shield 계약과 하이파이에
+반영해야 한다.
 
 ## 테스트 상태
+T052 착수 시 승인된 shield 하이파이·계약과 `DEC-016`의 앱 token 합집합을 대조하고 iOS 26.5 SDK의
+`ManagedSettings.Application.token` 제공 여부를 확인했다. 대상 앱과 활성 규칙의 대응은 가능하지만,
+두 개 이상 규칙이 같은 앱에 적용될 때 승인된 단일 장소·반경·종료 시각 문구는 실제 결합 해제
+조건을 정확히 표현하지 못한다. 제품 문구와 Dynamic Type layout에 영향을 주는 결정이므로 구현과
+task 완료 처리를 중단하고 BLK-009에 선택지와 권장안을 기록했다. 이번 세션에는 제품 코드 변경과
+테스트 실행이 없다.
+
 T051에서 `DeviceActivityMonitorExtension.intervalDidStart`와 앱 foreground `scenePhase`를 공통
 `AppLifecycleCoordinator`에 연결했다. 복구는 공유 규칙 snapshot read 성공 후에만 GetUp 일정·region을
 초기화하고 모든 활성 규칙의 일정·region을 재등록하며, fresh fix를 rule ID별 `.restoration` 위치
