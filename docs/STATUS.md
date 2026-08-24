@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 4 사용자 스토리 2 — T043 위치 모니터링 adapter 실패 테스트 작성 완료
+Phase 4 사용자 스토리 2 — T044 Managed Settings 제한 adapter 실패 테스트 작성 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T043 — 여섯 반경의 내부·경계·외부·오차 중첩과 위치 snapshot 기록의 실패 테스트를 작성함
+T044 — 선택 앱 shield 적용, 동일 revision 무효과와 다른 store 보존의 실패 테스트를 작성함
 
 ## 다음 작업
-T044 — 선택 앱 shield 적용, 동일 revision 무효과와 다른 store 보존의 실패 테스트를 작성함
+T045 — 시간 활성 × 위치 내부에서만 제한되고 비대상 앱은 열리는 실패 UI test를 작성함
 
 ## 차단 상태
 없음
@@ -23,6 +23,18 @@ T044 — 선택 앱 shield 적용, 동일 revision 무효과와 다른 store 보
 collection migration과 홈 정렬 정책은 기능 문서와 구현에 반영되어 있다.
 
 ## 테스트 상태
+T044에서 `ManagedSettingsRestrictionAdapterTests.swift`에 규칙이 선택한 opaque application token만
+GetUp named store에 shield로 기록하는 경로, 같은 rule revision이 이미 적용된 경우 Managed Settings와
+적용 상태 저장소에 쓰지 않는 idempotency, 다른 제공자의 named store를 보존하는 경로를 검증하는
+3개 실패 테스트를 작성했다. 테스트는 앱 이름이나 bundle identifier를 해석하지 않고 Codable
+`ApplicationToken`만 사용하며 `GetUpTests` target에 포함했다. 선행 red 테스트인 T042·T043을 검증
+중에만 target에서 제외해 iPhone 17 Pro iOS 26.5 Simulator 대상 빌드를 실행했고, T044 테스트 자체의
+Swift 6 오류 없이 계획된 T049 타입인 `ManagedSettingsStoreAccess`,
+`RestrictionApplicationStateStoring`, `ManagedSettingsRestrictionAdapter`가 아직 없어 compile
+단계에서 실패하는 red 상태를 확인했다. 선행 테스트의 target membership은 즉시 복구했고,
+`project.pbxproj` plist 문법과 `git diff --check`를 통과했다. T049 구현 뒤 이 suite를 다시 실행해야
+한다.
+
 T043에서 `LocationMonitoringAdapterTests.swift`에 500m·1km·2km·3km·4km·5km 각 반경의 확실한
 내부, 정확도 0인 정확한 경계, 확실한 외부와 오차 원 경계 중첩 판정을 매개변수화하고, 최신 위치
 evidence가 규칙 revision·관측 시각·거리·정확도·event source를 보존한
