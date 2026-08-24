@@ -1,4 +1,5 @@
 import Testing
+import UIKit
 @testable import GetUp
 
 @MainActor
@@ -44,6 +45,27 @@ struct AuthorizationAdapterTests {
         #expect(firstSnapshot.locationAccuracy == .full)
         #expect(firstSnapshot.backgroundRefresh == .available)
         #expect(changedSnapshot == reader.snapshot)
+    }
+
+    @Test("Every background refresh state is normalized")
+    func normalizesBackgroundRefreshStatus() {
+        #expect(
+            SystemAuthorizationStatusReader.normalize(.available) == .available
+        )
+        #expect(
+            SystemAuthorizationStatusReader.normalize(.denied) == .denied
+        )
+        #expect(
+            SystemAuthorizationStatusReader.normalize(.restricted) == .restricted
+        )
+    }
+
+    @Test("The adapter exposes the app's system Settings URL")
+    func exposesSystemSettingsURL() {
+        #expect(
+            SystemAuthorizationProvider.settingsURL
+                == URL(string: UIApplication.openSettingsURLString)
+        )
     }
 }
 

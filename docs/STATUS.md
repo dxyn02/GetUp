@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 6 사용자 스토리 4 테스트 — 권한·위치 복구 UI 실패 계약 완료
+Phase 6 사용자 스토리 4 구현 — 권한 상태 adapter 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T074 — 권한별 안내와 위치 확인 불가 복구 흐름 실패 UI test를 작성함
+T075 — Family Controls·위치·정확도·Background App Refresh 상태와 설정 URL adapter를 구현함
 
 ## 다음 작업
-T075 — Family Controls·위치·정확도·Background App Refresh 상태와 설정 URL adapter를 구현함
+T076 — 권한별 원인·복구·앱 재선택 상태를 PermissionGuideModel에 구현함
 
 ## 차단 상태
 없음. BLK-009은 사용자의 1안 선택으로 해결됨.
@@ -22,6 +22,19 @@ T075 — Family Controls·위치·정확도·Background App Refresh 상태와 �
 없음. 규칙 삭제 UI의 코드·Figma 불일치를 T060·T061로 보정한 뒤 US3 테스트를 시작하도록 계획을 갱신했다.
 
 ## 테스트 상태
+T075에서 `AuthorizationStatusReading` 경계와 `SystemAuthorizationStatusReader`를 추가해 Family Controls,
+위치 승인, 정확도와 Background App Refresh 시스템 상태 읽기를 snapshot 합성과 분리했다.
+`SystemAuthorizationProvider`는 매 조회마다 네 상태를 새로 합성하며, 앱 전용 `forApplication()`은
+`UIApplication.backgroundRefreshStatus`의 available·denied·restricted를 도메인 상태로 정규화한다.
+app extension 기본 경로는 extension 사용 금지 API를 호출하지 않으며, Permission Guide가 사용할
+`UIApplication.openSettingsURLString` 기반 `settingsURL`도 앱 전용으로 제공한다. T072에 Background
+App Refresh 세 상태 mapping과 설정 URL 테스트를 보강했다. T073의 계획된 오래된 fix red가 회귀
+실행을 막지 않도록 검증 중에만 해당 파일의 Sources membership을 제외하고 즉시 복구했다. iPhone
+17 Pro iOS 26.5 Simulator에서 앱과 Device Activity extension을 함께 빌드하고 `GetUpTests` 130개
+test case가 동적 인자를 포함해 총 166회 모두 통과했으며 실패·skip은 없다. 실제 권한 철회와
+Settings 이동·복귀는 T079 wiring 후 T085 실기기 인수에서 검증해야 한다. `project.pbxproj` plist
+문법과 `git diff --check`는 통과했다.
+
 T074에서 승인된 US4 하이파이의 권한 개요, Family Controls 재승인·앱 재선택, Always·Full Accuracy,
 Background App Refresh 안내 4개와 위치 `unavailable` 재확인 후 비활성·활성 홈 상태로 복귀하는
 2개 흐름을 `UserStory4PermissionGuidanceUITests.swift`에 작성했다. 시스템 Settings 자체는 iOS 소유

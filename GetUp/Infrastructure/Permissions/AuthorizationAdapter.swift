@@ -1,32 +1,32 @@
 @preconcurrency import CoreLocation
 @preconcurrency import FamilyControls
 import Foundation
+import UIKit
 
 @MainActor
-final class SystemAuthorizationProvider: AuthorizationProviding {
+protocol AuthorizationStatusReading: Sendable {
+    func familyControlsStatus() -> FamilyControlsAuthorizationStatus
+    func locationAuthorizationStatus() -> LocationAuthorizationStatus
+    func locationAccuracyStatus() -> LocationAccuracyStatus
+    func backgroundRefreshStatus() -> BackgroundRefreshStatus
+}
+
+@MainActor
+final class SystemAuthorizationStatusReader: AuthorizationStatusReading {
     private let locationManager: CLLocationManager
-    private let backgroundRefreshStatus: @Sendable () -> BackgroundRefreshStatus
+    private let readBackgroundRefreshStatus: @MainActor () -> BackgroundRefreshStatus
 
     init(
         locationManager: CLLocationManager = CLLocationManager(),
-        backgroundRefreshStatus: @escaping @Sendable () -> BackgroundRefreshStatus = {
+        backgroundRefreshStatus: @escaping @MainActor () -> BackgroundRefreshStatus = {
             .available
         }
     ) {
         self.locationManager = locationManager
-        self.backgroundRefreshStatus = backgroundRefreshStatus
+        self.readBackgroundRefreshStatus = backgroundRefreshStatus
     }
 
-    func authorizationSnapshot() async -> AuthorizationSnapshot {
-        AuthorizationSnapshot(
-            familyControls: familyControlsStatus,
-            locationAuthorization: locationAuthorizationStatus,
-            locationAccuracy: locationAccuracyStatus,
-            backgroundRefresh: backgroundRefreshStatus()
-        )
-    }
-
-    private var familyControlsStatus: FamilyControlsAuthorizationStatus {
+    func familyControlsStatus() -> FamilyControlsAuthorizationStatus {
         switch AuthorizationCenter.shared.authorizationStatus {
         case .approved, .approvedWithDataAccess:
             .approved
@@ -39,7 +39,7 @@ final class SystemAuthorizationProvider: AuthorizationProviding {
         }
     }
 
-    private var locationAuthorizationStatus: LocationAuthorizationStatus {
+    func locationAuthorizationStatus() -> LocationAuthorizationStatus {
         switch locationManager.authorizationStatus {
         case .authorizedAlways:
             .always
@@ -56,7 +56,7 @@ final class SystemAuthorizationProvider: AuthorizationProviding {
         }
     }
 
-    private var locationAccuracyStatus: LocationAccuracyStatus {
+    func locationAccuracyStatus() -> LocationAccuracyStatus {
         switch locationManager.accuracyAuthorization {
         case .fullAccuracy:
             .full
@@ -65,5 +65,76 @@ final class SystemAuthorizationProvider: AuthorizationProviding {
         @unknown default:
             .reduced
         }
+    }
+
+    func backgroundRefreshStatus() -> BackgroundRefreshStatus {
+        readBackgroundRefreshStatus()
+    }
+
+    static func normalize(
+        _ status: UIBackgroundRefreshStatus
+    ) -> BackgroundRefreshStatus {
+        switch status {
+        case .available:
+            .available
+        case .denied:
+            .denied
+        case .restricted:
+            .restricted
+        @unknown default:
+            .restricted
+        }
+    }
+}
+
+@MainActor
+final class SystemAuthorizationProvider: AuthorizationProviding {
+    private let statusReader: any AuthorizationStatusReading
+
+    init(statusReader: any AuthorizationStatusReading) {
+        self.statusReader = statusReader
+    }
+
+    convenience init(
+        locationManager: CLLocationManager = CLLocationManager(),
+        backgroundRefreshStatus: @escaping @MainActor () -> BackgroundRefreshStatus = {
+            .available
+        }
+    ) {
+        self.init(
+            statusReader: SystemAuthorizationStatusReader(
+                locationManager: locationManager,
+                backgroundRefreshStatus: backgroundRefreshStatus
+            )
+        )
+    }
+
+    func authorizationSnapshot() async -> AuthorizationSnapshot {
+        AuthorizationSnapshot(
+            familyControls: statusReader.familyControlsStatus(),
+            locationAuthorization: statusReader.locationAuthorizationStatus(),
+            locationAccuracy: statusReader.locationAccuracyStatus(),
+            backgroundRefresh: statusReader.backgroundRefreshStatus()
+        )
+    }
+
+    @available(iOSApplicationExtension, unavailable)
+    static func forApplication(
+        application: UIApplication = .shared,
+        locationManager: CLLocationManager = CLLocationManager()
+    ) -> SystemAuthorizationProvider {
+        SystemAuthorizationProvider(
+            locationManager: locationManager,
+            backgroundRefreshStatus: {
+                SystemAuthorizationStatusReader.normalize(
+                    application.backgroundRefreshStatus
+                )
+            }
+        )
+    }
+
+    @available(iOSApplicationExtension, unavailable)
+    static var settingsURL: URL? {
+        URL(string: UIApplication.openSettingsURLString)
     }
 }
