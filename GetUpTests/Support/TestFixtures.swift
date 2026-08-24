@@ -19,15 +19,14 @@ enum TestFixtures {
 
     static func makeRule(
         schemaVersion: Int = RestrictionRuleSnapshot.currentSchemaVersion,
+        id: UUID = UUID(uuidString: "00000000-0000-4000-8000-000000000101")!,
         revision: Int = 1,
+        name: String? = "테스트 규칙",
         isEnabled: Bool = true,
         weekdays: Set<Weekday> = [.monday],
         startTime: TimeOfDay = TimeOfDay(hour: 6, minute: 0),
         endTime: TimeOfDay = TimeOfDay(hour: 9, minute: 0),
-        referenceLocation: ReferenceLocation = ReferenceLocation(
-            latitude: 37.5665,
-            longitude: 126.9780
-        ),
+        savedPlaceID: UUID = UUID(uuidString: "00000000-0000-4000-8000-000000000102")!,
         radius: RadiusOption = .meters500,
         activitySelection: FamilyActivitySelection = FamilyActivitySelection(),
         createdAt: Date = now,
@@ -35,12 +34,14 @@ enum TestFixtures {
     ) -> RestrictionRuleSnapshot {
         RestrictionRuleSnapshot(
             schemaVersion: schemaVersion,
+            id: id,
             revision: revision,
+            name: name,
             isEnabled: isEnabled,
             weekdays: weekdays,
             startTime: startTime,
             endTime: endTime,
-            referenceLocation: referenceLocation,
+            savedPlaceID: savedPlaceID,
             radius: radius,
             activitySelection: activitySelection,
             createdAt: createdAt,

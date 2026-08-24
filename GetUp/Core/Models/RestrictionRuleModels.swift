@@ -88,15 +88,17 @@ struct SavedPlaceSnapshot: Codable, Equatable, Sendable {
 }
 
 struct RestrictionRuleSnapshot: Codable, Equatable, @unchecked Sendable {
-    static let currentSchemaVersion = 1
+    static let currentSchemaVersion = 2
 
     let schemaVersion: Int
+    let id: UUID
     let revision: Int
+    let name: String?
     let isEnabled: Bool
     let weekdays: Set<Weekday>
     let startTime: TimeOfDay
     let endTime: TimeOfDay
-    let referenceLocation: ReferenceLocation
+    let savedPlaceID: UUID
     let radius: RadiusOption
     let activitySelection: FamilyActivitySelection
     let createdAt: Date
@@ -104,24 +106,28 @@ struct RestrictionRuleSnapshot: Codable, Equatable, @unchecked Sendable {
 
     init(
         schemaVersion: Int = RestrictionRuleSnapshot.currentSchemaVersion,
+        id: UUID,
         revision: Int,
+        name: String?,
         isEnabled: Bool,
         weekdays: Set<Weekday>,
         startTime: TimeOfDay,
         endTime: TimeOfDay,
-        referenceLocation: ReferenceLocation,
+        savedPlaceID: UUID,
         radius: RadiusOption,
         activitySelection: FamilyActivitySelection,
         createdAt: Date,
         updatedAt: Date
     ) {
         self.schemaVersion = schemaVersion
+        self.id = id
         self.revision = revision
+        self.name = name
         self.isEnabled = isEnabled
         self.weekdays = weekdays
         self.startTime = startTime
         self.endTime = endTime
-        self.referenceLocation = referenceLocation
+        self.savedPlaceID = savedPlaceID
         self.radius = radius
         self.activitySelection = activitySelection
         self.createdAt = createdAt
@@ -130,15 +136,53 @@ struct RestrictionRuleSnapshot: Codable, Equatable, @unchecked Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case schemaVersion
+        case id
         case revision
+        case name
         case isEnabled
         case weekdays
         case startTime
         case endTime
-        case referenceLocation
+        case savedPlaceID
         case radius = "radiusMeters"
         case activitySelection
         case createdAt
         case updatedAt
+    }
+}
+
+struct RestrictionRuleCollectionSnapshot: Codable, Equatable, Sendable {
+    static let currentSchemaVersion = 2
+
+    let schemaVersion: Int
+    let revision: Int
+    let rules: [RestrictionRuleSnapshot]
+
+    init(
+        schemaVersion: Int = RestrictionRuleCollectionSnapshot.currentSchemaVersion,
+        revision: Int,
+        rules: [RestrictionRuleSnapshot]
+    ) {
+        self.schemaVersion = schemaVersion
+        self.revision = revision
+        self.rules = rules
+    }
+}
+
+struct SavedPlaceCollectionSnapshot: Codable, Equatable, Sendable {
+    static let currentSchemaVersion = 1
+
+    let schemaVersion: Int
+    let revision: Int
+    let places: [SavedPlaceSnapshot]
+
+    init(
+        schemaVersion: Int = SavedPlaceCollectionSnapshot.currentSchemaVersion,
+        revision: Int,
+        places: [SavedPlaceSnapshot]
+    ) {
+        self.schemaVersion = schemaVersion
+        self.revision = revision
+        self.places = places
     }
 }

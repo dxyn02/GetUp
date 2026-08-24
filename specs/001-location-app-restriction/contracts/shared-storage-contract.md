@@ -19,7 +19,9 @@
   "schemaVersion": 2,
   "revision": 2,
   "rules": [{
+    "schemaVersion": 2,
     "id": "stable-rule-id",
+    "revision": 1,
     "name": "출근 준비",
     "isEnabled": true,
     "weekdays": ["monday", "tuesday"],
@@ -27,7 +29,9 @@
     "endTime": { "hour": 9, "minute": 0 },
     "savedPlaceID": "stable-place-id",
     "radiusMeters": 1000,
-    "activitySelection": "opaque-codable-payload"
+    "activitySelection": "opaque-codable-payload",
+    "createdAt": "ISO-8601 timestamp",
+    "updatedAt": "ISO-8601 timestamp"
   }]
 }
 ```
@@ -44,7 +48,9 @@
     "id": "stable-place-id",
     "name": "집",
     "latitude": 0.0,
-    "longitude": 0.0
+    "longitude": 0.0,
+    "createdAt": "ISO-8601 timestamp",
+    "updatedAt": "ISO-8601 timestamp"
   }]
 }
 ```
@@ -66,10 +72,14 @@
 ## Ownership and Atomicity
 
 - 메인 앱만 규칙 파일을 쓴다.
+- 메인 앱만 저장 장소 파일을 쓴다.
 - 메인 앱의 위치 adapter만 위치 판정 파일을 쓴다.
 - 확장은 규칙·장소·위치 판정 파일을 읽기 전용으로 사용한다.
 - write는 같은 디렉터리의 임시 파일을 완전히 기록한 뒤 atomic replace한다.
 - 파일 보호는 `completeUntilFirstUserAuthentication`을 사용한다.
+- 규칙 저장마다 대상 규칙 revision과 규칙 collection revision을 각각 1 증가시킨다.
+- 저장 장소 collection을 먼저 기록한 뒤 규칙 collection을 기록해 규칙이 없는 장소를 참조하지 않게 한다.
+- 편집을 시작한 규칙 revision과 현재 저장된 revision이 다르면 저장하지 않고 최신 값 재로딩을 요구한다.
 - 저장 성공 후에만 일정·위치 등록을 새 revision으로 교체한다.
 
 ## Error Contract

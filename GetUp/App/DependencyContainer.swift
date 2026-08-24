@@ -13,6 +13,10 @@ struct DependencyContainer: Sendable {
         sharedSnapshotRepository
     }
 
+    var savedPlaceRepository: any SavedPlaceRepository {
+        sharedSnapshotRepository
+    }
+
     var locationConditionRepository: any LocationConditionRepository {
         sharedSnapshotRepository
     }

@@ -1,9 +1,81 @@
+@preconcurrency import FamilyControls
 import Foundation
 import Testing
 @testable import GetUp
 
 @Suite("Shared snapshot repository", .serialized)
 struct SharedSnapshotRepositoryTests {
+    @Test("Rule and saved-place collections round-trip through their contract files")
+    func collectionsRoundTrip() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let repository = SharedSnapshotRepository(containerURL: directory)
+        let rule = TestFixtures.makeRule(revision: 3)
+        let place = SavedPlaceSnapshot(
+            id: rule.savedPlaceID,
+            name: "집",
+            coordinate: ReferenceLocation(latitude: 37.0, longitude: 127.0),
+            createdAt: TestFixtures.now,
+            updatedAt: TestFixtures.now
+        )
+        let rules = RestrictionRuleCollectionSnapshot(revision: 5, rules: [rule])
+        let places = SavedPlaceCollectionSnapshot(revision: 2, places: [place])
+
+        try await repository.saveSavedPlaceCollection(places)
+        try await repository.saveRuleCollection(rules)
+
+        #expect(try await repository.loadRuleCollection() == rules)
+        #expect(try await repository.loadSavedPlaceCollection() == places)
+        #expect(FileManager.default.fileExists(
+            atPath: directory.appendingPathComponent(
+                SharedIdentifiers.restrictionRulesFileName
+            ).path
+        ))
+        #expect(FileManager.default.fileExists(
+            atPath: directory.appendingPathComponent(
+                SharedIdentifiers.savedPlacesFileName
+            ).path
+        ))
+    }
+
+    @Test("A legacy single-rule snapshot is read as linked rule and place collections")
+    func legacyRuleMigratesWithoutLosingCoordinates() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let legacy = LegacyRuleTestSnapshot(
+            schemaVersion: 1,
+            revision: 4,
+            isEnabled: true,
+            weekdays: [.monday],
+            startTime: TimeOfDay(hour: 6, minute: 0),
+            endTime: TimeOfDay(hour: 9, minute: 0),
+            referenceLocation: ReferenceLocation(latitude: 37.0, longitude: 127.0),
+            radius: .meters1000,
+            activitySelection: FamilyActivitySelection(),
+            createdAt: TestFixtures.now,
+            updatedAt: TestFixtures.now
+        )
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        try encoder.encode(legacy).write(
+            to: directory.appendingPathComponent(
+                SharedIdentifiers.legacyRestrictionRuleFileName
+            )
+        )
+        let repository = SharedSnapshotRepository(containerURL: directory)
+
+        let rules = try #require(try await repository.loadRuleCollection())
+        let places = try #require(try await repository.loadSavedPlaceCollection())
+        let rule = try #require(rules.rules.first)
+        let place = try #require(places.places.first)
+
+        #expect(rules.revision == 4)
+        #expect(rule.revision == 4)
+        #expect(rule.savedPlaceID == place.id)
+        #expect(place.name == "기존 장소")
+        #expect(place.coordinate == legacy.referenceLocation)
+    }
+
     @Test("Rule and location snapshots round-trip through separate files")
     func snapshotsRoundTrip() async throws {
         let directory = try makeTemporaryDirectory()
@@ -26,10 +98,14 @@ struct SharedSnapshotRepositoryTests {
         let repository = SharedSnapshotRepository(containerURL: directory)
 
         try await repository.saveRule(TestFixtures.makeRule())
+        try await repository.saveSavedPlaceCollection(
+            SavedPlaceCollectionSnapshot(revision: 1, places: [])
+        )
         try await repository.saveLocationCondition(TestFixtures.makeLocationCondition())
 
         for fileName in [
-            SharedIdentifiers.restrictionRuleFileName,
+            SharedIdentifiers.restrictionRulesFileName,
+            SharedIdentifiers.savedPlacesFileName,
             SharedIdentifiers.locationConditionFileName,
         ] {
             let attributes = try FileManager.default.attributesOfItem(
@@ -258,6 +334,34 @@ struct SharedSnapshotRepositoryTests {
         } catch {
             Issue.record("Unexpected error: \(error)")
         }
+    }
+}
+
+private struct LegacyRuleTestSnapshot: Codable {
+    let schemaVersion: Int
+    let revision: Int
+    let isEnabled: Bool
+    let weekdays: Set<Weekday>
+    let startTime: TimeOfDay
+    let endTime: TimeOfDay
+    let referenceLocation: ReferenceLocation
+    let radius: RadiusOption
+    let activitySelection: FamilyActivitySelection
+    let createdAt: Date
+    let updatedAt: Date
+
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion
+        case revision
+        case isEnabled
+        case weekdays
+        case startTime
+        case endTime
+        case referenceLocation
+        case radius = "radiusMeters"
+        case activitySelection
+        case createdAt
+        case updatedAt
     }
 }
 
