@@ -9,6 +9,11 @@ enum AppLoadingState: Equatable, Sendable {
     case failed
 }
 
+enum AppRuleDeletionError: Error, Equatable, Sendable {
+    case persistedRuleRequired
+    case activeRestriction
+}
+
 struct HomeRuleItem: Equatable, Identifiable, @unchecked Sendable {
     let rule: RestrictionRuleSnapshot
     let savedPlace: SavedPlaceSnapshot
@@ -36,6 +41,7 @@ final class AppModel {
     @ObservationIgnored private let applicationCountForRule: (RestrictionRuleSnapshot) -> Int
     @ObservationIgnored private let ruleAccessibilityID: (RestrictionRuleSnapshot) -> String
     @ObservationIgnored private let bootstrap: @Sendable () async throws -> Void
+    @ObservationIgnored private let canDeleteRule: @Sendable (UUID) async -> Bool
     @ObservationIgnored private let initialEditorDraft: RuleEditorDraft?
 
     private(set) var loadingState: AppLoadingState = .idle
@@ -59,6 +65,7 @@ final class AppModel {
             $0.id.uuidString.lowercased()
         },
         initialEditorDraft: RuleEditorDraft? = nil,
+        canDeleteRule: @escaping @Sendable (UUID) async -> Bool = { _ in true },
         bootstrap: @escaping @Sendable () async throws -> Void = {}
     ) {
         self.ruleRepository = ruleRepository
@@ -73,7 +80,12 @@ final class AppModel {
         }
         self.ruleAccessibilityID = ruleAccessibilityID
         self.initialEditorDraft = initialEditorDraft
+        self.canDeleteRule = canDeleteRule
         self.bootstrap = bootstrap
+    }
+
+    var canDeleteEditingRule: Bool {
+        editorModel?.sourceRevision != nil
     }
 
     func load() async {
@@ -156,6 +168,33 @@ final class AppModel {
         apply(rules: saved.rules.rules, places: saved.savedPlaces.places)
         selectedRuleID = saved.rule.id
         editorModel = nil
+    }
+
+    func deleteEditingRule() async throws {
+        guard
+            let editorModel,
+            let sourceRevision = editorModel.sourceRevision
+        else {
+            throw AppRuleDeletionError.persistedRuleRequired
+        }
+        let ruleID = editorModel.preparedDraft.id
+        guard await canDeleteRule(ruleID) else {
+            throw AppRuleDeletionError.activeRestriction
+        }
+
+        let service = RuleConfigurationService(
+            ruleRepository: ruleRepository,
+            savedPlaceRepository: savedPlaceRepository,
+            now: now,
+            applicationTokenCounter: applicationTokenCounter
+        )
+        let updatedRules = try await service.delete(
+            ruleID: ruleID,
+            sourceRevision: sourceRevision
+        )
+
+        apply(rules: updatedRules.rules, places: savedPlaces)
+        self.editorModel = nil
     }
 
     private func makeEditorModel(
