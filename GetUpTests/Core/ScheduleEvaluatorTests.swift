@@ -4,6 +4,29 @@ import Testing
 
 @Suite("Schedule evaluator")
 struct ScheduleEvaluatorTests {
+    @Test("Time wheel converts midnight and noon without changing the minute")
+    func timeWheelTwelveHourConversion() {
+        let midnight = TimePickerComponents(time: TimeOfDay(hour: 0, minute: 7))
+        let noon = TimePickerComponents(time: TimeOfDay(hour: 12, minute: 59))
+
+        #expect(midnight.hour == 12)
+        #expect(midnight.minute == 7)
+        #expect(midnight.period == .am)
+        #expect(midnight.time == TimeOfDay(hour: 0, minute: 7))
+        #expect(noon.hour == 12)
+        #expect(noon.minute == 59)
+        #expect(noon.period == .pm)
+        #expect(noon.time == TimeOfDay(hour: 12, minute: 59))
+    }
+
+    @Test("Time wheel formats a zero-padded 12-hour accessibility value")
+    func timeWheelDisplayName() {
+        #expect(
+            TimePickerComponents(time: TimeOfDay(hour: 18, minute: 1)).displayName
+                == "06:01 PM"
+        )
+    }
+
     @Test("DatePicker rejects 14 minutes and accepts 15 minutes across midnight")
     func datePickerMinimumDurationBoundary() {
         #expect(
