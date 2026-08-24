@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 5 사용자 스토리 3 완료 — 자동 해제와 변경 guard 독립 검증 완료
+Phase 6 사용자 스토리 4 구현 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T067 — 자동 해제 후 active set과 편집 guard를 갱신해 규칙 재진입을 허용함
+T079 — foreground·권한 변경 runtime 복구와 권한 안내 갱신을 연결함
 
 ## 다음 작업
-T068 — 권한·위치 오류 및 복구 흐름의 US4 로우파이를 제작함
+T080 — Dynamic Type·VoiceOver·Reduce Motion·명암·색상 외 상태 표현 검증
 
 ## 차단 상태
 없음. BLK-009은 사용자의 1안 선택으로 해결됨.
@@ -22,6 +22,136 @@ T068 — 권한·위치 오류 및 복구 흐름의 US4 로우파이를 제작�
 없음. 규칙 삭제 UI의 코드·Figma 불일치를 T060·T061로 보정한 뒤 US3 테스트를 시작하도록 계획을 갱신했다.
 
 ## 테스트 상태
+T079에서 `AppLifecycleCoordinator`가 복구마다 최신 `AuthorizationSnapshot`을 읽고 일정·region·위치
+snapshot·제한 합집합을 재평가한 뒤 통합 `RestrictionPresentationState`를 반환하도록 확장했다. 앱의
+최초 활성화, foreground 복귀와 위치 재확인은 같은 복구 경로를 사용하며, app 전용 권한 provider로
+Background App Refresh 실제 상태까지 반영해 `PermissionGuideModel`을 생성·갱신·종료한다. 필수 권한
+부족을 위치 불가보다 우선하고, 제한 복구 실패 시에는 상태를 추정하지 않아 기존 안내를 보존한다.
+대상 lifecycle·권한 안내·권한 adapter 16개 논리 테스트가 동적 인자 포함 21회 모두 통과했다. iPhone
+17 Pro iOS 26.5 Simulator에서 전체 `GetUpTests` 141개가 동적 인자 포함 총 184회, US4 UI test 6개가
+모두 통과했으며 실패·skip은 없다. 실제 시스템 Settings 복귀, 권한 철회 callback과 Family Controls
+재승인은 T085 실기기 인수에서 확인한다.
+
+T078에서 `RestrictionCoordinator`가 현재 시각 기준 24시간 이상 지난 위치 근거를 평가 직전에
+`unavailable`로 정규화하도록 구현했다. 유효 시간대 안에서는 동일 revision의 기존 활성 shield만
+보존하고 비활성 규칙에는 새 shield를 적용하지 않으며, 시간대가 끝나면 위치가 `unavailable`이어도
+기존 우선순위에 따라 shield를 해제한다. 위치 불가·자동 해제·다중 규칙 coordinator 대상 10개 논리
+테스트가 동적 인자 포함 16회 모두 통과했다. 이어 iPhone 17 Pro iOS 26.5 Simulator에서 T073을
+제외하지 않은 전체 `GetUpTests` 139개가 동적 인자 포함 총 182회 모두 통과했으며 실패·skip은 없다.
+실제 Device Activity 종료 callback과 물리 기기 위치 오류는 T085 실기기 인수에서 확인한다.
+
+T077에서 승인된 Figma 하이파이의 권한 개요, Family Controls 복구, Always·Full Accuracy,
+Background App Refresh, 위치 `unavailable` 비활성·활성의 여섯 상태를 `PermissionGuideView`와 UI test
+fixture에 연결했다. 권한 목록의 원형 표시는 `🛡️`, `📍`, `🎯`, `🔄` 이모지로 교체하고 모든 화면의
+하단 action을 56pt 공통 구조와 `safeAreaInset`으로 고정했으며, 내용은 Dynamic Type에서 스크롤된다.
+화면 전환 시 제목 VoiceOver focus, 접근성 identifier·label·hint, 승인 문구 localization resource도
+추가했다. iPhone 17 Pro iOS 26.5 Simulator에서 `UserStory4PermissionGuidanceUITests` 6개가 모두
+통과했고 실패·skip은 없다. 단위·통합 회귀는 T073의 계획된 오래된 fix red만 검증 중 target에서
+제외한 뒤 즉시 복구해 `GetUpTests` 137개 test case, 동적 인자 포함 총 174회가 모두 통과했다. 실제
+VoiceOver 탐색과 권한 철회·Settings 복귀는 T080·T085에서 실기기로 확인한다.
+
+T076에서 `PermissionGuideModel`이 Family Controls, Always location, Full Accuracy와 Background App
+Refresh를 승인된 `🛡️`, `📍`, `🎯`, `🔄` 순서로 합성하도록 구현했다. 필수 권한과 진단용 Background
+App Refresh를 구분하고 Family Controls 복구 뒤에는 최신 승인 상태와 별개로 앱 재선택 완료 전까지
+복구 상태를 유지한다. 권한 복구 우선순위, 위치 권한 결합 안내, Background App Refresh 지연·저전력
+모드 안내, 위치 `unavailable`의 비활성 신규 제한 금지와 활성 제한 보존 문구, foreground 갱신 시
+해결된 안내 종료를 전용 단위 테스트 7개(동적 실행 포함 8회)로 검증했다. T073의 계획된 오래된 fix
+red가 회귀 실행을 막지 않도록 전체 검증 중에만 해당 파일의 Sources membership을 제외하고 즉시
+복구했다. iPhone 17 Pro iOS 26.5 Simulator에서 나머지 `GetUpTests` 137개 test case가 동적 인자를
+포함해 총 174회 모두 통과했으며 실패·skip은 없다. `PermissionGuideView`와 앱 진입·foreground
+wiring은 T077·T079에서 연결하고, T074의 UI test 6개는 그때 green으로 전환한다. `project.pbxproj`
+plist 문법과 `git diff --check`는 통과했다.
+
+T075에서 `AuthorizationStatusReading` 경계와 `SystemAuthorizationStatusReader`를 추가해 Family Controls,
+위치 승인, 정확도와 Background App Refresh 시스템 상태 읽기를 snapshot 합성과 분리했다.
+`SystemAuthorizationProvider`는 매 조회마다 네 상태를 새로 합성하며, 앱 전용 `forApplication()`은
+`UIApplication.backgroundRefreshStatus`의 available·denied·restricted를 도메인 상태로 정규화한다.
+app extension 기본 경로는 extension 사용 금지 API를 호출하지 않으며, Permission Guide가 사용할
+`UIApplication.openSettingsURLString` 기반 `settingsURL`도 앱 전용으로 제공한다. T072에 Background
+App Refresh 세 상태 mapping과 설정 URL 테스트를 보강했다. T073의 계획된 오래된 fix red가 회귀
+실행을 막지 않도록 검증 중에만 해당 파일의 Sources membership을 제외하고 즉시 복구했다. iPhone
+17 Pro iOS 26.5 Simulator에서 앱과 Device Activity extension을 함께 빌드하고 `GetUpTests` 130개
+test case가 동적 인자를 포함해 총 166회 모두 통과했으며 실패·skip은 없다. 실제 권한 철회와
+Settings 이동·복귀는 T079 wiring 후 T085 실기기 인수에서 검증해야 한다. `project.pbxproj` plist
+문법과 `git diff --check`는 통과했다.
+
+T074에서 승인된 US4 하이파이의 권한 개요, Family Controls 재승인·앱 재선택, Always·Full Accuracy,
+Background App Refresh 안내 4개와 위치 `unavailable` 재확인 후 비활성·활성 홈 상태로 복귀하는
+2개 흐름을 `UserStory4PermissionGuidanceUITests.swift`에 작성했다. 시스템 Settings 자체는 iOS 소유
+화면이므로 GetUp의 `설정 열기` 행동 노출까지만 검증하고 외부 앱 내부는 assertion하지 않는다.
+T072의 계획된 compile red가 UI target 빌드를 막지 않도록 검증 중에만 해당 파일의 Sources
+membership을 제외하고 즉시 복구했다. iPhone 17 Pro iOS 26.5 Simulator에서 신규 UI test 6개가
+모두 실행됐으며 아직 `permissionGuide.screen`과 scenario fixture가 없어 6개 모두 실패하는 의도한
+red를 확인했다. T076·T077·T079에서 모델·화면·foreground 및 위치 재확인 갱신을 연결해 green으로
+전환해야 한다. `project.pbxproj` plist 문법과 `git diff --check`는 통과했다.
+
+T073에서 위치 요청 오류, 24시간 전 fix, 음수 horizontal accuracy, 설정 반경과 오차 원의 경계
+중첩을 실제 `LocationMonitor` → `LocationConditionSnapshot` → `RestrictionCoordinator` 경로에
+주입하는 `LocationUnavailableTests.swift`를 작성했다. 각 원인에서 활성 제한은 그대로 유지하고
+비활성 상태에는 새 제한을 적용하지 않는 계약을 각각 검증해 총 8개 동적 사례가 된다. T072의
+계획된 compile red가 후속 suite 실행을 막지 않도록 검증 중에만 해당 파일의 Sources membership을
+제외하고 즉시 복구했다. iPhone 17 Pro iOS 26.5 Simulator의 전체 `GetUpTests`에서 기존 사례와
+위치 오류·음수 accuracy·경계 중첩 사례 126개가 통과했고, 오래된 fix의 활성·비활성 2개는 24시간
+전 근거를 `.inside`로 판정해 실패하는 의도한 red를 확인했다. 오래된 위치 최신성 판정과 상태 보존은
+T078에서 green으로 전환해야 한다. `project.pbxproj` plist 문법과 `git diff --check`는 통과했다.
+
+T072에서 `AuthorizationSnapshot`의 Family Controls, 위치 승인, 정확도, Background App Refresh
+상태 조합 5개와 매 조회 시 최신 시스템 상태를 다시 합성하는 계약을
+`AuthorizationAdapterTests.swift`에 작성하고 GetUpTests target에 추가했다. Background App Refresh는
+진단 상태로 snapshot에 보존하되 기존 결정대로 신규 shield 적용의 필수 권한 gate에는 포함하지
+않는다. iPhone 17 Pro iOS 26.5 Simulator의 대상 suite 실행은 아직 구현되지 않은
+`AuthorizationStatusReading`과 `SystemAuthorizationProvider(statusReader:)` 때문에 compile 단계에서
+실패해 의도한 red를 확인했으며, 이 계약은 T075에서 구현한다. 최초 sandbox 실행은
+CoreSimulatorService 접근 제한으로 기기를 찾지 못했으나 Simulator 접근을 허용한 재실행에서는
+환경 오류 없이 위 계약 누락으로 실패했다. `project.pbxproj` plist 문법과 `git diff --check`는
+통과했으며 실패 테스트 task이므로 전체 suite는 실행하지 않았다.
+
+T071에서 사용자가 직접 수정한 현재 US4 하이파이를 구현 기준으로 승인했다. 최종안은 화면 우측
+상단 badge를 제거하고 권한 점검 목록의 `🛡️`, `📍`, `🎯`, `🔄` 표시와 기존 문구·action 구조를
+유지한다. 최종 Figma wrapper를 다시 렌더링하고 여섯 화면, text node 48개, action frame 10개를
+검사했으며 제품 font는 SF Pro Bold·Regular·Semibold만 사용했다. 빈 text, placeholder, shimmer와
+393×852pt 화면 직접 자식 overflow는 모두 0건이고, action은 단일 화면 `y=768`, 두 행동 화면
+`y=692`·`y=768`, `353×56pt`로 일치한다. 디자인 승인 문서 작업이므로 code test는 실행하지 않았다.
+다음 작업은 T072~T074 실패 테스트이며 T077 UI 구현은 승인된 이 하이파이를 기준으로 진행한다.
+
+T070에서 T069 승인 로우파이를 보존한 채 별도 Figma wrapper에 권한 점검, Family Controls 복구,
+Always·Full Accuracy, Background App Refresh, 위치 `unavailable`의 비활성·활성 하이파이 6개 화면과
+접근성·구현 인계 panel을 작성했다. GetUp Focus `Eyebrow`·`Title`·`Subtitle`·`Button` text style과
+semantic color·radius token을 적용하고, 권한별 emoji badge와 상태 → 원인 → 제한 영향 → 복구 행동
+위계를 추가했다. 전체 wrapper와 각 화면을 렌더링하고 text node 54개, icon badge 6개, action frame
+10개를 감사한 결과 제품 font는 SF Pro Bold·Regular·Semibold만 사용했으며 빈 text, placeholder,
+shimmer와 393×852pt 화면 직접 자식 overflow는 모두 0건이었다. action은 단일 화면 `y=768`, 두 행동
+화면 `y=692`·`y=768`, `353×56pt`로 일치한다. 디자인·문서 task이므로 code test는 실행하지 않았고,
+실제 Accessibility Inspector·VoiceOver·AX1~AX5·시스템 설정 복귀 focus는 구현 후 물리 기기에서
+검증한다. 다음 작업은 T071 사용자 검토와 구현 승인이다.
+
+T069에서 사용자가 직접 수정한 현재 Figma 상태를 최종 승인했다. 승인본은 권한 설명에 `🛡️`, `📍`,
+`🎯`, `🔄` 표시를 사용하고 여섯 화면의 하단 action을 공통 baseline에 정렬한다. 최종 wrapper를
+다시 렌더링하고 text node 48개와 버튼 frame 10개를 검사했으며, 빈 text, placeholder와 비정상
+크기 text는 0건이었다. 기본 본문은 SF Pro를 유지하고 emoji가 포함된 일부 text run은 Figma에서
+mixed font로 보고된다. 디자인 승인 문서 작업이므로 code test는 실행하지 않았으며 다음 작업은
+T070 하이파이 제작이다.
+
+T069 사용자 피드백에 따라 `US4-LF-01` 권한 설명 앞의 원형 bullet을 앱 사용 제한 `🛡️`, 위치 접근
+`📍`, 정확한 위치 `🎯`, Background App Refresh `🔄` 표시로 교체했다. 여섯 화면의 primary 버튼은
+모두 `x=20, y=692`, secondary 버튼은 `x=20, y=768`, 크기는 `353×56pt`로 고정해 내용 길이와
+관계없이 같은 위치에 표시되도록 수정했다. 사용자가 Figma에서 직접 조정한 wrapper 배경과 화면
+문구는 보존하고, 밝은 wrapper에서 상단 제목이 읽히도록 기존 `color/onAccent` token으로 대비만
+보정했다. 반영본 자동 감사에서 text node 49개, 버튼 frame 10개를 확인했으며 SF Pro 외 서체, 빈
+text, placeholder, shimmer와 화면 경계 밖 text overflow는 모두 0건이었다. 디자인·문서 변경이므로
+code test는 실행하지 않았고, T069 완료 여부는 사용자 재검토와 승인 뒤 결정한다.
+
+T068에서 기존 Figma 파일의 `GetUp Focus` local color·spacing·radius variable과 SF Pro typography를
+재사용해 권한 점검, Family Controls 재승인·앱 재선택, Always·Full Accuracy 설정, Background App
+Refresh 확인, 위치 `unavailable`의 비활성·활성 상태를 여섯 개 393×852pt frame으로 제작했다. 위치
+확인 불가에서는 위치만을 근거로 제한 상태를 바꾸지 않고, 비활성은 새 shield 미적용, 활성은 기존
+shield 보존, 시간 종료는 위치와 무관하게 해제하는 계약을 Figma panel과
+`design/low-fidelity/US4-permission-location-errors.md`에 기록했다. Figma wrapper와 각 화면을
+렌더링하고 text node 52개를 자동 감사한 결과 SF Pro 외 서체, 빈 text, placeholder, shimmer와 화면
+경계 밖 text overflow는 모두 0건이었다. 실제 좌표·주소·앱 이름·bundle identifier·app token은
+포함하지 않았다. 디자인·문서 task이므로 code test는 실행하지 않았으며 다음 작업은 T069 사용자
+검토다.
+
 T067에서 `AppModel.refreshRestrictionStatus()`가 최신 active `(ruleID, revision)` 집합을 읽은 뒤 홈의
 `RestrictionStatusModel`과 현재 열린 `RuleEditorModel`의 `RestrictionModificationGuard`를 같은
 snapshot 기준으로 함께 갱신하도록 연결했다. 자동 해제로 해당 revision이 active set에서 사라지면

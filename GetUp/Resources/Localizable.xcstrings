@@ -1,6 +1,105 @@
 {
   "sourceLanguage" : "ko",
   "strings" : {
+    "permission_guide.action.later" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "나중에"
+          }
+        }
+      }
+    },
+    "permission_guide.action.open_settings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "설정 열기"
+          }
+        }
+      }
+    },
+    "permission_guide.action.retry_location" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "위치 다시 확인"
+          }
+        }
+      }
+    },
+    "permission_guide.background_refresh.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "백그라운드 새로 고침을 확인해 주세요"
+          }
+        }
+      }
+    },
+    "permission_guide.family_controls.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "앱 사용 제한 권한이 필요해요"
+          }
+        }
+      }
+    },
+    "permission_guide.location.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "정확한 위치 접근 권한이 필요해요"
+          }
+        }
+      }
+    },
+    "permission_guide.location_unavailable.active.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "위치를 확인할 수 없어 제한이 유지돼요"
+          }
+        }
+      }
+    },
+    "permission_guide.location_unavailable.inactive.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "현재 위치를 확인할 수 없어요"
+          }
+        }
+      }
+    },
+    "permission_guide.overview.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "원활한 사용을 위해 아래 권한이 필요해요"
+          }
+        }
+      }
+    },
     "restriction_guard.confirm" : {
       "extractionState" : "manual",
       "localizations" : {

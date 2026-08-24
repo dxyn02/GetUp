@@ -183,24 +183,24 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 
 ### 로우파이 및 하이파이
 
-- [ ] T068 [US4] 권한 종류별 안내, 시스템 설정 이동, 위치 확인 불가, 재선택 흐름의 로우파이를 제작하고 Figma 링크와 상태 설명을 `design/low-fidelity/US4-permission-location-errors.md`에 기록한다
-- [ ] T069 [US4] US4 로우파이를 사용자와 검토해 피드백·변경 사항·승인 여부를 `design/low-fidelity/US4-permission-location-errors.md`에 반영한다
-- [ ] T070 [US4] 승인된 로우파이를 기준으로 오류별 hierarchy, icon, 문구, 접근성을 포함한 하이파이를 제작하고 Figma 링크와 규격을 `design/high-fidelity/US4-permission-location-errors.md`에 기록한다
-- [ ] T071 [US4] US4 하이파이를 사용자와 검토해 구현 승인 상태와 최종 변경 사항을 `design/high-fidelity/US4-permission-location-errors.md`에 기록한다
+- [x] T068 [US4] 권한 종류별 안내, 시스템 설정 이동, 위치 확인 불가, 재선택 흐름의 로우파이를 제작하고 Figma 링크와 상태 설명을 `design/low-fidelity/US4-permission-location-errors.md`에 기록한다
+- [x] T069 [US4] US4 로우파이를 사용자와 검토해 피드백·변경 사항·승인 여부를 `design/low-fidelity/US4-permission-location-errors.md`에 반영한다
+- [x] T070 [US4] 승인된 로우파이를 기준으로 오류별 hierarchy, icon, 문구, 접근성을 포함한 하이파이를 제작하고 Figma 링크와 규격을 `design/high-fidelity/US4-permission-location-errors.md`에 기록한다
+- [x] T071 [US4] US4 하이파이를 사용자와 검토해 구현 승인 상태와 최종 변경 사항을 `design/high-fidelity/US4-permission-location-errors.md`에 기록한다
 
 ### 테스트
 
-- [ ] T072 [P] [US4] Family Controls, Always, Full Accuracy, Background App Refresh 상태 합성의 실패 테스트를 `GetUpTests/Integration/AuthorizationAdapterTests.swift`에 작성한다
-- [ ] T073 [P] [US4] 위치 오류·오래된 fix·음수 accuracy·경계 중첩에서 상태를 보존하는 실패 테스트를 `GetUpTests/Core/LocationUnavailableTests.swift`에 작성한다
-- [ ] T074 [P] [US4] 권한별 안내와 위치 확인 불가 복구 흐름의 실패 UI test를 `GetUpUITests/UserStory4PermissionGuidanceUITests.swift`에 작성한다
+- [x] T072 [P] [US4] Family Controls, Always, Full Accuracy, Background App Refresh 상태 합성의 실패 테스트를 `GetUpTests/Integration/AuthorizationAdapterTests.swift`에 작성한다
+- [x] T073 [P] [US4] 위치 오류·오래된 fix·음수 accuracy·경계 중첩에서 상태를 보존하는 실패 테스트를 `GetUpTests/Core/LocationUnavailableTests.swift`에 작성한다
+- [x] T074 [P] [US4] 권한별 안내와 위치 확인 불가 복구 흐름의 실패 UI test를 `GetUpUITests/UserStory4PermissionGuidanceUITests.swift`에 작성한다
 
 ### 구현
 
-- [ ] T075 [P] [US4] Family Controls·위치·정확도·Background App Refresh 상태와 설정 URL을 `GetUp/Infrastructure/Permissions/AuthorizationAdapter.swift`에 구현한다
-- [ ] T076 [US4] 권한별 원인·복구·앱 재선택 상태를 `GetUp/Features/PermissionGuide/PermissionGuideModel.swift`에 구현한다
-- [ ] T077 [US4] 승인된 하이파이에 맞춰 권한 및 설정 안내를 `GetUp/Features/PermissionGuide/PermissionGuideView.swift`에 구현한다
-- [ ] T078 [US4] 위치 확인 불가에서 기존 shield를 보존하고 시간 종료는 해제하도록 `GetUp/Infrastructure/ScreenTime/RestrictionCoordinator.swift`를 확장한다
-- [ ] T079 [US4] foreground 진입과 권한 변경 시 권한·일정·region·snapshot을 재평가하고 권한 안내 상태를 갱신하도록 `GetUp/App/AppLifecycleCoordinator.swift`를 확장한다
+- [x] T075 [P] [US4] Family Controls·위치·정확도·Background App Refresh 상태와 설정 URL을 `GetUp/Infrastructure/Permissions/AuthorizationAdapter.swift`에 구현한다
+- [x] T076 [US4] 권한별 원인·복구·앱 재선택 상태를 `GetUp/Features/PermissionGuide/PermissionGuideModel.swift`에 구현한다
+- [x] T077 [US4] 승인된 하이파이에 맞춰 권한 및 설정 안내를 `GetUp/Features/PermissionGuide/PermissionGuideView.swift`에 구현한다
+- [x] T078 [US4] 위치 확인 불가에서 기존 shield를 보존하고 시간 종료는 해제하도록 `GetUp/Infrastructure/ScreenTime/RestrictionCoordinator.swift`를 확장한다
+- [x] T079 [US4] foreground 진입과 권한 변경 시 권한·일정·region·snapshot을 재평가하고 권한 안내 상태를 갱신하도록 `GetUp/App/AppLifecycleCoordinator.swift`를 확장한다
 
 **Checkpoint**: US4를 독립 검증해 사용자가 기능 미동작 원인을 이해하고 안전하게 복구할 수 있다.
 

@@ -11,31 +11,37 @@ enum AppLifecycleRecoveryFailure: Equatable, Sendable {
 struct AppLifecycleRecoveryResult: Equatable, Sendable {
     let recoveredRuleIDs: [UUID]
     let failures: [AppLifecycleRecoveryFailure]
+    let authorization: AuthorizationSnapshot
+    let presentationState: RestrictionPresentationState?
 }
 
 actor AppLifecycleCoordinator {
-    typealias RestrictionRestore = @Sendable () async throws -> Void
+    typealias RestrictionRestore = @Sendable () async throws -> RestrictionCoordinationResult
 
     private let ruleRepository: any RuleRepository
     private let scheduleManager: any ScheduleManaging
     private let locationMonitor: any LocationMonitoring
+    private let authorizationProvider: any AuthorizationProviding
     private let restoreRestriction: RestrictionRestore
 
     init(
         ruleRepository: any RuleRepository,
         scheduleManager: any ScheduleManaging,
         locationMonitor: any LocationMonitoring,
+        authorizationProvider: any AuthorizationProviding,
         restoreRestriction: @escaping RestrictionRestore
     ) {
         self.ruleRepository = ruleRepository
         self.scheduleManager = scheduleManager
         self.locationMonitor = locationMonitor
+        self.authorizationProvider = authorizationProvider
         self.restoreRestriction = restoreRestriction
     }
 
     func restore() async throws -> AppLifecycleRecoveryResult {
         let rules = try await ruleRepository.loadRuleCollection()?.rules ?? []
         let enabledRules = rules.filter(\.isEnabled).sorted(by: Self.ruleOrder)
+        let authorization = await authorizationProvider.authorizationSnapshot()
         var failures: [AppLifecycleRecoveryFailure] = []
         var recoveredRuleIDs: [UUID] = []
 
@@ -77,35 +83,93 @@ actor AppLifecycleCoordinator {
             }
         }
 
+        let restrictionResult: RestrictionCoordinationResult?
         do {
-            try await restoreRestriction()
+            restrictionResult = try await restoreRestriction()
         } catch {
             failures.append(.restriction)
+            restrictionResult = nil
         }
 
         return AppLifecycleRecoveryResult(
             recoveredRuleIDs: recoveredRuleIDs,
-            failures: failures
+            failures: failures,
+            authorization: authorization,
+            presentationState: Self.presentationState(
+                authorization: authorization,
+                restrictionResult: restrictionResult,
+                hasConfiguredRules: !rules.isEmpty
+            )
         )
     }
 
     @MainActor
     static func live(
         container: DependencyContainer,
-        bundle: Bundle = .main
+        bundle: Bundle = .main,
+        authorizationProvider: any AuthorizationProviding = SystemAuthorizationProvider()
     ) throws -> AppLifecycleCoordinator {
         let restrictionCoordinator = try container.makeRestrictionCoordinator(
-            bundle: bundle
+            bundle: bundle,
+            authorizationProvider: authorizationProvider
         )
 
         return AppLifecycleCoordinator(
             ruleRepository: container.ruleRepository,
             scheduleManager: DeviceActivityScheduleAdapter(),
             locationMonitor: container.makeLocationMonitor(),
+            authorizationProvider: authorizationProvider,
             restoreRestriction: {
-                _ = try await restrictionCoordinator.restore()
+                try await restrictionCoordinator.restore()
             }
         )
+    }
+
+    private static func presentationState(
+        authorization: AuthorizationSnapshot,
+        restrictionResult: RestrictionCoordinationResult?,
+        hasConfiguredRules: Bool
+    ) -> RestrictionPresentationState? {
+        let missingPermissions = missingPermissions(in: authorization)
+        if !missingPermissions.isEmpty {
+            return .permissionRequired(missingPermissions: missingPermissions)
+        }
+
+        guard let restrictionResult else {
+            return nil
+        }
+
+        if restrictionResult.decisions.values.contains(where: { decision in
+            if case .locationUnavailable = decision.presentationState {
+                return true
+            }
+            return false
+        }) == true {
+            return .locationUnavailable(
+                isRestrictionApplied: restrictionResult.appliedState.isApplied
+            )
+        }
+
+        if restrictionResult.appliedState.isApplied {
+            return .active
+        }
+        return hasConfiguredRules ? .inactive : .configurationRequired
+    }
+
+    private static func missingPermissions(
+        in authorization: AuthorizationSnapshot
+    ) -> Set<RequiredPermission> {
+        var result: Set<RequiredPermission> = []
+        if authorization.familyControls != .approved {
+            result.insert(.familyControls)
+        }
+        if authorization.locationAuthorization != .always {
+            result.insert(.alwaysLocation)
+        }
+        if authorization.locationAccuracy != .full {
+            result.insert(.fullAccuracy)
+        }
+        return result
     }
 
     private static func ruleOrder(
