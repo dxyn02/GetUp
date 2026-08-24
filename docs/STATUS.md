@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 6 사용자 스토리 4 디자인 — 하이파이 제작 완료·사용자 검토 대기
+Phase 6 사용자 스토리 4 디자인 — 하이파이 승인 완료
 
 ## 진행 중
-T071 — US4 하이파이 사용자 검토와 구현 승인
+없음
 
 ## 마지막 완료 작업
-T070 — 승인된 US4 로우파이를 기준으로 오류별 하이파이와 접근성·구현 인계를 작성함
+T071 — 사용자가 직접 수정한 US4 하이파이를 구현 기준으로 승인함
 
 ## 다음 작업
-T071 — US4 하이파이를 사용자와 검토하고 피드백·구현 승인 여부를 반영함
+T072 — Family Controls·위치·정확도·Background App Refresh 권한 합성 실패 테스트를 작성함
 
 ## 차단 상태
 없음. BLK-009은 사용자의 1안 선택으로 해결됨.
@@ -22,6 +22,14 @@ T071 — US4 하이파이를 사용자와 검토하고 피드백·구현 승인 
 없음. 규칙 삭제 UI의 코드·Figma 불일치를 T060·T061로 보정한 뒤 US3 테스트를 시작하도록 계획을 갱신했다.
 
 ## 테스트 상태
+T071에서 사용자가 직접 수정한 현재 US4 하이파이를 구현 기준으로 승인했다. 최종안은 화면 우측
+상단 badge를 제거하고 권한 점검 목록의 `🛡️`, `📍`, `🎯`, `🔄` 표시와 기존 문구·action 구조를
+유지한다. 최종 Figma wrapper를 다시 렌더링하고 여섯 화면, text node 48개, action frame 10개를
+검사했으며 제품 font는 SF Pro Bold·Regular·Semibold만 사용했다. 빈 text, placeholder, shimmer와
+393×852pt 화면 직접 자식 overflow는 모두 0건이고, action은 단일 화면 `y=768`, 두 행동 화면
+`y=692`·`y=768`, `353×56pt`로 일치한다. 디자인 승인 문서 작업이므로 code test는 실행하지 않았다.
+다음 작업은 T072~T074 실패 테스트이며 T077 UI 구현은 승인된 이 하이파이를 기준으로 진행한다.
+
 T070에서 T069 승인 로우파이를 보존한 채 별도 Figma wrapper에 권한 점검, Family Controls 복구,
 Always·Full Accuracy, Background App Refresh, 위치 `unavailable`의 비활성·활성 하이파이 6개 화면과
 접근성·구현 인계 panel을 작성했다. GetUp Focus `Eyebrow`·`Title`·`Subtitle`·`Button` text style과

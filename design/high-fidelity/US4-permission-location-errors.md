@@ -8,7 +8,7 @@
 | 관련 task | `T070`, `T071` |
 | 작성자 | `Codex` |
 | 작성일 | `2026-08-24` |
-| 문서 상태 | `검토 대기` |
+| 문서 상태 | `승인됨 · 구현 기준` |
 | 승인된 로우파이 | [US4 권한 및 위치 문제 안내 로우파이](../low-fidelity/US4-permission-location-errors.md) |
 | 관련 명세·contract | [spec.md](../../specs/001-location-app-restriction/spec.md), [restriction-evaluation-contract.md](../../specs/001-location-app-restriction/contracts/restriction-evaluation-contract.md), [platform-events-contract.md](../../specs/001-location-app-restriction/contracts/platform-events-contract.md) |
 | Figma wrapper | [US4 · T070 하이파이](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=174-2090) |
@@ -34,8 +34,8 @@
 - 사용자가 승인한 화면 순서, 문구와 하단 action baseline을 유지했다.
 - 제목을 `GetUp Focus/Title`, eyebrow·subtitle·button을 각 전용 text style로 정규화해 정보 위계를
   강화했다.
-- 여섯 화면 우측 상단에 상태를 빠르게 구분하는 emoji badge를 추가했다. 권한 목록의 `🛡️`, `📍`,
-  `🎯`, `🔄` 표시는 승인된 로우파이대로 유지한다.
+- 권한 점검 목록의 `🛡️`, `📍`, `🎯`, `🔄` 표시는 승인된 로우파이대로 유지하고, 사용자가 최종
+  수정본에서 제거한 화면 우측 상단 badge는 추가하지 않는다.
 - 위치 확인 불가 화면의 `위치 다시 확인`은 보조 행동, `설정 열기`는 주요 행동으로 token과 layer
   이름을 정규화했다.
 - Figma handoff panel에 안전 계약, 접근성, 플랫폼 소유 경계, 개인정보 보호와 구현 identifier를
@@ -64,7 +64,6 @@ Family Controls 승인 UI와 권한 prompt는 iOS appearance를 그대로 따른
 |---|---|---|---|
 | 최상위 배경 | `GetUp Focus/color/background` | `#08090B` | 주요 text와 약 `19.92:1` |
 | card surface | `GetUp Focus/color/surface` | `#15171B` | 보조 text와 약 `7.54:1` |
-| icon badge surface | `GetUp Focus/color/surfaceElevated` | `#202329` | `radius/full`과 함께 사용 |
 | 주요 text | `GetUp Focus/color/textPrimary` | `#FFFFFF` | 제목·상태·핵심 원인 |
 | 보조 text | `GetUp Focus/color/textSecondary` | `#A6A8AD` | 설명·안전 안내 |
 | 주요 action | `GetUp Focus/color/accent` | `#F4D600` | `onAccent`와 약 `13.64:1` |
@@ -94,7 +93,6 @@ Family Controls 승인 UI와 권한 prompt는 iOS appearance를 그대로 따른
 - 화면 좌우 margin은 20pt, card와 action 폭은 353pt다.
 - 주요·보조 action은 `353×56pt`이며 최소 `44×44pt` touch target을 충족한다.
 - 단일 action은 `y=768`, 두 action 화면은 보조 행동 `y=692`, 주요 행동 `y=768` baseline을 사용한다.
-- icon badge는 `46×46pt`, `GetUp Focus/radius/full`이며 우측 20pt·상단 48pt에 고정한다.
 - AX1~AX5에서는 고정 `y` 구현을 사용하지 않고 `safeAreaInset` 또는 scroll content의 하단 action
   영역으로 변환한다. Figma 좌표는 기본 글자 크기의 시각 기준이다.
 
@@ -102,16 +100,13 @@ Family Controls 승인 UI와 권한 prompt는 iOS appearance를 그대로 따른
 
 | 자산 | 표시 | 용도 | 접근성 처리 |
 |---|---|---|---|
-| 권한 점검 badge | `🧩` | 여러 권한을 함께 복구하는 상태 | 장식 요소로 숨김 |
 | 앱 사용 제한 | `🛡️` | Family Controls 승인과 선택 앱 제한 | 아이콘 숨김, 행 전체 label로 grouping |
 | 위치 접근 | `📍` | Always 위치 접근 | 아이콘 숨김, 권한명·설명을 함께 읽음 |
 | 정확한 위치 | `🎯` | Full Accuracy와 반경 판정 | 아이콘 숨김, 권한명·설명을 함께 읽음 |
 | Background App Refresh | `🔄` | 앱이 닫힌 동안 상태 복구 가능성 | 아이콘 숨김, 권한명·설명을 함께 읽음 |
-| 위치 확인 불가 | `🧭` | 새 제한을 시작하지 않는 불확실 상태 | title·상태 card가 의미 전달 |
 
-별도 raster asset은 필요하지 않다. 구현에서 SF Symbol로 대체할 경우 `shield`, `location.fill`,
-`scope`, `arrow.clockwise`, `location.slash` 계열을 우선 검토하되, 최종 symbol 가용성과 이름은 Xcode의
-지원 iOS 26 SDK에서 확인한다.
+별도 raster asset은 필요하지 않다. 권한 목록의 emoji는 같은 행의 권한명·설명과 함께 사용하고,
+아이콘만으로 권한 종류나 현재 상태를 전달하지 않는다.
 
 ## component 상태
 
@@ -144,7 +139,7 @@ Family Controls 승인 UI와 권한 prompt는 iOS appearance를 그대로 따른
 ## 접근성 검증
 
 - [x] VoiceOver 순서를 상태 → 원인 → 현재 제한 영향 → 복구 행동으로 정의했다.
-- [x] emoji badge와 같은 중복 시각 요소는 접근성에서 숨기고 권한 행을 하나의 label로 묶는다.
+- [x] 권한 목록 emoji는 접근성에서 숨기고 권한명과 설명을 하나의 label로 묶는다.
 - [x] `AX1`~`AX5`에서 scroll, 자연 줄바꿈과 하단 action 재배치 규칙을 정의했다.
 - [x] 주요 text·보조 text·accent action의 기본 contrast가 AA 이상임을 확인했다.
 - [x] 권한 필요와 위치 확인 불가가 색상만으로 전달되지 않는다.
@@ -152,9 +147,9 @@ Family Controls 승인 UI와 권한 prompt는 iOS appearance를 그대로 따른
 - [x] 외부 설정·picker 복귀 뒤 갱신된 상태 heading으로 focus를 이동한다.
 - [x] 모든 action에 최소 `44×44pt` touch target을 정의했다.
 
-Figma 자동 감사에서 여섯 화면, text node 54개, icon badge 6개와 action frame 10개를 검사했다. 제품
-text는 `SF Pro Bold`·`Regular`·`Semibold`만 사용하고, `GetUp Focus/Eyebrow`, `Title`, `Subtitle`,
-`Button` style 및 semantic color·radius token 연결을 확인했다. 빈 text, placeholder, shimmer와 각
+사용자가 직접 수정하고 승인한 Figma를 최종 감사해 여섯 화면, text node 48개와 action frame 10개를
+검사했다. 권한 점검 목록의 `🛡️`, `📍`, `🎯`, `🔄` 표시는 유지되고 화면 우측 상단 badge는 0개다.
+제품 text는 `SF Pro Bold`·`Regular`·`Semibold`만 사용하며 빈 text, placeholder, shimmer와 각
 393×852pt 화면의 직접 자식 overflow는 모두 0건이었다. 실제 Accessibility Inspector, VoiceOver,
 AX1~AX5, Increase Contrast와 시스템 설정 복귀 focus는 구현 후 물리 기기에서 검증한다.
 
@@ -180,8 +175,7 @@ AX1~AX5, Increase Contrast와 시스템 설정 복귀 focus는 구현 후 물리
 - `Localizable.xcstrings`에는 `permission_guide.*` 문자열을 추가한다.
 - UI test identifier는 `permissionGuide.screen`, `permissionGuide.permissionList`,
   `permissionGuide.openSettings`, `permissionGuide.retryLocation`, `permissionGuide.later`를 사용한다.
-- 별도 image·raster asset은 필요하지 않다. SF Symbol 채택 여부는 T077 구현 시 지원 SDK에서 확인한다.
-- T071 사용자 승인 전에는 T077 UI 구현을 시작하지 않는다.
+- 별도 image·raster asset은 필요하지 않으며 권한 목록 emoji는 같은 행의 text와 함께 구현한다.
 
 ## 검토 체크리스트
 
@@ -198,21 +192,23 @@ AX1~AX5, Increase Contrast와 시스템 설정 복귀 focus는 구현 후 물리
 | 날짜 | 검토자 | 결과 | 의견 | 반영 위치 또는 사유 |
 |---|---|---|---|---|
 | `2026-08-24` | 사용자 | `검토 대기` | T070 하이파이 초안 검토 요청 | `T071`에서 피드백과 구현 승인 여부 반영 |
+| `2026-08-24` | 사용자 | `승인됨` | 사용자가 직접 수정한 현재 Figma를 구현 기준으로 승인 | `T071` 완료, T072~T074 선행 테스트 진행 가능 |
 
 ## 변경 기록
 
 | 날짜 | 작성자 | 변경 내용 | 관련 검토 의견 |
 |---|---|---|---|
 | `2026-08-24` | `Codex` | 승인된 로우파이를 GetUp Focus text style·semantic token으로 정규화하고 권한별 icon badge, 상태 위계, 접근성·구현 인계 panel을 추가 | 최초 초안 |
+| `2026-08-24` | 사용자 | 화면 우측 상단 badge를 제거하고 권한 점검 목록 emoji와 기존 문구·action 구조를 유지한 최종안을 확정 | 최종 승인 |
 
 ## 구현 승인
 
 | 항목 | 내용 |
 |---|---|
-| 승인 상태 | `검토 대기` |
-| 승인자 | 미승인 |
-| 승인일 | 미승인 |
-| 미해결 항목 | T071 사용자 검토와 구현 승인 |
+| 승인 상태 | `승인됨` |
+| 승인자 | 사용자 |
+| 승인일 | `2026-08-24` |
+| 미해결 항목 | 없음 |
 
-승인 상태가 `승인됨`이 되기 전에는 T077 `PermissionGuideView.swift` 구현을 시작하지 않는다. 승인 뒤
-제품 동작이나 화면 구조가 바뀌면 로우파이 또는 하이파이 검토를 다시 수행한다.
+T072~T074의 실패 테스트를 먼저 작성한 뒤 이 승인본을 기준으로 T076·T077 UI 상태와 화면을
+구현한다. 제품 동작이나 화면 구조가 바뀌면 로우파이 또는 하이파이 검토를 다시 수행한다.
