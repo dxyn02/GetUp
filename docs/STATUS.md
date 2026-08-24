@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 5 사용자 스토리 3 — T058 하이파이 제작 완료, T059 사용자 검토 대기
+Phase 5 사용자 스토리 3 — T059 하이파이 승인 완료
 
 ## 진행 중
-T059 — US3 하이파이 사용자 검토와 구현 승인 대기
+없음
 
 ## 마지막 완료 작업
-T058 — 승인된 US3 로우파이 기준의 하이파이와 접근성 규격을 제작함
+T059 — US3 하이파이 사용자 검토와 구현 승인을 완료함
 
 ## 다음 작업
-T059 — US3 하이파이를 사용자와 검토하고 구현 승인 여부를 기록함
+T060 — 자동 해제 core 실패 테스트를 먼저 작성함
 
 ## 차단 상태
 없음. BLK-009은 사용자의 1안 선택으로 해결됨.
@@ -22,6 +22,14 @@ T059 — US3 하이파이를 사용자와 검토하고 구현 승인 여부를 �
 없음. 다중 규칙용 짧은 요약과 snapshot 불가 fallback을 shield 계약·하이파이·DEC-029에 반영했다.
 
 ## 테스트 상태
+T059에서 사용자가 완료 전용 UI를 제외한 US3 하이파이를 구현 기준으로 승인했다. Figma wrapper와
+규격 panel을 `승인됨`으로 갱신하고 `design/high-fidelity/US3-auto-release.md`에 승인자·승인일·미해결
+항목 없음 상태를 기록했다. 승인 문구 반영 뒤 wrapper를 다시 렌더링했으며, 전체 64개 text node에서
+SF Pro 외 서체, 누락 font, 빈 text, placeholder, shimmer와 화면 경계 overflow가 모두 0건이었다.
+Apple iOS 26 `Alert` component instance와 Accessibility annotation도 유지됨을 확인했다. 디자인·문서
+승인 task이므로 code test는 실행하지 않았다. 다음은 T060·T061 테스트 작성이며, 이후 T064·T065 UI
+구현은 이 승인본을 기준으로 진행한다.
+
 T058에서 승인된 US3 로우파이와 기존 US2 활성 홈 하이파이를 기준으로 활성·guarded 홈과 iOS 26
 공식 `Alert` component를 사용하는 편집 차단 상태를 제작했다. 시간 종료 또는 신뢰 가능한 위치 이탈
 뒤에는 활성 규칙의 앱 token 합집합을 다시 계산하고, 별도 완료 화면·배너·toast·VoiceOver
@@ -30,7 +38,8 @@ Alert dismiss 뒤 focus 복귀, AX1–AX5 자연 줄바꿈, Increase Contrast, R
 touch target을 Figma 규격·Accessibility annotation과 `design/high-fidelity/US3-auto-release.md`에
 기록했다. wrapper와 두 화면·규격 panel을 개별 렌더링했으며, 전체 64개 text node에서 SF Pro 외
 서체, 누락 font, 빈 text, placeholder, shimmer와 화면 경계 overflow가 모두 0건이었다. 디자인·문서
-task이므로 code test는 실행하지 않았다. T059 사용자 승인 전에는 T064·T065 UI 구현을 시작하지 않는다.
+task이므로 code test는 실행하지 않았다. 이후 T059 승인으로 구현 gate를 해제했으며 T060·T061
+테스트를 먼저 작성한 뒤 T064·T065 UI 구현을 시작한다.
 
 T057에서 사용자가 자동 해제 완료 전용 UI 제거 반영본을 승인했다. Figma 보드와
 `design/low-fidelity/US3-auto-release.md`를 `승인됨`으로 갱신하고, 전용 화면·배너·toast 없이 조건

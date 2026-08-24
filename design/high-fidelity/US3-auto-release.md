@@ -8,7 +8,7 @@
 | 관련 task | `T058`, `T059` |
 | 작성자 | `Codex` |
 | 작성일 | `2026-08-24` |
-| 문서 상태 | `검토 대기` |
+| 문서 상태 | `승인됨` |
 | 승인된 로우파이 | [US3 자동 해제 로우파이](../low-fidelity/US3-auto-release.md) |
 | 관련 명세·contract | [spec.md](../../specs/001-location-app-restriction/spec.md), [restriction-evaluation-contract.md](../../specs/001-location-app-restriction/contracts/restriction-evaluation-contract.md), [platform-events-contract.md](../../specs/001-location-app-restriction/contracts/platform-events-contract.md) |
 | Figma wrapper | [US3 · T058 하이파이](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=136-1988) |
@@ -152,6 +152,7 @@ Inspector, VoiceOver, AX1–AX5와 Increase Contrast는 구현 후 물리 기기
 | 날짜 | 검토자 | 결과 | 의견 | 반영 위치 또는 사유 |
 |---|---|---|---|---|
 | `2026-08-24` | 사용자 | `검토 대기` | T058 하이파이 초안 검토 요청 | `T059`에서 피드백과 승인 여부 반영 |
+| `2026-08-24` | 사용자 | `승인됨` | 현재 하이파이를 구현 기준으로 승인 | T059 완료 및 T060 테스트 작성 가능 |
 
 ## 변경 기록
 
@@ -163,10 +164,10 @@ Inspector, VoiceOver, AX1–AX5와 Increase Contrast는 구현 후 물리 기기
 
 | 항목 | 내용 |
 |---|---|
-| 승인 상태 | `검토 대기` |
-| 승인자 | `<미승인>` |
-| 승인일 | `<미승인>` |
-| 미해결 항목 | T059 사용자 검토와 승인 |
+| 승인 상태 | `승인됨` |
+| 승인자 | 사용자 |
+| 승인일 | `2026-08-24` |
+| 미해결 항목 | 없음 |
 
-T059에서 승인 상태가 `승인됨`이 되기 전에는 T064·T065 UI 구현을 시작하지 않는다. 승인 뒤 제품
-동작이나 화면 구조가 바뀌면 로우파이 또는 하이파이 검토를 다시 수행한다.
+T060·T061 테스트를 먼저 작성한 뒤 이 승인본을 기준으로 T064·T065 UI 구현을 진행한다. 제품 동작이나
+화면 구조가 바뀌면 로우파이 또는 하이파이 검토를 다시 수행한다.
