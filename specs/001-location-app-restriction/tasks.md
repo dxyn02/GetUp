@@ -147,7 +147,7 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 
 ### 로우파이 및 하이파이
 
-- [ ] T056 [US3] 활성 중 편집 차단, 종료 조건 안내, 자동 해제 완료 상태의 로우파이를 제작하고 Figma 링크와 상태 설명을 `design/low-fidelity/US3-auto-release.md`에 기록한다
+- [x] T056 [US3] 활성 중 편집 차단, 종료 조건 안내, 자동 해제 완료 상태의 로우파이를 제작하고 Figma 링크와 상태 설명을 `design/low-fidelity/US3-auto-release.md`에 기록한다
 - [ ] T057 [US3] US3 로우파이를 사용자와 검토해 피드백·변경 사항·승인 여부를 `design/low-fidelity/US3-auto-release.md`에 반영한다
 - [ ] T058 [US3] 승인된 로우파이를 기준으로 차단 안내와 해제 전환의 하이파이를 제작하고 Figma 링크와 접근성 규격을 `design/high-fidelity/US3-auto-release.md`에 기록한다
 - [ ] T059 [US3] US3 하이파이를 사용자와 검토해 구현 승인 상태와 최종 변경 사항을 `design/high-fidelity/US3-auto-release.md`에 기록한다
