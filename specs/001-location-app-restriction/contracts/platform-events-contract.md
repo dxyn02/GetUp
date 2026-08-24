@@ -37,10 +37,10 @@
 ## Restriction Adapter
 
 - 고정된 이름의 Managed Settings store 하나를 사용한다.
-- `apply`는 현재 rule revision의 선택 앱 토큰에 shield를 설정한다.
+- `apply`는 현재 활성 `(ruleID, revision)` 집합이 선택한 앱 token 합집합에 shield를 설정한다.
 - `remove`는 GetUp store의 shield만 지운다.
 - 다른 Screen Time 제공자의 store는 수정하지 않는다.
-- 동일 revision의 동일 목표 상태는 시스템 write를 반복하지 않는다.
+- 동일한 활성 rule revision 집합은 시스템 write를 반복하지 않는다.
 
 ## Delivery and Recovery Boundary
 
@@ -49,3 +49,10 @@
 - 재부팅 후 첫 잠금 해제 전에는 자동 위치 복구를 약속하지 않는다.
 - 첫 잠금 해제 뒤 공유 파일, 권한, 일정, 위치 조건을 복구하고 사용자가 앱을 직접 열지 않아도
   다음 신뢰 가능한 event에서 상태를 일치시킨다.
+- Device Activity extension의 `intervalDidStart`와 앱 foreground 활성화는 같은 복구 coordinator를
+  호출한다. 복구는 공유 규칙을 먼저 읽은 뒤 GetUp 소유 일정·region을 초기화하고 활성 규칙별로
+  재등록·위치 갱신한 다음 제한 합집합을 재평가한다.
+- 첫 잠금 해제 전 파일 보호 등으로 규칙 snapshot을 읽을 수 없으면 일정·region·shield를 변경하지
+  않고 다음 시스템 event에서 다시 시도한다.
+- 개별 일정·region 등록 실패는 다른 유효 규칙과 최종 제한 상태 재평가를 막지 않으며 복구 결과에
+  개인정보를 포함하지 않는 component·rule ID 수준 실패로 남긴다.

@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 4 사용자 스토리 2 — T050 다중 규칙 활성화 경로 구현 완료
+Phase 4 사용자 스토리 2 — T051 background·재부팅 복구 경로 구현 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T050 — 시간·위치 event를 모든 규칙의 상태 평가와 앱 token 합집합 적용에 연결함
+T051 — Device Activity interval과 앱 lifecycle의 공통 복구 경로를 구현함
 
 ## 다음 작업
-T051 — 앱 비실행·재부팅 복구 event에서 공유 snapshot과 제한 상태를 복구함
+T052 — 승인된 하이파이에 맞는 restricted-app shield UI를 구현함
 
 ## 차단 상태
 없음. BLK-008은 사용자의 1안 선택으로 해결됨.
@@ -23,6 +23,20 @@ T051 — 앱 비실행·재부팅 복구 event에서 공유 snapshot과 제한 �
 schema 1 안전 migration을 설계 문서·계약과 구현에 반영했다.
 
 ## 테스트 상태
+T051에서 `DeviceActivityMonitorExtension.intervalDidStart`와 앱 foreground `scenePhase`를 공통
+`AppLifecycleCoordinator`에 연결했다. 복구는 공유 규칙 snapshot read 성공 후에만 GetUp 일정·region을
+초기화하고 모든 활성 규칙의 일정·region을 재등록하며, fresh fix를 rule ID별 `.restoration` 위치
+condition으로 갱신한 뒤 T050 제한 합집합을 재평가한다. Family Controls의 `.approved`와 iOS 26의
+`.approvedWithDataAccess`, Always·Full Accuracy를 실제 시스템 상태에서 정규화하는 복구용 권한
+provider를 앱과 extension target에 추가했다. 개별 schedule·location 실패는 다른 규칙과 최종 제한
+재평가를 막지 않으며, 첫 잠금 해제 전 보호 파일 read 실패는 기존 시스템 상태를 변경하지 않고
+다음 event 재시도로 남긴다. iPhone 17 Pro iOS 26.5 Simulator에서 앱과 extension을 함께 build하고
+전체 `GetUpTests` 110개가 동적 인자를 포함해 총 142회 모두 통과했으며 실패·skip은 없다. 최초 red
+검증 시 CoreSimulator service 연결이 일시적으로 끊겼으나 권한을 허용한 최종 두 실행은 정상
+통과했다. 실제 앱 종료 상태 `intervalDidStart`, background region 등록과 재부팅 후 첫 잠금 해제
+event 전달은 Simulator로 입증하지 않으며 T083 실기기 인수에서 확인해야 한다.
+`project.pbxproj` plist 문법과 `git diff --check`도 통과했다.
+
 T050에서 사용자의 BLK-008 1안 결정을 반영해 `location-conditions.json`을 rule ID별 schema 2
 collection으로 변경하고, rule ID가 없는 schema 1 위치 snapshot은 빈 collection으로 안전하게
 해석했다. 적용 상태는 활성 `(ruleID, revision)` 집합을 추적하며, 기존 Boolean·revision만 남은

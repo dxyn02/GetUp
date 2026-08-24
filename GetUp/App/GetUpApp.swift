@@ -21,13 +21,16 @@ struct GetUpApp: App {
 
 @MainActor
 private struct GetUpRootView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var model: AppModel
+    private let lifecycleCoordinator: AppLifecycleCoordinator?
     private let currentLocationProvider: any CurrentLocationProviding
     private let defaultCoordinate: ReferenceLocation
     private let applicationSelectionOverride: (@MainActor () -> FamilyActivitySelection?)?
 
     init(environment: AppEnvironment) {
         _model = State(initialValue: environment.model)
+        lifecycleCoordinator = environment.lifecycleCoordinator
         currentLocationProvider = environment.currentLocationProvider
         defaultCoordinate = environment.defaultCoordinate
         applicationSelectionOverride = environment.applicationSelectionOverride
@@ -46,6 +49,14 @@ private struct GetUpRootView: View {
                 return
             }
             await model.load()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active, let lifecycleCoordinator else {
+                return
+            }
+            Task {
+                _ = try? await lifecycleCoordinator.restore()
+            }
         }
     }
 
@@ -455,6 +466,7 @@ private enum AppRuntime {
 @MainActor
 private struct AppEnvironment {
     let model: AppModel
+    let lifecycleCoordinator: AppLifecycleCoordinator?
     let currentLocationProvider: any CurrentLocationProviding
     let defaultCoordinate: ReferenceLocation
     let applicationSelectionOverride: (@MainActor () -> FamilyActivitySelection?)?
@@ -462,11 +474,18 @@ private struct AppEnvironment {
     static func live() throws -> AppEnvironment {
         let container = try DependencyContainer.live()
         let locationSession = CoreLocationCurrentLocationSession()
+        let lifecycleCoordinator = try AppLifecycleCoordinator.live(
+            container: container
+        )
         return AppEnvironment(
             model: AppModel(
                 ruleRepository: container.ruleRepository,
-                savedPlaceRepository: container.savedPlaceRepository
+                savedPlaceRepository: container.savedPlaceRepository,
+                bootstrap: {
+                    _ = try await lifecycleCoordinator.restore()
+                }
             ),
+            lifecycleCoordinator: lifecycleCoordinator,
             currentLocationProvider: CurrentLocationProvider(session: locationSession),
             defaultCoordinate: ReferenceLocation(latitude: 37.5665, longitude: 126.9780),
             applicationSelectionOverride: nil
@@ -547,6 +566,7 @@ private enum UITestConfiguration {
                 initialEditorDraft: initialDraft,
                 bootstrap: bootstrap
             ),
+            lifecycleCoordinator: nil,
             currentLocationProvider: UITestCurrentLocationProvider(),
             defaultCoordinate: fixtures.home.coordinate,
             applicationSelectionOverride: selectionOverride

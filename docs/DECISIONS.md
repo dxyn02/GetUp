@@ -245,6 +245,31 @@ revision을 collection revision으로 간주하거나 마지막 event 규칙에 
 `ManagedSettingsRestrictionAdapter.swift`, `RestrictionCoordinator.swift`, 공유 저장·평가 계약과 관련
 테스트 fixture를 함께 변경한다. T051의 extension 복구는 이 schema 2 collection을 읽어야 한다.
 
+## DEC-028 — 앱·Device Activity extension의 공통 best-effort 복구 경로
+
+**날짜**: 2026-08-24
+
+**결정**: 앱 foreground 활성화와 Device Activity extension의 `intervalDidStart`는 동일한
+`AppLifecycleCoordinator`를 사용한다. coordinator는 보호된 규칙 collection을 먼저 읽고, 읽기에
+성공한 경우에만 GetUp 소유 일정과 region을 초기화한다. 이후 활성 규칙을 안정적인 ID 순서로
+재등록하고 신뢰 가능한 위치 fix를 갱신한 뒤 `RestrictionCoordinator.restore()`로 현재 제한 합집합을
+일치시킨다.
+
+첫 잠금 해제 전 파일 보호 등으로 규칙을 읽지 못하면 기존 일정·region·shield를 그대로 보존하고
+다음 event에서 다시 시도한다. 개별 일정 또는 region 등록 실패는 다른 규칙의 복구와 제한 상태
+재평가를 막지 않으며 `AppLifecycleRecoveryResult`에 component와 rule ID만 기록한다. 실제 오류 설명,
+좌표와 app token은 결과에 포함하지 않는다.
+
+**근거**: 앱과 extension이 서로 다른 복구 순서나 저장 해석을 사용하면 재부팅·종료 상태에서 제한
+결과가 달라질 수 있다. 반면 보호 파일을 읽기 전에 기존 시스템 등록을 제거하면 첫 잠금 해제 전
+정상 설정까지 잃을 수 있다. 공통 순서와 best-effort 결과는 복구 가능한 규칙을 계속 처리하면서
+개인정보 없는 진단 경계를 제공한다.
+
+**영향 범위**: `AppLifecycleCoordinator.swift`, `DeviceActivityMonitorExtension.swift`, 앱
+`scenePhase` wiring, `AuthorizationAdapter.swift`, `LocationMonitor.swift`의 extension target membership,
+`platform-events-contract.md`와 복구 통합 테스트에 적용한다. 실제 background·종료·재부팅 event
+전달은 Simulator로 입증하지 않고 T083 실기기 인수에서 검증한다.
+
 ## DEC-017 — 직접 시간 입력과 DatePicker 유효 범위 제한
 
 **날짜**: 2026-08-23
