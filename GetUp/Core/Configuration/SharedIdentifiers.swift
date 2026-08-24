@@ -11,6 +11,9 @@ enum SharedIdentifiers {
 
     static let managedSettingsStoreName = "getup.restriction"
     static let deviceActivityNamePrefix = "getup.schedule"
+    static let activeRuleRevisionsDefaultsKey = "getup.restriction.active-rule-revisions"
+    static let legacyRestrictionIsAppliedDefaultsKey = "getup.restriction.is-applied"
+    static let legacyRestrictionRuleRevisionDefaultsKey = "getup.restriction.rule-revision"
 
     static func appGroupIdentifier(in bundle: Bundle = .main) -> String? {
         guard

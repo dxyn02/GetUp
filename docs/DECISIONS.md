@@ -128,6 +128,9 @@ extension의 비동기 경계를 통과하려면 해당 immutable aggregate에�
 
 **날짜**: 2026-08-21
 
+**상태**: 적용 상태의 단일 rule revision 범위는 2026-08-24에 `DEC-027`로 대체됨. 비동기 protocol
+경계와 하나의 일관된 snapshot으로 조회한다는 원칙은 유지한다.
+
 **결정**: 시간, 공유 저장소, 권한, 일정, 위치 monitoring 및 제한 적용 기능을 `Sendable` protocol로
 분리한다. process·actor 경계를 통과할 수 있는 작업은 명시적인 `async` API로 제공하고, 저장·등록·
 시스템 제한 변경처럼 실패 가능한 작업은 `throws`로 노출한다. 제한 적용 상태는 적용 여부와 rule
@@ -214,6 +217,58 @@ target의 deployment target을 iOS 26 이상으로 통일한다. 이 결정은 `
 
 **영향 범위**: 제한 상태 계산은 단일 Boolean·revision 대신 활성 rule ID 집합과 앱 token 합집합을
 추적해야 한다. 규칙별 조건 평가, 부분 종료, 중복 앱 및 idempotency 테스트를 후속 계획에 추가한다.
+
+## DEC-027 — 다중 규칙 위치·제한 적용 상태 계약
+
+**날짜**: 2026-08-24
+
+**결정**: `location-conditions.json` schema 2는 rule ID별 `LocationConditionSnapshot` collection을
+저장한다. 제한 적용 상태는 단일 Boolean·revision 대신 활성 `(ruleID, revision)` 집합을 App Group
+`UserDefaults`에 저장한다. `RestrictionCoordinator`는 저장된 모든 유효 규칙을 같은 event 시점에
+독립 평가하고, `active` 규칙과 기존 상태를 보존해야 하는 `unavailable` 규칙을 합성한 뒤 해당
+규칙들의 application token 합집합을 named Managed Settings store에 한 번 적용한다.
+
+rule ID가 없는 schema 1 위치 snapshot은 특정 규칙에 귀속시킬 수 없으므로 값 추정을 금지하고 빈
+schema 2 collection으로 migration한다. 각 규칙은 새 위치 근거가 기록될 때까지 `unavailable`이다.
+기존 UserDefaults가 적용 Boolean·revision만 보존한 경우에는 활성 규칙을 추정하지 않고 최초
+coordinator 평가에서 GetUp named store를 한 번 초기화한다.
+일부 규칙이 종료되거나 외부로 판정되면 남은 활성 규칙 집합으로 합집합을 다시 계산하며, 활성
+rule revision 집합이 같으면 Managed Settings와 상태 저장소 write를 생략한다.
+
+**근거**: `FR-038`·`FR-044`와 `DEC-016`의 합집합 및 부분 종료 동작을 앱과 extension의 재실행
+경계에서도 결정적으로 복구하려면 규칙별 위치 근거와 활성 규칙 집합이 모두 필요하다. 기존 단일
+revision을 collection revision으로 간주하거나 마지막 event 규칙에 귀속시키면 서로 다른 규칙이
+같은 revision을 가질 수 있어 잘못된 제한 적용이 발생한다.
+
+**영향 범위**: `RuntimeStateModels.swift`, `PlatformContracts.swift`,
+`SharedSnapshotRepository.swift`, `LocationMonitor.swift`,
+`ManagedSettingsRestrictionAdapter.swift`, `RestrictionCoordinator.swift`, 공유 저장·평가 계약과 관련
+테스트 fixture를 함께 변경한다. T051의 extension 복구는 이 schema 2 collection을 읽어야 한다.
+
+## DEC-028 — 앱·Device Activity extension의 공통 best-effort 복구 경로
+
+**날짜**: 2026-08-24
+
+**결정**: 앱 foreground 활성화와 Device Activity extension의 `intervalDidStart`는 동일한
+`AppLifecycleCoordinator`를 사용한다. coordinator는 보호된 규칙 collection을 먼저 읽고, 읽기에
+성공한 경우에만 GetUp 소유 일정과 region을 초기화한다. 이후 활성 규칙을 안정적인 ID 순서로
+재등록하고 신뢰 가능한 위치 fix를 갱신한 뒤 `RestrictionCoordinator.restore()`로 현재 제한 합집합을
+일치시킨다.
+
+첫 잠금 해제 전 파일 보호 등으로 규칙을 읽지 못하면 기존 일정·region·shield를 그대로 보존하고
+다음 event에서 다시 시도한다. 개별 일정 또는 region 등록 실패는 다른 규칙의 복구와 제한 상태
+재평가를 막지 않으며 `AppLifecycleRecoveryResult`에 component와 rule ID만 기록한다. 실제 오류 설명,
+좌표와 app token은 결과에 포함하지 않는다.
+
+**근거**: 앱과 extension이 서로 다른 복구 순서나 저장 해석을 사용하면 재부팅·종료 상태에서 제한
+결과가 달라질 수 있다. 반면 보호 파일을 읽기 전에 기존 시스템 등록을 제거하면 첫 잠금 해제 전
+정상 설정까지 잃을 수 있다. 공통 순서와 best-effort 결과는 복구 가능한 규칙을 계속 처리하면서
+개인정보 없는 진단 경계를 제공한다.
+
+**영향 범위**: `AppLifecycleCoordinator.swift`, `DeviceActivityMonitorExtension.swift`, 앱
+`scenePhase` wiring, `AuthorizationAdapter.swift`, `LocationMonitor.swift`의 extension target membership,
+`platform-events-contract.md`와 복구 통합 테스트에 적용한다. 실제 background·종료·재부팅 event
+전달은 Simulator로 입증하지 않고 T083 실기기 인수에서 검증한다.
 
 ## DEC-017 — 직접 시간 입력과 DatePicker 유효 범위 제한
 
@@ -340,3 +395,56 @@ opaque token 경계를 유지한다.
 다른 규칙의 참조를 깨뜨리거나 사용자가 다시 쓸 장소 데이터를 잃을 수 있다. revision 검증은 오래
 열린 편집 화면이 최신 변경을 삭제하는 것을 막고, 삭제 guard를 단일 경로에 두면 제한 활성화 구현
 이후에도 화면별 우회 없이 FR-023을 적용할 수 있다.
+
+## DEC-026 — MVP shield의 단일 닫기 행동
+
+**날짜**: 2026-08-24
+
+**결정**: MVP의 restricted-app shield는 iOS 버전과 관계없이 secondary action을 제공하지 않는다.
+저장 장소 이름·설정 반경·종료 시각을 제목과 설명으로 직접 안내하고, primary `앱 닫기` 행동만
+제공한다. shield 내부 지도와 GetUp 앱 열기 행동은 구현하지 않는다.
+
+향후 secondary action에 `오늘만 허용`을 제공하고 인앱결제 뒤 일시적으로 제한을 해제하는 아이디어는
+현재 범위와 승인에 포함하지 않는다. 해당 기능은 해제 기간, 결제 실패·복원·환불, 활성 규칙 간
+우선순위, 보호 기능의 유료 해제 적합성과 App Store 정책을 별도 spec에서 검토한 뒤 결정한다.
+
+**근거**: 장소·반경·종료 시각 문구만으로 현재 해제 조건을 이해할 수 있으며, 모든 지원 버전에서
+동일한 단일 행동 계약을 유지한다. 미래 수익화 아이디어를 현재 제한 우회 동작과 결합하지 않아
+MVP의 자동 해제 규칙과 검증 범위를 안정적으로 유지한다.
+
+## DEC-029 — 동일 앱의 다중 활성 규칙 shield 요약
+
+**날짜**: 2026-08-24
+
+**결정**: shield 대상 앱 token과 일치하는 활성 규칙이 하나이면 승인된 장소 이름·반경·종료 시각을
+모두 표시한다. 두 개 이상이면 제목에 활성 규칙 수를 표시하고, 설명에는 각 규칙의 위치 또는 시간이
+모두 끝나야 다시 사용할 수 있다는 결합 의미만 짧게 안내한다. 개별 조건 목록은 나열하지 않는다.
+App Group snapshot, 적용 상태 또는 app token을 읽지 못하면 제한 활성 사실과 설정한 위치 또는 시간
+종료 뒤 자동 해제된다는 일반 문구를 사용한다.
+
+**근거**: 한 규칙만 대표로 표시하면 실제 해제 조건을 잘못 안내하고, 모든 규칙을 나열하면 규칙
+개수에 따라 ManagedSettingsUI의 system-owned layout과 Dynamic Type에서 핵심 문구가 잘릴 수 있다.
+짧은 다중 규칙 요약은 정확한 결합 의미를 보존하면서 개인정보와 overflow 위험을 줄인다.
+
+**영향 범위**: `shield-ui-contract.md`, US2 하이파이, `ShieldContentProvider`,
+`ShieldConfigurationExtension`과 단일·다중·fallback 콘텐츠 테스트에 적용한다.
+
+## DEC-030 — 규칙 저장 후 공통 runtime 복구 경로 재사용
+
+**날짜**: 2026-08-24
+
+**결정**: `RuleConfigurationService`는 저장 장소와 규칙 collection snapshot을 모두 기록한 뒤에만
+새 `RestrictionRuleSnapshot`을 runtime 동기화 경계로 전달한다. 앱의 live 환경은 이 경계를
+`AppLifecycleCoordinator.restore()`에 연결해 GetUp 소유 일정·region을 초기화하고 저장된 모든 활성
+규칙을 새 revision으로 재등록하며, fresh 위치 근거를 갱신한 뒤 제한 합집합을 즉시 재평가한다.
+snapshot 기록이 실패하면 runtime 동기화를 호출하지 않는다. 개별 일정·region 등록 실패는
+`DEC-028`의 best-effort 결과를 따르며 다른 규칙과 최종 제한 재평가를 막지 않는다.
+
+**근거**: 저장 직후 경로가 foreground·재부팅 복구와 다른 순서나 별도 adapter 조립을 사용하면 같은
+snapshot으로도 시스템 등록과 제한 상태가 달라질 수 있다. 공통 coordinator를 재사용하면 여러 규칙,
+권한, 위치 불가와 부분 등록 실패의 기존 검증을 그대로 유지하면서 `FR-022`의 즉시 재평가를
+충족한다. 두 snapshot보다 먼저 runtime을 변경하지 않아 불완전한 저장 상태가 시스템 등록에
+반영되는 것도 방지한다.
+
+**영향 범위**: `RuleConfigurationService`, `AppModel`, live `AppEnvironment`,
+`platform-events-contract.md`와 저장 후 동기화 테스트에 적용한다.

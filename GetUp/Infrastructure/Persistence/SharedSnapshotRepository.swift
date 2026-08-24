@@ -101,38 +101,76 @@ actor SharedSnapshotRepository: RuleRepository, SavedPlaceRepository, LocationCo
         try deleteSnapshot(fileName: SharedIdentifiers.savedPlacesFileName)
     }
 
-    func loadLocationCondition() async throws -> LocationConditionSnapshot? {
-        guard
-            let condition: LocationConditionSnapshot = try loadSnapshot(
-                LocationConditionSnapshot.self,
-                fileName: SharedIdentifiers.locationConditionFileName,
-                supportedSchemaVersion: LocationConditionSnapshot.currentSchemaVersion
-            )
-        else {
+    func loadLocationConditionCollection() async throws -> LocationConditionCollectionSnapshot? {
+        let fileName = SharedIdentifiers.locationConditionFileName
+        let fileURL = containerURL.appendingPathComponent(fileName)
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
             return nil
         }
 
-        guard let rules = try await loadRuleCollection() else {
-            return nil
-        }
-        guard condition.ruleRevision == rules.revision else {
-            throw SharedSnapshotRepositoryError.revisionMismatch(
-                expected: rules.revision,
-                actual: condition.ruleRevision
-            )
+        let data: Data
+        do {
+            data = try Data(contentsOf: fileURL)
+        } catch {
+            throw SharedSnapshotRepositoryError.readFailed(fileName: fileName)
         }
 
-        return condition
+        let decoder = makeDecoder()
+        let header: SchemaHeader
+        do {
+            header = try decoder.decode(SchemaHeader.self, from: data)
+        } catch {
+            throw SharedSnapshotRepositoryError.decodingFailed(fileName: fileName)
+        }
+
+        switch header.schemaVersion {
+        case LocationConditionCollectionSnapshot.currentSchemaVersion:
+            do {
+                return try decoder.decode(LocationConditionCollectionSnapshot.self, from: data)
+            } catch {
+                throw SharedSnapshotRepositoryError.decodingFailed(fileName: fileName)
+            }
+        case LegacyLocationConditionSnapshot.currentSchemaVersion:
+            do {
+                _ = try decoder.decode(LegacyLocationConditionSnapshot.self, from: data)
+                return LocationConditionCollectionSnapshot(conditions: [])
+            } catch {
+                throw SharedSnapshotRepositoryError.decodingFailed(fileName: fileName)
+            }
+        default:
+            throw SharedSnapshotRepositoryError.unsupportedSchema(
+                fileName: fileName,
+                found: header.schemaVersion,
+                supported: LocationConditionCollectionSnapshot.currentSchemaVersion
+            )
+        }
     }
 
     func saveLocationCondition(_ condition: LocationConditionSnapshot) async throws {
+        var conditions = try await loadLocationConditionCollection()?.conditions ?? []
+        conditions.removeAll { $0.ruleID == condition.ruleID }
+        conditions.append(condition)
+        conditions.sort { $0.ruleID.uuidString < $1.ruleID.uuidString }
         try saveSnapshot(
-            condition,
+            LocationConditionCollectionSnapshot(conditions: conditions),
             fileName: SharedIdentifiers.locationConditionFileName
         )
     }
 
-    func deleteLocationCondition() async throws {
+    func deleteLocationCondition(for ruleID: UUID) async throws {
+        guard var collection = try await loadLocationConditionCollection() else {
+            return
+        }
+        collection = LocationConditionCollectionSnapshot(
+            conditions: collection.conditions.filter { $0.ruleID != ruleID }
+        )
+        try saveSnapshot(
+            collection,
+            fileName: SharedIdentifiers.locationConditionFileName
+        )
+    }
+
+    func deleteLocationConditions() async throws {
         try deleteSnapshot(fileName: SharedIdentifiers.locationConditionFileName)
     }
 
@@ -269,6 +307,18 @@ actor SharedSnapshotRepository: RuleRepository, SavedPlaceRepository, LocationCo
 
 private struct SchemaHeader: Decodable {
     let schemaVersion: Int
+}
+
+private struct LegacyLocationConditionSnapshot: Codable, Sendable {
+    static let currentSchemaVersion = 1
+
+    let schemaVersion: Int
+    let ruleRevision: Int
+    let state: LocationConditionState
+    let observedAt: Date
+    let distanceMeters: Double?
+    let horizontalAccuracyMeters: Double?
+    let source: LocationConditionSource
 }
 
 private struct LegacyRestrictionRuleSnapshot: Codable, @unchecked Sendable {

@@ -15,6 +15,11 @@ GetUp의 named Managed Settings store가 선택 앱에 shield를 적용한 상�
 | Primary button | 제한 앱을 닫음 |
 | Secondary button | 제공하지 않음 |
 
+대상 앱에 적용된 활성 규칙이 하나이면 저장 장소·반경·종료 시각을 모두 표시한다. 두 개 이상이면
+규칙 수와 각 규칙의 위치 또는 시간이 모두 끝나야 한다는 짧은 요약을 표시하며 개별 조건은
+나열하지 않는다. snapshot 또는 app token을 읽지 못하면 제한 활성 사실과 자동 종료 조건만 담은
+일반 문구를 사용한다.
+
 ## Interaction Rules
 
 - 제한 해제 또는 규칙 변경 버튼을 shield에 제공하지 않는다.
@@ -24,6 +29,7 @@ GetUp의 named Managed Settings store가 선택 앱에 shield를 적용한 상�
   앱 내부 권한 안내에서 설명하되 shield에 장황하게 노출하지 않는다.
 - VoiceOver가 제목, 설명, 버튼을 의미 있는 순서로 읽을 수 있어야 한다.
 - 시스템 글자 크기와 명암 설정에서도 핵심 안내가 잘리거나 색상만으로 전달되지 않아야 한다.
+- 다중 규칙 요약과 fallback에는 장소·좌표·앱 식별 정보 또는 token을 포함하지 않는다.
 
 ## Acceptance Cases
 

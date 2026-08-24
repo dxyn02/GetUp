@@ -108,30 +108,30 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 
 ### 로우파이 및 하이파이
 
-- [ ] T038 [US2] 제한 활성 상태 화면과 restricted-app shield의 제목·설명·닫기 흐름 로우파이를 제작하고 Figma 링크와 상태 설명을 `design/low-fidelity/US2-active-restriction.md`에 기록한다
-- [ ] T039 [US2] US2 로우파이를 사용자와 검토해 피드백·변경 사항·승인 여부를 `design/low-fidelity/US2-active-restriction.md`에 반영한다
-- [ ] T040 [US2] 승인된 로우파이와 `shield-ui-contract.md`를 기준으로 접근성·명암·Dynamic Type을 포함한 하이파이를 제작하고 Figma 링크와 규격을 `design/high-fidelity/US2-active-restriction.md`에 기록한다
-- [ ] T041 [US2] US2 하이파이를 사용자와 검토해 구현 승인 상태와 최종 변경 사항을 `design/high-fidelity/US2-active-restriction.md`에 기록한다
+- [x] T038 [US2] 제한 활성 상태 화면과 restricted-app shield의 제목·설명·닫기 흐름 로우파이를 제작하고 Figma 링크와 상태 설명을 `design/low-fidelity/US2-active-restriction.md`에 기록한다
+- [x] T039 [US2] US2 로우파이를 사용자와 검토해 피드백·변경 사항·승인 여부를 `design/low-fidelity/US2-active-restriction.md`에 반영한다
+- [x] T040 [US2] 승인된 로우파이와 `shield-ui-contract.md`를 기준으로 접근성·명암·Dynamic Type을 포함한 하이파이를 제작하고 Figma 링크와 규격을 `design/high-fidelity/US2-active-restriction.md`에 기록한다
+- [x] T041 [US2] US2 하이파이를 사용자와 검토해 구현 승인 상태와 최종 변경 사항을 `design/high-fidelity/US2-active-restriction.md`에 기록한다
 
 ### 테스트
 
-- [ ] T042 [P] [US2] 선택 요일별 일정 등록, 15분 오류, 자정 초과, 기존 일정 교체의 실패 테스트를 `GetUpTests/Integration/DeviceActivityScheduleAdapterTests.swift`에 작성한다
-- [ ] T043 [P] [US2] 500m/1km/2km/3km/4km/5km 내부·경계·외부·오차 중첩 및 위치 snapshot 기록의 실패 테스트를 `GetUpTests/Integration/LocationMonitoringAdapterTests.swift`에 작성한다
-- [ ] T044 [P] [US2] 선택 앱만 shield 적용, 동일 revision 무효과, 다른 store 보존의 실패 테스트를 `GetUpTests/Integration/ManagedSettingsRestrictionAdapterTests.swift`에 작성한다
-- [ ] T045 [P] [US2] 시간 활성 × 위치 내부에서만 제한되고 비대상 앱은 열리는 실패 UI test를 `GetUpUITests/UserStory2RestrictionActivationUITests.swift`에 작성한다
+- [x] T042 [P] [US2] 선택 요일별 일정 등록, 15분 오류, 자정 초과, 기존 일정 교체의 실패 테스트를 `GetUpTests/Integration/DeviceActivityScheduleAdapterTests.swift`에 작성한다
+- [x] T043 [P] [US2] 500m/1km/2km/3km/4km/5km 내부·경계·외부·오차 중첩 및 위치 snapshot 기록의 실패 테스트를 `GetUpTests/Integration/LocationMonitoringAdapterTests.swift`에 작성한다
+- [x] T044 [P] [US2] 선택 앱만 shield 적용, 동일 revision 무효과, 다른 store 보존의 실패 테스트를 `GetUpTests/Integration/ManagedSettingsRestrictionAdapterTests.swift`에 작성한다
+- [x] T045 [P] [US2] 시간 활성 × 위치 내부에서만 제한되고 비대상 앱은 열리는 실패 UI test를 `GetUpUITests/UserStory2RestrictionActivationUITests.swift`에 작성한다
 
 ### 구현
 
-- [ ] T046 [P] [US2] 선택 요일별 `DeviceActivitySchedule` 등록·교체·복구를 `GetUp/Infrastructure/Scheduling/DeviceActivityScheduleAdapter.swift`에 구현한다
-- [ ] T047 [P] [US2] 거리·horizontal accuracy 판정 공식을 `GetUp/Infrastructure/Location/LocationEvidenceEvaluator.swift`에 구현한다
-- [ ] T048 [US2] Always·Full Accuracy 아래 원형 region 등록과 최신 위치 snapshot 갱신을 `GetUp/Infrastructure/Location/LocationMonitor.swift`에 구현한다
-- [ ] T049 [P] [US2] named `ManagedSettingsStore`의 선택 앱 shield 적용을 `GetUp/Infrastructure/ScreenTime/ManagedSettingsRestrictionAdapter.swift`에 구현한다
-- [ ] T050 [US2] 시간·위치 event를 상태 머신과 restriction adapter에 연결하는 활성화 경로를 `GetUp/Infrastructure/ScreenTime/RestrictionCoordinator.swift`에 구현한다
-- [ ] T051 [US2] 앱 비실행 상태의 `intervalDidStart`와 재부팅 뒤 첫 잠금 해제 이후 전달되는 시스템 event에서 공유 snapshot을 읽고 권한·일정·region·제한 상태를 복구하도록 `GetUpDeviceActivityMonitor/DeviceActivityMonitorExtension.swift`, `GetUp/App/AppLifecycleCoordinator.swift`를 구현한다
-- [ ] T052 [US2] 승인된 하이파이에 맞는 shield 제목·설명·아이콘·닫기 버튼을 `GetUpShieldConfiguration/ShieldConfigurationExtension.swift`에 구현한다
-- [ ] T053 [US2] 우회 없이 제한 앱을 닫는 primary action을 `GetUpShieldAction/ShieldActionExtension.swift`에 구현한다
-- [ ] T054 [US2] 규칙 저장 성공 후 일정·region 등록과 초기 상태 평가를 연결하도록 `GetUp/Features/RuleEditor/RuleConfigurationService.swift`를 확장한다
-- [ ] T055 [US2] 승인된 하이파이에 맞춰 현재 활성 상태와 종료 조건을 `GetUp/Features/RestrictionStatus/RestrictionStatusView.swift` 및 `RestrictionStatusModel.swift`에 구현한다
+- [x] T046 [P] [US2] 선택 요일별 `DeviceActivitySchedule` 등록·교체·복구를 `GetUp/Infrastructure/Scheduling/DeviceActivityScheduleAdapter.swift`에 구현한다
+- [x] T047 [P] [US2] 거리·horizontal accuracy 판정 공식을 `GetUp/Infrastructure/Location/LocationEvidenceEvaluator.swift`에 구현한다
+- [x] T048 [US2] Always·Full Accuracy 아래 원형 region 등록과 최신 위치 snapshot 갱신을 `GetUp/Infrastructure/Location/LocationMonitor.swift`에 구현한다
+- [x] T049 [P] [US2] named `ManagedSettingsStore`의 선택 앱 shield 적용을 `GetUp/Infrastructure/ScreenTime/ManagedSettingsRestrictionAdapter.swift`에 구현한다
+- [x] T050 [US2] 시간·위치 event를 상태 머신과 restriction adapter에 연결하는 활성화 경로를 `GetUp/Infrastructure/ScreenTime/RestrictionCoordinator.swift`에 구현한다
+- [x] T051 [US2] 앱 비실행 상태의 `intervalDidStart`와 재부팅 뒤 첫 잠금 해제 이후 전달되는 시스템 event에서 공유 snapshot을 읽고 권한·일정·region·제한 상태를 복구하도록 `GetUpDeviceActivityMonitor/DeviceActivityMonitorExtension.swift`, `GetUp/App/AppLifecycleCoordinator.swift`를 구현한다
+- [x] T052 [US2] 승인된 하이파이에 맞는 shield 제목·설명·아이콘·닫기 버튼을 `GetUpShieldConfiguration/ShieldConfigurationExtension.swift`에 구현한다
+- [x] T053 [US2] 우회 없이 제한 앱을 닫는 primary action을 `GetUpShieldAction/ShieldActionExtension.swift`에 구현한다
+- [x] T054 [US2] 규칙 저장 성공 후 일정·region 등록과 초기 상태 평가를 연결하도록 `GetUp/Features/RuleEditor/RuleConfigurationService.swift`를 확장한다
+- [x] T055 [US2] 승인된 하이파이에 맞춰 현재 활성 상태와 종료 조건을 `GetUp/Features/RestrictionStatus/RestrictionStatusView.swift` 및 `RestrictionStatusModel.swift`에 구현한다
 
 **Checkpoint**: US1+US2로 설정부터 조건 충족 시 실제 선택 앱 제한까지 첫 사용 가능한 MVP를 검증한다.
 

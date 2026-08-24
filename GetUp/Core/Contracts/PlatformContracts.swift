@@ -17,9 +17,10 @@ protocol SavedPlaceRepository: Sendable {
 }
 
 protocol LocationConditionRepository: Sendable {
-    func loadLocationCondition() async throws -> LocationConditionSnapshot?
+    func loadLocationConditionCollection() async throws -> LocationConditionCollectionSnapshot?
     func saveLocationCondition(_ condition: LocationConditionSnapshot) async throws
-    func deleteLocationCondition() async throws
+    func deleteLocationCondition(for ruleID: UUID) async throws
+    func deleteLocationConditions() async throws
 }
 
 protocol AuthorizationProviding: Sendable {
@@ -40,13 +41,36 @@ protocol LocationMonitoring: Sendable {
     ) async -> LocationConditionSnapshot
 }
 
+struct ActiveRuleRevision: Codable, Equatable, Hashable, Sendable {
+    let ruleID: UUID
+    let revision: Int
+}
+
 struct AppliedRestrictionState: Equatable, Sendable {
-    let isApplied: Bool
-    let ruleRevision: Int?
+    let activeRuleRevisions: Set<ActiveRuleRevision>
+    let requiresReset: Bool
+
+    init(
+        activeRuleRevisions: Set<ActiveRuleRevision>,
+        requiresReset: Bool = false
+    ) {
+        self.activeRuleRevisions = activeRuleRevisions
+        self.requiresReset = requiresReset
+    }
+
+    var isApplied: Bool {
+        !activeRuleRevisions.isEmpty || requiresReset
+    }
+
+    func contains(_ rule: RestrictionRuleSnapshot) -> Bool {
+        activeRuleRevisions.contains(
+            ActiveRuleRevision(ruleID: rule.id, revision: rule.revision)
+        )
+    }
 }
 
 protocol RestrictionApplying: Sendable {
     func currentAppliedState() async -> AppliedRestrictionState
-    func applyRestriction(for rule: RestrictionRuleSnapshot) async throws
+    func applyRestriction(for rules: [RestrictionRuleSnapshot]) async throws
     func removeRestriction() async throws
 }

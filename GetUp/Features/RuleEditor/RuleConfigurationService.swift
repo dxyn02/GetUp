@@ -17,6 +17,9 @@ struct RuleConfigurationService: Sendable {
     private let savedPlaceRepository: any SavedPlaceRepository
     private let now: @Sendable () -> Date
     private let applicationTokenCounter: @Sendable (FamilyActivitySelection) -> Int
+    private let synchronizeRuntimeAfterSave: @Sendable (
+        RestrictionRuleSnapshot
+    ) async throws -> Void
 
     init(
         ruleRepository: any RuleRepository,
@@ -24,12 +27,16 @@ struct RuleConfigurationService: Sendable {
         now: @escaping @Sendable () -> Date = Date.init,
         applicationTokenCounter: @escaping @Sendable (FamilyActivitySelection) -> Int = {
             $0.applicationTokens.count
-        }
+        },
+        synchronizeRuntimeAfterSave: @escaping @Sendable (
+            RestrictionRuleSnapshot
+        ) async throws -> Void = { _ in }
     ) {
         self.ruleRepository = ruleRepository
         self.savedPlaceRepository = savedPlaceRepository
         self.now = now
         self.applicationTokenCounter = applicationTokenCounter
+        self.synchronizeRuntimeAfterSave = synchronizeRuntimeAfterSave
     }
 
     @discardableResult
@@ -81,6 +88,7 @@ struct RuleConfigurationService: Sendable {
         // 장소를 먼저 기록해 새 규칙이 존재하지 않는 장소를 참조하는 순간을 만들지 않는다.
         try await savedPlaceRepository.saveSavedPlaceCollection(placeCollection)
         try await ruleRepository.saveRuleCollection(ruleCollection)
+        try await synchronizeRuntimeAfterSave(rule)
 
         return SavedRuleConfiguration(
             rule: rule,

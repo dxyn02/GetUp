@@ -78,3 +78,106 @@ T025는 DST의 존재하지 않는 시각과 반복 시각에 대한 기대 결�
 **해결**: 1안을 선택한다. DST 전환으로 존재하지 않는 시작·종료 경계는 각각 다음 유효 현지
 시각으로 이동한다. 반복되는 시작 경계는 첫 번째 발생, 반복되는 종료 경계는 두 번째 발생을
 사용한다.
+
+## BLK-007 — Restricted App Shield의 지도 확인 진입과 iOS 지원 범위
+
+**상태**: 해결됨(RESOLVED) — 2026-08-24
+
+사용자는 `US2-LF-02`에서 어떤 위치로부터 얼마나 벗어나야 하는지 문구 또는 지도 화면으로 확인하고
+싶다고 요청했다. 저장 장소 이름·설정 반경·종료 시각은 현재 `ShieldConfiguration`의 title과
+subtitle로 안내할 수 있어 로우파이에 반영했다. 그러나 시스템 shield에는 임의의 Map UI를 삽입할 수
+없다. 지도 화면을 열려면 secondary action과 앱 진입 동작이 필요하지만,
+`ShieldActionResponse.openParentalControlsApp`은 iOS 26.5부터 제공된다. 이는 현재 최소 지원 버전
+iOS 26.0과 secondary action·GetUp 자동 실행을 제공하지 않는 `shield-ui-contract.md`에 영향을 준다.
+
+**선택지**:
+
+1. MVP에서는 shield에 `집 중심에서 1km 밖 또는 09:00 AM`처럼 장소·반경·종료 시각을 직접
+   표시하고 지도 버튼은 제공하지 않는다. iOS 26.0 이상에서 계약 변경 없이 일관되게 동작한다.
+2. `지도에서 보기` secondary action을 추가하고 iOS 26.5 이상에서 GetUp의 지도 화면을 연다.
+   iOS 26.0~26.4에서는 버튼을 숨기거나 별도 fallback을 정의해야 하며 contract·task·테스트를
+   변경해야 한다. 최소 지원 버전을 iOS 26.5로 올리는 방안도 별도 제품 결정이 필요하다.
+
+**권장안**: 1안. 사용자가 필요한 장소와 이탈 거리를 제한 앱을 떠나지 않고 즉시 확인할 수 있고,
+현재 MVP의 최소 지원 버전과 단일 닫기 행동 계약을 유지한다. 지도 진입은 최소 OS와 shield 계약을
+함께 재검토하는 후속 범위로 둔다.
+
+**해결**: 1안을 선택한다. MVP의 모든 지원 버전에서 secondary action을 제공하지 않고,
+저장 장소 이름·설정 반경·종료 시각을 shield 제목과 설명으로 안내하며 primary `앱 닫기` 행동만
+제공한다. 향후 `오늘만 허용`과 인앱결제를 통한 일시 해제 아이디어는 현재 기능에 포함하지 않고
+별도 spec과 플랫폼·결제 정책 검토를 거쳐 결정한다.
+
+## BLK-008 — 여러 규칙 활성화 상태의 런타임 저장 계약
+
+**상태**: 해결됨(RESOLVED) — 2026-08-24
+
+`FR-038`·`FR-044`와 `DEC-016`은 시간·위치 조건을 충족한 모든 규칙의 앱 token 합집합을 적용하고,
+일부 규칙이 끝나면 남은 활성 규칙만으로 합집합을 다시 계산하도록 요구한다. 그러나 T050 착수
+시점의 런타임 계약은 다음과 같이 단일 규칙만 표현한다.
+
+- `LocationConditionSnapshot`과 `location-conditions.json`은 rule ID 없이 하나의 `ruleRevision`만
+  저장한다.
+- `AppliedRestrictionState`는 하나의 `ruleRevision`과 Boolean만 저장한다.
+- `RestrictionApplying.applyRestriction(for:)`는 하나의 `RestrictionRuleSnapshot`만 받는다.
+- `RestrictionStateMachine.evaluate(_:)`는 하나의 규칙과 하나의 위치 snapshot만 평가한다.
+
+이 상태로 T050을 연결하면 두 규칙이 동시에 활성화될 때 마지막으로 평가된 규칙이 앞선 규칙의
+shield를 덮어쓰거나 제거할 수 있어 명세를 위반한다. 반대로 T050에서 다중 규칙 계약을 도입하면
+공유 JSON schema, App Group 적용 상태, adapter API와 기존 테스트 fixture를 함께 변경해야 하므로
+중대한 저장 계약 변경에 해당한다.
+
+**선택지**:
+
+1. T050 범위에서 다중 규칙 런타임 계약을 도입한다. 위치 상태를 rule ID별 collection으로 저장하고,
+   적용 상태는 활성 rule ID·revision 집합과 최종 앱 token 합집합을 식별할 수 있게 변경한다.
+   coordinator는 모든 유효 규칙을 독립 평가한 뒤 합집합을 한 번 적용한다. 기존 단일 위치 snapshot은
+   명시적인 migration 또는 안전한 `unavailable` 처리 규칙을 함께 정의한다.
+2. T050을 단일 규칙 활성화 경로로만 구현하고 다중 규칙 합집합과 저장 migration은 후속 task로
+   분리한다. 이 경우 현재 `FR-038`·`FR-044`를 만족하지 못하는 기간과 완료 task를 명시하고 새로운
+   task를 `tasks.md`에 추가해야 한다.
+
+**권장안**: 1안. 이미 확정된 다중 규칙 제품 동작을 실제 런타임 경계에서 보존하고, T051의 extension
+복구 경로가 잘못된 단일 규칙 저장 계약에 의존하기 전에 바로잡을 수 있다. 결정되면
+`data-model.md`, `shared-storage-contract.md`, `restriction-evaluation-contract.md`,
+`PlatformContracts.swift` 및 관련 테스트를 같은 내용으로 갱신해야 한다.
+
+**해결**: 사용자가 1안을 선택했다. T050에서 위치 상태를 rule ID별 collection으로 저장하고,
+적용 상태는 활성 rule ID·revision 집합을 추적한다. coordinator는 모든 유효 규칙을 독립 평가해
+활성 규칙의 앱 token 합집합을 한 번 적용한다. rule ID가 없는 기존 schema 1 위치 snapshot은 어느
+규칙의 근거인지 안전하게 판별할 수 없으므로 migration 시 빈 collection으로 변환하고, 새 위치
+근거가 기록될 때까지 각 규칙을 `unavailable`로 평가한다.
+
+## BLK-009 — 동일 앱에 여러 활성 규칙이 적용될 때 shield 해제 조건 표시
+
+**상태**: 해결됨(RESOLVED) — 2026-08-24
+
+T052의 승인된 하이파이는 하나의 저장 장소·반경·종료 시각을 사용해 `집 1km 밖으로 이동하세요`와
+같은 shield 문구를 표시한다. 그러나 `FR-038`·`FR-044`와 `DEC-016`에 따라 같은 앱 token이 두 개
+이상의 활성 규칙에 포함될 수 있다. 이 경우 앱 제한이 실제로 해제되려면 해당 앱을 선택한 각 활성
+규칙의 `(장소 밖 또는 시간 종료)` 조건이 모두 끝나야 한다.
+
+iOS 26.5의 `ManagedSettings.Application.token`으로 현재 shield 대상 앱과 활성 규칙의 token을
+비교할 수는 있다. 하지만 여러 규칙 중 하나의 장소·반경·시각만 표시하면 그 조건만 끝났을 때 앱을
+다시 쓸 수 있는 것처럼 잘못 안내한다. 모든 조건을 나열하면 규칙 개수에 따라 system-owned shield
+설명이 길어져 Dynamic Type과 화면 높이에서 잘릴 수 있으며, 승인된 단일 조건 하이파이와도 달라진다.
+
+**선택지**:
+
+1. 단일 규칙일 때는 승인된 장소·반경·종료 시각 문구를 사용하고, 두 개 이상일 때는
+   `이 앱에 여러 제한 규칙이 활성화되어 있어요. 각 규칙의 위치 또는 시간이 끝나면 다시 사용할 수
+   있어요.`처럼 규칙 수와 정확한 결합 의미를 짧게 안내한다. 개별 조건은 나열하지 않는다.
+2. 두 개 이상일 때도 해당 앱에 적용된 모든 규칙의 `장소·반경 또는 종료 시각`을 subtitle에
+   나열한다. 정보는 완전하지만 규칙 수 제한과 overflow·Dynamic Type 처리 규칙을 새로 정하고
+   하이파이를 다시 승인해야 한다.
+3. 안정적인 정렬의 첫 규칙 또는 가장 늦은 종료 시각 규칙 하나만 표시한다. 위치 조건 조합 때문에
+   실제 해제 시점을 대표하지 못해 잘못된 안내가 될 수 있다.
+
+**권장안**: 1안. 실제 해제 조건을 거짓 없이 전달하면서 ManagedSettingsUI가 소유하는 제한된
+layout과 Dynamic Type에서 핵심 문구가 잘릴 위험을 줄인다. 결정되면 `shield-ui-contract.md`와
+US2 하이파이의 다중 규칙 상태를 갱신하고, 단일·다중·snapshot 불가 fallback 콘텐츠를 테스트한 뒤
+T052를 구현해야 한다.
+
+**해결**: 사용자가 1안을 선택했다. shield 대상 앱에 적용된 활성 규칙이 하나이면 승인된
+장소·반경·종료 시각 상세 문구를 사용하고, 두 개 이상이면 규칙 수와 각 규칙의 위치 또는 시간이
+모두 끝나야 한다는 짧은 요약을 사용한다. snapshot 또는 app token을 읽지 못하면 제한이 활성화된
+사실과 자동 종료 조건만 안내하는 개인정보 없는 fallback을 표시한다.

@@ -51,6 +51,7 @@ enum TestFixtures {
 
     static func makeLocationCondition(
         schemaVersion: Int = LocationConditionSnapshot.currentSchemaVersion,
+        ruleID: UUID = UUID(uuidString: "00000000-0000-4000-8000-000000000101")!,
         ruleRevision: Int = 1,
         state: LocationConditionState = .inside,
         observedAt: Date = now,
@@ -60,6 +61,7 @@ enum TestFixtures {
     ) -> LocationConditionSnapshot {
         LocationConditionSnapshot(
             schemaVersion: schemaVersion,
+            ruleID: ruleID,
             ruleRevision: ruleRevision,
             state: state,
             observedAt: observedAt,
@@ -85,11 +87,13 @@ enum TestFixtures {
 
     static func makeAppliedRestriction(
         isApplied: Bool = false,
+        ruleID: UUID = UUID(uuidString: "00000000-0000-4000-8000-000000000101")!,
         ruleRevision: Int? = nil
     ) -> AppliedRestrictionState {
         AppliedRestrictionState(
-            isApplied: isApplied,
-            ruleRevision: ruleRevision
+            activeRuleRevisions: isApplied
+                ? [ActiveRuleRevision(ruleID: ruleID, revision: ruleRevision ?? 1)]
+                : []
         )
     }
 }

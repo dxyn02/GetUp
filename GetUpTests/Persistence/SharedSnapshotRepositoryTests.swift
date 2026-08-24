@@ -88,7 +88,62 @@ struct SharedSnapshotRepositoryTests {
         try await repository.saveLocationCondition(condition)
 
         #expect(try await repository.loadRule() == rule)
-        #expect(try await repository.loadLocationCondition() == condition)
+        #expect(
+            try await repository.loadLocationConditionCollection()?.conditions
+                == [condition]
+        )
+    }
+
+    @Test("Location conditions are stored independently by rule ID")
+    func locationConditionCollectionPreservesEveryRule() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let repository = SharedSnapshotRepository(containerURL: directory)
+        let first = TestFixtures.makeLocationCondition()
+        let second = TestFixtures.makeLocationCondition(
+            ruleID: UUID(uuidString: "00000000-0000-4000-8000-000000000201")!,
+            ruleRevision: 4,
+            state: .outside
+        )
+
+        try await repository.saveLocationCondition(first)
+        try await repository.saveLocationCondition(second)
+
+        let collection = try #require(
+            try await repository.loadLocationConditionCollection()
+        )
+        #expect(Set(collection.conditions.map(\.ruleID)) == [first.ruleID, second.ruleID])
+        #expect(collection.conditions.count == 2)
+    }
+
+    @Test("A legacy location snapshot migrates to an empty safe collection")
+    func legacyLocationSnapshotDoesNotGuessRuleIdentity() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let legacy = LegacyLocationConditionTestSnapshot(
+            schemaVersion: 1,
+            ruleRevision: 1,
+            state: .inside,
+            observedAt: TestFixtures.now,
+            distanceMeters: 100,
+            horizontalAccuracyMeters: 10,
+            source: .freshFix
+        )
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        try encoder.encode(legacy).write(
+            to: directory.appendingPathComponent(
+                SharedIdentifiers.locationConditionFileName
+            )
+        )
+        let repository = SharedSnapshotRepository(containerURL: directory)
+
+        let collection = try #require(
+            try await repository.loadLocationConditionCollection()
+        )
+
+        #expect(collection.schemaVersion == 2)
+        #expect(collection.conditions.isEmpty)
     }
 
     @Test("Snapshot files use complete-until-first-unlock protection")
@@ -133,7 +188,7 @@ struct SharedSnapshotRepositoryTests {
         let repository = SharedSnapshotRepository(containerURL: directory)
 
         #expect(try await repository.loadRule() == nil)
-        #expect(try await repository.loadLocationCondition() == nil)
+        #expect(try await repository.loadLocationConditionCollection() == nil)
     }
 
     @Test("Corrupted rule JSON reports a decoding failure")
@@ -168,7 +223,7 @@ struct SharedSnapshotRepositoryTests {
         await expectRepositoryError(
             .decodingFailed(fileName: SharedIdentifiers.locationConditionFileName)
         ) {
-            _ = try await repository.loadLocationCondition()
+            _ = try await repository.loadLocationConditionCollection()
         }
     }
 
@@ -219,32 +274,24 @@ struct SharedSnapshotRepositoryTests {
                 supported: LocationConditionSnapshot.currentSchemaVersion
             )
         ) {
-            _ = try await repository.loadLocationCondition()
+            _ = try await repository.loadLocationConditionCollection()
         }
     }
 
-    @Test("A location snapshot for another rule revision is rejected")
-    func mismatchedRuleRevisionIsRejected() async throws {
+    @Test("A location snapshot revision remains available for per-rule evaluation")
+    func mismatchedRuleRevisionIsLoadedForSafeEvaluation() async throws {
         let directory = try makeTemporaryDirectory()
         defer { removeTemporaryDirectory(directory) }
         let repository = SharedSnapshotRepository(containerURL: directory)
         try await repository.saveRule(TestFixtures.makeRule(revision: 1))
         try await repository.saveLocationCondition(
-            TestFixtures.makeLocationCondition(ruleRevision: 1)
-        )
-        try replaceJSONInteger(
-            key: "ruleRevision",
-            value: 2,
-            in: directory.appendingPathComponent(
-                SharedIdentifiers.locationConditionFileName
-            )
+            TestFixtures.makeLocationCondition(ruleRevision: 2)
         )
 
-        await expectRepositoryError(
-            .revisionMismatch(expected: 1, actual: 2)
-        ) {
-            _ = try await repository.loadLocationCondition()
-        }
+        let collection = try #require(
+            try await repository.loadLocationConditionCollection()
+        )
+        #expect(collection.conditions.first?.ruleRevision == 2)
     }
 
     @Test("Atomic rule write failure preserves the previous snapshot")
@@ -298,8 +345,8 @@ struct SharedSnapshotRepositoryTests {
         }
 
         #expect(
-            try await workingRepository.loadLocationCondition()
-                == originalCondition
+            try await workingRepository.loadLocationConditionCollection()?.conditions
+                == [originalCondition]
         )
     }
 
@@ -371,6 +418,16 @@ private struct LegacyRuleTestSnapshot: Codable {
         case createdAt
         case updatedAt
     }
+}
+
+private struct LegacyLocationConditionTestSnapshot: Codable {
+    let schemaVersion: Int
+    let ruleRevision: Int
+    let state: LocationConditionState
+    let observedAt: Date
+    let distanceMeters: Double?
+    let horizontalAccuracyMeters: Double?
+    let source: LocationConditionSource
 }
 
 private struct FailingSnapshotFileWriter: SnapshotFileWriting {

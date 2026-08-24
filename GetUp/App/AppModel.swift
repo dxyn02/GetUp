@@ -41,12 +41,17 @@ final class AppModel {
     @ObservationIgnored private let applicationCountForRule: (RestrictionRuleSnapshot) -> Int
     @ObservationIgnored private let ruleAccessibilityID: (RestrictionRuleSnapshot) -> String
     @ObservationIgnored private let bootstrap: @Sendable () async throws -> Void
+    @ObservationIgnored private let synchronizeRuntimeAfterSave: @Sendable (
+        RestrictionRuleSnapshot
+    ) async throws -> Void
+    @ObservationIgnored private let loadAppliedRestrictionState: @Sendable () async -> AppliedRestrictionState
     @ObservationIgnored private let canDeleteRule: @Sendable (UUID) async -> Bool
     @ObservationIgnored private let initialEditorDraft: RuleEditorDraft?
 
     private(set) var loadingState: AppLoadingState = .idle
     private(set) var homeRules: [HomeRuleItem] = []
     private(set) var savedPlaces: [SavedPlaceSnapshot] = []
+    private(set) var restrictionStatus = RestrictionStatusModel()
     private(set) var editorModel: RuleEditorModel?
     var selectedRuleID: UUID?
 
@@ -66,7 +71,13 @@ final class AppModel {
         },
         initialEditorDraft: RuleEditorDraft? = nil,
         canDeleteRule: @escaping @Sendable (UUID) async -> Bool = { _ in true },
-        bootstrap: @escaping @Sendable () async throws -> Void = {}
+        bootstrap: @escaping @Sendable () async throws -> Void = {},
+        synchronizeRuntimeAfterSave: @escaping @Sendable (
+            RestrictionRuleSnapshot
+        ) async throws -> Void = { _ in },
+        loadAppliedRestrictionState: @escaping @Sendable () async -> AppliedRestrictionState = {
+            AppliedRestrictionState(activeRuleRevisions: [])
+        }
     ) {
         self.ruleRepository = ruleRepository
         self.savedPlaceRepository = savedPlaceRepository
@@ -82,6 +93,8 @@ final class AppModel {
         self.initialEditorDraft = initialEditorDraft
         self.canDeleteRule = canDeleteRule
         self.bootstrap = bootstrap
+        self.synchronizeRuntimeAfterSave = synchronizeRuntimeAfterSave
+        self.loadAppliedRestrictionState = loadAppliedRestrictionState
     }
 
     var canDeleteEditingRule: Bool {
@@ -95,12 +108,14 @@ final class AppModel {
             try await bootstrap()
             async let loadedRules = ruleRepository.loadRuleCollection()
             async let loadedPlaces = savedPlaceRepository.loadSavedPlaceCollection()
-            let snapshots = try await (loadedRules, loadedPlaces)
+            async let appliedState = loadAppliedRestrictionState()
+            let snapshots = try await (loadedRules, loadedPlaces, appliedState)
 
             apply(
                 rules: snapshots.0?.rules ?? [],
                 places: snapshots.1?.places ?? []
             )
+            restrictionStatus = RestrictionStatusModel(appliedState: snapshots.2)
             loadingState = .loaded
 
             if let initialEditorDraft, editorModel == nil {
@@ -112,6 +127,7 @@ final class AppModel {
             homeRules = []
             savedPlaces = []
             editorModel = nil
+            restrictionStatus = RestrictionStatusModel()
             loadingState = .failed
         }
     }
@@ -158,7 +174,8 @@ final class AppModel {
             ruleRepository: ruleRepository,
             savedPlaceRepository: savedPlaceRepository,
             now: now,
-            applicationTokenCounter: applicationTokenCounter
+            applicationTokenCounter: applicationTokenCounter,
+            synchronizeRuntimeAfterSave: synchronizeRuntimeAfterSave
         )
         let saved = try await service.save(
             draft: draft,
@@ -166,8 +183,15 @@ final class AppModel {
         )
 
         apply(rules: saved.rules.rules, places: saved.savedPlaces.places)
+        await refreshRestrictionStatus()
         selectedRuleID = saved.rule.id
         editorModel = nil
+    }
+
+    func refreshRestrictionStatus() async {
+        restrictionStatus = RestrictionStatusModel(
+            appliedState: await loadAppliedRestrictionState()
+        )
     }
 
     func deleteEditingRule() async throws {
