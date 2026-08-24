@@ -5,7 +5,7 @@
 | 항목 | 내용 |
 |---|---|
 | 사용자 스토리 | `US1` |
-| 관련 task | `T023`, `T024` |
+| 관련 task | `T023`, `T024`, `T060`, `T061` |
 | 작성자 | `Codex` |
 | 작성일 | `2026-08-23` |
 | 문서 상태 | `승인됨 · 구현 기준` |
@@ -30,6 +30,9 @@
    opaque app token의 이름이나 식별자를 해석하지 않는다.
 5. 시간·요일·장소·앱이 모두 유효하면 저장 버튼이 활성화된다. 저장 실패 시 draft를 유지한 상태에서
    같은 값으로 다시 저장한다.
+6. 저장된 비활성 규칙의 편집 화면 하단에서 `규칙 삭제`를 선택하면 시스템 Alert가 규칙만 삭제되고
+   저장 장소는 보존됨을 안내한다. `취소`는 편집 화면을 유지하고, destructive `삭제`는 대상 규칙만
+   제거한다. 같은 규칙이 활성 상태라면 정상 삭제 Alert 대신 US3의 종료 조건 guard Alert를 표시한다.
 
 ### 승인된 로우파이와의 차이
 
@@ -62,7 +65,7 @@ bottom CTA` 구조로 9개 상태를 처음부터 다시 작성했다. 후보 A�
 
 ## 화면과 상태 범위
 
-최종 검토 대상은 규칙 설정 10개 화면과 홈 3개 화면, 총 13개다. 이전 하이파이 화면은 디자인 변경
+최종 검토 대상은 규칙 설정 12개 화면과 홈 3개 화면, 총 15개다. 이전 하이파이 화면은 디자인 변경
 이력으로 보존하되 구현 기준으로 사용하지 않는다.
 
 | 화면 ID | Figma frame | 상태 | 발생 조건 | 표시 내용 | 가능한 행동 |
@@ -77,6 +80,8 @@ bottom CTA` 구조로 9개 상태를 처음부터 다시 작성했다. 후보 A�
 | `HF-FLOW-09` | [앱 선택](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=82-1965) | `시스템 소유 경계` | `BLOCKED` 탭 | 검색, 선택 상태와 선택 개수 예시 | 선택 완료 |
 | `HF-FLOW-10` | [최종 검토](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=63-8169) | `ready` | 네 필수 조건 유효 | 12시간제 시간·요일·장소·앱 요약, 활성 저장 CTA | 조건 재편집, 저장 |
 | `HF-FLOW-11` | [저장 실패](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=63-8217) | `오류` | repository 저장 실패 | 보존된 draft와 같은 화면의 오류 card | 재시도, 편집 복귀 |
+| `HF-FLOW-12` | [규칙 삭제](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=147-2006) | `inactive / destructive entry` | 저장된 비활성 규칙 편집 | `GetUp Focus/color/error`를 사용하는 353×52pt bordered 삭제 버튼 | 삭제 확인 열기 |
+| `HF-FLOW-13` | [규칙 삭제 확인](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=147-2049) | `confirmation` | 비활성 규칙 삭제 시도 | 규칙만 삭제되고 저장 장소는 보존된다는 iOS 26 공식 Alert | 취소, destructive 삭제 |
 | `HOME-01` | [규칙 없음](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=86-2054) | `empty` | 저장 규칙 없음 | 제품 행동 원리, 문 아이콘, 새 규칙 CTA | 첫 규칙 생성 |
 | `HOME-02` | [모든 규칙 1/3](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=88-1959) | `today` | 저장 규칙 중 오늘 적용 | `RULE 1 OF 3`, 오늘 적용일과 조건을 묶은 단일 swipe card | 좌우 swipe, 규칙 수정, 새 규칙 |
 | `HOME-03` | [모든 규칙 2/3](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=89-1959) | `next` | 저장된 다른 유효 규칙 | `RULE 2 OF 3`, 해당 규칙의 다음 적용일과 조건을 묶은 단일 swipe card | 좌우 swipe, 규칙 수정, 새 규칙 |
@@ -185,11 +190,16 @@ scroll하며 label·값이 겹치면 행을 두 줄로 재배치한다.
 - [x] alert·하위 화면 복귀·validation 실패 뒤 focus 목적지를 정의했다.
 - [x] interactive element의 최소 `44×44pt` hit area를 정의했다.
 
-검증 결과: 최종 논리 플로우 보드의 규칙 설정 10개와 홈 3개, 총 13개 화면을 검사했다. 시작·종료
+검증 결과: 최종 논리 플로우 보드의 규칙 설정 12개와 홈 3개, 총 15개 화면을 검사했다. 시작·종료
 wheel은 `58`·`59`·`00`·`01`·`02` 순서로 1분 간격을 표현하고, 홈과 규칙 요약은 시간과 작은
 AM/PM을 같은 그룹으로 구성한다. 임시 placeholder 문구와 SF Pro 외 제품 font는 0건이었다.
 Dark Focus 화면은 GetUp Focus token을 사용한다. 실제 Accessibility Inspector와
-최대 Dynamic Type 실행 검증은 `T078` 및 SwiftUI 구현 뒤 수행한다.
+최대 Dynamic Type 실행 검증은 `T080` 및 SwiftUI 구현 뒤 수행한다.
+
+T060에서 추가한 `HF-FLOW-12`, `HF-FLOW-13`과 [삭제 UI 규격 panel](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=151-2014)의
+text node 70개를 별도로 감사했다. SF Pro 외 서체, 빈 text, placeholder와 직접 자식 overflow는
+0건이며, 확인 화면은 Apple iOS 26 `Alert`의 `Type=Side-by-Side`와
+`Mode=Light, Type=Destructive` 행동 variant를 사용한다.
 
 ## 플랫폼 동작과 제약
 
@@ -213,8 +223,11 @@ Dark Focus 화면은 GetUp Focus token을 사용한다. 실제 Accessibility Ins
 - UI test identifier: `ruleEditor.startTime`, `ruleEditor.endTime`, `ruleEditor.weekday.*`,
   `ruleEditor.locationRow`, `ruleEditor.applicationRow`, `ruleEditor.save`,
   `locationPicker.radius`, `locationPicker.currentLocation`, `ruleSaveError.retry`,
-  `home.rulePager`, `home.ruleCard.<ruleID>`, `home.rulePageIndicator`.
-- 구현 대상: `T031`, `T033`, `T034`, `T035`, `T037`. UI 구현은 `T024` 승인 뒤 시작한다.
+  `home.rulePager`, `home.ruleCard.<ruleID>`, `home.rulePageIndicator`, `ruleEditor.delete`.
+- 삭제 문구: `규칙을 삭제할까요?`, `규칙만 삭제되며 저장한 장소는 다른 규칙에서 계속 사용할 수 있어요.`,
+  `취소`, `삭제`. VoiceOver hint는 `확인 후 이 규칙을 삭제합니다.`로 제공한다.
+- 구현 대상: `T031`, `T033`, `T034`, `T035`, `T037`. 활성 중 같은 삭제 진입점을 US3 guard로
+  전환하는 판정은 `T066`, 정상·활성 삭제 UI test는 `T063`에서 검증한다.
 - 알려진 차이: 실제 지도·시스템 picker·keyboard와 실기기 Dynamic Type은 구현 후 검증한다.
 
 ## 검토 체크리스트
@@ -240,6 +253,8 @@ Dark Focus 화면은 GetUp Focus token을 사용한다. 실제 Accessibility Ins
 | `2026-08-23` | 사용자 | `홈 카드 통합 요청` | swipe 대상 규칙의 시간과 조건이 두 카드로 분리되어 하나의 규칙으로 읽히지 않음 | 하나의 외곽 container, rule index, divider, page indicator와 swipe 안내로 통합 |
 | `2026-08-23` | 사용자 | `모든 규칙 적용 요청` | 여러 규칙이 저장된 경우 일부 대표 규칙만이 아니라 모두 적용 | 모든 저장 규칙을 pager에 표시하고 각 규칙을 독립 적용, 동시 충족 시 합집합 유지 |
 | `2026-08-23` | 사용자 | `최종 승인` | 사용자가 직접 다듬은 최종 하이파이를 확인하고 이대로 구현 기준으로 승인 | 최종 Figma 감사 통과, `T024` 완료 및 `T025`부터 구현 선행 테스트 진행 가능 |
+| `2026-08-24` | `Codex` | `검토 대기` | T037 구현 뒤 누락이 확인된 정상 삭제 버튼·확인 Alert를 최종 wrapper에 동기화 | `T061`에서 사용자 피드백과 승인 여부 반영 |
+| `2026-08-24` | 사용자 | `승인됨` | T060에서 동기화한 정상 삭제 버튼·확인 Alert를 구현 기준으로 승인 | `T061` 완료 및 `T062` 테스트 작성 가능 |
 
 ## 변경 기록
 
@@ -254,6 +269,7 @@ Dark Focus 화면은 GetUp Focus token을 사용한다. 실제 Accessibility Ins
 | `2026-08-23` | `Codex` | 홈의 시간과 행동·조건 영역을 하나의 `Swipeable rule card` 외곽선 안에 연결하고 `RULE n OF 3`, page indicator와 좌우 swipe 안내를 추가했다. | 홈 카드 통합 요청 |
 | `2026-08-23` | `Codex` | 홈 pager에 모든 유효 규칙을 `RULE n OF 3`과 page indicator로 표시하고 오늘 적용 규칙 우선·나머지 다음 적용 시점 순 정렬, 현재 card와 무관한 독립 적용 원칙을 명시했다. | 모든 규칙 적용 요청 |
 | `2026-08-23` | `Codex` | 사용자 수정 최종본의 13개 제품 화면을 다시 감사했다. SF Pro 외 서체, 임시 문구, text overflow가 없고 시·분·AM/PM wheel, 1분 단위 분 전환, 큰 지도·반경 원, 장소 이름 진입, 통합 swipe card와 모든 규칙 pager가 유지됨을 확인했다. | 최종 승인 |
+| `2026-08-24` | `Codex` | T037의 실제 SwiftUI를 기준으로 `HF-FLOW-12` 삭제 버튼, `HF-FLOW-13` 공식 iOS 26 삭제 확인 Alert와 T060 상태·문구·접근성·구현 인계 panel을 최종 wrapper에 추가했다. | 규칙 삭제 UI 누락 보완 |
 
 ## 구현 승인
 
@@ -261,7 +277,7 @@ Dark Focus 화면은 GetUp Focus token을 사용한다. 실제 Accessibility Ins
 |---|---|
 | 승인 상태 | `승인됨` |
 | 승인자 | 사용자 |
-| 승인일 | `2026-08-23` |
+| 승인일 | `2026-08-24` |
 | 미해결 항목 | 없음 |
 
 이 문서와 연결된 최종 Figma node를 US1 SwiftUI 구현 기준으로 사용한다.

@@ -5,14 +5,14 @@
 | 항목 | 내용 |
 |---|---|
 | 사용자 스토리 | `US3` |
-| 관련 task | `T058`, `T059` |
+| 관련 task | `T058`, `T059`, `T060`, `T061` |
 | 작성자 | `Codex` |
 | 작성일 | `2026-08-24` |
 | 문서 상태 | `승인됨` |
 | 승인된 로우파이 | [US3 자동 해제 로우파이](../low-fidelity/US3-auto-release.md) |
 | 관련 명세·contract | [spec.md](../../specs/001-location-app-restriction/spec.md), [restriction-evaluation-contract.md](../../specs/001-location-app-restriction/contracts/restriction-evaluation-contract.md), [platform-events-contract.md](../../specs/001-location-app-restriction/contracts/platform-events-contract.md) |
 | Figma wrapper | [US3 · T058 하이파이](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=136-1988) |
-| 구현 대상 | `T064`의 `RuleEditorModel.swift`·`RestrictionStatusView.swift`, `T065`의 `AppModel.swift` |
+| 구현 대상 | `T066`의 `RuleEditorModel.swift`·`RestrictionStatusView.swift`, `T067`의 `AppModel.swift` |
 
 ## 최종 사용자 흐름
 
@@ -41,6 +41,13 @@
 
 조건 종료 뒤 상태는 새로운 frame이 아니라 기존 예정·비활성 홈을 사용한다. 위치 `unavailable`과 권한
 부족 안내는 US4 범위이며 T058에 별도 상태를 추가하지 않는다.
+
+T060에서 정상 삭제 진입점과 확인 상태를 US1 최종 wrapper의
+[HF-FLOW-12](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=147-2006)·
+[HF-FLOW-13](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=147-2049)에 동기화했다.
+비활성 규칙은 정상 삭제 확인 Alert로, 활성 `(ruleID, revision)`과 일치하는 규칙은 같은 삭제 시도에서
+`US3-HF-02` guard Alert로 분기한다. 상태·문구·접근성 인계는
+[T060 규격 panel](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=151-2014)에 기록했다.
 
 ## 시각 명세
 
@@ -127,13 +134,13 @@ Inspector, VoiceOver, AX1–AX5와 Increase Contrast는 구현 후 물리 기기
 
 ## 구현 인계
 
-- `T064`: `RuleEditorModel.swift`와 `RestrictionStatusView.swift`에서 활성 revision을 기준으로
+- `T066`: `RuleEditorModel.swift`와 `RestrictionStatusView.swift`에서 활성 revision을 기준으로
   편집·끄기·삭제를 같은 guard로 거부하고 종료 조건 Alert를 연결한다.
-- `T065`: `AppModel.swift`에서 자동 해제 뒤 active set을 다시 읽고 기존 홈·편집 흐름을 재활성화한다.
+- `T067`: `AppModel.swift`에서 자동 해제 뒤 active set을 다시 읽고 기존 홈·편집 흐름을 재활성화한다.
 - `Localizable.xcstrings`에는 `restriction_guard.title`, `restriction_guard.message`,
   `restriction_guard.confirm`을 추가한다.
 - UI test identifier는 `restrictionStatus.editDisabled`, `restrictionGuard.alert`,
-  `restrictionGuard.confirm`을 사용한다.
+  `restrictionGuard.confirm`, `ruleEditor.delete`를 사용한다.
 - 별도 image·raster asset은 필요하지 않으며 기존 `GetUp Focus` 변수·text style과 Apple iOS 26
   `Alert` component를 재사용한다.
 
@@ -152,13 +159,16 @@ Inspector, VoiceOver, AX1–AX5와 Increase Contrast는 구현 후 물리 기기
 | 날짜 | 검토자 | 결과 | 의견 | 반영 위치 또는 사유 |
 |---|---|---|---|---|
 | `2026-08-24` | 사용자 | `검토 대기` | T058 하이파이 초안 검토 요청 | `T059`에서 피드백과 승인 여부 반영 |
-| `2026-08-24` | 사용자 | `승인됨` | 현재 하이파이를 구현 기준으로 승인 | T059 완료 및 T060 테스트 작성 가능 |
+| `2026-08-24` | 사용자 | `승인됨` | 현재 하이파이를 구현 기준으로 승인 | T059 완료 및 T060 디자인 정합성 보정 가능 |
+| `2026-08-24` | `Codex` | `검토 대기` | 정상 삭제 확인과 활성 삭제 guard의 공통 진입점을 US1 최종 wrapper에 동기화 | `T061`에서 사용자 피드백과 승인 여부 반영 |
+| `2026-08-24` | 사용자 | `승인됨` | 정상 삭제 확인과 활성 삭제 guard의 공통 진입점 동기화를 구현 기준으로 승인 | `T061` 완료 및 `T062` 테스트 작성 가능 |
 
 ## 변경 기록
 
 | 날짜 | 작성자 | 변경 내용 | 관련 검토 의견 |
 |---|---|---|---|
 | `2026-08-24` | `Codex` | 승인된 활성 홈과 iOS 26 Alert를 재사용해 T058 하이파이·접근성 규격 작성 | 최초 초안 |
+| `2026-08-24` | `Codex` | 비활성 규칙의 삭제 버튼·공식 destructive Alert를 추가하고, 활성 규칙에서는 기존 US3 guard Alert로 분기하는 T060 인계를 연결 | 규칙 삭제 UI 정합성 보완 |
 
 ## 구현 승인
 
@@ -169,5 +179,6 @@ Inspector, VoiceOver, AX1–AX5와 Increase Contrast는 구현 후 물리 기기
 | 승인일 | `2026-08-24` |
 | 미해결 항목 | 없음 |
 
-T060·T061 테스트를 먼저 작성한 뒤 이 승인본을 기준으로 T064·T065 UI 구현을 진행한다. 제품 동작이나
+T060·T061에서 규칙 삭제 UI의 Figma 정합성을 보정·승인했다. T062·T063 테스트를 먼저 작성한 뒤,
+이 승인본을 기준으로 T066·T067 UI 구현을 진행한다. 제품 동작이나
 화면 구조가 바뀌면 로우파이 또는 하이파이 검토를 다시 수행한다.
