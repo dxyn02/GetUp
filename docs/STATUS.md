@@ -4,25 +4,23 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 3 사용자 스토리 1 — T036 규칙 collection 저장 구현 완료
+Phase 3 사용자 스토리 1 완료 — T037 앱·홈·편집 통합 구현 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T036 — 규칙 collection·저장 장소 collection 저장과 revision 증가를 구현함
+T037 — 앱 시작점, 모든 저장 규칙 홈 pager와 선택 규칙 편집 연결을 구현함
 
 ## 다음 작업
-T037 — 저장된 모든 규칙과 장소를 불러오는 앱 시작점·홈 pager·편집 화면 연결을 구현함
+T038 — 사용자 스토리 2 제한 활성 상태와 restricted-app shield 로우파이를 제작함
 
 ## 차단 상태
 없음
 
 ## 계획 갱신 필요
-없음. `DEC-015`~`DEC-022`에 따른 다중 규칙, 저장 장소, 직접 시간 설정, 여섯 단계 반경 및 DST
-경계 정책은 기능 문서에 반영되어 있다. `SavedPlaceSnapshot`과 위치 선택 draft 모델은 T030에서
-구현했으며, 기존 단일 규칙 저장소의 collection·저장 장소 구조 migration은 계획된 T034~T036
-범위에서 진행한다.
+없음. `DEC-015`~`DEC-024`에 따른 다중 규칙, 저장 장소, 직접 시간 설정, 여섯 단계 반경, DST 경계,
+collection migration과 홈 정렬 정책은 기능 문서와 구현에 반영되어 있다.
 
 ## 테스트 상태
 명세 품질 체크리스트 16/16개 항목을 통과함. 계획 산출물의 구조 검증을 통과함.
@@ -162,6 +160,17 @@ aggregate로 읽으며, 새 plural collection 파일이 생기면 이를 우선�
 통과했다. `xcodebuild build-for-testing`은 앱과 새 test source의 arm64·x86_64 compile을 통과한 뒤
 T037 전의 기존 예상 상태인 앱 entry point `_main` linker 오류로 종료됐다. `project.pbxproj` 문법과
 `git diff --check`를 확인했다.
+T037에서 `GetUpApp` 실행 진입점과 `@MainActor @Observable AppModel`을 구현해 규칙·저장 장소
+collection을 로딩하고, 오늘 선택 요일 또는 현재 활성인 자정 초과 규칙을 먼저 배치한 뒤 나머지를
+DST 보정된 다음 시작 시점 순으로 정렬한다. 승인된 Dark Focus의 규칙 없음 화면과 시간·요일·장소·
+반경·앱 개수·수정 행동을 하나로 묶은 swipeable card, page indicator, 새 규칙 CTA를 구현했다.
+선택 card 편집은 ID·revision과 기존 값을 보존하고 저장 성공 뒤 collection을 다시 반영해 홈으로
+복귀한다. UI test 전용 격리 저장소와 불투명 앱 선택 seam은 launch argument가 있을 때만 활성화한다.
+`build-for-testing`에서 앱 entry point를 포함한 앱·단위 테스트·UI 테스트 target의 arm64·x86_64
+compile과 link가 모두 통과했다. iPhone 17 Pro iOS 26.5 Simulator에서 단위·저장소 81개 test case
+(동적 인자 포함 93회 실행)와 T027 UI test 4개가 실패·skip 없이 통과했다. Simulator가 실제 파일
+실제 App Group, Family Controls picker, 지도 권한과 실기기 Dynamic Type·VoiceOver는 계획된
+통합·마무리 task 전까지 미검증 상태다.
 `tasks.md`의 87개 task가 연속 ID, 체크박스 및 파일 경로 형식 검증을 통과함.
 T001 검증으로 `project.pbxproj` plist 문법, 공유 scheme XML 및 `xcodebuild -list -json`을 실행해
 Debug/Release 구성, 6개 target과 6개 scheme 인식을 확인함. Simulator service와 기본 DerivedData

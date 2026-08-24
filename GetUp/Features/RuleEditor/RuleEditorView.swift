@@ -88,6 +88,7 @@ struct RuleEditorView: View {
             isPresented: $isApplicationPickerPresented,
             selection: applicationSelection
         )
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .preferredColorScheme(.dark)
     }
 
