@@ -67,6 +67,8 @@
 		AA0000000000000000000155 /* TimeRangePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000032 /* TimeRangePicker.swift */; };
 		AA0000000000000000000156 /* WeekdayPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000033 /* WeekdayPicker.swift */; };
 		AA0000000000000000000157 /* RadiusPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000034 /* RadiusPicker.swift */; };
+		AA0000000000000000000160 /* RuleEditorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000035 /* RuleEditorModel.swift */; };
+		AA0000000000000000000161 /* RuleEditorModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000015 /* RuleEditorModelTests.swift */; };
 		AA0000000000000000000081 /* TestFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000001 /* TestFixtures.swift */; };
 		AA0000000000000000000082 /* RestrictionStateMachineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000002 /* RestrictionStateMachineTests.swift */; };
 		AA0000000000000000000083 /* SharedSnapshotRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */; };
@@ -164,6 +166,7 @@
 		B40000000000000000000032 /* TimeRangePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeRangePicker.swift; sourceTree = "<group>"; };
 		B40000000000000000000033 /* WeekdayPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekdayPicker.swift; sourceTree = "<group>"; };
 		B40000000000000000000034 /* RadiusPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadiusPicker.swift; sourceTree = "<group>"; };
+		B40000000000000000000035 /* RuleEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleEditorModel.swift; sourceTree = "<group>"; };
 		B50000000000000000000001 /* TestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFixtures.swift; sourceTree = "<group>"; };
 		B50000000000000000000002 /* RestrictionStateMachineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStateMachineTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSnapshotRepositoryTests.swift; sourceTree = "<group>"; };
@@ -173,6 +176,7 @@
 		B50000000000000000000007 /* LocationPickerModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPickerModelTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000008 /* CurrentLocationProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrentLocationProviderTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000009 /* FamilyActivitySelectionAdapterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyActivitySelectionAdapterTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000015 /* RuleEditorModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleEditorModelTests.swift; sourceTree = "<group>"; };
 		B60000000000000000000001 /* UserStory1RuleConfigurationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory1RuleConfigurationUITests.swift; sourceTree = "<group>"; };
 		BA0000000000000000000001 /* GetUp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GetUp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000002 /* GetUpDeviceActivityMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpDeviceActivityMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -337,6 +341,7 @@
 				B50000000000000000000005 /* ScheduleEvaluatorTests.swift */,
 				B50000000000000000000006 /* RestrictionRuleValidatorTests.swift */,
 				B50000000000000000000007 /* LocationPickerModelTests.swift */,
+				B50000000000000000000015 /* RuleEditorModelTests.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -512,6 +517,7 @@
 		B40000000000000000000030 /* RuleEditor */ = {
 			isa = PBXGroup;
 			children = (
+				B40000000000000000000035 /* RuleEditorModel.swift */,
 				B40000000000000000000031 /* Components */,
 			);
 			path = RuleEditor;
@@ -766,6 +772,7 @@
 				AA0000000000000000000155 /* TimeRangePicker.swift in Sources */,
 				AA0000000000000000000156 /* WeekdayPicker.swift in Sources */,
 				AA0000000000000000000157 /* RadiusPicker.swift in Sources */,
+				AA0000000000000000000160 /* RuleEditorModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -836,6 +843,7 @@
 				AA0000000000000000000087 /* LocationPickerModelTests.swift in Sources */,
 				AA0000000000000000000088 /* CurrentLocationProviderTests.swift in Sources */,
 				AA0000000000000000000090 /* FamilyActivitySelectionAdapterTests.swift in Sources */,
+				AA0000000000000000000161 /* RuleEditorModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

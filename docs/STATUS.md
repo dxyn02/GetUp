@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 3 사용자 스토리 1 — T033 규칙 편집 입력 component 구현 완료
+Phase 3 사용자 스토리 1 — T034 규칙 편집 model 구현 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T033 — wheel time picker, 요일, 여섯 단계 반경 component를 구현함
+T034 — 편집 draft, validation, 여러 규칙 identity와 저장 장소 재사용 model을 구현함
 
 ## 다음 작업
-T034 — 편집 draft, validation, 규칙 이름, 여러 규칙과 저장 장소 선택·재사용 model을 구현함
+T035 — 승인된 하이파이에 맞춰 규칙 편집 화면과 장소·앱 선택 진입을 구현함
 
 ## 차단 상태
 없음
@@ -126,6 +126,19 @@ linker 오류로 종료됐다. 따라서 새 assertion의 실제 실행, 화면 
 동작은 T037의 앱 entry point 구현 후 검증해야 한다. T032에서 누락된
 `FamilyActivitySelectionAdapterTests.swift`의 Xcode `Integration` group 경로도 바로잡았고,
 `project.pbxproj` 문법, asset JSON 및 `git diff --check`를 확인했다.
+T034에서 `RuleEditorDraft`와 `@MainActor @Observable RuleEditorModel`을 구현했다. 새 규칙은 주입 가능한
+고유 ID와 `sourceRevision == nil`을 사용하고, 기존 규칙 편집은 ID·revision·생성 시각과 모든 입력을
+보존해 다른 저장 규칙을 대체하지 않는다. 선택적인 규칙 이름은 앞뒤 공백을 제거한 뒤 빈 값이면
+`nil`로 준비하며, 요일·시간·저장 장소·여섯 단계 반경·opaque `FamilyActivitySelection`을 하나의
+draft로 유지한다. 저장 가능 여부는 별도 규칙을 복제하지 않고 `RestrictionRuleValidator` 결과로
+계산한다. `LocationPickerCompletion`의 새 장소는 ID와 생성·수정 시각을 부여해 collection에 추가하고,
+기존 장소는 ID 기준으로 갱신·재사용하며 취소 시 현재 draft를 보존한다. 새 규칙 필수 validation,
+유효 draft, 기존 편집 값 보존, 새 장소 생성, 기존 장소 재사용, 취소, 삭제된 장소 참조, 규칙별 독립
+ID를 검증하는 Swift Testing 8개를 추가했다. production 및 test source는 iOS 26 Simulator SDK,
+Swift 6 strict concurrency와 warning-as-error compile을 통과했고, 동일 production source의 임시 host
+harness 12개 assertion이 모두 통과했다. 전체 `build-for-testing`은 새 source compile 후 T037 전의
+기존 예상 상태인 앱 entry point `_main` linker 오류로 종료되어 Xcode test suite 실행은 아직
+미검증 상태다. `project.pbxproj` 문법과 `git diff --check`를 확인했다.
 `tasks.md`의 87개 task가 연속 ID, 체크박스 및 파일 경로 형식 검증을 통과함.
 T001 검증으로 `project.pbxproj` plist 문법, 공유 scheme XML 및 `xcodebuild -list -json`을 실행해
 Debug/Release 구성, 6개 target과 6개 scheme 인식을 확인함. Simulator service와 기본 DerivedData
