@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 6 사용자 스토리 4 구현 완료
+Phase 7 마무리 및 교차 관심사 진행 중
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T079 — foreground·권한 변경 runtime 복구와 권한 안내 갱신을 연결함
+T080 — Dynamic Type·VoiceOver·Reduce Motion·명암·색상 외 상태 표현을 검증함
 
 ## 다음 작업
-T080 — Dynamic Type·VoiceOver·Reduce Motion·명암·색상 외 상태 표현 검증
+T081 — 진단 log·analytics의 좌표·앱 token 비기록 검증 및 보강
 
 ## 차단 상태
 없음. BLK-009은 사용자의 1안 선택으로 해결됨.
@@ -22,6 +22,17 @@ T080 — Dynamic Type·VoiceOver·Reduce Motion·명암·색상 외 상태 표�
 없음. 규칙 삭제 UI의 코드·Figma 불일치를 T060·T061로 보정한 뒤 US3 테스트를 시작하도록 계획을 갱신했다.
 
 ## 테스트 상태
+T080에서 `AccessibilityUITests.swift`를 추가해 최대 Dynamic Type `AX5`에서 규칙 편집과 권한 복구의
+핵심 내용·하단 행동이 손실 없이 노출되고 최소 `44×44pt` touch target을 유지하는지 검증했다. 활성
+제한의 VoiceOver용 상태·제목·시간·위치·앱 수·수정 차단 정보가 시각적 읽기 순서와 명시적 문구로
+제공되는지 확인하고, Reduce Motion에서도 shield 표시·닫기 행동이 동일하며 Increase Contrast와
+Differentiate Without Color에서도 위치 확인 불가와 제한 유지 상태가 색상 외 문구로 남는지
+검증했다. 최초 실행에서 UI test restriction probe의 `앱 닫기` 접근성 높이가 약 24pt로 확인되어
+button label의 hit area를 44pt로 보강했다. iPhone 17 Pro iOS 26.5 Simulator에서 T080 전용 UI test
+5개와 기존 US1~US4를 포함한 전체 `GetUpUITests` 22개가 실패·skip 없이 통과했다. 실제 물리 기기의
+VoiceOver 음성 순회, Accessibility Inspector와 Increase Contrast 시각 확인은 최종 실기기 검증에서
+확인한다.
+
 T079에서 `AppLifecycleCoordinator`가 복구마다 최신 `AuthorizationSnapshot`을 읽고 일정·region·위치
 snapshot·제한 합집합을 재평가한 뒤 통합 `RestrictionPresentationState`를 반환하도록 확장했다. 앱의
 최초 활성화, foreground 복귀와 위치 재확인은 같은 복구 경로를 사용하며, app 전용 권한 provider로
