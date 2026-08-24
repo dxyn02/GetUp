@@ -49,7 +49,7 @@ struct LocationPickerView: View {
                     guidanceCard(for: guidance)
                 }
 
-                radiusSummary
+                RadiusPicker(selection: $radius)
                 applyButton
             }
             .padding(.horizontal, 20)
@@ -228,26 +228,6 @@ struct LocationPickerView: View {
         .padding()
         .background(FocusColor.surfaceElevated, in: .rect(cornerRadius: 16))
         .accessibilityIdentifier("locationPicker.guidance")
-    }
-
-    private var radiusSummary: some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text("반경")
-                .font(.caption)
-                .fontWeight(.bold)
-                .foregroundStyle(FocusColor.textSecondary)
-
-            Spacer()
-
-            Text(radius.displayName)
-                .font(.title3)
-                .fontWeight(.bold)
-                .foregroundStyle(FocusColor.accent)
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("반경")
-        .accessibilityValue(radius.displayName)
-        .accessibilityIdentifier("locationPicker.radiusSummary")
     }
 
     private var applyButton: some View {
