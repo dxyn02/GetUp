@@ -4,13 +4,13 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 3 사용자 스토리 1 완료 — T037 앱·홈·편집 통합 구현 완료
+Phase 3 사용자 스토리 1 완료 — T037 앱·홈·편집·삭제 통합 구현 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T037 — 앱 시작점, 모든 저장 규칙 홈 pager와 선택 규칙 편집 연결을 구현함
+T037 — 앱 시작점, 모든 저장 규칙 홈 pager와 선택 규칙 편집·삭제 연결을 구현함
 
 ## 다음 작업
 T038 — 사용자 스토리 2 제한 활성 상태와 restricted-app shield 로우파이를 제작함
@@ -19,7 +19,7 @@ T038 — 사용자 스토리 2 제한 활성 상태와 restricted-app shield 로
 없음
 
 ## 계획 갱신 필요
-없음. `DEC-015`~`DEC-024`에 따른 다중 규칙, 저장 장소, 직접 시간 설정, 여섯 단계 반경, DST 경계,
+없음. `DEC-015`~`DEC-025`에 따른 다중 규칙, 저장 장소, 직접 시간 설정, 여섯 단계 반경, DST 경계,
 collection migration과 홈 정렬 정책은 기능 문서와 구현에 반영되어 있다.
 
 ## 테스트 상태
@@ -45,7 +45,8 @@ T030 대상 타입의 미구현 오류로 red 상태를 확인했다. 새 테스
 `project.pbxproj` 문법과 `git diff --check`를 확인했으며, red 상태는 T030 구현과 함께 해소됐다.
 T027에서 `UserStory1RuleConfigurationUITests.swift`에 필수 입력 validation과 요일·저장 장소·앱
 선택, 유효 규칙 저장 후 process 재실행 재로딩, 세 저장 규칙의 양방향 card swipe, 선택 card 편집 시
-값 보존을 작성했다. 승인된 하이파이의 accessibility identifier를 사용하고, 시스템 소유
+값 보존, 규칙 삭제 확인과 재실행 후 삭제 보존을 작성했다. 승인된 하이파이의 accessibility
+identifier를 사용하고, 시스템 소유
 `FamilyActivityPicker` 결과는 `--ui-test-family-picker-result` launch argument로 test seam에서만
 주입하도록 계약했다. UI test source는 Swift 6 strict concurrency standalone type-check와
 `xcodebuild build-for-testing`의 arm64·x86_64 compile을 통과했다. 전체 test build는 app entry point가
@@ -166,10 +167,14 @@ DST 보정된 다음 시작 시점 순으로 정렬한다. 승인된 Dark Focus�
 반경·앱 개수·수정 행동을 하나로 묶은 swipeable card, page indicator, 새 규칙 CTA를 구현했다.
 선택 card 편집은 ID·revision과 기존 값을 보존하고 저장 성공 뒤 collection을 다시 반영해 홈으로
 복귀한다. UI test 전용 격리 저장소와 불투명 앱 선택 seam은 launch argument가 있을 때만 활성화한다.
+사용자 피드백으로 누락을 확인한 규칙 삭제를 같은 편집 화면에 보완했다. 삭제 확인 후 대상 규칙만
+제거하고 규칙 collection revision을 증가시키며, 다른 규칙과 재사용 가능한 저장 장소는 보존한다.
+stale editor 삭제는 기록 전에 거부하고 `AppModel`의 비동기 삭제 guard가 거부하면 화면을 닫거나
+저장소를 변경하지 않는다. 실제 활성 제한 판정은 계획된 T064에서 이 guard에 연결한다.
 `build-for-testing`에서 앱 entry point를 포함한 앱·단위 테스트·UI 테스트 target의 arm64·x86_64
-compile과 link가 모두 통과했다. iPhone 17 Pro iOS 26.5 Simulator에서 단위·저장소 81개 test case
-(동적 인자 포함 93회 실행)와 T027 UI test 4개가 실패·skip 없이 통과했다. Simulator가 실제 파일
-Simulator가 실제 파일 보호 속성을 노출하지 않는 환경 차이는 writer option을 직접 검증하고 물리
+compile과 link가 모두 통과했다. 삭제 보완 후 iPhone 17 Pro iOS 26.5 Simulator에서 단위·저장소
+85개 test case(동적 인자 포함 97회 실행)와 T027 UI test 5개가 실패·skip 없이 통과했다. Simulator가
+실제 파일 보호 속성을 노출하지 않는 환경 차이는 writer option을 직접 검증하고 물리
 기기에서 실제 속성을 확인하도록 기존 테스트를 보정했다. 실제 App Group, Family Controls picker,
 지도 권한과 실기기 Dynamic Type·VoiceOver는 계획된 통합·마무리 task 전까지 미검증 상태다.
 `tasks.md`의 87개 task가 연속 ID, 체크박스 및 파일 경로 형식 검증을 통과함.

@@ -7,6 +7,7 @@ struct RuleEditorView: View {
         RuleEditorDraft,
         [SavedPlaceSnapshot]
     ) async throws -> Void
+    typealias DeleteAction = @MainActor () async throws -> Void
 
     @Bindable private var model: RuleEditorModel
 
@@ -16,6 +17,7 @@ struct RuleEditorView: View {
     private let applicationSelectionOverride: (@MainActor () -> FamilyActivitySelection?)?
     private let onOpenSettings: () -> Void
     private let onSave: SaveAction
+    private let onDelete: DeleteAction?
 
     @State private var presentedTimeBoundary: TimeRangeBoundary?
     @State private var locationPickerModel: LocationPickerModel?
@@ -25,6 +27,8 @@ struct RuleEditorView: View {
     @State private var isApplicationPickerPresented = false
     @State private var applicationPickerGuidance: String?
     @State private var saveState: RuleEditorSaveState = .idle
+    @State private var deleteState: RuleEditorDeleteState = .idle
+    @State private var isDeleteConfirmationPresented = false
 
     init(
         model: RuleEditorModel,
@@ -33,7 +37,8 @@ struct RuleEditorView: View {
         familyActivityAdapter: FamilyActivitySelectionAdapter? = nil,
         applicationSelectionOverride: (@MainActor () -> FamilyActivitySelection?)? = nil,
         onOpenSettings: @escaping () -> Void,
-        onSave: @escaping SaveAction
+        onSave: @escaping SaveAction,
+        onDelete: DeleteAction? = nil
     ) {
         self.model = model
         self.currentLocationProvider = currentLocationProvider
@@ -43,6 +48,7 @@ struct RuleEditorView: View {
         self.applicationSelectionOverride = applicationSelectionOverride
         self.onOpenSettings = onOpenSettings
         self.onSave = onSave
+        self.onDelete = onDelete
     }
 
     var body: some View {
@@ -53,8 +59,16 @@ struct RuleEditorView: View {
                 weekdaySection
                 conditionCard
 
+                if onDelete != nil {
+                    deleteSection
+                }
+
                 if case .failed = saveState {
                     saveFailureCard
+                }
+
+                if case .failed = deleteState {
+                    deleteFailureCard
                 }
             }
             .padding(.horizontal, 20)
@@ -83,6 +97,14 @@ struct RuleEditorView: View {
             }
         } message: {
             Text("다른 규칙에서도 다시 사용할 수 있도록 이름을 입력해 주세요.")
+        }
+        .alert("규칙을 삭제할까요?", isPresented: $isDeleteConfirmationPresented) {
+            Button("취소", role: .cancel) {}
+            Button("삭제", role: .destructive) {
+                deleteRule()
+            }
+        } message: {
+            Text("규칙만 삭제되며 저장한 장소는 다른 규칙에서 계속 사용할 수 있어요.")
         }
         .familyActivityPicker(
             isPresented: $isApplicationPickerPresented,
@@ -318,6 +340,44 @@ struct RuleEditorView: View {
         .accessibilityIdentifier("ruleSaveError.card")
     }
 
+    private var deleteSection: some View {
+        Button(role: .destructive) {
+            isDeleteConfirmationPresented = true
+        } label: {
+            Group {
+                if deleteState == .deleting {
+                    ProgressView()
+                        .tint(RuleEditorColor.error)
+                } else {
+                    Label("규칙 삭제", systemImage: "trash")
+                }
+            }
+            .font(.body)
+            .fontWeight(.semibold)
+            .frame(maxWidth: .infinity, minHeight: 52)
+        }
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.roundedRectangle(radius: 16))
+        .tint(RuleEditorColor.error)
+        .disabled(deleteState == .deleting || saveState == .saving)
+        .accessibilityHint("확인 후 이 규칙을 삭제합니다.")
+        .accessibilityIdentifier("ruleEditor.delete")
+    }
+
+    private var deleteFailureCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("삭제하지 못했어요", systemImage: "exclamationmark")
+                .font(.headline)
+            Text("규칙이 다른 곳에서 변경되었거나 현재 삭제할 수 없는 상태예요. 다시 불러온 뒤 시도해 주세요.")
+                .font(.footnote)
+                .foregroundStyle(RuleEditorColor.textSecondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(18)
+        .background(RuleEditorColor.error.opacity(0.14), in: .rect(cornerRadius: 24))
+        .accessibilityIdentifier("ruleEditor.deleteError")
+    }
+
     private var saveButton: some View {
         Button {
             save()
@@ -521,10 +581,34 @@ struct RuleEditorView: View {
             }
         }
     }
+
+    private func deleteRule() {
+        guard let onDelete, deleteState != .deleting else {
+            return
+        }
+
+        deleteState = .deleting
+        Task { @MainActor in
+            do {
+                try await onDelete()
+                deleteState = .idle
+            } catch is CancellationError {
+                deleteState = .idle
+            } catch {
+                deleteState = .failed
+            }
+        }
+    }
 }
 
 private enum RuleEditorSaveState: Equatable {
     case idle
     case saving
+    case failed
+}
+
+private enum RuleEditorDeleteState: Equatable {
+    case idle
+    case deleting
     case failed
 }

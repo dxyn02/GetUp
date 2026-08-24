@@ -79,7 +79,7 @@ task는 관련 구현보다 먼저 작성하고 실패를 확인한다.
 
 - [x] T025 [P] [US1] DatePicker의 14/15분 선택 경계, 선택 요일, 같은 날·자정 초과·DST 시간 계산을 `GetUpTests/Core/ScheduleEvaluatorTests.swift`에, 요일·저장 장소·여섯 반경·앱 token 누락과 같은 시작·종료 validation 실패를 `GetUpTests/Core/RestrictionRuleValidatorTests.swift`에 먼저 작성한다
 - [x] T026 [P] [US1] 지도 이동, 현재 위치 바로가기, 저장 장소 생성·재사용, When In Use 권한 없음, 확인·취소 상태와 현재 위치 조회 adapter의 실패 테스트를 `GetUpTests/Core/LocationPickerModelTests.swift`, `GetUpTests/Integration/CurrentLocationProviderTests.swift`에 작성한다
-- [x] T027 [P] [US1] 규칙 입력, validation, 앱 선택, 저장·재로딩과 홈에서 모든 저장 규칙을 탐색하는 card swipe 흐름의 실패 UI test를 `GetUpUITests/UserStory1RuleConfigurationUITests.swift`에 작성한다
+- [x] T027 [P] [US1] 규칙 입력, validation, 앱 선택, 저장·삭제·재로딩과 홈에서 모든 저장 규칙을 탐색하는 card swipe 흐름의 실패 UI test를 `GetUpUITests/UserStory1RuleConfigurationUITests.swift`에 작성한다
 
 ### 구현
 
@@ -91,8 +91,8 @@ task는 관련 구현보다 먼저 작성하고 실패를 확인한다.
 - [x] T033 [P] [US1] 시·분·AM/PM을 각각 조정하고 분을 1분 단위로 선택하며 15분 미만 구간을 막는 wheel time picker, 요일, 여섯 단계 slider 반경 component를 `GetUp/Features/RuleEditor/Components/TimeRangePicker.swift`, `WeekdayPicker.swift`, `RadiusPicker.swift`에 구현한다
 - [x] T034 [US1] 편집 draft, validation, 규칙 이름, 여러 규칙과 저장 장소 선택·재사용을 `GetUp/Features/RuleEditor/RuleEditorModel.swift`에 구현한다
 - [x] T035 [US1] 승인된 하이파이에 맞춰 규칙 편집과 기준 위치·앱 선택 진입을 `GetUp/Features/RuleEditor/RuleEditorView.swift`에 구현한다
-- [x] T036 [US1] 규칙 collection·저장 장소 collection 저장과 revision 증가를 `GetUp/Features/RuleEditor/RuleConfigurationService.swift`에 구현한다
-- [x] T037 [US1] 앱 시작 시 저장된 모든 규칙과 장소를 불러오고 오늘 적용 규칙 우선·다음 적용 시점 순으로 정렬한 swipeable 홈 pager 및 편집 화면으로 연결하도록 `GetUp/App/GetUpApp.swift`와 `GetUp/App/AppModel.swift`를 구현한다
+- [x] T036 [US1] 규칙 collection·저장 장소 collection 저장, 대상 규칙 삭제와 revision 증가를 `GetUp/Features/RuleEditor/RuleConfigurationService.swift`에 구현한다
+- [x] T037 [US1] 앱 시작 시 저장된 모든 규칙과 장소를 불러오고 오늘 적용 규칙 우선·다음 적용 시점 순으로 정렬한 swipeable 홈 pager, 편집·삭제 화면으로 연결하도록 `GetUp/App/GetUpApp.swift`와 `GetUp/App/AppModel.swift`를 구현한다
 
 **Checkpoint**: US1을 독립 실행해 유효 규칙의 생성·저장·재로딩을 검증할 수 있다.
 
