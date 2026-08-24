@@ -518,3 +518,25 @@ SwiftUI Alert의 system-owned action에는 별도 accessibility identifier를 �
 
 **영향 범위**: `RestrictionCoordinator`, `LocationUnavailableTests`, `RestrictionReleaseTests`와
 `restriction-evaluation-contract.md`의 위치 불가·시간 종료 우선순위에 적용한다.
+
+## DEC-034 — foreground 복구 결과와 권한 안내 갱신 경계
+
+**날짜**: 2026-08-24
+
+**결정**: 앱 최초 활성화, foreground 복귀와 사용자의 위치 재확인은 모두
+`AppLifecycleCoordinator.restore()`를 호출한다. main app은 `SystemAuthorizationProvider.forApplication()`을
+주입해 Family Controls, 위치 승인·정확도와 Background App Refresh의 최신 상태를 읽고 같은 provider를
+제한 재평가에도 사용한다. 복구 결과는 권한 snapshot과 통합 화면 상태를 함께 반환하며 화면 상태는
+필수 권한 부족, 위치 확인 불가, 제한 활성, 구성 필요 또는 비활성 순서로 합성한다.
+
+`GetUpRootView`는 이 결과로 기존 `PermissionGuideModel`을 갱신하거나 새 안내를 표시한다. 권한과 위치
+문제가 모두 해결되면 안내를 닫고, 제한 재평가 자체가 실패하면 활성 여부를 추정하지 않고 기존
+안내 상태를 보존한다. app extension은 Background App Refresh app API를 사용하지 않는 기본
+`SystemAuthorizationProvider`를 계속 사용한다.
+
+**근거**: Settings 이동 뒤 foreground, 최초 실행과 수동 위치 재확인이 서로 다른 권한·일정·위치
+복구 순서를 사용하면 동일한 시스템 상태에서 안내와 shield가 어긋날 수 있다. 공통 결과를 화면까지
+전달하면 최신 권한을 기준으로 안내를 열고 닫으면서도 복구 실패 시 잘못된 활성·비활성 추정을 막는다.
+
+**영향 범위**: `AppLifecycleCoordinator`, `GetUpRootView`, `SystemAuthorizationProvider`,
+`RestrictionCoordinator` 조립과 `AppLifecycleCoordinatorTests`, US4 UI test에 적용한다.

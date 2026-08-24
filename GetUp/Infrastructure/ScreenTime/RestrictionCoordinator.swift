@@ -207,12 +207,13 @@ actor RestrictionCoordinator {
 @MainActor
 extension DependencyContainer {
     func makeRestrictionCoordinator(
-        bundle: Bundle = .main
+        bundle: Bundle = .main,
+        authorizationProvider: any AuthorizationProviding = SystemAuthorizationProvider()
     ) throws -> RestrictionCoordinator {
         RestrictionCoordinator(
             ruleRepository: ruleRepository,
             locationConditionRepository: locationConditionRepository,
-            authorizationProvider: SystemAuthorizationProvider(),
+            authorizationProvider: authorizationProvider,
             restrictionAdapter: try makeRestrictionAdapter(bundle: bundle)
         )
     }

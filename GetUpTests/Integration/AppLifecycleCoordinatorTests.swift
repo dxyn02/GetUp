@@ -13,11 +13,17 @@ struct AppLifecycleCoordinatorTests {
         )
         let schedule = RecoveryScheduleManager()
         let location = RecoveryLocationMonitor()
-        let restriction = RecoveryRestrictionRecorder()
+        let authorization = TestFixtures.makeAuthorization()
+        let restriction = RecoveryRestrictionRecorder(
+            result: restrictionResult(for: enabled, presentationState: .active)
+        )
         let coordinator = AppLifecycleCoordinator(
             ruleRepository: RecoveryRuleRepository(rules: [enabled, disabled]),
             scheduleManager: schedule,
             locationMonitor: location,
+            authorizationProvider: RecoveryAuthorizationProvider(
+                snapshot: authorization
+            ),
             restoreRestriction: { try await restriction.restore() }
         )
 
@@ -31,6 +37,8 @@ struct AppLifecycleCoordinatorTests {
         #expect(await restriction.restoreCount == 1)
         #expect(result.recoveredRuleIDs == [enabled.id])
         #expect(result.failures.isEmpty)
+        #expect(result.authorization == authorization)
+        #expect(result.presentationState == .active)
     }
 
     @Test("A platform registration failure does not skip restriction reconciliation")
@@ -38,11 +46,14 @@ struct AppLifecycleCoordinatorTests {
         let rule = TestFixtures.makeRule()
         let schedule = RecoveryScheduleManager(shouldFailReplacement: true)
         let location = RecoveryLocationMonitor(shouldFailReplacement: true)
-        let restriction = RecoveryRestrictionRecorder()
+        let restriction = RecoveryRestrictionRecorder(
+            result: restrictionResult(for: rule, presentationState: .inactive)
+        )
         let coordinator = AppLifecycleCoordinator(
             ruleRepository: RecoveryRuleRepository(rules: [rule]),
             scheduleManager: schedule,
             locationMonitor: location,
+            authorizationProvider: RecoveryAuthorizationProvider(),
             restoreRestriction: { try await restriction.restore() }
         )
 
@@ -61,6 +72,7 @@ struct AppLifecycleCoordinatorTests {
             ruleRepository: RecoveryRuleRepository(rules: [], shouldFailLoad: true),
             scheduleManager: schedule,
             locationMonitor: location,
+            authorizationProvider: RecoveryAuthorizationProvider(),
             restoreRestriction: { try await restriction.restore() }
         )
 
@@ -72,6 +84,88 @@ struct AppLifecycleCoordinatorTests {
             #expect(await location.didStopAll == false)
             #expect(await restriction.restoreCount == 0)
         }
+    }
+
+    @Test("Recovery reports permission changes before restriction presentation")
+    func reportsLatestAuthorizationForPermissionGuidance() async throws {
+        let rule = TestFixtures.makeRule()
+        let authorization = TestFixtures.makeAuthorization(
+            familyControls: .denied,
+            locationAuthorization: .whenInUse,
+            locationAccuracy: .reduced,
+            backgroundRefresh: .restricted
+        )
+        let coordinator = AppLifecycleCoordinator(
+            ruleRepository: RecoveryRuleRepository(rules: [rule]),
+            scheduleManager: RecoveryScheduleManager(),
+            locationMonitor: RecoveryLocationMonitor(),
+            authorizationProvider: RecoveryAuthorizationProvider(
+                snapshot: authorization
+            ),
+            restoreRestriction: {
+                restrictionResult(
+                    for: rule,
+                    presentationState: .locationUnavailable(
+                        isRestrictionApplied: true
+                    )
+                )
+            }
+        )
+
+        let result = try await coordinator.restore()
+
+        #expect(result.authorization == authorization)
+        #expect(result.presentationState == .permissionRequired(
+            missingPermissions: [
+                .familyControls,
+                .alwaysLocation,
+                .fullAccuracy,
+            ]
+        ))
+    }
+
+    @Test("A restriction reconciliation failure does not invent a presentation state")
+    func restrictionFailureDoesNotInferPresentation() async throws {
+        let rule = TestFixtures.makeRule()
+        let restriction = RecoveryRestrictionRecorder(shouldFail: true)
+        let coordinator = AppLifecycleCoordinator(
+            ruleRepository: RecoveryRuleRepository(rules: [rule]),
+            scheduleManager: RecoveryScheduleManager(),
+            locationMonitor: RecoveryLocationMonitor(),
+            authorizationProvider: RecoveryAuthorizationProvider(),
+            restoreRestriction: { try await restriction.restore() }
+        )
+
+        let result = try await coordinator.restore()
+
+        #expect(result.failures == [.restriction])
+        #expect(result.presentationState == nil)
+    }
+
+    private func restrictionResult(
+        for rule: RestrictionRuleSnapshot,
+        presentationState: RestrictionPresentationState
+    ) -> RestrictionCoordinationResult {
+        let appliedState = AppliedRestrictionState(
+            activeRuleRevisions: presentationState == .active
+                ? [ActiveRuleRevision(ruleID: rule.id, revision: rule.revision)]
+                : []
+        )
+        return RestrictionCoordinationResult(
+            event: .restoration,
+            decisions: [
+                rule.id: EvaluationDecision(
+                    presentationState: presentationState,
+                    desiredRestriction: presentationState == .active ? .active : .preserve,
+                    effect: .none,
+                    reason: presentationState == .active
+                        ? .conditionsSatisfied
+                        : .locationUnavailable
+                ),
+            ],
+            appliedState: appliedState,
+            transitionMeasurement: nil
+        )
     }
 }
 
@@ -144,10 +238,41 @@ private actor RecoveryLocationMonitor: LocationMonitoring {
     }
 }
 
+private struct RecoveryAuthorizationProvider: AuthorizationProviding {
+    let snapshot: AuthorizationSnapshot
+
+    init(snapshot: AuthorizationSnapshot = TestFixtures.makeAuthorization()) {
+        self.snapshot = snapshot
+    }
+
+    func authorizationSnapshot() -> AuthorizationSnapshot { snapshot }
+}
+
 private actor RecoveryRestrictionRecorder {
     private(set) var restoreCount = 0
+    private let result: RestrictionCoordinationResult
+    private let shouldFail: Bool
 
-    func restore() throws { restoreCount += 1 }
+    init(
+        result: RestrictionCoordinationResult = RestrictionCoordinationResult(
+            event: .restoration,
+            decisions: [:],
+            appliedState: AppliedRestrictionState(activeRuleRevisions: []),
+            transitionMeasurement: nil
+        ),
+        shouldFail: Bool = false
+    ) {
+        self.result = result
+        self.shouldFail = shouldFail
+    }
+
+    func restore() throws -> RestrictionCoordinationResult {
+        restoreCount += 1
+        if shouldFail {
+            throw RecoveryFailure.expected
+        }
+        return result
+    }
 }
 
 private enum RecoveryFailure: Error {

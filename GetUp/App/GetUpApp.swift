@@ -64,15 +64,15 @@ private struct GetUpRootView: View {
             guard model.loadingState == .idle else {
                 return
             }
+            _ = await restoreRuntimeState(refreshRestrictionStatus: false)
             await model.load()
         }
         .onChange(of: scenePhase) { _, newPhase in
-            guard newPhase == .active, let lifecycleCoordinator else {
+            guard newPhase == .active, lifecycleCoordinator != nil else {
                 return
             }
             Task {
-                _ = try? await lifecycleCoordinator.restore()
-                await model.refreshRestrictionStatus()
+                _ = await restoreRuntimeState()
             }
         }
     }
@@ -104,6 +104,9 @@ private struct GetUpRootView: View {
             openSettings()
             return nil
         case .retryLocation:
+            if lifecycleCoordinator != nil {
+                return await restoreRuntimeState()
+            }
             await model.refreshRestrictionStatus()
             let state: RestrictionPresentationState = permissionGuideRetryResult == "inside"
                 ? .active
@@ -121,6 +124,59 @@ private struct GetUpRootView: View {
         case .beginPermissionSetup, .later:
             return nil
         }
+    }
+
+    private func restoreRuntimeState(
+        refreshRestrictionStatus: Bool = true
+    ) async -> PermissionGuideUpdate? {
+        guard
+            let lifecycleCoordinator,
+            let result = try? await lifecycleCoordinator.restore()
+        else {
+            return nil
+        }
+
+        if refreshRestrictionStatus {
+            await model.refreshRestrictionStatus()
+        }
+
+        guard let presentationState = result.presentationState else {
+            if let permissionGuideModel {
+                permissionGuideModel.update(
+                    authorization: result.authorization,
+                    presentationState: permissionGuideModel.presentationState
+                )
+            } else {
+                let candidate = PermissionGuideModel(
+                    authorization: result.authorization,
+                    presentationState: .inactive
+                )
+                if candidate.isPresented {
+                    permissionGuideModel = candidate
+                }
+            }
+            return nil
+        }
+
+        let update = PermissionGuideUpdate(
+            authorization: result.authorization,
+            presentationState: presentationState
+        )
+        if let permissionGuideModel {
+            permissionGuideModel.update(
+                authorization: update.authorization,
+                presentationState: update.presentationState
+            )
+        } else {
+            let candidate = PermissionGuideModel(
+                authorization: update.authorization,
+                presentationState: update.presentationState
+            )
+            if candidate.isPresented {
+                permissionGuideModel = candidate
+            }
+        }
+        return update
     }
 
     @ViewBuilder
@@ -606,16 +662,14 @@ private struct AppEnvironment {
         let container = try DependencyContainer.live()
         let locationSession = CoreLocationCurrentLocationSession()
         let lifecycleCoordinator = try AppLifecycleCoordinator.live(
-            container: container
+            container: container,
+            authorizationProvider: SystemAuthorizationProvider.forApplication()
         )
         let restrictionAdapter = try ManagedSettingsRestrictionAdapter.live()
         return AppEnvironment(
             model: AppModel(
                 ruleRepository: container.ruleRepository,
                 savedPlaceRepository: container.savedPlaceRepository,
-                bootstrap: {
-                    _ = try await lifecycleCoordinator.restore()
-                },
                 synchronizeRuntimeAfterSave: { _ in
                     _ = try await lifecycleCoordinator.restore()
                 },

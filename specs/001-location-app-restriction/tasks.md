@@ -200,7 +200,7 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 - [x] T076 [US4] 권한별 원인·복구·앱 재선택 상태를 `GetUp/Features/PermissionGuide/PermissionGuideModel.swift`에 구현한다
 - [x] T077 [US4] 승인된 하이파이에 맞춰 권한 및 설정 안내를 `GetUp/Features/PermissionGuide/PermissionGuideView.swift`에 구현한다
 - [x] T078 [US4] 위치 확인 불가에서 기존 shield를 보존하고 시간 종료는 해제하도록 `GetUp/Infrastructure/ScreenTime/RestrictionCoordinator.swift`를 확장한다
-- [ ] T079 [US4] foreground 진입과 권한 변경 시 권한·일정·region·snapshot을 재평가하고 권한 안내 상태를 갱신하도록 `GetUp/App/AppLifecycleCoordinator.swift`를 확장한다
+- [x] T079 [US4] foreground 진입과 권한 변경 시 권한·일정·region·snapshot을 재평가하고 권한 안내 상태를 갱신하도록 `GetUp/App/AppLifecycleCoordinator.swift`를 확장한다
 
 **Checkpoint**: US4를 독립 검증해 사용자가 기능 미동작 원인을 이해하고 안전하게 복구할 수 있다.
 

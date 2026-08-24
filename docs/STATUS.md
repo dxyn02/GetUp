@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 6 사용자 스토리 4 구현 — 위치 확인 불가 안전 처리 완료
+Phase 6 사용자 스토리 4 구현 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T078 — stale 위치 근거의 상태 보존과 위치 불가 상태의 시간 우선 해제를 구현함
+T079 — foreground·권한 변경 runtime 복구와 권한 안내 갱신을 연결함
 
 ## 다음 작업
-T079 — foreground·권한 변경 시 runtime 재평가와 권한 안내 갱신 구현
+T080 — Dynamic Type·VoiceOver·Reduce Motion·명암·색상 외 상태 표현 검증
 
 ## 차단 상태
 없음. BLK-009은 사용자의 1안 선택으로 해결됨.
@@ -22,6 +22,16 @@ T079 — foreground·권한 변경 시 runtime 재평가와 권한 안내 갱신
 없음. 규칙 삭제 UI의 코드·Figma 불일치를 T060·T061로 보정한 뒤 US3 테스트를 시작하도록 계획을 갱신했다.
 
 ## 테스트 상태
+T079에서 `AppLifecycleCoordinator`가 복구마다 최신 `AuthorizationSnapshot`을 읽고 일정·region·위치
+snapshot·제한 합집합을 재평가한 뒤 통합 `RestrictionPresentationState`를 반환하도록 확장했다. 앱의
+최초 활성화, foreground 복귀와 위치 재확인은 같은 복구 경로를 사용하며, app 전용 권한 provider로
+Background App Refresh 실제 상태까지 반영해 `PermissionGuideModel`을 생성·갱신·종료한다. 필수 권한
+부족을 위치 불가보다 우선하고, 제한 복구 실패 시에는 상태를 추정하지 않아 기존 안내를 보존한다.
+대상 lifecycle·권한 안내·권한 adapter 16개 논리 테스트가 동적 인자 포함 21회 모두 통과했다. iPhone
+17 Pro iOS 26.5 Simulator에서 전체 `GetUpTests` 141개가 동적 인자 포함 총 184회, US4 UI test 6개가
+모두 통과했으며 실패·skip은 없다. 실제 시스템 Settings 복귀, 권한 철회 callback과 Family Controls
+재승인은 T085 실기기 인수에서 확인한다.
+
 T078에서 `RestrictionCoordinator`가 현재 시각 기준 24시간 이상 지난 위치 근거를 평가 직전에
 `unavailable`로 정규화하도록 구현했다. 유효 시간대 안에서는 동일 revision의 기존 활성 shield만
 보존하고 비활성 규칙에는 새 shield를 적용하지 않으며, 시간대가 끝나면 위치가 `unavailable`이어도
