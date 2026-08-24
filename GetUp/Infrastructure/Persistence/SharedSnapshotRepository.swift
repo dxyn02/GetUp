@@ -16,13 +16,15 @@ protocol SnapshotFileWriting: Sendable {
 }
 
 struct AtomicSnapshotFileWriter: SnapshotFileWriting {
+    static let writingOptions: Data.WritingOptions = [
+        .atomic,
+        .completeFileProtectionUntilFirstUserAuthentication,
+    ]
+
     func write(_ data: Data, to destinationURL: URL) throws {
         try data.write(
             to: destinationURL,
-            options: [
-                .atomic,
-                .completeFileProtectionUntilFirstUserAuthentication,
-            ]
+            options: Self.writingOptions
         )
     }
 }

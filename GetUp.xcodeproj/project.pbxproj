@@ -71,6 +71,9 @@
 		AA0000000000000000000162 /* RuleEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000036 /* RuleEditorView.swift */; };
 		AA0000000000000000000163 /* RuleConfigurationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000037 /* RuleConfigurationService.swift */; };
 		AA0000000000000000000164 /* RuleConfigurationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000016 /* RuleConfigurationServiceTests.swift */; };
+		AA0000000000000000000165 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000038 /* AppModel.swift */; };
+		AA0000000000000000000166 /* GetUpApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000039 /* GetUpApp.swift */; };
+		AA0000000000000000000167 /* AppModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000017 /* AppModelTests.swift */; };
 		AA0000000000000000000161 /* RuleEditorModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000015 /* RuleEditorModelTests.swift */; };
 		AA0000000000000000000081 /* TestFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000001 /* TestFixtures.swift */; };
 		AA0000000000000000000082 /* RestrictionStateMachineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000002 /* RestrictionStateMachineTests.swift */; };
@@ -172,6 +175,8 @@
 		B40000000000000000000035 /* RuleEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleEditorModel.swift; sourceTree = "<group>"; };
 		B40000000000000000000036 /* RuleEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleEditorView.swift; sourceTree = "<group>"; };
 		B40000000000000000000037 /* RuleConfigurationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleConfigurationService.swift; sourceTree = "<group>"; };
+		B40000000000000000000038 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		B40000000000000000000039 /* GetUpApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GetUpApp.swift; sourceTree = "<group>"; };
 		B50000000000000000000001 /* TestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFixtures.swift; sourceTree = "<group>"; };
 		B50000000000000000000002 /* RestrictionStateMachineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStateMachineTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSnapshotRepositoryTests.swift; sourceTree = "<group>"; };
@@ -183,6 +188,7 @@
 		B50000000000000000000009 /* FamilyActivitySelectionAdapterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyActivitySelectionAdapterTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000015 /* RuleEditorModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleEditorModelTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000016 /* RuleConfigurationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleConfigurationServiceTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000017 /* AppModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModelTests.swift; sourceTree = "<group>"; };
 		B60000000000000000000001 /* UserStory1RuleConfigurationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory1RuleConfigurationUITests.swift; sourceTree = "<group>"; };
 		BA0000000000000000000001 /* GetUp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GetUp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000002 /* GetUpDeviceActivityMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpDeviceActivityMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -349,6 +355,7 @@
 				B50000000000000000000007 /* LocationPickerModelTests.swift */,
 				B50000000000000000000015 /* RuleEditorModelTests.swift */,
 				B50000000000000000000016 /* RuleConfigurationServiceTests.swift */,
+				B50000000000000000000017 /* AppModelTests.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -475,6 +482,8 @@
 			isa = PBXGroup;
 			children = (
 				B40000000000000000000008 /* DependencyContainer.swift */,
+				B40000000000000000000038 /* AppModel.swift */,
+				B40000000000000000000039 /* GetUpApp.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -784,6 +793,8 @@
 				AA0000000000000000000160 /* RuleEditorModel.swift in Sources */,
 				AA0000000000000000000162 /* RuleEditorView.swift in Sources */,
 				AA0000000000000000000163 /* RuleConfigurationService.swift in Sources */,
+				AA0000000000000000000165 /* AppModel.swift in Sources */,
+				AA0000000000000000000166 /* GetUpApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -856,6 +867,7 @@
 				AA0000000000000000000090 /* FamilyActivitySelectionAdapterTests.swift in Sources */,
 				AA0000000000000000000161 /* RuleEditorModelTests.swift in Sources */,
 				AA0000000000000000000164 /* RuleConfigurationServiceTests.swift in Sources */,
+				AA0000000000000000000167 /* AppModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

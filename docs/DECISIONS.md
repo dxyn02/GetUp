@@ -304,3 +304,24 @@ legacy 파일을 fallback으로 사용하며, 데이터 복구 가능성을 위�
 변경을 덮어쓰는 것을 막는다. 파일 간 transaction을 제공하지 않는 App Group 파일 저장에서 장소 우선
 순서는 dangling reference보다 복구 가능한 미사용 장소를 선택하며, 결정론적인 legacy ID는 migration을
 여러 번 읽어도 동일한 aggregate를 생성한다.
+
+## DEC-024 — 앱 화면 상태와 홈 규칙 정렬 책임
+
+**날짜**: 2026-08-24
+
+**결정**: `@MainActor @Observable AppModel`이 규칙·저장 장소 collection 로딩, 홈 표시 모델 정렬,
+선택 card, 규칙 생성·편집 진입 및 저장 후 홈 갱신을 소유한다. 홈은 참조 장소와 유효 일정, 하나
+이상의 유효 앱 선택을 가진 모든 저장 규칙을 표시한다. 현재 날짜의 선택 요일에 속하거나 자정 초과
+구간이 현재 활성인 규칙을 오늘 그룹에 두고 실제 당일 시작 시점 순으로 정렬한다. 나머지는 DST
+보정된 다음 시작 시점 순으로 정렬하며, 같은 시점은 생성 시각과 규칙 ID로 결정론적으로 정렬한다.
+pager에서 선택한 card는 탐색 상태일 뿐 규칙 적용 여부를 변경하지 않는다.
+
+UI test 실행 시에만 `--ui-testing` launch argument로 App Group과 분리된 cache 저장소, 고정 시각,
+불투명 앱 선택 개수 seam을 사용한다. 일반 실행은 `DependencyContainer.live()`의 App Group 저장소와
+실제 `FamilyActivitySelection.applicationTokens`만 사용한다.
+
+**근거**: 화면별로 저장소 로딩과 정렬을 반복하면 재실행·저장·편집 후 서로 다른 card 순서와
+선택 상태가 생길 수 있다. main actor의 단일 화면 모델은 Observation 갱신과 repository actor 경계를
+명확히 하며, 고정 시각의 순수 정렬 입력은 오늘·다음 규칙과 자정 초과 경계를 결정론적으로 테스트할
+수 있게 한다. UI test seam은 시스템 Family Controls picker와 실제 App Group 상태에 의존하지 않고
+opaque token 경계를 유지한다.

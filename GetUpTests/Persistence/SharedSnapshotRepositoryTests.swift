@@ -93,6 +93,12 @@ struct SharedSnapshotRepositoryTests {
 
     @Test("Snapshot files use complete-until-first-unlock protection")
     func snapshotFilesAreProtected() async throws {
+        #expect(
+            AtomicSnapshotFileWriter.writingOptions.contains(
+                .completeFileProtectionUntilFirstUserAuthentication
+            )
+        )
+
         let directory = try makeTemporaryDirectory()
         defer { removeTemporaryDirectory(directory) }
         let repository = SharedSnapshotRepository(containerURL: directory)
@@ -103,6 +109,7 @@ struct SharedSnapshotRepositoryTests {
         )
         try await repository.saveLocationCondition(TestFixtures.makeLocationCondition())
 
+        #if !targetEnvironment(simulator)
         for fileName in [
             SharedIdentifiers.restrictionRulesFileName,
             SharedIdentifiers.savedPlacesFileName,
@@ -116,6 +123,7 @@ struct SharedSnapshotRepositoryTests {
                     == .completeUntilFirstUserAuthentication
             )
         }
+        #endif
     }
 
     @Test("Missing snapshot files load as nil")
