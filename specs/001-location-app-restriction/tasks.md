@@ -129,7 +129,7 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 - [x] T050 [US2] 시간·위치 event를 상태 머신과 restriction adapter에 연결하는 활성화 경로를 `GetUp/Infrastructure/ScreenTime/RestrictionCoordinator.swift`에 구현한다
 - [x] T051 [US2] 앱 비실행 상태의 `intervalDidStart`와 재부팅 뒤 첫 잠금 해제 이후 전달되는 시스템 event에서 공유 snapshot을 읽고 권한·일정·region·제한 상태를 복구하도록 `GetUpDeviceActivityMonitor/DeviceActivityMonitorExtension.swift`, `GetUp/App/AppLifecycleCoordinator.swift`를 구현한다
 - [x] T052 [US2] 승인된 하이파이에 맞는 shield 제목·설명·아이콘·닫기 버튼을 `GetUpShieldConfiguration/ShieldConfigurationExtension.swift`에 구현한다
-- [ ] T053 [US2] 우회 없이 제한 앱을 닫는 primary action을 `GetUpShieldAction/ShieldActionExtension.swift`에 구현한다
+- [x] T053 [US2] 우회 없이 제한 앱을 닫는 primary action을 `GetUpShieldAction/ShieldActionExtension.swift`에 구현한다
 - [ ] T054 [US2] 규칙 저장 성공 후 일정·region 등록과 초기 상태 평가를 연결하도록 `GetUp/Features/RuleEditor/RuleConfigurationService.swift`를 확장한다
 - [ ] T055 [US2] 승인된 하이파이에 맞춰 현재 활성 상태와 종료 조건을 `GetUp/Features/RestrictionStatus/RestrictionStatusView.swift` 및 `RestrictionStatusModel.swift`에 구현한다
 

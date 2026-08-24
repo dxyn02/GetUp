@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 4 사용자 스토리 2 — T052 shield UI 구현 완료
+Phase 4 사용자 스토리 2 — T053 shield primary action 구현 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T052 — 단일·다중·fallback shield 콘텐츠와 Shield Configuration extension을 구현함
+T053 — 우회 없이 제한 앱을 닫는 Shield Action extension을 구현함
 
 ## 다음 작업
-T053 — 우회 없이 제한 앱을 닫는 primary action을 구현함
+T054 — 규칙 저장 성공 후 일정·region 등록과 초기 상태 평가를 연결함
 
 ## 차단 상태
 없음. BLK-009은 사용자의 1안 선택으로 해결됨.
@@ -22,6 +22,17 @@ T053 — 우회 없이 제한 앱을 닫는 primary action을 구현함
 없음. 다중 규칙용 짧은 요약과 snapshot 불가 fallback을 shield 계약·하이파이·DEC-029에 반영했다.
 
 ## 테스트 상태
+T053에서 `ShieldActionResponsePolicy`와 `ShieldActionExtension`을 구현했다. 화면에 제공하는 primary
+`앱 닫기` action은 `.close`를 반환하며 application·category·web domain callback이 모두 같은 정책을
+사용한다. 구성 화면에는 secondary action이 없지만 시스템이 예기치 않게 secondary action을
+전달하더라도 `.close`를 반환해 `.defer`, `.none`, `openParentalControlsApp`로 제한을 우회하거나
+GetUp을 여는 경로를 만들지 않는다. action 처리 과정은 Managed Settings store, App Group 상태와
+사용자 데이터를 읽거나 변경하지 않는다. iPhone 17 Pro iOS 26.5 Simulator에서 앱과 Shield Action
+extension을 함께 build하고 전체 `GetUpTests` 115개가 동적 인자를 포함해 총 147회 모두 통과했으며
+실패·skip은 없다. 실제 restricted app 위에서 primary button을 눌렀을 때의 system-owned 종료 전환은
+Simulator unit test로 입증하지 않으며 T083의 Family Controls entitlement 적용 실기기 인수에서
+확인해야 한다. `project.pbxproj` plist 문법과 `git diff --check`도 통과했다.
+
 T052에서 사용자의 BLK-009 1안 결정을 반영해 `ShieldContentProvider`와
 `ShieldConfigurationExtension`을 구현했다. App Group의 규칙·장소 snapshot과 활성
 `(ruleID, revision)` 집합을 동기적으로 읽고, shield를 요청한 opaque application token에 실제로

@@ -111,6 +111,10 @@
 		AA0000000000000000000193 /* ShieldContentProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000049 /* ShieldContentProvider.swift */; };
 		AA0000000000000000000194 /* ShieldConfigurationExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = B80000000000000000000001 /* ShieldConfigurationExtension.swift */; };
 		AA0000000000000000000195 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000022 /* Localizable.xcstrings */; };
+		AA0000000000000000000196 /* ShieldActionResponsePolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000024 /* ShieldActionResponsePolicyTests.swift */; };
+		AA0000000000000000000197 /* ShieldActionResponsePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000050 /* ShieldActionResponsePolicy.swift */; };
+		AA0000000000000000000198 /* ShieldActionResponsePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000050 /* ShieldActionResponsePolicy.swift */; };
+		AA0000000000000000000199 /* ShieldActionExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90000000000000000000001 /* ShieldActionExtension.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -211,6 +215,7 @@
 		B40000000000000000000046 /* AuthorizationAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationAdapter.swift; sourceTree = "<group>"; };
 		B40000000000000000000047 /* AppLifecycleCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLifecycleCoordinator.swift; sourceTree = "<group>"; };
 		B40000000000000000000049 /* ShieldContentProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldContentProvider.swift; sourceTree = "<group>"; };
+		B40000000000000000000050 /* ShieldActionResponsePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldActionResponsePolicy.swift; sourceTree = "<group>"; };
 		B50000000000000000000001 /* TestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFixtures.swift; sourceTree = "<group>"; };
 		B50000000000000000000002 /* RestrictionStateMachineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStateMachineTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSnapshotRepositoryTests.swift; sourceTree = "<group>"; };
@@ -226,6 +231,7 @@
 		B50000000000000000000021 /* RestrictionCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionCoordinatorTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000022 /* AppLifecycleCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLifecycleCoordinatorTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000023 /* ShieldContentProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldContentProviderTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000024 /* ShieldActionResponsePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldActionResponsePolicyTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000015 /* RuleEditorModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleEditorModelTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000016 /* RuleConfigurationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleConfigurationServiceTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000017 /* AppModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModelTests.swift; sourceTree = "<group>"; };
@@ -233,6 +239,7 @@
 		B60000000000000000000002 /* UserStory2RestrictionActivationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory2RestrictionActivationUITests.swift; sourceTree = "<group>"; };
 		B70000000000000000000001 /* DeviceActivityMonitorExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceActivityMonitorExtension.swift; sourceTree = "<group>"; };
 		B80000000000000000000001 /* ShieldConfigurationExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldConfigurationExtension.swift; sourceTree = "<group>"; };
+		B90000000000000000000001 /* ShieldActionExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldActionExtension.swift; sourceTree = "<group>"; };
 		BA0000000000000000000001 /* GetUp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GetUp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000002 /* GetUpDeviceActivityMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpDeviceActivityMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000003 /* GetUpShieldConfiguration.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpShieldConfiguration.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -364,6 +371,7 @@
 		BB0000000000000000000013 /* GetUpShieldAction */ = {
 			isa = PBXGroup;
 			children = (
+				B90000000000000000000001 /* ShieldActionExtension.swift */,
 				B20000000000000000000004 /* GetUpShieldAction.entitlements */,
 				B30000000000000000000004 /* Info.plist */,
 				B30000000000000000000014 /* PrivacyInfo.xcprivacy */,
@@ -432,6 +440,7 @@
 				B50000000000000000000021 /* RestrictionCoordinatorTests.swift */,
 				B50000000000000000000022 /* AppLifecycleCoordinatorTests.swift */,
 				B50000000000000000000023 /* ShieldContentProviderTests.swift */,
+				B50000000000000000000024 /* ShieldActionResponsePolicyTests.swift */,
 			);
 			path = Integration;
 			sourceTree = "<group>";
@@ -594,6 +603,7 @@
 				B40000000000000000000044 /* ManagedSettingsRestrictionAdapter.swift */,
 				B40000000000000000000045 /* RestrictionCoordinator.swift */,
 				B40000000000000000000049 /* ShieldContentProvider.swift */,
+				B40000000000000000000050 /* ShieldActionResponsePolicy.swift */,
 			);
 			path = ScreenTime;
 			sourceTree = "<group>";
@@ -880,6 +890,7 @@
 				AA0000000000000000000183 /* AuthorizationAdapter.swift in Sources */,
 				AA0000000000000000000185 /* AppLifecycleCoordinator.swift in Sources */,
 				AA0000000000000000000192 /* ShieldContentProvider.swift in Sources */,
+				AA0000000000000000000197 /* ShieldActionResponsePolicy.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -944,6 +955,8 @@
 				AA0000000000000000000124 /* DiagnosticsLogger.swift in Sources */,
 				AA0000000000000000000134 /* ScheduleEvaluator.swift in Sources */,
 				AA0000000000000000000144 /* RestrictionRuleValidator.swift in Sources */,
+				AA0000000000000000000198 /* ShieldActionResponsePolicy.swift in Sources */,
+				AA0000000000000000000199 /* ShieldActionExtension.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -966,6 +979,7 @@
 				AA0000000000000000000182 /* RestrictionCoordinatorTests.swift in Sources */,
 				AA0000000000000000000186 /* AppLifecycleCoordinatorTests.swift in Sources */,
 				AA0000000000000000000191 /* ShieldContentProviderTests.swift in Sources */,
+				AA0000000000000000000196 /* ShieldActionResponsePolicyTests.swift in Sources */,
 				AA0000000000000000000161 /* RuleEditorModelTests.swift in Sources */,
 				AA0000000000000000000164 /* RuleConfigurationServiceTests.swift in Sources */,
 				AA0000000000000000000167 /* AppModelTests.swift in Sources */,
