@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 5 사용자 스토리 3 완료 — 자동 해제와 변경 guard 독립 검증 완료
+Phase 6 사용자 스토리 4 디자인 — 권한·위치 오류 로우파이 검토 대기
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T067 — 자동 해제 후 active set과 편집 guard를 갱신해 규칙 재진입을 허용함
+T068 — 권한별 복구와 위치 확인 불가 상태의 US4 로우파이를 제작함
 
 ## 다음 작업
-T068 — 권한·위치 오류 및 복구 흐름의 US4 로우파이를 제작함
+T069 — US4 로우파이를 사용자와 검토하고 피드백·승인 여부를 반영함
 
 ## 차단 상태
 없음. BLK-009은 사용자의 1안 선택으로 해결됨.
@@ -22,6 +22,17 @@ T068 — 권한·위치 오류 및 복구 흐름의 US4 로우파이를 제작�
 없음. 규칙 삭제 UI의 코드·Figma 불일치를 T060·T061로 보정한 뒤 US3 테스트를 시작하도록 계획을 갱신했다.
 
 ## 테스트 상태
+T068에서 기존 Figma 파일의 `GetUp Focus` local color·spacing·radius variable과 SF Pro typography를
+재사용해 권한 점검, Family Controls 재승인·앱 재선택, Always·Full Accuracy 설정, Background App
+Refresh 확인, 위치 `unavailable`의 비활성·활성 상태를 여섯 개 393×852pt frame으로 제작했다. 위치
+확인 불가에서는 위치만을 근거로 제한 상태를 바꾸지 않고, 비활성은 새 shield 미적용, 활성은 기존
+shield 보존, 시간 종료는 위치와 무관하게 해제하는 계약을 Figma panel과
+`design/low-fidelity/US4-permission-location-errors.md`에 기록했다. Figma wrapper와 각 화면을
+렌더링하고 text node 52개를 자동 감사한 결과 SF Pro 외 서체, 빈 text, placeholder, shimmer와 화면
+경계 밖 text overflow는 모두 0건이었다. 실제 좌표·주소·앱 이름·bundle identifier·app token은
+포함하지 않았다. 디자인·문서 task이므로 code test는 실행하지 않았으며 다음 작업은 T069 사용자
+검토다.
+
 T067에서 `AppModel.refreshRestrictionStatus()`가 최신 active `(ruleID, revision)` 집합을 읽은 뒤 홈의
 `RestrictionStatusModel`과 현재 열린 `RuleEditorModel`의 `RestrictionModificationGuard`를 같은
 snapshot 기준으로 함께 갱신하도록 연결했다. 자동 해제로 해당 revision이 active set에서 사라지면
