@@ -19,6 +19,14 @@
 **근거**: 운영체제가 위치 경계 및 예약된 activity callback의 전달 시점을 제어하며, 첫 잠금 해제
 전에는 보호된 위치 데이터를 사용할 수 없다.
 
+**구현 메모 (2026-08-24)**: `RestrictionCoordinator`의 time·location event는 플랫폼이 알고 있는
+신뢰 가능한 확인 시각을 `confirmedAt`으로 받을 수 있고, 값이 없으면 coordinator 진입 시각을
+사용한다. 실제 Managed Settings adapter write가 성공한 경우에만 `RestrictionTransitionMeasurement`로
+확인 시각, effect 완료 시각과 `applyShield | removeShield`를 반환한다. 동일 상태 반복 평가,
+위치 `unavailable` 보존과 restoration에는 측정 event를 만들지 않는다. 일부 활성 규칙 종료로 남은
+합집합을 다시 적용하는 경우에도 사용자 관점의 부분 해제이므로 측정 effect는 `removeShield`로
+분류한다.
+
 ## DEC-003 — iOS target 및 target 구성
 
 **날짜**: 2026-08-20
@@ -268,7 +276,14 @@ revision을 collection revision으로 간주하거나 마지막 event 규칙에 
 **영향 범위**: `AppLifecycleCoordinator.swift`, `DeviceActivityMonitorExtension.swift`, 앱
 `scenePhase` wiring, `AuthorizationAdapter.swift`, `LocationMonitor.swift`의 extension target membership,
 `platform-events-contract.md`와 복구 통합 테스트에 적용한다. 실제 background·종료·재부팅 event
-전달은 Simulator로 입증하지 않고 T083 실기기 인수에서 검증한다.
+전달은 Simulator로 입증하지 않고 T085 실기기 인수에서 검증한다.
+
+**구현 메모 (2026-08-24)**: `intervalDidEnd`는 callback 진입 즉시 확인 시각을 기록하고 공통
+`DependencyContainer.makeRestrictionCoordinator()`로 `handleTimeEvent(confirmedAt:)`를 호출한다.
+GetUp named store를 무조건 비우거나 위치를 새로 추정하지 않고 저장된 모든 규칙을 현재 시간으로
+재평가하므로, 종료 규칙은 위치 `unavailable`이어도 해제하면서 다른 활성 규칙의 합집합은 보존한다.
+보호 파일 read 또는 live 조립 실패 시에는 다른 규칙을 잘못 해제하지 않고 기존 shield를 보존해
+다음 시스템 event에서 재시도한다.
 
 ## DEC-017 — 직접 시간 입력과 DatePicker 유효 범위 제한
 
@@ -388,7 +403,7 @@ opaque token 경계를 유지한다.
 **결정**: 저장된 규칙은 편집 화면의 파괴적 동작과 확인 alert를 거쳐 삭제한다. 삭제 시 대상 규칙만
 규칙 collection에서 제거하고 collection revision을 1 증가시키며, 다른 규칙과 재사용 가능한 저장
 장소 collection은 변경하지 않는다. 편집을 시작한 규칙 revision이 달라졌다면 stale delete로
-거부한다. `AppModel`은 삭제 전에 주입 가능한 비동기 guard를 호출하며, T064에서 실제 활성 제한
+거부한다. `AppModel`은 삭제 전에 주입 가능한 비동기 guard를 호출하며, T066에서 실제 활성 제한
 판정을 이 경계에 연결해 활성 규칙의 삭제를 거부하고 종료 조건을 안내한다.
 
 **근거**: 저장 장소는 여러 규칙이 공유할 수 있는 독립 aggregate이므로 규칙 삭제와 함께 제거하면
@@ -462,5 +477,27 @@ toast 또는 완료 전용 VoiceOver announcement를 표시하지 않는다. 현
 기존 규칙 상태와 중복된다. 제한 대상 앱이 다시 열리고 GetUp 홈의 활성 표시가 사라지는 결과만으로
 자동 해제를 확인할 수 있어 일시 상태와 추가 접근성 focus·announcement를 도입할 필요가 없다.
 
-**영향 범위**: `design/low-fidelity/US3-auto-release.md`, T056·T057 설계 기준과 이후 T058·T064·T065
+**영향 범위**: `design/low-fidelity/US3-auto-release.md`, T056·T057 설계 기준과 이후 T058·T066·T067
 UI 구현에 적용한다. 자동 해제 effect, 30초 측정과 다중 규칙 합집합 재계산 동작은 변경하지 않는다.
+
+## DEC-032 — 활성 revision 기반 단일 규칙 변경 guard
+
+**날짜**: 2026-08-24
+
+**결정**: 현재 적용 상태의 `(ruleID, revision)`이 저장된 규칙과 정확히 일치할 때 장소 이름·반경·종료
+시각을 담은 `RestrictionModificationGuard`를 편집 모델에 주입한다. guard가 존재하면 규칙 끄기와
+저장을 모델에서 거부하고, 앱 저장·삭제 경계에서도 다시 거부한다. 활성 홈의 변경 control과 이미
+열린 편집기의 끄기·삭제 시도는 같은 종료 조건 문구를 사용하는 네이티브 SwiftUI Alert로 안내한다.
+조건이 종료된 비활성 규칙은 기존 편집 화면의 `ruleEditor.enabled` toggle과 삭제 흐름을 그대로
+사용한다. foreground 복구 또는 명시적인 상태 갱신에서 적용 상태를 다시 읽으면 홈 상태와 열린
+편집기의 guard를 같은 snapshot으로 재계산해, 해제된 revision은 기존 편집기와 새 재진입 모두에서
+즉시 변경 가능 상태로 전환한다.
+
+**근거**: 화면 진입만 막으면 이미 열린 편집기나 직접 호출 경로에서 활성 규칙을 변경할 수 있으므로
+화면·모델·저장 경계가 같은 활성 revision 판정을 공유해야 한다. 장소·반경·종료 시각을 값 객체로
+보존하면 편집·끄기·삭제가 서로 다른 안내를 만들지 않고 승인된 종료 조건을 일관되게 표시할 수 있다.
+SwiftUI Alert의 system-owned action에는 별도 accessibility identifier를 붙이지 않아 iOS 26의 중첩
+접근성 요소를 피하고 제목과 button label을 단일 focus 대상으로 유지한다.
+
+**영향 범위**: `RuleEditorModel`, `RestrictionStatusView`, `RuleEditorView`, `AppModel`,
+`Localizable.xcstrings`, T063 UI test와 T066·T067 단위 테스트에 적용한다.
