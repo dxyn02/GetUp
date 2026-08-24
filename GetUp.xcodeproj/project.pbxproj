@@ -88,6 +88,7 @@
 		AA0000000000000000000170 /* DeviceActivityScheduleAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000018 /* DeviceActivityScheduleAdapterTests.swift */; };
 		AA0000000000000000000171 /* LocationMonitoringAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000019 /* LocationMonitoringAdapterTests.swift */; };
 		AA0000000000000000000172 /* ManagedSettingsRestrictionAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000020 /* ManagedSettingsRestrictionAdapterTests.swift */; };
+		AA0000000000000000000173 /* UserStory2RestrictionActivationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000002 /* UserStory2RestrictionActivationUITests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -196,6 +197,7 @@
 		B50000000000000000000016 /* RuleConfigurationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleConfigurationServiceTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000017 /* AppModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModelTests.swift; sourceTree = "<group>"; };
 		B60000000000000000000001 /* UserStory1RuleConfigurationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory1RuleConfigurationUITests.swift; sourceTree = "<group>"; };
+		B60000000000000000000002 /* UserStory2RestrictionActivationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory2RestrictionActivationUITests.swift; sourceTree = "<group>"; };
 		BA0000000000000000000001 /* GetUp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GetUp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000002 /* GetUpDeviceActivityMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpDeviceActivityMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000003 /* GetUpShieldConfiguration.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpShieldConfiguration.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -398,6 +400,7 @@
 			isa = PBXGroup;
 			children = (
 				B60000000000000000000001 /* UserStory1RuleConfigurationUITests.swift */,
+				B60000000000000000000002 /* UserStory2RestrictionActivationUITests.swift */,
 			);
 			path = GetUpUITests;
 			sourceTree = "<group>";
@@ -888,6 +891,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA0000000000000000000089 /* UserStory1RuleConfigurationUITests.swift in Sources */,
+				AA0000000000000000000173 /* UserStory2RestrictionActivationUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -118,7 +118,7 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 - [x] T042 [P] [US2] 선택 요일별 일정 등록, 15분 오류, 자정 초과, 기존 일정 교체의 실패 테스트를 `GetUpTests/Integration/DeviceActivityScheduleAdapterTests.swift`에 작성한다
 - [x] T043 [P] [US2] 500m/1km/2km/3km/4km/5km 내부·경계·외부·오차 중첩 및 위치 snapshot 기록의 실패 테스트를 `GetUpTests/Integration/LocationMonitoringAdapterTests.swift`에 작성한다
 - [x] T044 [P] [US2] 선택 앱만 shield 적용, 동일 revision 무효과, 다른 store 보존의 실패 테스트를 `GetUpTests/Integration/ManagedSettingsRestrictionAdapterTests.swift`에 작성한다
-- [ ] T045 [P] [US2] 시간 활성 × 위치 내부에서만 제한되고 비대상 앱은 열리는 실패 UI test를 `GetUpUITests/UserStory2RestrictionActivationUITests.swift`에 작성한다
+- [x] T045 [P] [US2] 시간 활성 × 위치 내부에서만 제한되고 비대상 앱은 열리는 실패 UI test를 `GetUpUITests/UserStory2RestrictionActivationUITests.swift`에 작성한다
 
 ### 구현
 

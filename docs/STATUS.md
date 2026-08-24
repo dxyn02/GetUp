@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 4 사용자 스토리 2 — T044 Managed Settings 제한 adapter 실패 테스트 작성 완료
+Phase 4 사용자 스토리 2 — T045 제한 활성화 실패 UI test 작성 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T044 — 선택 앱 shield 적용, 동일 revision 무효과와 다른 store 보존의 실패 테스트를 작성함
+T045 — 시간 활성 × 위치 내부에서만 제한되고 비대상 앱은 열리는 실패 UI test를 작성함
 
 ## 다음 작업
-T045 — 시간 활성 × 위치 내부에서만 제한되고 비대상 앱은 열리는 실패 UI test를 작성함
+T046 — 선택 요일별 Device Activity 일정 등록·교체·복구 adapter를 구현함
 
 ## 차단 상태
 없음
@@ -23,6 +23,17 @@ T045 — 시간 활성 × 위치 내부에서만 제한되고 비대상 앱은 �
 collection migration과 홈 정렬 정책은 기능 문서와 구현에 반영되어 있다.
 
 ## 테스트 상태
+T045에서 `UserStory2RestrictionActivationUITests.swift`에 고정된 유효 규칙과 주입 시각·위치 상태를
+사용하는 3개 실패 UI test를 작성했다. 시간 활성·위치 내부에서는 선택 앱 probe만 shield로 이동하고
+비선택 앱 probe는 콘텐츠로 열려야 하며, 시간 비활성·위치 내부와 시간 활성·위치 외부에서는 선택
+앱도 제한 없이 열려야 한다. 이 probe는 `--ui-testing`에서만 제공하는 Simulator 검증 경계이며 실제
+Managed Settings shield의 출시 증거는 후속 실기기 인수 테스트로 남긴다. 선행 red 단위 테스트
+T042~T044를 검증 중에만 target에서 제외하고 iPhone 17 Pro iOS 26.5 Simulator에서 새 UI test 3개가
+compile·launch된 뒤 아직 없는 `restrictionStatus`·`restrictionProbe` 요소의 `XCTAssertTrue`에서 모두
+실패하는 red 상태를 확인했다. 실패 3개, 통과·skip 0개이며 target membership은 즉시 복구했다.
+`project.pbxproj` plist 문법과 `git diff --check`를 통과했고, T050의 활성화 경로와 T055의 상태 UI 및
+UI test seam을 연결한 뒤 다시 실행해야 한다.
+
 T044에서 `ManagedSettingsRestrictionAdapterTests.swift`에 규칙이 선택한 opaque application token만
 GetUp named store에 shield로 기록하는 경로, 같은 rule revision이 이미 적용된 경우 Managed Settings와
 적용 상태 저장소에 쓰지 않는 idempotency, 다른 제공자의 named store를 보존하는 경로를 검증하는
