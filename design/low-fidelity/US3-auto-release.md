@@ -8,7 +8,7 @@
 | 관련 task | `T056`, `T057` |
 | 작성자 | `Codex` |
 | 작성일 | `2026-08-24` |
-| 문서 상태 | `검토 대기` |
+| 문서 상태 | `승인됨` |
 | 관련 명세 | [User Story 3 — 조건 종료 시 자동 해제](../../specs/001-location-app-restriction/spec.md#user-story-3---조건-종료-시-자동-해제-priority-p2) |
 | 관련 contract | [restriction-evaluation-contract.md](../../specs/001-location-app-restriction/contracts/restriction-evaluation-contract.md), [platform-events-contract.md](../../specs/001-location-app-restriction/contracts/platform-events-contract.md) |
 | Figma node | [US3 / 자동 해제 + 활성 중 편집 차단](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=126-1976) |
@@ -131,6 +131,7 @@
 |---|---|---|---|---|
 | `2026-08-24` | 사용자 | `검토 대기` | T056 로우파이 초안 검토 요청 | `T057`에서 피드백과 승인 여부 반영 |
 | `2026-08-24` | 사용자 | `변경 요청` | 자동 해제 완료를 알리는 별도 화면은 불필요함 | 완료 전용 frame을 삭제하고 기존 예정·비활성 홈 복귀로 흐름을 변경함 |
+| `2026-08-24` | 사용자 | `승인됨` | 완료 전용 UI 제거 반영본 승인 | T057 완료 및 T058 하이파이 진행 가능 |
 
 ## 변경 기록
 
@@ -143,9 +144,10 @@
 
 | 항목 | 내용 |
 |---|---|
-| 승인 상태 | `검토 대기` |
-| 승인자 | `<미승인>` |
-| 승인일 | `<미승인>` |
-| 미해결 항목 | 완료 전용 UI 제거 반영본의 승인 여부 |
+| 승인 상태 | `승인됨` |
+| 승인자 | 사용자 |
+| 승인일 | `2026-08-24` |
+| 미해결 항목 | 없음 |
 
-승인 상태가 `승인됨`이 되기 전에는 `T058` 하이파이 작업이나 US3 UI 구현을 시작하지 않는다.
+T058 하이파이는 이 승인본을 기준으로 제작하며, 화면 구조나 제품 동작을 변경하면 다시 사용자
+검토를 거친다.
