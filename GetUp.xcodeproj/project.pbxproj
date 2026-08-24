@@ -92,6 +92,7 @@
 		AA0000000000000000000174 /* DeviceActivityScheduleAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000040 /* DeviceActivityScheduleAdapter.swift */; };
 		AA0000000000000000000175 /* DeviceActivityScheduleAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000040 /* DeviceActivityScheduleAdapter.swift */; };
 		AA0000000000000000000176 /* LocationEvidenceEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000042 /* LocationEvidenceEvaluator.swift */; };
+		AA0000000000000000000177 /* LocationMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000043 /* LocationMonitor.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -186,6 +187,7 @@
 		B40000000000000000000039 /* GetUpApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GetUpApp.swift; sourceTree = "<group>"; };
 		B40000000000000000000040 /* DeviceActivityScheduleAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceActivityScheduleAdapter.swift; sourceTree = "<group>"; };
 		B40000000000000000000042 /* LocationEvidenceEvaluator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationEvidenceEvaluator.swift; sourceTree = "<group>"; };
+		B40000000000000000000043 /* LocationMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationMonitor.swift; sourceTree = "<group>"; };
 		B50000000000000000000001 /* TestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFixtures.swift; sourceTree = "<group>"; };
 		B50000000000000000000002 /* RestrictionStateMachineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStateMachineTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSnapshotRepositoryTests.swift; sourceTree = "<group>"; };
@@ -537,6 +539,7 @@
 			children = (
 				B40000000000000000000023 /* CurrentLocationProvider.swift */,
 				B40000000000000000000042 /* LocationEvidenceEvaluator.swift */,
+				B40000000000000000000043 /* LocationMonitor.swift */,
 			);
 			path = Location;
 			sourceTree = "<group>";
@@ -824,6 +827,7 @@
 				AA0000000000000000000166 /* GetUpApp.swift in Sources */,
 				AA0000000000000000000174 /* DeviceActivityScheduleAdapter.swift in Sources */,
 				AA0000000000000000000176 /* LocationEvidenceEvaluator.swift in Sources */,
+				AA0000000000000000000177 /* LocationMonitor.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

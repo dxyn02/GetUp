@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 4 사용자 스토리 2 — T047 위치 거리·정확도 판정 구현 완료
+Phase 4 사용자 스토리 2 — T048 위치 monitor adapter 구현 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T047 — 거리·horizontal accuracy 판정 공식을 구현함
+T048 — Always·Full Accuracy 아래 원형 region 등록과 최신 위치 snapshot 갱신 adapter를 구현함
 
 ## 다음 작업
-T048 — Always·Full Accuracy 아래 원형 region 등록과 최신 위치 snapshot 갱신 adapter를 구현함
+T049 — named Managed Settings store의 선택 앱 shield 적용 adapter를 구현함
 
 ## 차단 상태
 없음
@@ -23,6 +23,19 @@ T048 — Always·Full Accuracy 아래 원형 region 등록과 최신 위치 snap
 collection migration과 홈 정렬 정책은 기능 문서와 구현에 반영되어 있다.
 
 ## 테스트 상태
+T048에서 `LocationMonitor.swift`를 앱 target에 추가했다. Always·Full Accuracy, region monitoring
+가용성, 기기 최대 반경을 등록 전에 검사하고, 저장 장소 좌표와 규칙별 안정적인 identifier로 원형
+region을 교체한다. Core Location 단발성 fix의 관측 시각·거리·horizontal accuracy를 T047 공식으로
+판정해 `LocationConditionSnapshot`으로 저장하며, 오류는 좌표를 추정하지 않고 `unavailable`로
+기록한다. `DependencyContainer.makeLocationMonitor()`로 live Core Location adapter와 공유 저장소를
+조립했다. 기존 T043에 Always·Full Accuracy gate와 규칙별 region 교체 검증을 보강하고, T049의
+계획된 red 테스트를 검증 중에만 target에서 제외했다. iPhone 17 Pro iOS 26.5 Simulator에서 7개
+테스트가 동적 인자를 포함해 총 27회 모두 통과했으며 target membership은 즉시 복구했다. 중간에
+종료 상태 Simulator가 `Busy` preflight 오류를 두 번 반환했으나 명시적으로 부팅한 뒤 같은 suite가
+통과했다. 실제 Always 권한 prompt, Full Accuracy 상태 변경과 background·종료 상태 region event
+전달은 Simulator 결과로 입증하지 않으며 T083 실기기 인수에서 검증해야 한다. `project.pbxproj`
+plist 문법과 `git diff --check`도 통과했다.
+
 T047에서 `LocationEvidenceEvaluator.swift`를 앱 target에 추가하고 중심 거리 `d`, 설정 반경 `R`,
 horizontal accuracy `a`를 사용한 순수 판정을 구현했다. 음수 또는 유한하지 않은 입력은
 `unavailable`, `d + a <= R`은 `inside`, `max(0, d - a) > R`은 `outside`, 나머지 경계 중첩은

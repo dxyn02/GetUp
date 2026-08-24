@@ -124,7 +124,7 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 
 - [x] T046 [P] [US2] 선택 요일별 `DeviceActivitySchedule` 등록·교체·복구를 `GetUp/Infrastructure/Scheduling/DeviceActivityScheduleAdapter.swift`에 구현한다
 - [x] T047 [P] [US2] 거리·horizontal accuracy 판정 공식을 `GetUp/Infrastructure/Location/LocationEvidenceEvaluator.swift`에 구현한다
-- [ ] T048 [US2] Always·Full Accuracy 아래 원형 region 등록과 최신 위치 snapshot 갱신을 `GetUp/Infrastructure/Location/LocationMonitor.swift`에 구현한다
+- [x] T048 [US2] Always·Full Accuracy 아래 원형 region 등록과 최신 위치 snapshot 갱신을 `GetUp/Infrastructure/Location/LocationMonitor.swift`에 구현한다
 - [ ] T049 [P] [US2] named `ManagedSettingsStore`의 선택 앱 shield 적용을 `GetUp/Infrastructure/ScreenTime/ManagedSettingsRestrictionAdapter.swift`에 구현한다
 - [ ] T050 [US2] 시간·위치 event를 상태 머신과 restriction adapter에 연결하는 활성화 경로를 `GetUp/Infrastructure/ScreenTime/RestrictionCoordinator.swift`에 구현한다
 - [ ] T051 [US2] 앱 비실행 상태의 `intervalDidStart`와 재부팅 뒤 첫 잠금 해제 이후 전달되는 시스템 event에서 공유 snapshot을 읽고 권한·일정·region·제한 상태를 복구하도록 `GetUpDeviceActivityMonitor/DeviceActivityMonitorExtension.swift`, `GetUp/App/AppLifecycleCoordinator.swift`를 구현한다

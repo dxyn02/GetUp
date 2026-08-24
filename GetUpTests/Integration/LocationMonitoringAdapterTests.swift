@@ -94,6 +94,103 @@ struct LocationMonitoringAdapterTests {
         #expect(try await repository.loadLocationCondition() == snapshot)
         #expect(await evidenceProvider.requestedRuleIDs == [rule.id])
     }
+
+    @MainActor
+    @Test("Always and Full Accuracy register the selected place as a rule-specific region")
+    func registersRuleRegionWithRequiredAuthorization() async throws {
+        let place = makeSavedPlace()
+        let savedPlaces = RecordingSavedPlaceRepository(place: place)
+        let regionMonitor = FakeLocationRegionMonitor(
+            monitoredIdentifiers: [regionIdentifier(for: TestFixtures.makeRule().id)]
+        )
+        let monitor = LocationMonitor(
+            evidenceProvider: FakeLocationEvidenceProvider(
+                evidence: LocationEvidence(
+                    observedAt: TestFixtures.now,
+                    distanceMeters: 0,
+                    horizontalAccuracyMeters: 0
+                )
+            ),
+            conditionRepository: RecordingLocationConditionRepository(),
+            savedPlaceRepository: savedPlaces,
+            regionMonitor: regionMonitor
+        )
+        let rule = TestFixtures.makeRule(radius: .meters2000)
+
+        try await monitor.replaceMonitoring(for: rule)
+
+        #expect(regionMonitor.stoppedIdentifiers == [regionIdentifier(for: rule.id)])
+        let registration = try #require(regionMonitor.registrations.first)
+        #expect(registration.center == place.coordinate)
+        #expect(registration.radiusMeters == 2_000)
+        #expect(registration.identifier == regionIdentifier(for: rule.id))
+    }
+
+    @MainActor
+    @Test("Region registration requires both Always authorization and Full Accuracy")
+    func requiresAlwaysAndFullAccuracy() async {
+        let place = makeSavedPlace()
+        let savedPlaces = RecordingSavedPlaceRepository(place: place)
+        let rule = TestFixtures.makeRule()
+
+        let whenInUseMonitor = FakeLocationRegionMonitor(
+            authorization: .whenInUse
+        )
+        let whenInUseLocationMonitor = makeLocationMonitor(
+            savedPlaces: savedPlaces,
+            regionMonitor: whenInUseMonitor
+        )
+        await #expect(throws: LocationMonitorError.alwaysAuthorizationRequired) {
+            try await whenInUseLocationMonitor.replaceMonitoring(for: rule)
+        }
+
+        let reducedAccuracyMonitor = FakeLocationRegionMonitor(
+            accuracy: .reduced
+        )
+        let reducedAccuracyLocationMonitor = makeLocationMonitor(
+            savedPlaces: savedPlaces,
+            regionMonitor: reducedAccuracyMonitor
+        )
+        await #expect(throws: LocationMonitorError.fullAccuracyRequired) {
+            try await reducedAccuracyLocationMonitor.replaceMonitoring(for: rule)
+        }
+
+        #expect(whenInUseMonitor.registrations.isEmpty)
+        #expect(reducedAccuracyMonitor.registrations.isEmpty)
+    }
+
+    @MainActor
+    private func makeLocationMonitor(
+        savedPlaces: any SavedPlaceRepository,
+        regionMonitor: any LocationRegionMonitoring
+    ) -> LocationMonitor {
+        LocationMonitor(
+            evidenceProvider: FakeLocationEvidenceProvider(
+                evidence: LocationEvidence(
+                    observedAt: TestFixtures.now,
+                    distanceMeters: 0,
+                    horizontalAccuracyMeters: 0
+                )
+            ),
+            conditionRepository: RecordingLocationConditionRepository(),
+            savedPlaceRepository: savedPlaces,
+            regionMonitor: regionMonitor
+        )
+    }
+
+    private func makeSavedPlace() -> SavedPlaceSnapshot {
+        SavedPlaceSnapshot(
+            id: TestFixtures.makeRule().savedPlaceID,
+            name: "테스트 장소",
+            coordinate: ReferenceLocation(latitude: 37.5, longitude: 127.0),
+            createdAt: TestFixtures.now,
+            updatedAt: TestFixtures.now
+        )
+    }
+
+    private func regionIdentifier(for ruleID: UUID) -> String {
+        "getup.location.\(ruleID.uuidString.lowercased())"
+    }
 }
 
 private actor FakeLocationEvidenceProvider: LocationEvidenceProviding {
@@ -113,15 +210,102 @@ private actor FakeLocationEvidenceProvider: LocationEvidenceProviding {
 private actor RecordingLocationConditionRepository: LocationConditionRepository {
     private var snapshot: LocationConditionSnapshot?
 
-    func loadLocationCondition() -> LocationConditionSnapshot? {
+    func loadLocationCondition() async throws -> LocationConditionSnapshot? {
         snapshot
     }
 
-    func saveLocationCondition(_ condition: LocationConditionSnapshot) {
+    func saveLocationCondition(_ condition: LocationConditionSnapshot) async throws {
         snapshot = condition
     }
 
-    func deleteLocationCondition() {
+    func deleteLocationCondition() async throws {
         snapshot = nil
+    }
+}
+
+private actor RecordingSavedPlaceRepository: SavedPlaceRepository {
+    private var collection: SavedPlaceCollectionSnapshot?
+
+    init(place: SavedPlaceSnapshot) {
+        collection = SavedPlaceCollectionSnapshot(revision: 1, places: [place])
+    }
+
+    func loadSavedPlaceCollection() async throws -> SavedPlaceCollectionSnapshot? {
+        collection
+    }
+
+    func saveSavedPlaceCollection(
+        _ collection: SavedPlaceCollectionSnapshot
+    ) async throws {
+        self.collection = collection
+    }
+
+    func deleteSavedPlaceCollection() async throws {
+        collection = nil
+    }
+}
+
+@MainActor
+private final class FakeLocationRegionMonitor: LocationRegionMonitoring {
+    struct Registration {
+        let center: ReferenceLocation
+        let radiusMeters: Double
+        let identifier: String
+    }
+
+    private let authorization: LocationAuthorizationStatus
+    private let accuracy: LocationAccuracyStatus
+    private var monitoredIdentifiers: Set<String>
+    private(set) var registrations: [Registration] = []
+    private(set) var stoppedIdentifiers: [String] = []
+
+    init(
+        authorization: LocationAuthorizationStatus = .always,
+        accuracy: LocationAccuracyStatus = .full,
+        monitoredIdentifiers: Set<String> = []
+    ) {
+        self.authorization = authorization
+        self.accuracy = accuracy
+        self.monitoredIdentifiers = monitoredIdentifiers
+    }
+
+    func authorizationStatus() -> LocationAuthorizationStatus {
+        authorization
+    }
+
+    func accuracyStatus() -> LocationAccuracyStatus {
+        accuracy
+    }
+
+    func isMonitoringAvailable() -> Bool {
+        true
+    }
+
+    func maximumMonitoringDistance() -> Double {
+        5_000
+    }
+
+    func monitoredRegionIdentifiers() -> [String] {
+        Array(monitoredIdentifiers)
+    }
+
+    func startMonitoring(
+        center: ReferenceLocation,
+        radiusMeters: Double,
+        identifier: String
+    ) {
+        registrations.append(
+            Registration(
+                center: center,
+                radiusMeters: radiusMeters,
+                identifier: identifier
+            )
+        )
+        monitoredIdentifiers.insert(identifier)
+    }
+
+    func stopMonitoring(identifier: String) {
+        stoppedIdentifiers.append(identifier)
+        monitoredIdentifiers.remove(identifier)
     }
 }
