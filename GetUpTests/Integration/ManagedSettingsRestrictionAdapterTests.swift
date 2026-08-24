@@ -110,7 +110,7 @@ struct ManagedSettingsRestrictionAdapterTests {
     }
 
     private func applicationToken(seed: UInt8) throws -> ApplicationToken {
-        let encodedData = try JSONEncoder().encode(Data([seed]))
+        let encodedData = try JSONEncoder().encode(["data": Data([seed])])
         return try JSONDecoder().decode(
             ApplicationToken.self,
             from: encodedData

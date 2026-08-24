@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 4 사용자 스토리 2 — T048 위치 monitor adapter 구현 완료
+Phase 4 사용자 스토리 2 — T049 Managed Settings 제한 adapter 구현 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T048 — Always·Full Accuracy 아래 원형 region 등록과 최신 위치 snapshot 갱신 adapter를 구현함
+T049 — named Managed Settings store의 선택 앱 shield 적용 adapter를 구현함
 
 ## 다음 작업
-T049 — named Managed Settings store의 선택 앱 shield 적용 adapter를 구현함
+T050 — 시간·위치 event를 상태 머신과 restriction adapter에 연결하는 활성화 경로를 구현함
 
 ## 차단 상태
 없음
@@ -23,6 +23,18 @@ T049 — named Managed Settings store의 선택 앱 shield 적용 adapter를 구
 collection migration과 홈 정렬 정책은 기능 문서와 구현에 반영되어 있다.
 
 ## 테스트 상태
+T049에서 `ManagedSettingsRestrictionAdapter.swift`를 앱과 Device Activity Monitor extension target에
+추가했다. 고정 이름 `getup.restriction`의 `ManagedSettingsStore`에 규칙의 opaque application token만
+shield로 설정하고, App Group `UserDefaults`에 적용 여부와 rule revision을 함께 기록한다. 같은
+revision이 이미 적용된 경우 store와 상태 저장소 write를 모두 생략하며, 제거 시에도 GetUp named
+store만 비운다. `DependencyContainer.makeRestrictionAdapter()`로 앱과 extension의 live adapter를
+조립했다. iOS 26.5의 `ApplicationToken` Codable dictionary 표현에 맞게 T044 fixture를 바로잡은 뒤
+해당 계약 테스트 3개가 모두 통과했다. 이어 iPhone 17 Pro iOS 26.5 Simulator에서 전체
+`GetUpTests` 99개가 동적 인자를 포함해 총 131회 모두 통과했고 실패·skip은 없다. 실제 Family
+Controls 승인 아래 시스템 shield 표시와 다른 제공자의 실제 named store 공존은 Simulator fake
+결과로 입증하지 않으며 T081·T083의 entitlement 적용 실기기 검증에서 확인해야 한다.
+`project.pbxproj` plist 문법과 `git diff --check`도 통과했다.
+
 T048에서 `LocationMonitor.swift`를 앱 target에 추가했다. Always·Full Accuracy, region monitoring
 가용성, 기기 최대 반경을 등록 전에 검사하고, 저장 장소 좌표와 규칙별 안정적인 identifier로 원형
 region을 교체한다. Core Location 단발성 fix의 관측 시각·거리·horizontal accuracy를 T047 공식으로
