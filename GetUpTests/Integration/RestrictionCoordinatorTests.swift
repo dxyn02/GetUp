@@ -62,6 +62,8 @@ struct RestrictionCoordinatorTests {
         let result = try await coordinator.handleLocationEvent(ruleID: first.id)
 
         #expect(result.appliedState.activeRuleRevisions == identities([second]))
+        #expect(result.transitionMeasurement?.effect == .removeShield)
+        #expect(result.transitionMeasurement?.eventConfirmedAt == TestFixtures.now)
         #expect(await adapter.appliedRuleIDs == [second.id])
         #expect(await adapter.removeCount == 0)
     }
@@ -82,6 +84,7 @@ struct RestrictionCoordinatorTests {
         let result = try await coordinator.restore()
 
         #expect(result.appliedState.activeRuleRevisions == identities([preserved]))
+        #expect(result.transitionMeasurement == nil)
         #expect(await adapter.applyCount == 0)
         #expect(await adapter.removeCount == 0)
     }
@@ -96,8 +99,9 @@ struct RestrictionCoordinatorTests {
             adapter: adapter
         )
 
-        _ = try await coordinator.handleTimeEvent()
+        let result = try await coordinator.handleTimeEvent()
 
+        #expect(result.transitionMeasurement == nil)
         #expect(await adapter.applyCount == 0)
         #expect(await adapter.removeCount == 0)
     }
