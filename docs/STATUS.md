@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 6 사용자 스토리 4 테스트 — 권한 상태 합성 실패 계약 완료
+Phase 6 사용자 스토리 4 테스트 — 위치 확인 불가 상태 보존 실패 계약 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T072 — Family Controls·Always·Full Accuracy·Background App Refresh 상태 합성 실패 테스트를 작성함
+T073 — 위치 오류·오래된 fix·음수 accuracy·경계 중첩 상태 보존 실패 테스트를 작성함
 
 ## 다음 작업
-T073 — 위치 오류·오래된 fix·음수 accuracy·경계 중첩 상태 보존 실패 테스트를 작성함
+T074 — 권한별 안내와 위치 확인 불가 복구 흐름 실패 UI test를 작성함
 
 ## 차단 상태
 없음. BLK-009은 사용자의 1안 선택으로 해결됨.
@@ -22,6 +22,16 @@ T073 — 위치 오류·오래된 fix·음수 accuracy·경계 중첩 상태 보
 없음. 규칙 삭제 UI의 코드·Figma 불일치를 T060·T061로 보정한 뒤 US3 테스트를 시작하도록 계획을 갱신했다.
 
 ## 테스트 상태
+T073에서 위치 요청 오류, 24시간 전 fix, 음수 horizontal accuracy, 설정 반경과 오차 원의 경계
+중첩을 실제 `LocationMonitor` → `LocationConditionSnapshot` → `RestrictionCoordinator` 경로에
+주입하는 `LocationUnavailableTests.swift`를 작성했다. 각 원인에서 활성 제한은 그대로 유지하고
+비활성 상태에는 새 제한을 적용하지 않는 계약을 각각 검증해 총 8개 동적 사례가 된다. T072의
+계획된 compile red가 후속 suite 실행을 막지 않도록 검증 중에만 해당 파일의 Sources membership을
+제외하고 즉시 복구했다. iPhone 17 Pro iOS 26.5 Simulator의 전체 `GetUpTests`에서 기존 사례와
+위치 오류·음수 accuracy·경계 중첩 사례 126개가 통과했고, 오래된 fix의 활성·비활성 2개는 24시간
+전 근거를 `.inside`로 판정해 실패하는 의도한 red를 확인했다. 오래된 위치 최신성 판정과 상태 보존은
+T078에서 green으로 전환해야 한다. `project.pbxproj` plist 문법과 `git diff --check`는 통과했다.
+
 T072에서 `AuthorizationSnapshot`의 Family Controls, 위치 승인, 정확도, Background App Refresh
 상태 조합 5개와 매 조회 시 최신 시스템 상태를 다시 합성하는 계약을
 `AuthorizationAdapterTests.swift`에 작성하고 GetUpTests target에 추가했다. Background App Refresh는
