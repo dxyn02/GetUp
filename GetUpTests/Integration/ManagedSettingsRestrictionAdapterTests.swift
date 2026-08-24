@@ -25,7 +25,7 @@ struct ManagedSettingsRestrictionAdapterTests {
             activitySelection: selection(applicationTokens: selected)
         )
 
-        try await adapter.applyRestriction(for: rule)
+        try await adapter.applyRestriction(for: [rule])
 
         let shielded = store.shieldedApplications(
             named: SharedIdentifiers.managedSettingsStoreName
@@ -35,7 +35,11 @@ struct ManagedSettingsRestrictionAdapterTests {
         #expect(store.writeCount == 1)
         #expect(
             await stateStore.currentState()
-                == AppliedRestrictionState(isApplied: true, ruleRevision: 4)
+                == AppliedRestrictionState(
+                    activeRuleRevisions: [
+                        ActiveRuleRevision(ruleID: rule.id, revision: 4),
+                    ]
+                )
         )
     }
 
@@ -51,8 +55,9 @@ struct ManagedSettingsRestrictionAdapterTests {
         )
         let stateStore = RecordingRestrictionApplicationStateStore(
             initialState: AppliedRestrictionState(
-                isApplied: true,
-                ruleRevision: 8
+                activeRuleRevisions: [
+                    ActiveRuleRevision(ruleID: rule.id, revision: 8),
+                ]
             )
         )
         let adapter = ManagedSettingsRestrictionAdapter(
@@ -60,7 +65,7 @@ struct ManagedSettingsRestrictionAdapterTests {
             stateStore: stateStore
         )
 
-        try await adapter.applyRestriction(for: rule)
+        try await adapter.applyRestriction(for: [rule])
 
         #expect(store.writeCount == 0)
         #expect(await stateStore.writeCount == 0)
@@ -89,7 +94,7 @@ struct ManagedSettingsRestrictionAdapterTests {
             activitySelection: selection(applicationTokens: selected)
         )
 
-        try await adapter.applyRestriction(for: rule)
+        try await adapter.applyRestriction(for: [rule])
 
         #expect(
             store.shieldedApplications(named: otherStoreName)
@@ -99,6 +104,57 @@ struct ManagedSettingsRestrictionAdapterTests {
             store.writtenStoreNames
                 == [SharedIdentifiers.managedSettingsStoreName]
         )
+    }
+
+    @Test("Multiple active rules apply the de-duplicated application union")
+    func appliesUnionAcrossActiveRules() async throws {
+        let shared = try applicationToken(seed: 7)
+        let firstOnly = try applicationToken(seed: 8)
+        let secondOnly = try applicationToken(seed: 9)
+        let first = TestFixtures.makeRule(
+            activitySelection: selection(applicationTokens: [shared, firstOnly])
+        )
+        let second = TestFixtures.makeRule(
+            id: UUID(uuidString: "00000000-0000-4000-8000-000000000201")!,
+            activitySelection: selection(applicationTokens: [shared, secondOnly])
+        )
+        let store = RecordingManagedSettingsStoreAccess()
+        let adapter = ManagedSettingsRestrictionAdapter(
+            storeAccess: store,
+            stateStore: RecordingRestrictionApplicationStateStore()
+        )
+
+        try await adapter.applyRestriction(for: [first, second])
+
+        #expect(
+            store.shieldedApplications(
+                named: SharedIdentifiers.managedSettingsStoreName
+            ) == [shared, firstOnly, secondOnly]
+        )
+    }
+
+    @Test("A legacy applied flag forces the old named store to be cleared")
+    func legacyAppliedStateRequiresReset() async throws {
+        let stateStore = RecordingRestrictionApplicationStateStore(
+            initialState: AppliedRestrictionState(
+                activeRuleRevisions: [],
+                requiresReset: true
+            )
+        )
+        let store = RecordingManagedSettingsStoreAccess()
+        let adapter = ManagedSettingsRestrictionAdapter(
+            storeAccess: store,
+            stateStore: stateStore
+        )
+
+        #expect(await adapter.currentAppliedState().requiresReset)
+
+        try await adapter.removeRestriction()
+
+        #expect(store.writeCount == 1)
+        #expect(await adapter.currentAppliedState() == AppliedRestrictionState(
+            activeRuleRevisions: []
+        ))
     }
 
     private func selection(
@@ -155,8 +211,7 @@ private actor RecordingRestrictionApplicationStateStore:
 
     init(
         initialState: AppliedRestrictionState = AppliedRestrictionState(
-            isApplied: false,
-            ruleRevision: nil
+            activeRuleRevisions: []
         )
     ) {
         state = initialState

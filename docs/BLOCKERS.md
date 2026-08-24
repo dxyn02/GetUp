@@ -109,7 +109,7 @@ iOS 26.0과 secondary action·GetUp 자동 실행을 제공하지 않는 `shield
 
 ## BLK-008 — 여러 규칙 활성화 상태의 런타임 저장 계약
 
-**상태**: 미해결(OPEN) — 2026-08-24
+**상태**: 해결됨(RESOLVED) — 2026-08-24
 
 `FR-038`·`FR-044`와 `DEC-016`은 시간·위치 조건을 충족한 모든 규칙의 앱 token 합집합을 적용하고,
 일부 규칙이 끝나면 남은 활성 규칙만으로 합집합을 다시 계산하도록 요구한다. 그러나 T050 착수
@@ -140,3 +140,9 @@ shield를 덮어쓰거나 제거할 수 있어 명세를 위반한다. 반대로
 복구 경로가 잘못된 단일 규칙 저장 계약에 의존하기 전에 바로잡을 수 있다. 결정되면
 `data-model.md`, `shared-storage-contract.md`, `restriction-evaluation-contract.md`,
 `PlatformContracts.swift` 및 관련 테스트를 같은 내용으로 갱신해야 한다.
+
+**해결**: 사용자가 1안을 선택했다. T050에서 위치 상태를 rule ID별 collection으로 저장하고,
+적용 상태는 활성 rule ID·revision 집합을 추적한다. coordinator는 모든 유효 규칙을 독립 평가해
+활성 규칙의 앱 token 합집합을 한 번 적용한다. rule ID가 없는 기존 schema 1 위치 snapshot은 어느
+규칙의 근거인지 안전하게 판별할 수 없으므로 migration 시 빈 collection으로 변환하고, 새 위치
+근거가 기록될 때까지 각 규칙을 `unavailable`로 평가한다.

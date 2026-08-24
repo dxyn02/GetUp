@@ -57,8 +57,9 @@ actor UserDefaultsRestrictionApplicationStateStore:
     RestrictionApplicationStateStoring
 {
     private enum Key {
-        static let isApplied = "getup.restriction.is-applied"
-        static let ruleRevision = "getup.restriction.rule-revision"
+        static let activeRuleRevisions = "getup.restriction.active-rule-revisions"
+        static let legacyIsApplied = "getup.restriction.is-applied"
+        static let legacyRuleRevision = "getup.restriction.rule-revision"
     }
 
     private let defaults: UserDefaults
@@ -68,22 +69,29 @@ actor UserDefaultsRestrictionApplicationStateStore:
     }
 
     func currentState() -> AppliedRestrictionState {
-        let isApplied = defaults.bool(forKey: Key.isApplied)
-        let revision = defaults.object(forKey: Key.ruleRevision) as? Int
-        return AppliedRestrictionState(
-            isApplied: isApplied,
-            ruleRevision: isApplied ? revision : nil
-        )
+        guard
+            let data = defaults.data(forKey: Key.activeRuleRevisions),
+            let revisions = try? JSONDecoder().decode(
+                Set<ActiveRuleRevision>.self,
+                from: data
+            )
+        else {
+            return AppliedRestrictionState(
+                activeRuleRevisions: [],
+                requiresReset: defaults.bool(forKey: Key.legacyIsApplied)
+            )
+        }
+        return AppliedRestrictionState(activeRuleRevisions: revisions)
     }
 
     func saveState(_ newState: AppliedRestrictionState) {
-        defaults.set(newState.isApplied, forKey: Key.isApplied)
-
-        if let revision = newState.ruleRevision {
-            defaults.set(revision, forKey: Key.ruleRevision)
+        if let data = try? JSONEncoder().encode(newState.activeRuleRevisions) {
+            defaults.set(data, forKey: Key.activeRuleRevisions)
         } else {
-            defaults.removeObject(forKey: Key.ruleRevision)
+            defaults.removeObject(forKey: Key.activeRuleRevisions)
         }
+        defaults.removeObject(forKey: Key.legacyIsApplied)
+        defaults.removeObject(forKey: Key.legacyRuleRevision)
     }
 }
 
@@ -128,23 +136,30 @@ final class ManagedSettingsRestrictionAdapter: RestrictionApplying {
         await stateStore.currentState()
     }
 
-    func applyRestriction(for rule: RestrictionRuleSnapshot) async throws {
-        let currentState = await stateStore.currentState()
-        guard
-            !currentState.isApplied
-                || currentState.ruleRevision != rule.revision
-        else {
+    func applyRestriction(for rules: [RestrictionRuleSnapshot]) async throws {
+        let activeRuleRevisions = Set(
+            rules.map { ActiveRuleRevision(ruleID: $0.id, revision: $0.revision) }
+        )
+        guard !activeRuleRevisions.isEmpty else {
+            try await removeRestriction()
             return
         }
 
+        let currentState = await stateStore.currentState()
+        guard currentState.activeRuleRevisions != activeRuleRevisions else {
+            return
+        }
+
+        let applications = rules.reduce(into: Set<ApplicationToken>()) {
+            $0.formUnion($1.activitySelection.applicationTokens)
+        }
         storeAccess.setShieldedApplications(
-            rule.activitySelection.applicationTokens,
+            applications,
             named: SharedIdentifiers.managedSettingsStoreName
         )
         await stateStore.saveState(
             AppliedRestrictionState(
-                isApplied: true,
-                ruleRevision: rule.revision
+                activeRuleRevisions: activeRuleRevisions
             )
         )
     }
@@ -161,8 +176,7 @@ final class ManagedSettingsRestrictionAdapter: RestrictionApplying {
         )
         await stateStore.saveState(
             AppliedRestrictionState(
-                isApplied: false,
-                ruleRevision: nil
+                activeRuleRevisions: []
             )
         )
     }

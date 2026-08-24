@@ -59,15 +59,22 @@
 
 ```json
 {
-  "schemaVersion": 1,
-  "ruleRevision": 1,
-  "state": "inside",
-  "observedAt": "ISO-8601 timestamp",
-  "distanceMeters": 120.0,
-  "horizontalAccuracyMeters": 20.0,
-  "source": "freshFix"
+  "schemaVersion": 2,
+  "conditions": [{
+    "schemaVersion": 2,
+    "ruleID": "stable-rule-id",
+    "ruleRevision": 1,
+    "state": "inside",
+    "observedAt": "ISO-8601 timestamp",
+    "distanceMeters": 120.0,
+    "horizontalAccuracyMeters": 20.0,
+    "source": "freshFix"
+  }]
 }
 ```
+
+schema 2에는 rule ID별 최신 condition을 하나씩 저장한다. rule ID가 없는 schema 1 단일 snapshot은
+특정 규칙에 귀속하지 않고 빈 schema 2 collection으로 migration한다.
 
 ## Ownership and Atomicity
 
@@ -89,7 +96,7 @@
 | 파일 없음 | 규칙은 `configurationRequired`, 위치는 `unavailable` |
 | decode 실패 | 새 제한 적용 금지, 복구 안내 및 진단 기록 |
 | 미지원 schema | 새 제한 적용 금지, migration 필요 상태 |
-| rule revision 불일치 | 위치를 `unavailable`로 간주 |
+| rule ID 없음 또는 revision 불일치 | 해당 규칙의 위치를 `unavailable`로 간주 |
 | 첫 잠금 해제 전 파일 보호 | 상태 보존, 잠금 해제 후 재평가 |
 | atomic write 실패 | 이전 완전한 snapshot 유지, 저장 실패 안내 |
 

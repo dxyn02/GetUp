@@ -4,28 +4,37 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 4 사용자 스토리 2 — T050 활성화 경로 설계 차단
+Phase 4 사용자 스토리 2 — T050 다중 규칙 활성화 경로 구현 완료
 
 ## 진행 중
-T050 — 다중 규칙 활성화 상태의 런타임 저장 계약 결정 대기
+없음
 
 ## 마지막 완료 작업
-T049 — named Managed Settings store의 선택 앱 shield 적용 adapter를 구현함
+T050 — 시간·위치 event를 모든 규칙의 상태 평가와 앱 token 합집합 적용에 연결함
 
 ## 다음 작업
-T050 — 시간·위치 event를 상태 머신과 restriction adapter에 연결하는 활성화 경로를 구현함
+T051 — 앱 비실행·재부팅 복구 event에서 공유 snapshot과 제한 상태를 복구함
 
 ## 차단 상태
-BLK-008 미해결. `FR-038`·`FR-044`와 `DEC-016`은 활성 규칙의 앱 token 합집합을 요구하지만,
-현재 위치·적용 상태·restriction adapter 계약은 단일 규칙만 표현한다. 저장 schema와 adapter API를
-다중 규칙 기준으로 확장할지 사용자 결정이 필요하다.
+없음. BLK-008은 사용자의 1안 선택으로 해결됨.
 
 ## 계획 갱신 필요
-BLK-008 결정 후 필요. 다중 규칙 계약을 즉시 도입하면 위치 condition collection과 적용 상태 schema,
-adapter API 및 migration을 설계 문서와 T050 구현에 반영한다. 단일 규칙 경로를 먼저 택하면 합집합
-구현을 위한 후속 task를 추가해야 한다.
+없음. `DEC-027`의 rule ID별 위치 condition collection, 활성 rule revision 집합, token 합집합과
+schema 1 안전 migration을 설계 문서·계약과 구현에 반영했다.
 
 ## 테스트 상태
+T050에서 사용자의 BLK-008 1안 결정을 반영해 `location-conditions.json`을 rule ID별 schema 2
+collection으로 변경하고, rule ID가 없는 schema 1 위치 snapshot은 빈 collection으로 안전하게
+해석했다. 적용 상태는 활성 `(ruleID, revision)` 집합을 추적하며, 기존 Boolean·revision만 남은
+UserDefaults 상태는 `requiresReset`으로 판정해 GetUp named store를 최초 평가에서 정리한다.
+`RestrictionCoordinator`는 time·location·restoration event마다 저장된 모든 규칙을 독립 평가하고,
+위치 `unavailable`은 동일 revision으로 이미 활성인 규칙만 보존한 뒤 최종 활성 규칙의 application
+token 합집합을 한 번 적용한다. 동시 활성, 중복 token 제거, 일부 규칙 종료 후 남은 합집합 보존,
+반복 평가 무효과와 schema migration 테스트를 추가했다. iPhone 17 Pro iOS 26.5 Simulator에서 전체
+`GetUpTests` 107개가 동적 인자를 포함해 총 139회 모두 통과했고 실패·skip은 없다. T045 UI test는
+상태 UI와 test seam을 구현하는 T055 전까지 계획된 red 상태이므로 이번 검증 범위에서 제외했다.
+`project.pbxproj` plist 문법과 `git diff --check`도 통과했다.
+
 T050 착수 시 `RestrictionStateMachine`, `PlatformContracts.swift`, 공유 저장 계약과 다중 규칙 요구사항을
 대조했다. 기존 계약은 위치 상태와 적용 shield 상태를 단일 `ruleRevision`으로만 표현해 두 개 이상의
 활성 규칙 합집합을 안전하게 계산·복구할 수 없음을 확인했다. 제품 동작과 공유 저장 schema에 영향을

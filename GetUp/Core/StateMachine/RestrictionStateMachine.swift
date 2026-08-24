@@ -43,7 +43,10 @@ enum RestrictionStateMachine {
             )
         }
 
-        guard input.locationCondition.ruleRevision == rule.revision else {
+        guard
+            input.locationCondition.ruleID == rule.id,
+            input.locationCondition.ruleRevision == rule.revision
+        else {
             return unavailableLocationDecision(
                 appliedRestriction: input.appliedRestriction,
                 reason: .locationRevisionMismatch
@@ -52,8 +55,7 @@ enum RestrictionStateMachine {
 
         switch input.locationCondition.state {
         case .inside:
-            let alreadyAppliedForCurrentRule = input.appliedRestriction.isApplied
-                && input.appliedRestriction.ruleRevision == rule.revision
+            let alreadyAppliedForCurrentRule = input.appliedRestriction.contains(rule)
 
             return EvaluationDecision(
                 presentationState: .active,

@@ -85,13 +85,17 @@ struct LocationMonitoringAdapterTests {
         )
 
         #expect(snapshot.schemaVersion == LocationConditionSnapshot.currentSchemaVersion)
+        #expect(snapshot.ruleID == rule.id)
         #expect(snapshot.ruleRevision == 7)
         #expect(snapshot.state == LocationConditionState.inside)
         #expect(snapshot.observedAt == observedAt)
         #expect(snapshot.distanceMeters == 420)
         #expect(snapshot.horizontalAccuracyMeters == 30)
         #expect(snapshot.source == LocationConditionSource.regionEvent)
-        #expect(try await repository.loadLocationCondition() == snapshot)
+        #expect(
+            try await repository.loadLocationConditionCollection()?.conditions
+                == [snapshot]
+        )
         #expect(await evidenceProvider.requestedRuleIDs == [rule.id])
     }
 
@@ -208,18 +212,29 @@ private actor FakeLocationEvidenceProvider: LocationEvidenceProviding {
 }
 
 private actor RecordingLocationConditionRepository: LocationConditionRepository {
-    private var snapshot: LocationConditionSnapshot?
+    private var collection: LocationConditionCollectionSnapshot?
 
-    func loadLocationCondition() async throws -> LocationConditionSnapshot? {
-        snapshot
+    func loadLocationConditionCollection() async throws
+        -> LocationConditionCollectionSnapshot?
+    {
+        collection
     }
 
     func saveLocationCondition(_ condition: LocationConditionSnapshot) async throws {
-        snapshot = condition
+        var conditions = collection?.conditions ?? []
+        conditions.removeAll { $0.ruleID == condition.ruleID }
+        conditions.append(condition)
+        collection = LocationConditionCollectionSnapshot(conditions: conditions)
     }
 
-    func deleteLocationCondition() async throws {
-        snapshot = nil
+    func deleteLocationCondition(for ruleID: UUID) async throws {
+        collection = LocationConditionCollectionSnapshot(
+            conditions: collection?.conditions.filter { $0.ruleID != ruleID } ?? []
+        )
+    }
+
+    func deleteLocationConditions() async throws {
+        collection = nil
     }
 }
 

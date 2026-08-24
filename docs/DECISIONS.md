@@ -128,6 +128,9 @@ extension의 비동기 경계를 통과하려면 해당 immutable aggregate에�
 
 **날짜**: 2026-08-21
 
+**상태**: 적용 상태의 단일 rule revision 범위는 2026-08-24에 `DEC-027`로 대체됨. 비동기 protocol
+경계와 하나의 일관된 snapshot으로 조회한다는 원칙은 유지한다.
+
 **결정**: 시간, 공유 저장소, 권한, 일정, 위치 monitoring 및 제한 적용 기능을 `Sendable` protocol로
 분리한다. process·actor 경계를 통과할 수 있는 작업은 명시적인 `async` API로 제공하고, 저장·등록·
 시스템 제한 변경처럼 실패 가능한 작업은 `throws`로 노출한다. 제한 적용 상태는 적용 여부와 rule
@@ -214,6 +217,33 @@ target의 deployment target을 iOS 26 이상으로 통일한다. 이 결정은 `
 
 **영향 범위**: 제한 상태 계산은 단일 Boolean·revision 대신 활성 rule ID 집합과 앱 token 합집합을
 추적해야 한다. 규칙별 조건 평가, 부분 종료, 중복 앱 및 idempotency 테스트를 후속 계획에 추가한다.
+
+## DEC-027 — 다중 규칙 위치·제한 적용 상태 계약
+
+**날짜**: 2026-08-24
+
+**결정**: `location-conditions.json` schema 2는 rule ID별 `LocationConditionSnapshot` collection을
+저장한다. 제한 적용 상태는 단일 Boolean·revision 대신 활성 `(ruleID, revision)` 집합을 App Group
+`UserDefaults`에 저장한다. `RestrictionCoordinator`는 저장된 모든 유효 규칙을 같은 event 시점에
+독립 평가하고, `active` 규칙과 기존 상태를 보존해야 하는 `unavailable` 규칙을 합성한 뒤 해당
+규칙들의 application token 합집합을 named Managed Settings store에 한 번 적용한다.
+
+rule ID가 없는 schema 1 위치 snapshot은 특정 규칙에 귀속시킬 수 없으므로 값 추정을 금지하고 빈
+schema 2 collection으로 migration한다. 각 규칙은 새 위치 근거가 기록될 때까지 `unavailable`이다.
+기존 UserDefaults가 적용 Boolean·revision만 보존한 경우에는 활성 규칙을 추정하지 않고 최초
+coordinator 평가에서 GetUp named store를 한 번 초기화한다.
+일부 규칙이 종료되거나 외부로 판정되면 남은 활성 규칙 집합으로 합집합을 다시 계산하며, 활성
+rule revision 집합이 같으면 Managed Settings와 상태 저장소 write를 생략한다.
+
+**근거**: `FR-038`·`FR-044`와 `DEC-016`의 합집합 및 부분 종료 동작을 앱과 extension의 재실행
+경계에서도 결정적으로 복구하려면 규칙별 위치 근거와 활성 규칙 집합이 모두 필요하다. 기존 단일
+revision을 collection revision으로 간주하거나 마지막 event 규칙에 귀속시키면 서로 다른 규칙이
+같은 revision을 가질 수 있어 잘못된 제한 적용이 발생한다.
+
+**영향 범위**: `RuntimeStateModels.swift`, `PlatformContracts.swift`,
+`SharedSnapshotRepository.swift`, `LocationMonitor.swift`,
+`ManagedSettingsRestrictionAdapter.swift`, `RestrictionCoordinator.swift`, 공유 저장·평가 계약과 관련
+테스트 fixture를 함께 변경한다. T051의 extension 복구는 이 schema 2 collection을 읽어야 한다.
 
 ## DEC-017 — 직접 시간 입력과 DatePicker 유효 범위 제한
 

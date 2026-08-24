@@ -81,6 +81,7 @@
 
 | Field | Type | Rules |
 |-------|------|-------|
+| `ruleID` | Stable identifier | 판정 대상 규칙을 고유하게 식별해야 한다. |
 | `ruleRevision` | Integer | 판정에 사용한 규칙 revision과 일치해야 한다. |
 | `state` | `inside`, `outside`, `unavailable` | 경계 중첩은 `unavailable`이다. |
 | `observedAt` | Timestamp | 근거가 확인된 시각이다. |
@@ -90,6 +91,10 @@
 
 새 규칙 revision, 재부팅 후 첫 잠금 해제, 권한 변경 또는 손상된 파일을 만나면 `unavailable`로
 초기화한다. 직접 위치 fix는 최신성 검사를 통과해야 하며, 오래된 fix는 `unavailable`이다.
+
+`LocationConditionCollectionSnapshot`은 rule ID별 최신 판정을 하나씩 보존하는 schema 2
+collection이다. rule ID가 없는 기존 schema 1 단일 snapshot은 특정 규칙에 안전하게 귀속할 수
+없으므로 빈 collection으로 migration하고 새 근거가 기록될 때까지 `unavailable`로 평가한다.
 
 #### Accuracy classification
 
@@ -114,6 +119,12 @@
 자동 제한을 새로 적용하려면 Family Controls 승인, Always 위치 권한, Full Accuracy가 모두
 필요하다. 권한의 실제 상태는 매 평가 전에 시스템에서 다시 확인한다.
 
+### AppliedRestrictionState
+
+named Managed Settings store에 현재 반영된 활성 `(ruleID, revision)` 집합을 보존한다. 적용 여부는
+집합이 비어 있는지로 파생하며, 모든 활성 규칙의 application token 합집합은 규칙 collection에서
+재구성한다. 동일한 활성 revision 집합은 idempotent한 무효과다.
+
 ### RestrictionPresentationState
 
 사용자에게 표시할 정규화된 상태다.
@@ -131,11 +142,11 @@
 
 ### Inputs
 
-- 유효한 `RestrictionRuleSnapshot` 또는 규칙 없음
+- 유효한 모든 `RestrictionRuleSnapshot`
 - 현재 현지 시각과 달력
-- `LocationConditionSnapshot`
+- rule ID별 `LocationConditionCollectionSnapshot`
 - `AuthorizationSnapshot`
-- 현재 shield 적용 여부와 마지막 적용 revision
+- 현재 shield에 반영된 활성 `(ruleID, revision)` 집합
 
 ### Decision table
 
@@ -148,7 +159,9 @@
 | 5 | 시간 활성 + 위치 `unavailable` | `locationUnavailable` | 기존 shield 상태 보존 |
 | 6 | 시간 활성 + 위치 `inside` + 권한 유효 | `active` | 선택 앱 shield 적용 |
 
-동일한 rule revision과 동일한 목표 shield 상태에는 효과를 다시 발생시키지 않는다.
+각 규칙을 독립 평가한 뒤 `active` 규칙과 위치 불가로 기존 상태를 보존해야 하는 규칙을 합성한다.
+최종 활성 규칙들의 application token 합집합을 한 번 적용하고, 동일한 활성 rule revision 집합에는
+효과를 다시 발생시키지 않는다.
 
 ## Persistence Boundaries
 

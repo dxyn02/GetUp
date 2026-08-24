@@ -345,6 +345,7 @@ actor LocationMonitor: LocationMonitoring {
         do {
             let evidence = try await evidenceProvider.evidence(for: rule)
             snapshot = LocationConditionSnapshot(
+                ruleID: rule.id,
                 ruleRevision: rule.revision,
                 state: LocationEvidenceEvaluator.evaluate(
                     distanceMeters: evidence.distanceMeters,
@@ -358,6 +359,7 @@ actor LocationMonitor: LocationMonitoring {
             )
         } catch {
             snapshot = LocationConditionSnapshot(
+                ruleID: rule.id,
                 ruleRevision: rule.revision,
                 state: .unavailable,
                 observedAt: clock.now,

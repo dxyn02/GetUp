@@ -13,9 +13,10 @@ enum LocationConditionSource: String, Codable, Sendable {
 }
 
 struct LocationConditionSnapshot: Codable, Equatable, Sendable {
-    static let currentSchemaVersion = 1
+    static let currentSchemaVersion = 2
 
     let schemaVersion: Int
+    let ruleID: UUID
     let ruleRevision: Int
     let state: LocationConditionState
     let observedAt: Date
@@ -25,6 +26,7 @@ struct LocationConditionSnapshot: Codable, Equatable, Sendable {
 
     init(
         schemaVersion: Int = LocationConditionSnapshot.currentSchemaVersion,
+        ruleID: UUID,
         ruleRevision: Int,
         state: LocationConditionState,
         observedAt: Date,
@@ -33,12 +35,34 @@ struct LocationConditionSnapshot: Codable, Equatable, Sendable {
         source: LocationConditionSource
     ) {
         self.schemaVersion = schemaVersion
+        self.ruleID = ruleID
         self.ruleRevision = ruleRevision
         self.state = state
         self.observedAt = observedAt
         self.distanceMeters = distanceMeters
         self.horizontalAccuracyMeters = horizontalAccuracyMeters
         self.source = source
+    }
+}
+
+struct LocationConditionCollectionSnapshot: Codable, Equatable, Sendable {
+    static let currentSchemaVersion = 2
+
+    let schemaVersion: Int
+    let conditions: [LocationConditionSnapshot]
+
+    init(
+        schemaVersion: Int = LocationConditionCollectionSnapshot.currentSchemaVersion,
+        conditions: [LocationConditionSnapshot]
+    ) {
+        self.schemaVersion = schemaVersion
+        self.conditions = conditions
+    }
+
+    func condition(for rule: RestrictionRuleSnapshot) -> LocationConditionSnapshot? {
+        conditions.first {
+            $0.ruleID == rule.id && $0.ruleRevision == rule.revision
+        }
     }
 }
 
