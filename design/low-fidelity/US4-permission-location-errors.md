@@ -24,6 +24,7 @@
 ### 포함 범위
 
 - Family Controls, Always location, Full Accuracy, Background App Refresh 상태별 원인과 복구 행동
+- 권한 네 종류를 구분하는 `🛡️`, `📍`, `🎯`, `🔄` 시각 표시
 - Family Controls 재승인 뒤 제한 앱 재선택이 필요한 흐름
 - 시스템 설정 이동과 GetUp foreground 복귀 뒤 재평가 흐름
 - 위치 확인 불가에서 비활성 제한을 새로 적용하지 않는 상태
@@ -92,6 +93,10 @@
 - Family Controls 재승인 뒤 이전 opaque token이 유효하다고 가정하지 않고 제한 앱 재선택을 요구한다.
 - `설정 열기`는 시스템 설정으로 이동하며, 복귀 시 최신 권한 상태를 다시 읽는다.
 - Background App Refresh 제한은 복구 지연 가능성을 설명하되 특정 실행 시각을 보장하지 않는다.
+- 권한 점검 목록은 원형 bullet 대신 앱 제한 `🛡️`, 위치 접근 `📍`, 정확한 위치 `🎯`,
+  Background App Refresh `🔄` 표시를 사용한다.
+- 모든 화면의 primary 버튼은 `x=20`, `y=692`, secondary 버튼은 `x=20`, `y=768`에 두고
+  두 종류 모두 `353×56pt`로 고정한다. secondary 버튼이 없는 화면도 primary 위치를 올리지 않는다.
 - 위치 오류, 오래된 fix, 음수 accuracy, Reduced Accuracy, 반경 경계와 오차 범위 중첩은
   `unavailable`로 표시한다.
 - 위치 `unavailable`에서는 좌표를 추정하지 않고 위치만을 근거로 제한 상태를 변경하지 않는다.
@@ -103,6 +108,8 @@
 ## 접근성 가설
 
 - VoiceOver 순서는 상태 → 원인 → 현재 제한 영향 → 복구 행동이다.
+- 권한 아이콘은 구현에서 의미 없는 중복 낭독을 막도록 접근성에서 숨기고, 같은 행의 권한 이름과
+  설명을 하나의 label로 묶는다.
 - 권한 부족과 위치 확인 불가는 색상뿐 아니라 eyebrow, 제목, 현재 상태 문구로 구분한다.
 - Dynamic Type AX5에서는 제목·본문을 축약하지 않고 자연스럽게 줄바꿈하며 화면 전체를 세로 scroll한다.
 - 모든 복구 버튼은 최소 `44×44pt` touch target을 유지한다.
@@ -123,9 +130,11 @@
 
 ## 자동 감사 결과
 
-2026-08-24 Figma wrapper와 여섯 화면을 렌더링하고 text node 52개를 검사했다. SF Pro 외 서체,
-빈 text, placeholder, shimmer와 각 393×852pt 화면 경계 밖 text overflow가 모두 0건이었다. 색상,
-간격과 반경은 기존 `GetUp Focus` local variable을 재사용했다.
+2026-08-24 피드백 반영 뒤 Figma wrapper와 여섯 화면을 다시 렌더링하고 text node 49개와 버튼
+frame 10개를 검사했다. 네 권한 항목에 `🛡️`, `📍`, `🎯`, `🔄` 표시가 각각 존재하고, primary 버튼
+6개는 모두 `x=20, y=692`, secondary 버튼 4개는 모두 `x=20, y=768`, 크기는 모두 `353×56pt`로
+일치했다. SF Pro 외 서체, 빈 text, placeholder, shimmer와 각 393×852pt 화면 경계 밖 text
+overflow가 모두 0건이었다. 색상, 간격과 반경은 기존 `GetUp Focus` local variable을 재사용했다.
 
 이 task는 디자인·문서 작업이므로 code test는 실행하지 않았다.
 
@@ -134,12 +143,15 @@
 | 날짜 | 검토자 | 결과 | 의견 | 반영 위치 또는 사유 |
 |---|---|---|---|---|
 | `2026-08-24` | 사용자 | `검토 대기` | T068 로우파이 초안 검토 요청 | `T069`에서 피드백과 승인 여부 반영 |
+| `2026-08-24` | 사용자 | `변경 요청` | 권한 설명 앞의 원형 표시를 관련 emoji 또는 이미지로 바꾸고 화면별 버튼 위치를 동일하게 고정 | `US4-LF-01`의 네 권한 표시와 여섯 화면의 action 좌표에 반영 |
+| `2026-08-24` | `Codex` | `반영 완료·재검토 대기` | 네 권한 표시와 primary·secondary button baseline을 통일하고 전체 wrapper를 재감사 | 사용자 재검토와 승인 대기 |
 
 ## 변경 기록
 
 | 날짜 | 작성자 | 변경 내용 | 관련 검토 의견 |
 |---|---|---|---|
 | `2026-08-24` | `Codex` | 권한 점검, Family Controls 재승인·앱 재선택, Always·Full Accuracy, Background App Refresh, 위치 확인 불가의 비활성·활성 상태를 하나의 검토 wrapper로 제작 | 최초 작성 |
+| `2026-08-24` | `Codex` | 원형 bullet을 권한별 `🛡️`, `📍`, `🎯`, `🔄` 표시로 교체하고 primary·secondary 버튼 위치와 크기를 화면 전체에서 통일 | 사용자 변경 요청 |
 
 ## 로우파이 승인
 
@@ -148,6 +160,6 @@
 | 승인 상태 | `검토 대기` |
 | 승인자 | 미승인 |
 | 승인일 | 미승인 |
-| 미해결 항목 | T069 사용자 검토와 승인 |
+| 미해결 항목 | 피드백 반영본의 T069 사용자 재검토와 승인 |
 
 승인 상태가 `승인됨`이 되기 전에는 T070 하이파이와 US4 UI 구현을 시작하지 않는다.

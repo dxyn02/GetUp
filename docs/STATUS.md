@@ -4,10 +4,10 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 6 사용자 스토리 4 디자인 — 권한·위치 오류 로우파이 검토 대기
+Phase 6 사용자 스토리 4 디자인 — 로우파이 피드백 반영 후 재검토 대기
 
 ## 진행 중
-없음
+T069 — US4 로우파이 사용자 피드백 반영본 재검토
 
 ## 마지막 완료 작업
 T068 — 권한별 복구와 위치 확인 불가 상태의 US4 로우파이를 제작함
@@ -22,6 +22,15 @@ T069 — US4 로우파이를 사용자와 검토하고 피드백·승인 여부�
 없음. 규칙 삭제 UI의 코드·Figma 불일치를 T060·T061로 보정한 뒤 US3 테스트를 시작하도록 계획을 갱신했다.
 
 ## 테스트 상태
+T069 사용자 피드백에 따라 `US4-LF-01` 권한 설명 앞의 원형 bullet을 앱 사용 제한 `🛡️`, 위치 접근
+`📍`, 정확한 위치 `🎯`, Background App Refresh `🔄` 표시로 교체했다. 여섯 화면의 primary 버튼은
+모두 `x=20, y=692`, secondary 버튼은 `x=20, y=768`, 크기는 `353×56pt`로 고정해 내용 길이와
+관계없이 같은 위치에 표시되도록 수정했다. 사용자가 Figma에서 직접 조정한 wrapper 배경과 화면
+문구는 보존하고, 밝은 wrapper에서 상단 제목이 읽히도록 기존 `color/onAccent` token으로 대비만
+보정했다. 반영본 자동 감사에서 text node 49개, 버튼 frame 10개를 확인했으며 SF Pro 외 서체, 빈
+text, placeholder, shimmer와 화면 경계 밖 text overflow는 모두 0건이었다. 디자인·문서 변경이므로
+code test는 실행하지 않았고, T069 완료 여부는 사용자 재검토와 승인 뒤 결정한다.
+
 T068에서 기존 Figma 파일의 `GetUp Focus` local color·spacing·radius variable과 SF Pro typography를
 재사용해 권한 점검, Family Controls 재승인·앱 재선택, Always·Full Accuracy 설정, Background App
 Refresh 확인, 위치 `unavailable`의 비활성·활성 상태를 여섯 개 393×852pt frame으로 제작했다. 위치
