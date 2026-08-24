@@ -501,3 +501,20 @@ SwiftUI Alert의 system-owned action에는 별도 accessibility identifier를 �
 
 **영향 범위**: `RuleEditorModel`, `RestrictionStatusView`, `RuleEditorView`, `AppModel`,
 `Localizable.xcstrings`, T063 UI test와 T066·T067 단위 테스트에 적용한다.
+
+## DEC-033 — 위치 근거의 24시간 최신성 경계
+
+**날짜**: 2026-08-24
+
+**결정**: `RestrictionCoordinator`는 현재 시각 기준 24시간 이상 지난 `LocationConditionSnapshot`을
+평가 직전에 `unavailable`로 정규화한다. 원래 `observedAt`과 source는 보존하되 거리와 정확도 값은
+판정 근거에서 제거한다. 유효 시간대 안에서는 같은 `(ruleID, revision)`의 기존 shield만 보존하고
+새 shield를 적용하지 않는다. 시간대가 종료된 규칙은 위치 최신성과 관계없이 먼저 비활성으로
+판정해 shield를 해제한다.
+
+**근거**: 오래된 위치를 내부 또는 외부의 권위 있는 근거로 재사용하면 잘못된 신규 제한이나 위치
+기반 해제가 발생할 수 있다. T073이 명시한 24시간 전 fix를 닫힌 최신성 경계로 사용하고, 위치 불가
+상태 보존보다 시간 종료를 우선하는 `FR-015`, `FR-019`, `FR-020`의 순서를 유지한다.
+
+**영향 범위**: `RestrictionCoordinator`, `LocationUnavailableTests`, `RestrictionReleaseTests`와
+`restriction-evaluation-contract.md`의 위치 불가·시간 종료 우선순위에 적용한다.

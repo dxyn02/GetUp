@@ -28,6 +28,8 @@ struct SystemRestrictionClock: Clock {
 }
 
 actor RestrictionCoordinator {
+    private static let maximumTrustedLocationAge: TimeInterval = 24 * 60 * 60
+
     private let ruleRepository: any RuleRepository
     private let locationConditionRepository: any LocationConditionRepository
     private let authorizationProvider: any AuthorizationProviding
@@ -91,9 +93,13 @@ actor RestrictionCoordinator {
         var desiredRules: [RestrictionRuleSnapshot] = []
 
         for rule in rules.sorted(by: Self.ruleOrder) {
-            let locationCondition = locationConditions.first {
+            let storedLocationCondition = locationConditions.first {
                 $0.ruleID == rule.id && $0.ruleRevision == rule.revision
             } ?? unavailableLocationCondition(for: rule)
+            let locationCondition = trustedLocationCondition(
+                storedLocationCondition,
+                for: rule
+            )
             let ruleAppliedState = AppliedRestrictionState(
                 activeRuleRevisions: currentAppliedState.activeRuleRevisions.filter {
                     $0.ruleID == rule.id && $0.revision == rule.revision
@@ -169,6 +175,25 @@ actor RestrictionCoordinator {
             horizontalAccuracyMeters: nil,
             source: .restoration
         )
+    }
+
+    private func trustedLocationCondition(
+        _ condition: LocationConditionSnapshot,
+        for rule: RestrictionRuleSnapshot
+    ) -> LocationConditionSnapshot {
+        let age = clock.now.timeIntervalSince(condition.observedAt)
+        guard age < Self.maximumTrustedLocationAge else {
+            return LocationConditionSnapshot(
+                ruleID: rule.id,
+                ruleRevision: rule.revision,
+                state: .unavailable,
+                observedAt: condition.observedAt,
+                distanceMeters: nil,
+                horizontalAccuracyMeters: nil,
+                source: condition.source
+            )
+        }
+        return condition
     }
 
     private static func ruleOrder(

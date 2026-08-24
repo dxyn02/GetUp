@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 6 사용자 스토리 4 구현 — 권한 안내 화면 완료
+Phase 6 사용자 스토리 4 구현 — 위치 확인 불가 안전 처리 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T077 — 승인된 하이파이에 맞춰 PermissionGuideView와 앱 진입 시나리오를 구현함
+T078 — stale 위치 근거의 상태 보존과 위치 불가 상태의 시간 우선 해제를 구현함
 
 ## 다음 작업
-T078 — 위치 확인 불가에서 기존 shield 보존과 시간 종료 해제를 구현함
+T079 — foreground·권한 변경 시 runtime 재평가와 권한 안내 갱신 구현
 
 ## 차단 상태
 없음. BLK-009은 사용자의 1안 선택으로 해결됨.
@@ -22,6 +22,14 @@ T078 — 위치 확인 불가에서 기존 shield 보존과 시간 종료 해제
 없음. 규칙 삭제 UI의 코드·Figma 불일치를 T060·T061로 보정한 뒤 US3 테스트를 시작하도록 계획을 갱신했다.
 
 ## 테스트 상태
+T078에서 `RestrictionCoordinator`가 현재 시각 기준 24시간 이상 지난 위치 근거를 평가 직전에
+`unavailable`로 정규화하도록 구현했다. 유효 시간대 안에서는 동일 revision의 기존 활성 shield만
+보존하고 비활성 규칙에는 새 shield를 적용하지 않으며, 시간대가 끝나면 위치가 `unavailable`이어도
+기존 우선순위에 따라 shield를 해제한다. 위치 불가·자동 해제·다중 규칙 coordinator 대상 10개 논리
+테스트가 동적 인자 포함 16회 모두 통과했다. 이어 iPhone 17 Pro iOS 26.5 Simulator에서 T073을
+제외하지 않은 전체 `GetUpTests` 139개가 동적 인자 포함 총 182회 모두 통과했으며 실패·skip은 없다.
+실제 Device Activity 종료 callback과 물리 기기 위치 오류는 T085 실기기 인수에서 확인한다.
+
 T077에서 승인된 Figma 하이파이의 권한 개요, Family Controls 복구, Always·Full Accuracy,
 Background App Refresh, 위치 `unavailable` 비활성·활성의 여섯 상태를 `PermissionGuideView`와 UI test
 fixture에 연결했다. 권한 목록의 원형 표시는 `🛡️`, `📍`, `🎯`, `🔄` 이모지로 교체하고 모든 화면의
