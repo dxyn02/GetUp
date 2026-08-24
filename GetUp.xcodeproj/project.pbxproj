@@ -68,6 +68,7 @@
 		AA0000000000000000000156 /* WeekdayPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000033 /* WeekdayPicker.swift */; };
 		AA0000000000000000000157 /* RadiusPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000034 /* RadiusPicker.swift */; };
 		AA0000000000000000000160 /* RuleEditorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000035 /* RuleEditorModel.swift */; };
+		AA0000000000000000000162 /* RuleEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000036 /* RuleEditorView.swift */; };
 		AA0000000000000000000161 /* RuleEditorModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000015 /* RuleEditorModelTests.swift */; };
 		AA0000000000000000000081 /* TestFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000001 /* TestFixtures.swift */; };
 		AA0000000000000000000082 /* RestrictionStateMachineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000002 /* RestrictionStateMachineTests.swift */; };
@@ -167,6 +168,7 @@
 		B40000000000000000000033 /* WeekdayPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekdayPicker.swift; sourceTree = "<group>"; };
 		B40000000000000000000034 /* RadiusPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadiusPicker.swift; sourceTree = "<group>"; };
 		B40000000000000000000035 /* RuleEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleEditorModel.swift; sourceTree = "<group>"; };
+		B40000000000000000000036 /* RuleEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleEditorView.swift; sourceTree = "<group>"; };
 		B50000000000000000000001 /* TestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFixtures.swift; sourceTree = "<group>"; };
 		B50000000000000000000002 /* RestrictionStateMachineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStateMachineTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSnapshotRepositoryTests.swift; sourceTree = "<group>"; };
@@ -518,6 +520,7 @@
 			isa = PBXGroup;
 			children = (
 				B40000000000000000000035 /* RuleEditorModel.swift */,
+				B40000000000000000000036 /* RuleEditorView.swift */,
 				B40000000000000000000031 /* Components */,
 			);
 			path = RuleEditor;
@@ -773,6 +776,7 @@
 				AA0000000000000000000156 /* WeekdayPicker.swift in Sources */,
 				AA0000000000000000000157 /* RadiusPicker.swift in Sources */,
 				AA0000000000000000000160 /* RuleEditorModel.swift in Sources */,
+				AA0000000000000000000162 /* RuleEditorView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

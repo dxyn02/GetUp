@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 3 사용자 스토리 1 — T034 규칙 편집 model 구현 완료
+Phase 3 사용자 스토리 1 — T035 규칙 편집 화면 구현 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T034 — 편집 draft, validation, 여러 규칙 identity와 저장 장소 재사용 model을 구현함
+T035 — 승인된 Dark Focus 규칙 편집 화면과 시간·장소·앱 선택 진입을 구현함
 
 ## 다음 작업
-T035 — 승인된 하이파이에 맞춰 규칙 편집 화면과 장소·앱 선택 진입을 구현함
+T036 — 규칙 collection·저장 장소 collection 저장과 revision 증가를 구현함
 
 ## 차단 상태
 없음
@@ -139,6 +139,19 @@ Swift 6 strict concurrency와 warning-as-error compile을 통과했고, 동일 p
 harness 12개 assertion이 모두 통과했다. 전체 `build-for-testing`은 새 source compile 후 T037 전의
 기존 예상 상태인 앱 entry point `_main` linker 오류로 종료되어 Xcode test suite 실행은 아직
 미검증 상태다. `project.pbxproj` 문법과 `git diff --check`를 확인했다.
+T035에서 승인된 Figma `HF-FLOW-01`·`HF-FLOW-10`·`HF-FLOW-11`을 기준으로
+`RuleEditorView.swift`를 구현했다. Dark Focus의 편집 header, 시간 disclosure, 요일 chip, 장소·앱
+조건 card와 하단 저장 CTA를 구성하고 필수 요일·장소·앱 validation을 화면에 연결했다. 시작·종료
+시간은 기존 wheel sheet로, 장소는 `LocationPickerView` push와 재사용 가능한 장소 이름 입력 alert로
+연결했다. 앱 선택은 개인용 Family Controls 승인 뒤 시스템 `FamilyActivityPicker`를 표시하고 opaque
+selection을 model에 반영하며, UI test에서만 결과를 주입할 수 있는 seam을 제공한다. 저장은 T036의
+service를 주입받는 async closure로 분리하고 중복 tap 방지, draft를 보존하는 저장 실패 card와 재시도
+식별자를 구현했다. 주요 control과 validation에는 T027 UI test 계약의 accessibility identifier,
+label, value, hint를 적용했다. `RuleEditorView.swift`와 관련 앱·테스트 source는 iOS 26 Simulator SDK의
+arm64·x86_64에서 Swift 6 compile을 통과했다. 전체 `build-for-testing`은 source와 test compile 뒤
+T037 전의 기존 예상 상태인 앱 entry point `_main` linker 오류로 종료되어 실제 화면 render, 시스템
+Family Controls 승인·picker 및 UI test 실행은 아직 미검증 상태다. `project.pbxproj` 문법과
+`git diff --check`를 확인했다.
 `tasks.md`의 87개 task가 연속 ID, 체크박스 및 파일 경로 형식 검증을 통과함.
 T001 검증으로 `project.pbxproj` plist 문법, 공유 scheme XML 및 `xcodebuild -list -json`을 실행해
 Debug/Release 구성, 6개 target과 6개 scheme 인식을 확인함. Simulator service와 기본 DerivedData

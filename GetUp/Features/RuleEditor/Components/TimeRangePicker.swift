@@ -1,9 +1,11 @@
 import Foundation
 import SwiftUI
 
-enum TimeRangeBoundary: Equatable, Sendable {
+enum TimeRangeBoundary: Hashable, Identifiable, Sendable {
     case start
     case end
+
+    var id: Self { self }
 }
 
 struct TimeRangePicker: View {
