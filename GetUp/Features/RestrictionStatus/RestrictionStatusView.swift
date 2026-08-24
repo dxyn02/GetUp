@@ -5,10 +5,12 @@ struct RestrictionStatusView: View {
     let rulePosition: Int
     let ruleCount: Int
 
+    @State private var isGuardAlertPresented = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("RESTRICTION ACTIVE")
+                Text("restriction_status.active")
                     .font(.caption)
                     .fontWeight(.bold)
                     .foregroundStyle(HomeColor.accent)
@@ -61,13 +63,23 @@ struct RestrictionStatusView: View {
             }
             .background(HomeColor.surfaceElevated.opacity(0.52), in: .rect(cornerRadius: 18))
 
-            Label("조건 종료 후 수정 가능", systemImage: "lock.fill")
-                .font(.footnote)
-                .fontWeight(.semibold)
-                .foregroundStyle(HomeColor.textSecondary)
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .background(HomeColor.surfaceElevated.opacity(0.42), in: .rect(cornerRadius: 14))
-                .accessibilityIdentifier("restrictionStatus.editDisabled")
+            Button {
+                isGuardAlertPresented = true
+            } label: {
+                Label("restriction_status.edit_disabled", systemImage: "lock.fill")
+                    .font(.footnote)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(HomeColor.textSecondary)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .background(
+                        HomeColor.surfaceElevated.opacity(0.42),
+                        in: .rect(cornerRadius: 14)
+                    )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("restriction_status.edit_disabled"))
+            .accessibilityHint("수정할 수 있는 위치와 시간을 안내합니다.")
+            .accessibilityIdentifier("restrictionStatus.editDisabled")
         }
         .padding(22)
         .frame(maxWidth: .infinity, minHeight: 410, alignment: .topLeading)
@@ -78,6 +90,14 @@ struct RestrictionStatusView: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("home.ruleCard.\(item.accessibilityID)")
+        .alert(
+            Text("restriction_guard.title"),
+            isPresented: $isGuardAlertPresented
+        ) {
+            Button("restriction_guard.confirm", role: .cancel) {}
+        } message: {
+            Text(modificationGuard.message)
+        }
     }
 
     private func conditionRow(
@@ -103,6 +123,14 @@ struct RestrictionStatusView: View {
 
     private var radiusLabel: String {
         RadiusPicker.displayName(for: item.rule.radius)
+    }
+
+    private var modificationGuard: RestrictionModificationGuard {
+        RestrictionModificationGuard(
+            savedPlaceName: item.savedPlace.name,
+            radius: item.rule.radius,
+            endTime: item.rule.endTime
+        )
     }
 
     private var weekdayLabel: String {

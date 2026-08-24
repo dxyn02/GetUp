@@ -194,10 +194,108 @@ struct AppModelTests {
         #expect(await repository.storedRules?.rules == [rule])
     }
 
+    @Test("The applied active revision guards editor save and deletion")
+    func appliedActiveRevisionGuardsEditorMutations() async throws {
+        let place = makePlace()
+        let rule = makeRule(
+            id: Self.todayRuleID,
+            revision: 3,
+            weekdays: [.monday],
+            start: TimeOfDay(hour: 6, minute: 0),
+            placeID: place.id
+        )
+        let repository = AppModelRepository(
+            rules: RestrictionRuleCollectionSnapshot(revision: 5, rules: [rule]),
+            places: SavedPlaceCollectionSnapshot(revision: 2, places: [place])
+        )
+        let activeState = AppliedRestrictionState(
+            activeRuleRevisions: [
+                ActiveRuleRevision(ruleID: rule.id, revision: rule.revision),
+            ]
+        )
+        let model = makeModel(
+            repository: repository,
+            loadAppliedRestrictionState: { activeState }
+        )
+        await model.load()
+        model.beginEditingRule(id: rule.id)
+        let editor = try #require(model.editorModel)
+
+        #expect(!editor.canModify)
+        await #expect(throws: AppRuleSaveError.activeRestriction) {
+            try await model.save(
+                draft: editor.preparedDraft,
+                savedPlaces: editor.savedPlaces
+            )
+        }
+        await #expect(throws: AppRuleDeletionError.activeRestriction) {
+            try await model.deleteEditingRule()
+        }
+
+        #expect(model.editorModel != nil)
+        #expect(await repository.storedRules?.rules == [rule])
+    }
+
+    @Test("Refreshing a released active revision re-enables the open editor and re-entry")
+    func releaseRefreshReEnablesEditing() async throws {
+        let place = makePlace()
+        let rule = makeRule(
+            id: Self.todayRuleID,
+            revision: 3,
+            weekdays: [.monday],
+            start: TimeOfDay(hour: 6, minute: 0),
+            placeID: place.id
+        )
+        let repository = AppModelRepository(
+            rules: RestrictionRuleCollectionSnapshot(revision: 5, rules: [rule]),
+            places: SavedPlaceCollectionSnapshot(revision: 2, places: [place])
+        )
+        let stateSource = AppliedRestrictionStateSource(
+            AppliedRestrictionState(
+                activeRuleRevisions: [
+                    ActiveRuleRevision(ruleID: rule.id, revision: rule.revision),
+                ]
+            )
+        )
+        let model = makeModel(
+            repository: repository,
+            loadAppliedRestrictionState: { await stateSource.load() }
+        )
+        await model.load()
+        model.beginEditingRule(id: rule.id)
+        let guardedEditor = try #require(model.editorModel)
+        #expect(model.restrictionStatus.isActive(rule))
+        #expect(!guardedEditor.canModify)
+
+        await stateSource.update(AppliedRestrictionState(activeRuleRevisions: []))
+        await model.refreshRestrictionStatus()
+
+        #expect(!model.restrictionStatus.isActive(rule))
+        #expect(guardedEditor.canModify)
+        #expect(guardedEditor.modificationGuard == nil)
+
+        model.cancelEditing()
+        model.beginEditingRule(id: rule.id)
+        let reenteredEditor = try #require(model.editorModel)
+        #expect(reenteredEditor.canModify)
+        #expect(reenteredEditor.setEnabled(false))
+
+        try await model.save(
+            draft: reenteredEditor.preparedDraft,
+            savedPlaces: reenteredEditor.savedPlaces
+        )
+
+        #expect(model.editorModel == nil)
+        #expect(model.homeRules.first?.rule.isEnabled == false)
+    }
+
     private func makeModel(
         repository: AppModelRepository,
         now: Date = date(year: 2026, month: 8, day: 24, hour: 12),
         canDeleteRule: @escaping @Sendable (UUID) async -> Bool = { _ in true },
+        loadAppliedRestrictionState: @escaping @Sendable () async -> AppliedRestrictionState = {
+            AppliedRestrictionState(activeRuleRevisions: [])
+        },
         synchronizeRuntimeAfterSave: @escaping @Sendable (
             RestrictionRuleSnapshot
         ) async throws -> Void = { _ in }
@@ -211,7 +309,8 @@ struct AppModelTests {
             applicationTokenCounter: { _ in 1 },
             applicationCountForRule: { _ in 1 },
             canDeleteRule: canDeleteRule,
-            synchronizeRuntimeAfterSave: synchronizeRuntimeAfterSave
+            synchronizeRuntimeAfterSave: synchronizeRuntimeAfterSave,
+            loadAppliedRestrictionState: loadAppliedRestrictionState
         )
     }
 
@@ -298,6 +397,22 @@ private actor SavedRuleRuntimeSyncRecorder {
 
     func record(_ rule: RestrictionRuleSnapshot) {
         ruleRevisions.append(rule.revision)
+    }
+}
+
+private actor AppliedRestrictionStateSource {
+    private var state: AppliedRestrictionState
+
+    init(_ state: AppliedRestrictionState) {
+        self.state = state
+    }
+
+    func load() -> AppliedRestrictionState {
+        state
+    }
+
+    func update(_ state: AppliedRestrictionState) {
+        self.state = state
     }
 }
 

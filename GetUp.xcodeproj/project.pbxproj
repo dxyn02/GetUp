@@ -116,6 +116,8 @@
 		AA0000000000000000000198 /* ShieldActionResponsePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000050 /* ShieldActionResponsePolicy.swift */; };
 		AA0000000000000000000199 /* ShieldActionExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90000000000000000000001 /* ShieldActionExtension.swift */; };
 		AA0000000000000000000200 /* RestrictionStatusModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000025 /* RestrictionStatusModelTests.swift */; };
+		AA0000000000000000000203 /* RestrictionReleaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000026 /* RestrictionReleaseTests.swift */; };
+		AA0000000000000000000204 /* UserStory3AutoReleaseUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000003 /* UserStory3AutoReleaseUITests.swift */; };
 		AA0000000000000000000201 /* RestrictionStatusModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000051 /* RestrictionStatusModel.swift */; };
 		AA0000000000000000000202 /* RestrictionStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000053 /* RestrictionStatusView.swift */; };
 /* End PBXBuildFile section */
@@ -241,8 +243,10 @@
 		B50000000000000000000016 /* RuleConfigurationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleConfigurationServiceTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000017 /* AppModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModelTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000025 /* RestrictionStatusModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStatusModelTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000026 /* RestrictionReleaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionReleaseTests.swift; sourceTree = "<group>"; };
 		B60000000000000000000001 /* UserStory1RuleConfigurationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory1RuleConfigurationUITests.swift; sourceTree = "<group>"; };
 		B60000000000000000000002 /* UserStory2RestrictionActivationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory2RestrictionActivationUITests.swift; sourceTree = "<group>"; };
+		B60000000000000000000003 /* UserStory3AutoReleaseUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory3AutoReleaseUITests.swift; sourceTree = "<group>"; };
 		B70000000000000000000001 /* DeviceActivityMonitorExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceActivityMonitorExtension.swift; sourceTree = "<group>"; };
 		B80000000000000000000001 /* ShieldConfigurationExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldConfigurationExtension.swift; sourceTree = "<group>"; };
 		B90000000000000000000001 /* ShieldActionExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldActionExtension.swift; sourceTree = "<group>"; };
@@ -416,6 +420,7 @@
 				B50000000000000000000016 /* RuleConfigurationServiceTests.swift */,
 				B50000000000000000000017 /* AppModelTests.swift */,
 				B50000000000000000000025 /* RestrictionStatusModelTests.swift */,
+				B50000000000000000000026 /* RestrictionReleaseTests.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -457,6 +462,7 @@
 			children = (
 				B60000000000000000000001 /* UserStory1RuleConfigurationUITests.swift */,
 				B60000000000000000000002 /* UserStory2RestrictionActivationUITests.swift */,
+				B60000000000000000000003 /* UserStory3AutoReleaseUITests.swift */,
 			);
 			path = GetUpUITests;
 			sourceTree = "<group>";
@@ -1003,6 +1009,7 @@
 				AA0000000000000000000164 /* RuleConfigurationServiceTests.swift in Sources */,
 				AA0000000000000000000167 /* AppModelTests.swift in Sources */,
 				AA0000000000000000000200 /* RestrictionStatusModelTests.swift in Sources */,
+				AA0000000000000000000203 /* RestrictionReleaseTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1012,6 +1019,7 @@
 			files = (
 				AA0000000000000000000089 /* UserStory1RuleConfigurationUITests.swift in Sources */,
 				AA0000000000000000000173 /* UserStory2RestrictionActivationUITests.swift in Sources */,
+				AA0000000000000000000204 /* UserStory3AutoReleaseUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

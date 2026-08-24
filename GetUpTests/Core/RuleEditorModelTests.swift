@@ -63,6 +63,51 @@ struct RuleEditorModelTests {
         #expect(model.selectedSavedPlace == savedPlace)
     }
 
+    @Test("An active restriction keeps disabling and saving guarded until release")
+    func activeRestrictionGuardsMutations() {
+        let savedPlace = makeSavedPlace()
+        let guardContext = RestrictionModificationGuard(
+            savedPlaceName: "집",
+            radius: .meters1000,
+            endTime: TimeOfDay(hour: 9, minute: 0)
+        )
+        let draft = RuleEditorDraft(
+            id: Self.ruleID,
+            sourceRevision: 7,
+            isEnabled: true,
+            name: "출근 준비",
+            weekdays: [.monday],
+            startTime: TimeOfDay(hour: 6, minute: 0),
+            endTime: TimeOfDay(hour: 9, minute: 0),
+            savedPlaceID: savedPlace.id,
+            radius: .meters1000,
+            activitySelection: FamilyActivitySelection(includeEntireCategory: true),
+            createdAt: TestFixtures.now
+        )
+        let model = makeModel(
+            draft: draft,
+            savedPlaces: [savedPlace],
+            applicationTokenCount: 1,
+            modificationGuard: guardContext
+        )
+
+        #expect(!model.canModify)
+        #expect(!model.canSave)
+        #expect(!model.setEnabled(false))
+        #expect(model.isEnabled)
+        #expect(
+            model.modificationGuard?.message
+                == "집 1km 밖으로 이동하거나 09:00 AM이 지나면 규칙을 수정·끄기·삭제할 수 있어요."
+        )
+
+        model.updateModificationGuard(nil)
+
+        #expect(model.canModify)
+        #expect(model.canSave)
+        #expect(model.setEnabled(false))
+        #expect(!model.isEnabled)
+    }
+
     @Test("Reusing a saved place selects it without duplicating the collection")
     func reusedPlaceIsSelectedWithoutDuplication() {
         let savedPlace = makeSavedPlace()
@@ -141,11 +186,13 @@ struct RuleEditorModelTests {
         draft: RuleEditorDraft? = nil,
         savedPlaces: [SavedPlaceSnapshot] = [],
         ruleID: UUID = RuleEditorModelTests.ruleID,
-        applicationTokenCount: Int = 0
+        applicationTokenCount: Int = 0,
+        modificationGuard: RestrictionModificationGuard? = nil
     ) -> RuleEditorModel {
         RuleEditorModel(
             draft: draft,
             savedPlaces: savedPlaces,
+            modificationGuard: modificationGuard,
             makeID: IDSequence([ruleID, Self.newPlaceID]).next,
             now: { TestFixtures.now },
             applicationTokenCounter: { _ in applicationTokenCount }
