@@ -4,10 +4,10 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 4 사용자 스토리 2 — T049 Managed Settings 제한 adapter 구현 완료
+Phase 4 사용자 스토리 2 — T050 활성화 경로 설계 차단
 
 ## 진행 중
-없음
+T050 — 다중 규칙 활성화 상태의 런타임 저장 계약 결정 대기
 
 ## 마지막 완료 작업
 T049 — named Managed Settings store의 선택 앱 shield 적용 adapter를 구현함
@@ -16,13 +16,22 @@ T049 — named Managed Settings store의 선택 앱 shield 적용 adapter를 구
 T050 — 시간·위치 event를 상태 머신과 restriction adapter에 연결하는 활성화 경로를 구현함
 
 ## 차단 상태
-없음
+BLK-008 미해결. `FR-038`·`FR-044`와 `DEC-016`은 활성 규칙의 앱 token 합집합을 요구하지만,
+현재 위치·적용 상태·restriction adapter 계약은 단일 규칙만 표현한다. 저장 schema와 adapter API를
+다중 규칙 기준으로 확장할지 사용자 결정이 필요하다.
 
 ## 계획 갱신 필요
-없음. `DEC-015`~`DEC-026`에 따른 다중 규칙, 저장 장소, 직접 시간 설정, 여섯 단계 반경, DST 경계,
-collection migration과 홈 정렬 정책은 기능 문서와 구현에 반영되어 있다.
+BLK-008 결정 후 필요. 다중 규칙 계약을 즉시 도입하면 위치 condition collection과 적용 상태 schema,
+adapter API 및 migration을 설계 문서와 T050 구현에 반영한다. 단일 규칙 경로를 먼저 택하면 합집합
+구현을 위한 후속 task를 추가해야 한다.
 
 ## 테스트 상태
+T050 착수 시 `RestrictionStateMachine`, `PlatformContracts.swift`, 공유 저장 계약과 다중 규칙 요구사항을
+대조했다. 기존 계약은 위치 상태와 적용 shield 상태를 단일 `ruleRevision`으로만 표현해 두 개 이상의
+활성 규칙 합집합을 안전하게 계산·복구할 수 없음을 확인했다. 제품 동작과 공유 저장 schema에 영향을
+주는 선택이므로 구현과 task 완료 처리를 중단하고 BLK-008에 선택지와 권장안을 기록했다. 이번
+세션에는 제품 코드 변경과 테스트 실행이 없다.
+
 T049에서 `ManagedSettingsRestrictionAdapter.swift`를 앱과 Device Activity Monitor extension target에
 추가했다. 고정 이름 `getup.restriction`의 `ManagedSettingsStore`에 규칙의 opaque application token만
 shield로 설정하고, App Group `UserDefaults`에 적용 여부와 rule revision을 함께 기록한다. 같은

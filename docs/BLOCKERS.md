@@ -106,3 +106,37 @@ iOS 26.0과 secondary action·GetUp 자동 실행을 제공하지 않는 `shield
 저장 장소 이름·설정 반경·종료 시각을 shield 제목과 설명으로 안내하며 primary `앱 닫기` 행동만
 제공한다. 향후 `오늘만 허용`과 인앱결제를 통한 일시 해제 아이디어는 현재 기능에 포함하지 않고
 별도 spec과 플랫폼·결제 정책 검토를 거쳐 결정한다.
+
+## BLK-008 — 여러 규칙 활성화 상태의 런타임 저장 계약
+
+**상태**: 미해결(OPEN) — 2026-08-24
+
+`FR-038`·`FR-044`와 `DEC-016`은 시간·위치 조건을 충족한 모든 규칙의 앱 token 합집합을 적용하고,
+일부 규칙이 끝나면 남은 활성 규칙만으로 합집합을 다시 계산하도록 요구한다. 그러나 T050 착수
+시점의 런타임 계약은 다음과 같이 단일 규칙만 표현한다.
+
+- `LocationConditionSnapshot`과 `location-conditions.json`은 rule ID 없이 하나의 `ruleRevision`만
+  저장한다.
+- `AppliedRestrictionState`는 하나의 `ruleRevision`과 Boolean만 저장한다.
+- `RestrictionApplying.applyRestriction(for:)`는 하나의 `RestrictionRuleSnapshot`만 받는다.
+- `RestrictionStateMachine.evaluate(_:)`는 하나의 규칙과 하나의 위치 snapshot만 평가한다.
+
+이 상태로 T050을 연결하면 두 규칙이 동시에 활성화될 때 마지막으로 평가된 규칙이 앞선 규칙의
+shield를 덮어쓰거나 제거할 수 있어 명세를 위반한다. 반대로 T050에서 다중 규칙 계약을 도입하면
+공유 JSON schema, App Group 적용 상태, adapter API와 기존 테스트 fixture를 함께 변경해야 하므로
+중대한 저장 계약 변경에 해당한다.
+
+**선택지**:
+
+1. T050 범위에서 다중 규칙 런타임 계약을 도입한다. 위치 상태를 rule ID별 collection으로 저장하고,
+   적용 상태는 활성 rule ID·revision 집합과 최종 앱 token 합집합을 식별할 수 있게 변경한다.
+   coordinator는 모든 유효 규칙을 독립 평가한 뒤 합집합을 한 번 적용한다. 기존 단일 위치 snapshot은
+   명시적인 migration 또는 안전한 `unavailable` 처리 규칙을 함께 정의한다.
+2. T050을 단일 규칙 활성화 경로로만 구현하고 다중 규칙 합집합과 저장 migration은 후속 task로
+   분리한다. 이 경우 현재 `FR-038`·`FR-044`를 만족하지 못하는 기간과 완료 task를 명시하고 새로운
+   task를 `tasks.md`에 추가해야 한다.
+
+**권장안**: 1안. 이미 확정된 다중 규칙 제품 동작을 실제 런타임 경계에서 보존하고, T051의 extension
+복구 경로가 잘못된 단일 규칙 저장 계약에 의존하기 전에 바로잡을 수 있다. 결정되면
+`data-model.md`, `shared-storage-contract.md`, `restriction-evaluation-contract.md`,
+`PlatformContracts.swift` 및 관련 테스트를 같은 내용으로 갱신해야 한다.
