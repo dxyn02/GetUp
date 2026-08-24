@@ -169,8 +169,9 @@ DST 보정된 다음 시작 시점 순으로 정렬한다. 승인된 Dark Focus�
 `build-for-testing`에서 앱 entry point를 포함한 앱·단위 테스트·UI 테스트 target의 arm64·x86_64
 compile과 link가 모두 통과했다. iPhone 17 Pro iOS 26.5 Simulator에서 단위·저장소 81개 test case
 (동적 인자 포함 93회 실행)와 T027 UI test 4개가 실패·skip 없이 통과했다. Simulator가 실제 파일
-실제 App Group, Family Controls picker, 지도 권한과 실기기 Dynamic Type·VoiceOver는 계획된
-통합·마무리 task 전까지 미검증 상태다.
+Simulator가 실제 파일 보호 속성을 노출하지 않는 환경 차이는 writer option을 직접 검증하고 물리
+기기에서 실제 속성을 확인하도록 기존 테스트를 보정했다. 실제 App Group, Family Controls picker,
+지도 권한과 실기기 Dynamic Type·VoiceOver는 계획된 통합·마무리 task 전까지 미검증 상태다.
 `tasks.md`의 87개 task가 연속 ID, 체크박스 및 파일 경로 형식 검증을 통과함.
 T001 검증으로 `project.pbxproj` plist 문법, 공유 scheme XML 및 `xcodebuild -list -json`을 실행해
 Debug/Release 구성, 6개 target과 6개 scheme 인식을 확인함. Simulator service와 기본 DerivedData
