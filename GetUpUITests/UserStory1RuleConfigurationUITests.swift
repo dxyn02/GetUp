@@ -113,6 +113,34 @@ final class UserStory1RuleConfigurationUITests: XCTestCase {
     }
 
     @MainActor
+    func testDeletingAHomeRuleRequiresConfirmationAndPersistsAfterRelaunch() {
+        let storeID = #function
+        var app = launchApp(
+            scenario: "three-saved-rules",
+            storeID: storeID,
+            resetStore: true
+        )
+        let pager = app.otherElements["home.rulePager"]
+        XCTAssertTrue(pager.waitForExistence(timeout: 2))
+
+        pager.swipeLeft()
+        app.buttons["home.ruleCard.rule-2.edit"].tap()
+        app.buttons["ruleEditor.delete"].tap()
+
+        let confirmation = app.alerts["규칙을 삭제할까요?"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 2))
+        confirmation.buttons["삭제"].tap()
+
+        XCTAssertTrue(app.otherElements["home.rulePager"].waitForExistence(timeout: 2))
+        XCTAssertEqual(app.staticTexts["home.rulePageIndicator"].label, "1 / 2")
+
+        app.terminate()
+        app = launchApp(storeID: storeID)
+        XCTAssertTrue(app.otherElements["home.rulePager"].waitForExistence(timeout: 2))
+        XCTAssertEqual(app.staticTexts["home.rulePageIndicator"].label, "1 / 2")
+    }
+
+    @MainActor
     private func launchApp(
         scenario: String? = nil,
         storeID: String,

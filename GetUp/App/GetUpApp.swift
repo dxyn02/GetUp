@@ -76,7 +76,8 @@ private struct GetUpRootView: View {
                 onOpenSettings: openSettings,
                 onSave: { draft, savedPlaces in
                     try await model.save(draft: draft, savedPlaces: savedPlaces)
-                }
+                },
+                onDelete: deleteAction
             )
         } else {
             EmptyView()
@@ -92,6 +93,15 @@ private struct GetUpRootView: View {
                 }
             }
         )
+    }
+
+    private var deleteAction: RuleEditorView.DeleteAction? {
+        guard model.canDeleteEditingRule else {
+            return nil
+        }
+        return {
+            try await model.deleteEditingRule()
+        }
     }
 
     private func openSettings() {

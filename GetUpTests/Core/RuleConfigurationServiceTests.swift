@@ -112,6 +112,57 @@ struct RuleConfigurationServiceTests {
         #expect(await repository.writeOrder.isEmpty)
     }
 
+    @Test("Deleting a rule preserves other rules and reusable saved places")
+    func deletesOnlySelectedRule() async throws {
+        let place = makePlace()
+        let deletedRule = makeRule(revision: 2, savedPlaceID: place.id)
+        let remainingRule = makeRule(
+            id: UUID(uuidString: "00000000-0000-4000-8000-000000000204")!,
+            revision: 4,
+            savedPlaceID: place.id,
+            name: "남은 규칙"
+        )
+        let repository = InMemoryRuleConfigurationRepository(
+            rules: RestrictionRuleCollectionSnapshot(
+                revision: 7,
+                rules: [deletedRule, remainingRule]
+            ),
+            places: SavedPlaceCollectionSnapshot(revision: 3, places: [place])
+        )
+        let service = makeService(repository: repository)
+
+        let deleted = try await service.delete(
+            ruleID: deletedRule.id,
+            sourceRevision: deletedRule.revision
+        )
+
+        #expect(deleted.revision == 8)
+        #expect(deleted.rules == [remainingRule])
+        #expect(await repository.storedRules == deleted)
+        #expect(await repository.storedPlaces?.places == [place])
+        #expect(await repository.writeOrder == [.rules])
+    }
+
+    @Test("Deleting from a stale editor is rejected without writing")
+    func rejectsStaleDelete() async throws {
+        let place = makePlace()
+        let rule = makeRule(revision: 3, savedPlaceID: place.id)
+        let repository = InMemoryRuleConfigurationRepository(
+            rules: RestrictionRuleCollectionSnapshot(revision: 3, rules: [rule]),
+            places: SavedPlaceCollectionSnapshot(revision: 1, places: [place])
+        )
+        let service = makeService(repository: repository)
+
+        await #expect(throws: RuleConfigurationServiceError.staleRevision(
+            expected: 3,
+            actual: 2
+        )) {
+            try await service.delete(ruleID: rule.id, sourceRevision: 2)
+        }
+
+        #expect(await repository.writeOrder.isEmpty)
+    }
+
     private func makeService(
         repository: InMemoryRuleConfigurationRepository
     ) -> RuleConfigurationService {
@@ -187,6 +238,9 @@ private actor InMemoryRuleConfigurationRepository: RuleRepository, SavedPlaceRep
     private var rules: RestrictionRuleCollectionSnapshot?
     private var places: SavedPlaceCollectionSnapshot?
     private(set) var writeOrder: [Write] = []
+
+    var storedRules: RestrictionRuleCollectionSnapshot? { rules }
+    var storedPlaces: SavedPlaceCollectionSnapshot? { places }
 
     init(
         rules: RestrictionRuleCollectionSnapshot? = nil,

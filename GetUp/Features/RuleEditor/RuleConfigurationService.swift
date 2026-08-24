@@ -89,6 +89,30 @@ struct RuleConfigurationService: Sendable {
         )
     }
 
+    @discardableResult
+    func delete(
+        ruleID: UUID,
+        sourceRevision: Int
+    ) async throws -> RestrictionRuleCollectionSnapshot {
+        let currentRules = try await ruleRepository.loadRuleCollection()
+            ?? RestrictionRuleCollectionSnapshot(revision: 0, rules: [])
+        let existingRule = currentRules.rules.first { $0.id == ruleID }
+
+        guard existingRule?.revision == sourceRevision else {
+            throw RuleConfigurationServiceError.staleRevision(
+                expected: existingRule?.revision,
+                actual: sourceRevision
+            )
+        }
+
+        let updatedRules = RestrictionRuleCollectionSnapshot(
+            revision: currentRules.revision + 1,
+            rules: currentRules.rules.filter { $0.id != ruleID }
+        )
+        try await ruleRepository.saveRuleCollection(updatedRules)
+        return updatedRules
+    }
+
     private func validateRevision(
         of existingRule: RestrictionRuleSnapshot?,
         against draft: RuleEditorDraft

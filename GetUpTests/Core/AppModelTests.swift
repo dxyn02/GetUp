@@ -124,9 +124,73 @@ struct AppModelTests {
         #expect(model.savedPlaces.isEmpty)
     }
 
+    @Test("Deleting an edited rule refreshes home and preserves its saved place")
+    func deletingEditedRuleRefreshesHome() async throws {
+        let place = makePlace()
+        let deletedRule = makeRule(
+            id: Self.todayRuleID,
+            revision: 3,
+            weekdays: [.monday],
+            start: TimeOfDay(hour: 6, minute: 0),
+            placeID: place.id
+        )
+        let remainingRule = makeRule(
+            id: Self.tuesdayRuleID,
+            weekdays: [.tuesday],
+            start: TimeOfDay(hour: 6, minute: 0),
+            placeID: place.id
+        )
+        let repository = AppModelRepository(
+            rules: RestrictionRuleCollectionSnapshot(
+                revision: 5,
+                rules: [deletedRule, remainingRule]
+            ),
+            places: SavedPlaceCollectionSnapshot(revision: 2, places: [place])
+        )
+        let model = makeModel(repository: repository)
+        await model.load()
+        model.beginEditingRule(id: deletedRule.id)
+
+        try await model.deleteEditingRule()
+
+        #expect(model.editorModel == nil)
+        #expect(model.homeRules.map(\.id) == [remainingRule.id])
+        #expect(model.selectedRuleID == remainingRule.id)
+        #expect(model.savedPlaces == [place])
+        #expect(await repository.storedRules?.revision == 6)
+        #expect(await repository.storedPlacesSnapshot?.places == [place])
+    }
+
+    @Test("The deletion guard rejects an active rule without writing")
+    func deletionGuardRejectsActiveRule() async throws {
+        let place = makePlace()
+        let rule = makeRule(
+            id: Self.todayRuleID,
+            revision: 3,
+            weekdays: [.monday],
+            start: TimeOfDay(hour: 6, minute: 0),
+            placeID: place.id
+        )
+        let repository = AppModelRepository(
+            rules: RestrictionRuleCollectionSnapshot(revision: 5, rules: [rule]),
+            places: SavedPlaceCollectionSnapshot(revision: 2, places: [place])
+        )
+        let model = makeModel(repository: repository, canDeleteRule: { _ in false })
+        await model.load()
+        model.beginEditingRule(id: rule.id)
+
+        await #expect(throws: AppRuleDeletionError.activeRestriction) {
+            try await model.deleteEditingRule()
+        }
+
+        #expect(model.editorModel != nil)
+        #expect(await repository.storedRules?.rules == [rule])
+    }
+
     private func makeModel(
         repository: AppModelRepository,
-        now: Date = date(year: 2026, month: 8, day: 24, hour: 12)
+        now: Date = date(year: 2026, month: 8, day: 24, hour: 12),
+        canDeleteRule: @escaping @Sendable (UUID) async -> Bool = { _ in true }
     ) -> AppModel {
         AppModel(
             ruleRepository: repository,
@@ -135,7 +199,8 @@ struct AppModelTests {
             calendar: Self.calendar,
             timeZone: Self.timeZone,
             applicationTokenCounter: { _ in 1 },
-            applicationCountForRule: { _ in 1 }
+            applicationCountForRule: { _ in 1 },
+            canDeleteRule: canDeleteRule
         )
     }
 
@@ -261,6 +326,8 @@ private actor AppModelRepository: RuleRepository, SavedPlaceRepository {
     func deleteSavedPlaceCollection() async throws {
         storedPlaces = nil
     }
+
+    var storedPlacesSnapshot: SavedPlaceCollectionSnapshot? { storedPlaces }
 }
 
 private enum AppModelRepositoryError: Error {
