@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 4 사용자 스토리 2 — T046 Device Activity 일정 adapter 구현 완료
+Phase 4 사용자 스토리 2 — T047 위치 거리·정확도 판정 구현 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T046 — 선택 요일별 Device Activity 일정 등록·교체·복구 adapter를 구현함
+T047 — 거리·horizontal accuracy 판정 공식을 구현함
 
 ## 다음 작업
-T047 — 거리·horizontal accuracy 판정 공식을 구현함
+T048 — Always·Full Accuracy 아래 원형 region 등록과 최신 위치 snapshot 갱신 adapter를 구현함
 
 ## 차단 상태
 없음
@@ -23,6 +23,15 @@ T047 — 거리·horizontal accuracy 판정 공식을 구현함
 collection migration과 홈 정렬 정책은 기능 문서와 구현에 반영되어 있다.
 
 ## 테스트 상태
+T047에서 `LocationEvidenceEvaluator.swift`를 앱 target에 추가하고 중심 거리 `d`, 설정 반경 `R`,
+horizontal accuracy `a`를 사용한 순수 판정을 구현했다. 음수 또는 유한하지 않은 입력은
+`unavailable`, `d + a <= R`은 `inside`, `max(0, d - a) > R`은 `outside`, 나머지 경계 중첩은
+`unavailable`로 분류한다. T048용 위치 snapshot 테스트와 T049의 계획된 red 테스트를 검증 중에만
+제외하고 iPhone 17 Pro iOS 26.5 Simulator에서 여섯 반경별 내부·정확한 경계·외부·경계 중첩
+4개 동적 테스트가 총 24회 모두 통과했으며, test source와 target membership은 즉시 복구했다.
+T043의 최신 위치 snapshot 기록 테스트는 T048 구현 전까지 red 상태다. `project.pbxproj` plist
+문법과 `git diff --check`도 통과했다.
+
 T046에서 `DeviceActivityScheduleAdapter.swift`를 앱과 Device Activity Monitor extension target에
 추가했다. 규칙 UUID와 요일을 포함하는 안정적인 activity name으로 선택 요일별 반복 일정을
 등록하고, 동일 규칙의 이전 일정만 제거한 뒤 현재 규칙으로 복구하며, GetUp 소유 일정 전체 제거도
