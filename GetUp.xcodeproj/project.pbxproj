@@ -120,6 +120,7 @@
 		AA0000000000000000000205 /* AuthorizationAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000027 /* AuthorizationAdapterTests.swift */; };
 		AA0000000000000000000206 /* LocationUnavailableTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000028 /* LocationUnavailableTests.swift */; };
 		AA0000000000000000000207 /* UserStory4PermissionGuidanceUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000004 /* UserStory4PermissionGuidanceUITests.swift */; };
+		AA0000000000000000000211 /* AccessibilityUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000005 /* AccessibilityUITests.swift */; };
 		AA0000000000000000000208 /* PermissionGuideModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000054 /* PermissionGuideModel.swift */; };
 		AA0000000000000000000209 /* PermissionGuideModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000029 /* PermissionGuideModelTests.swift */; };
 		AA0000000000000000000210 /* PermissionGuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000056 /* PermissionGuideView.swift */; };
@@ -259,6 +260,7 @@
 		B60000000000000000000002 /* UserStory2RestrictionActivationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory2RestrictionActivationUITests.swift; sourceTree = "<group>"; };
 		B60000000000000000000003 /* UserStory3AutoReleaseUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory3AutoReleaseUITests.swift; sourceTree = "<group>"; };
 		B60000000000000000000004 /* UserStory4PermissionGuidanceUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory4PermissionGuidanceUITests.swift; sourceTree = "<group>"; };
+		B60000000000000000000005 /* AccessibilityUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityUITests.swift; sourceTree = "<group>"; };
 		B70000000000000000000001 /* DeviceActivityMonitorExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceActivityMonitorExtension.swift; sourceTree = "<group>"; };
 		B80000000000000000000001 /* ShieldConfigurationExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldConfigurationExtension.swift; sourceTree = "<group>"; };
 		B90000000000000000000001 /* ShieldActionExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldActionExtension.swift; sourceTree = "<group>"; };
@@ -479,6 +481,7 @@
 				B60000000000000000000002 /* UserStory2RestrictionActivationUITests.swift */,
 				B60000000000000000000003 /* UserStory3AutoReleaseUITests.swift */,
 				B60000000000000000000004 /* UserStory4PermissionGuidanceUITests.swift */,
+				B60000000000000000000005 /* AccessibilityUITests.swift */,
 			);
 			path = GetUpUITests;
 			sourceTree = "<group>";
@@ -1052,6 +1055,7 @@
 				AA0000000000000000000173 /* UserStory2RestrictionActivationUITests.swift in Sources */,
 				AA0000000000000000000204 /* UserStory3AutoReleaseUITests.swift in Sources */,
 				AA0000000000000000000207 /* UserStory4PermissionGuidanceUITests.swift in Sources */,
+				AA0000000000000000000211 /* AccessibilityUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -587,8 +587,12 @@ private struct RestrictionActivationProbeView: View {
                 HStack {
                     Text("제한 적용 중")
                     Spacer()
-                    Button("앱 닫기") {
+                    Button {
                         showsShield = false
+                    } label: {
+                        Text("앱 닫기")
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(.rect)
                     }
                     .accessibilityIdentifier("restrictionProbe.shield.close")
                 }
