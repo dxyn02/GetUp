@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 4 사용자 스토리 2 — T054 저장 후 runtime 동기화 구현 완료
+Phase 4 사용자 스토리 2 — T055 완료, US2 체크포인트 검증 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T054 — 규칙 저장 완료 뒤 일정·region 등록과 초기 제한 상태 평가를 연결함
+T055 — 현재 활성 상태와 종료 조건을 승인된 홈 카드에 연결함
 
 ## 다음 작업
-T055 — 현재 활성 상태와 종료 조건 화면을 구현함
+US2 PR 검토·merge 후 T056 — 자동 해제 상태 로우파이를 제작함
 
 ## 차단 상태
 없음. BLK-009은 사용자의 1안 선택으로 해결됨.
@@ -22,6 +22,20 @@ T055 — 현재 활성 상태와 종료 조건 화면을 구현함
 없음. 다중 규칙용 짧은 요약과 snapshot 불가 fallback을 shield 계약·하이파이·DEC-029에 반영했다.
 
 ## 테스트 상태
+T055에서 shared 적용 상태의 `(ruleID, revision)`과 현재 규칙 revision이 정확히 일치할 때만 활성으로
+표시하는 `RestrictionStatusModel`을 추가했다. 앱 최초 load, 규칙 저장 직후 runtime 동기화, foreground
+복귀 뒤 적용 상태를 다시 읽고, 활성 규칙은 승인된 `RESTRICTION ACTIVE` 카드에서 장소·반경, 종료
+시각, 제한 앱 개수와 `조건 종료 후 수정 가능` 안내를 표시한다. 비활성 규칙은 기존 홈 카드와 편집
+흐름을 유지한다. Dynamic Type 접근성 크기에서는 pager 높이를 확장하고 정보가 축약되지 않도록 했으며,
+T045 전용 Simulator probe는 `--ui-test-scenario restriction-activation`에서만 제공한다. 모델 단위
+테스트는 구현 전 계획된 compile 실패를 확인한 뒤 green으로 전환했고, T045 UI 테스트 3개에서
+시간 활성·위치 내부의 대상 앱 shield, 비대상 앱 통과, 시간 또는 위치 조건 불충족 시 비활성을 모두
+검증했다. iPhone 17 Pro iOS 26.5 Simulator에서 전체 `GetUpTests` 119개가 동적 인자를 포함해 총
+151회 모두 통과했고 실패·skip은 없다. 기본 글자 크기 Simulator 캡처로 활성 카드의 색상, 정보 순서와
+시간 표기 잘림이 없음을 확인했다. 실제 App Group 적용 상태, restricted app system shield와 물리 기기
+VoiceOver·최대 Dynamic Type은 T083 인수에서 확인해야 한다. `project.pbxproj` plist 문법과
+`git diff --check`도 통과했다.
+
 T054에서 `RuleConfigurationService`가 저장 장소와 규칙 collection을 모두 성공적으로 기록한 뒤에만
 새 rule revision을 runtime 동기화 경계로 전달하도록 확장했다. `AppModel`은 이 경계를 보존하고 live
 `AppEnvironment`는 기존 `AppLifecycleCoordinator.restore()`에 연결한다. 따라서 저장 직후 GetUp 소유

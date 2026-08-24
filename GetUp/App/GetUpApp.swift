@@ -27,6 +27,7 @@ private struct GetUpRootView: View {
     private let currentLocationProvider: any CurrentLocationProviding
     private let defaultCoordinate: ReferenceLocation
     private let applicationSelectionOverride: (@MainActor () -> FamilyActivitySelection?)?
+    private let showsRestrictionProbe: Bool
 
     init(environment: AppEnvironment) {
         _model = State(initialValue: environment.model)
@@ -34,6 +35,7 @@ private struct GetUpRootView: View {
         currentLocationProvider = environment.currentLocationProvider
         defaultCoordinate = environment.defaultCoordinate
         applicationSelectionOverride = environment.applicationSelectionOverride
+        showsRestrictionProbe = environment.showsRestrictionProbe
     }
 
     var body: some View {
@@ -56,6 +58,7 @@ private struct GetUpRootView: View {
             }
             Task {
                 _ = try? await lifecycleCoordinator.restore()
+                await model.refreshRestrictionStatus()
             }
         }
     }
@@ -68,7 +71,10 @@ private struct GetUpRootView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(HomeColor.background.ignoresSafeArea())
         case .loaded:
-            HomeView(model: model)
+            HomeView(
+                model: model,
+                showsRestrictionProbe: showsRestrictionProbe
+            )
         case .failed:
             LoadFailureView {
                 Task { await model.load() }
@@ -125,7 +131,9 @@ private struct GetUpRootView: View {
 
 @MainActor
 private struct HomeView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Bindable var model: AppModel
+    let showsRestrictionProbe: Bool
 
     var body: some View {
         ScrollView {
@@ -145,7 +153,11 @@ private struct HomeView: View {
         .foregroundStyle(HomeColor.textPrimary)
         .toolbarBackground(HomeColor.background, for: .navigationBar)
         .safeAreaInset(edge: .bottom) {
-            if !model.homeRules.isEmpty {
+            if showsRestrictionProbe {
+                RestrictionActivationProbeView(
+                    isRestrictionActive: model.restrictionStatus.hasActiveRestriction
+                )
+            } else if !model.homeRules.isEmpty {
                 newRuleButton
             }
         }
@@ -201,17 +213,27 @@ private struct HomeView: View {
         VStack(spacing: 14) {
             VStack(spacing: 0) {
                 TabView(selection: selectedRuleBinding) {
-                    ForEach(model.homeRules) { item in
-                        HomeRuleCard(item: item) {
-                            model.beginEditingRule(id: item.id)
+                    ForEach(Array(model.homeRules.enumerated()), id: \.element.id) { index, item in
+                        if model.restrictionStatus.isActive(item.rule) {
+                            RestrictionStatusView(
+                                item: item,
+                                rulePosition: index + 1,
+                                ruleCount: model.homeRules.count
+                            )
+                            .padding(.horizontal, 2)
+                            .tag(item.id)
+                        } else {
+                            HomeRuleCard(item: item) {
+                                model.beginEditingRule(id: item.id)
+                            }
+                            .padding(.horizontal, 2)
+                            .tag(item.id)
                         }
-                        .padding(.horizontal, 2)
-                        .tag(item.id)
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
             }
-            .frame(height: 440)
+            .frame(height: rulePagerHeight)
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("home.rulePager")
 
@@ -256,6 +278,10 @@ private struct HomeView: View {
         } ?? 0
         return "\(selectedIndex + 1) / \(model.homeRules.count)"
     }
+
+    private var rulePagerHeight: CGFloat {
+        dynamicTypeSize.isAccessibilitySize ? 680 : 440
+    }
 }
 
 private struct HomeRuleCard: View {
@@ -270,6 +296,7 @@ private struct HomeRuleCard: View {
                         .font(.caption)
                         .fontWeight(.bold)
                         .foregroundStyle(HomeColor.accent)
+                        .accessibilityIdentifier("restrictionStatus.inactive")
                     Text(item.rule.name ?? item.savedPlace.name)
                         .font(.title)
                         .fontWeight(.bold)
@@ -421,7 +448,7 @@ private struct StartupUnavailableView: View {
     }
 }
 
-private enum HomeColor {
+enum HomeColor {
     static let background = Color(red: 8 / 255, green: 9 / 255, blue: 11 / 255)
     static let surface = Color(red: 21 / 255, green: 23 / 255, blue: 27 / 255)
     static let surfaceElevated = Color(red: 32 / 255, green: 35 / 255, blue: 41 / 255)
@@ -430,6 +457,66 @@ private enum HomeColor {
     static let textSecondary = Color(red: 166 / 255, green: 168 / 255, blue: 173 / 255)
     static let textTertiary = Color(red: 125 / 255, green: 128 / 255, blue: 135 / 255)
     static let error = Color(red: 255 / 255, green: 105 / 255, blue: 97 / 255)
+}
+
+private struct RestrictionActivationProbeView: View {
+    let isRestrictionActive: Bool
+    @State private var showsShield = false
+    @State private var showsSelectedApplication = false
+    @State private var showsUnselectedApplication = false
+
+    var body: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 8) {
+                Button("선택 앱 열기") {
+                    if isRestrictionActive {
+                        showsShield = true
+                        showsSelectedApplication = false
+                    } else {
+                        showsSelectedApplication = true
+                    }
+                }
+                .accessibilityIdentifier("restrictionProbe.selectedApplication.open")
+
+                Button("비대상 앱 열기") {
+                    showsUnselectedApplication = true
+                    showsShield = false
+                }
+                .accessibilityIdentifier("restrictionProbe.unselectedApplication.open")
+            }
+            .buttonStyle(.bordered)
+
+            if showsShield {
+                HStack {
+                    Text("제한 적용 중")
+                    Spacer()
+                    Button("앱 닫기") {
+                        showsShield = false
+                    }
+                    .accessibilityIdentifier("restrictionProbe.shield.close")
+                }
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("restrictionProbe.shield")
+            }
+
+            if showsSelectedApplication {
+                Color.clear
+                    .frame(height: 1)
+                    .accessibilityElement()
+                    .accessibilityIdentifier("restrictionProbe.selectedApplication.content")
+            }
+
+            if showsUnselectedApplication {
+                Color.clear
+                    .frame(height: 1)
+                    .accessibilityElement()
+                    .accessibilityIdentifier("restrictionProbe.unselectedApplication.content")
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 8)
+        .background(HomeColor.background)
+    }
 }
 
 private extension Weekday {
@@ -470,6 +557,7 @@ private struct AppEnvironment {
     let currentLocationProvider: any CurrentLocationProviding
     let defaultCoordinate: ReferenceLocation
     let applicationSelectionOverride: (@MainActor () -> FamilyActivitySelection?)?
+    let showsRestrictionProbe: Bool
 
     static func live() throws -> AppEnvironment {
         let container = try DependencyContainer.live()
@@ -477,6 +565,7 @@ private struct AppEnvironment {
         let lifecycleCoordinator = try AppLifecycleCoordinator.live(
             container: container
         )
+        let restrictionAdapter = try ManagedSettingsRestrictionAdapter.live()
         return AppEnvironment(
             model: AppModel(
                 ruleRepository: container.ruleRepository,
@@ -486,12 +575,16 @@ private struct AppEnvironment {
                 },
                 synchronizeRuntimeAfterSave: { _ in
                     _ = try await lifecycleCoordinator.restore()
+                },
+                loadAppliedRestrictionState: {
+                    await restrictionAdapter.currentAppliedState()
                 }
             ),
             lifecycleCoordinator: lifecycleCoordinator,
             currentLocationProvider: CurrentLocationProvider(session: locationSession),
             defaultCoordinate: ReferenceLocation(latitude: 37.5665, longitude: 126.9780),
-            applicationSelectionOverride: nil
+            applicationSelectionOverride: nil,
+            showsRestrictionProbe: false
         )
     }
 }
@@ -513,6 +606,8 @@ private enum UITestConfiguration {
         let scenario = value(after: "--ui-test-scenario")
         let shouldReset = arguments.contains("--ui-test-reset-store")
         let applicationResult = value(after: "--ui-test-family-picker-result")
+        let fixtureNow = parsedDate(value(after: "--ui-test-now")) ?? Fixtures.now
+        let locationState = value(after: "--ui-test-location-state")
         let fileManager = FileManager.default
         let root = fileManager.urls(for: .cachesDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("GetUpUITests", isDirectory: true)
@@ -542,6 +637,13 @@ private enum UITestConfiguration {
                         rules: fixtures.rules
                     )
                 )
+            } else if scenario == "restriction-activation" {
+                try await container.ruleRepository.saveRuleCollection(
+                    RestrictionRuleCollectionSnapshot(
+                        revision: 1,
+                        rules: [fixtures.restrictionActivationRule]
+                    )
+                )
             }
         }
 
@@ -558,7 +660,7 @@ private enum UITestConfiguration {
             model: AppModel(
                 ruleRepository: container.ruleRepository,
                 savedPlaceRepository: container.savedPlaceRepository,
-                now: { Fixtures.now },
+                now: { fixtureNow },
                 calendar: Fixtures.calendar,
                 timeZone: Fixtures.timeZone,
                 applicationTokenCounter: { selection in
@@ -567,12 +669,29 @@ private enum UITestConfiguration {
                 applicationCountForRule: fixtures.applicationCount,
                 ruleAccessibilityID: fixtures.accessibilityID,
                 initialEditorDraft: initialDraft,
-                bootstrap: bootstrap
+                bootstrap: bootstrap,
+                loadAppliedRestrictionState: {
+                    let rule = fixtures.restrictionActivationRule
+                    let scheduleIsActive = ScheduleEvaluator.isActive(
+                        weekdays: rule.weekdays,
+                        startTime: rule.startTime,
+                        endTime: rule.endTime,
+                        at: fixtureNow,
+                        calendar: Fixtures.calendar,
+                        timeZone: Fixtures.timeZone
+                    )
+                    let revisions: Set<ActiveRuleRevision> =
+                        scheduleIsActive && locationState == "inside"
+                        ? [ActiveRuleRevision(ruleID: rule.id, revision: rule.revision)]
+                        : []
+                    return AppliedRestrictionState(activeRuleRevisions: revisions)
+                }
             ),
             lifecycleCoordinator: nil,
             currentLocationProvider: UITestCurrentLocationProvider(),
             defaultCoordinate: fixtures.home.coordinate,
-            applicationSelectionOverride: selectionOverride
+            applicationSelectionOverride: selectionOverride,
+            showsRestrictionProbe: scenario == "restriction-activation"
         )
     }
 
@@ -597,6 +716,13 @@ private enum UITestConfiguration {
         let sanitized = value.components(separatedBy: allowed.inverted)
             .joined(separator: "_")
         return sanitized.isEmpty ? "default" : sanitized
+    }
+
+    private static func parsedDate(_ value: String?) -> Date? {
+        guard let value else {
+            return nil
+        }
+        return ISO8601DateFormatter().date(from: value)
     }
 
     private struct Fixtures: Sendable {
@@ -665,6 +791,18 @@ private enum UITestConfiguration {
                     radius: .meters2000
                 ),
             ]
+        }
+
+        var restrictionActivationRule: RestrictionRuleSnapshot {
+            makeRule(
+                id: Self.rule1ID,
+                name: "출근 준비",
+                weekdays: [.monday, .tuesday, .wednesday, .thursday, .friday],
+                start: TimeOfDay(hour: 6, minute: 0),
+                end: TimeOfDay(hour: 9, minute: 0),
+                place: home,
+                radius: .meters1000
+            )
         }
 
         func initialDraft(for scenario: String?) -> RuleEditorDraft? {

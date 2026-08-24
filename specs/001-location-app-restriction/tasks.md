@@ -131,7 +131,7 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 - [x] T052 [US2] 승인된 하이파이에 맞는 shield 제목·설명·아이콘·닫기 버튼을 `GetUpShieldConfiguration/ShieldConfigurationExtension.swift`에 구현한다
 - [x] T053 [US2] 우회 없이 제한 앱을 닫는 primary action을 `GetUpShieldAction/ShieldActionExtension.swift`에 구현한다
 - [x] T054 [US2] 규칙 저장 성공 후 일정·region 등록과 초기 상태 평가를 연결하도록 `GetUp/Features/RuleEditor/RuleConfigurationService.swift`를 확장한다
-- [ ] T055 [US2] 승인된 하이파이에 맞춰 현재 활성 상태와 종료 조건을 `GetUp/Features/RestrictionStatus/RestrictionStatusView.swift` 및 `RestrictionStatusModel.swift`에 구현한다
+- [x] T055 [US2] 승인된 하이파이에 맞춰 현재 활성 상태와 종료 조건을 `GetUp/Features/RestrictionStatus/RestrictionStatusView.swift` 및 `RestrictionStatusModel.swift`에 구현한다
 
 **Checkpoint**: US1+US2로 설정부터 조건 충족 시 실제 선택 앱 제한까지 첫 사용 가능한 MVP를 검증한다.
 
