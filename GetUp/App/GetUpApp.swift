@@ -23,28 +23,42 @@ struct GetUpApp: App {
 private struct GetUpRootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var model: AppModel
+    @State private var permissionGuideModel: PermissionGuideModel?
     private let lifecycleCoordinator: AppLifecycleCoordinator?
     private let currentLocationProvider: any CurrentLocationProviding
     private let defaultCoordinate: ReferenceLocation
     private let applicationSelectionOverride: (@MainActor () -> FamilyActivitySelection?)?
     private let showsRestrictionProbe: Bool
+    private let permissionGuideRetryResult: String?
 
     init(environment: AppEnvironment) {
         _model = State(initialValue: environment.model)
+        _permissionGuideModel = State(initialValue: environment.permissionGuideModel)
         lifecycleCoordinator = environment.lifecycleCoordinator
         currentLocationProvider = environment.currentLocationProvider
         defaultCoordinate = environment.defaultCoordinate
         applicationSelectionOverride = environment.applicationSelectionOverride
         showsRestrictionProbe = environment.showsRestrictionProbe
+        permissionGuideRetryResult = environment.permissionGuideRetryResult
     }
 
     var body: some View {
-        NavigationStack {
-            content
-                .navigationDestination(isPresented: editorIsPresented) {
-                    editorDestination
+        Group {
+            if let permissionGuideModel, permissionGuideModel.isPresented {
+                PermissionGuideView(
+                    model: permissionGuideModel,
+                    onAction: handlePermissionGuideAction
+                )
+            } else {
+                NavigationStack {
+                    content
+                        .navigationDestination(isPresented: editorIsPresented) {
+                            editorDestination
+                        }
                 }
+            }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .preferredColorScheme(.dark)
         .task {
             guard model.loadingState == .idle else {
@@ -79,6 +93,33 @@ private struct GetUpRootView: View {
             LoadFailureView {
                 Task { await model.load() }
             }
+        }
+    }
+
+    private func handlePermissionGuideAction(
+        _ action: PermissionGuideAction
+    ) async -> PermissionGuideUpdate? {
+        switch action {
+        case .reauthorizeAndReselectApplications, .openSettings:
+            openSettings()
+            return nil
+        case .retryLocation:
+            await model.refreshRestrictionStatus()
+            let state: RestrictionPresentationState = permissionGuideRetryResult == "inside"
+                ? .active
+                : .inactive
+            return PermissionGuideUpdate(
+                authorization: permissionGuideModel?.authorization
+                    ?? AuthorizationSnapshot(
+                        familyControls: .approved,
+                        locationAuthorization: .always,
+                        locationAccuracy: .full,
+                        backgroundRefresh: .available
+                    ),
+                presentationState: state
+            )
+        case .beginPermissionSetup, .later:
+            return nil
         }
     }
 
@@ -558,6 +599,8 @@ private struct AppEnvironment {
     let defaultCoordinate: ReferenceLocation
     let applicationSelectionOverride: (@MainActor () -> FamilyActivitySelection?)?
     let showsRestrictionProbe: Bool
+    let permissionGuideModel: PermissionGuideModel?
+    let permissionGuideRetryResult: String?
 
     static func live() throws -> AppEnvironment {
         let container = try DependencyContainer.live()
@@ -584,7 +627,9 @@ private struct AppEnvironment {
             currentLocationProvider: CurrentLocationProvider(session: locationSession),
             defaultCoordinate: ReferenceLocation(latitude: 37.5665, longitude: 126.9780),
             applicationSelectionOverride: nil,
-            showsRestrictionProbe: false
+            showsRestrictionProbe: false,
+            permissionGuideModel: nil,
+            permissionGuideRetryResult: nil
         )
     }
 }
@@ -608,6 +653,9 @@ private enum UITestConfiguration {
         let applicationResult = value(after: "--ui-test-family-picker-result")
         let fixtureNow = parsedDate(value(after: "--ui-test-now")) ?? Fixtures.now
         let locationState = value(after: "--ui-test-location-state")
+        let permissionGuideRetryResult = value(
+            after: "--ui-test-location-retry-result"
+        )
         let fileManager = FileManager.default
         let root = fileManager.urls(for: .cachesDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("GetUpUITests", isDirectory: true)
@@ -637,7 +685,8 @@ private enum UITestConfiguration {
                         rules: fixtures.rules
                     )
                 )
-            } else if scenario == "restriction-activation" {
+            } else if scenario == "restriction-activation"
+                || scenario?.hasPrefix("location-unavailable-") == true {
                 try await container.ruleRepository.saveRuleCollection(
                     RestrictionRuleCollectionSnapshot(
                         revision: 1,
@@ -680,8 +729,15 @@ private enum UITestConfiguration {
                         calendar: Fixtures.calendar,
                         timeZone: Fixtures.timeZone
                     )
+                    let shouldApply = locationState == "inside"
+                        || (
+                            scenario == "location-unavailable-active"
+                                && permissionGuideRetryResult == "inside"
+                        )
+                    let scheduleAllowsApplication = scheduleIsActive
+                        || scenario == "location-unavailable-active"
                     let revisions: Set<ActiveRuleRevision> =
-                        scheduleIsActive && locationState == "inside"
+                        scheduleAllowsApplication && shouldApply
                         ? [ActiveRuleRevision(ruleID: rule.id, revision: rule.revision)]
                         : []
                     return AppliedRestrictionState(activeRuleRevisions: revisions)
@@ -691,8 +747,94 @@ private enum UITestConfiguration {
             currentLocationProvider: UITestCurrentLocationProvider(),
             defaultCoordinate: fixtures.home.coordinate,
             applicationSelectionOverride: selectionOverride,
-            showsRestrictionProbe: scenario == "restriction-activation"
+            showsRestrictionProbe: scenario == "restriction-activation",
+            permissionGuideModel: permissionGuideModel(for: scenario),
+            permissionGuideRetryResult: permissionGuideRetryResult
         )
+    }
+
+    private static func permissionGuideModel(
+        for scenario: String?
+    ) -> PermissionGuideModel? {
+        let approved = AuthorizationSnapshot(
+            familyControls: .approved,
+            locationAuthorization: .always,
+            locationAccuracy: .full,
+            backgroundRefresh: .available
+        )
+
+        switch scenario {
+        case "permission-overview":
+            return PermissionGuideModel(
+                authorization: AuthorizationSnapshot(
+                    familyControls: .denied,
+                    locationAuthorization: .whenInUse,
+                    locationAccuracy: .reduced,
+                    backgroundRefresh: .restricted
+                ),
+                presentationState: .permissionRequired(
+                    missingPermissions: [
+                        .familyControls,
+                        .alwaysLocation,
+                        .fullAccuracy,
+                    ]
+                ),
+                initialScreenKind: .overview
+            )
+        case "permission-family-controls":
+            return PermissionGuideModel(
+                authorization: AuthorizationSnapshot(
+                    familyControls: .denied,
+                    locationAuthorization: .always,
+                    locationAccuracy: .full,
+                    backgroundRefresh: .available
+                ),
+                presentationState: .permissionRequired(
+                    missingPermissions: [.familyControls]
+                ),
+                initialScreenKind: .familyControls
+            )
+        case "permission-location":
+            return PermissionGuideModel(
+                authorization: AuthorizationSnapshot(
+                    familyControls: .approved,
+                    locationAuthorization: .whenInUse,
+                    locationAccuracy: .reduced,
+                    backgroundRefresh: .available
+                ),
+                presentationState: .permissionRequired(
+                    missingPermissions: [.alwaysLocation, .fullAccuracy]
+                ),
+                initialScreenKind: .location
+            )
+        case "permission-background-refresh":
+            return PermissionGuideModel(
+                authorization: AuthorizationSnapshot(
+                    familyControls: .approved,
+                    locationAuthorization: .always,
+                    locationAccuracy: .full,
+                    backgroundRefresh: .restricted
+                ),
+                presentationState: .inactive,
+                initialScreenKind: .backgroundRefresh
+            )
+        case "location-unavailable-inactive":
+            return PermissionGuideModel(
+                authorization: approved,
+                presentationState: .locationUnavailable(
+                    isRestrictionApplied: false
+                )
+            )
+        case "location-unavailable-active":
+            return PermissionGuideModel(
+                authorization: approved,
+                presentationState: .locationUnavailable(
+                    isRestrictionApplied: true
+                )
+            )
+        default:
+            return nil
+        }
     }
 
     private static var arguments: [String] {
