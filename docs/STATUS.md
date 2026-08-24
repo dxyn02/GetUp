@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 6 사용자 스토리 4 구현 — 권한 상태 adapter 완료
+Phase 6 사용자 스토리 4 구현 — 권한 안내 모델 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T075 — Family Controls·위치·정확도·Background App Refresh 상태와 설정 URL adapter를 구현함
+T076 — 권한별 원인·복구·앱 재선택과 위치 확인 불가 상태를 PermissionGuideModel에 구현함
 
 ## 다음 작업
-T076 — 권한별 원인·복구·앱 재선택 상태를 PermissionGuideModel에 구현함
+T077 — 승인된 하이파이에 맞춰 PermissionGuideView를 구현함
 
 ## 차단 상태
 없음. BLK-009은 사용자의 1안 선택으로 해결됨.
@@ -22,6 +22,18 @@ T076 — 권한별 원인·복구·앱 재선택 상태를 PermissionGuideModel�
 없음. 규칙 삭제 UI의 코드·Figma 불일치를 T060·T061로 보정한 뒤 US3 테스트를 시작하도록 계획을 갱신했다.
 
 ## 테스트 상태
+T076에서 `PermissionGuideModel`이 Family Controls, Always location, Full Accuracy와 Background App
+Refresh를 승인된 `🛡️`, `📍`, `🎯`, `🔄` 순서로 합성하도록 구현했다. 필수 권한과 진단용 Background
+App Refresh를 구분하고 Family Controls 복구 뒤에는 최신 승인 상태와 별개로 앱 재선택 완료 전까지
+복구 상태를 유지한다. 권한 복구 우선순위, 위치 권한 결합 안내, Background App Refresh 지연·저전력
+모드 안내, 위치 `unavailable`의 비활성 신규 제한 금지와 활성 제한 보존 문구, foreground 갱신 시
+해결된 안내 종료를 전용 단위 테스트 7개(동적 실행 포함 8회)로 검증했다. T073의 계획된 오래된 fix
+red가 회귀 실행을 막지 않도록 전체 검증 중에만 해당 파일의 Sources membership을 제외하고 즉시
+복구했다. iPhone 17 Pro iOS 26.5 Simulator에서 나머지 `GetUpTests` 137개 test case가 동적 인자를
+포함해 총 174회 모두 통과했으며 실패·skip은 없다. `PermissionGuideView`와 앱 진입·foreground
+wiring은 T077·T079에서 연결하고, T074의 UI test 6개는 그때 green으로 전환한다. `project.pbxproj`
+plist 문법과 `git diff --check`는 통과했다.
+
 T075에서 `AuthorizationStatusReading` 경계와 `SystemAuthorizationStatusReader`를 추가해 Family Controls,
 위치 승인, 정확도와 Background App Refresh 시스템 상태 읽기를 snapshot 합성과 분리했다.
 `SystemAuthorizationProvider`는 매 조회마다 네 상태를 새로 합성하며, 앱 전용 `forApplication()`은

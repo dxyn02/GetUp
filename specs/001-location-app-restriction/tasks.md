@@ -197,7 +197,7 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 ### 구현
 
 - [x] T075 [P] [US4] Family Controls·위치·정확도·Background App Refresh 상태와 설정 URL을 `GetUp/Infrastructure/Permissions/AuthorizationAdapter.swift`에 구현한다
-- [ ] T076 [US4] 권한별 원인·복구·앱 재선택 상태를 `GetUp/Features/PermissionGuide/PermissionGuideModel.swift`에 구현한다
+- [x] T076 [US4] 권한별 원인·복구·앱 재선택 상태를 `GetUp/Features/PermissionGuide/PermissionGuideModel.swift`에 구현한다
 - [ ] T077 [US4] 승인된 하이파이에 맞춰 권한 및 설정 안내를 `GetUp/Features/PermissionGuide/PermissionGuideView.swift`에 구현한다
 - [ ] T078 [US4] 위치 확인 불가에서 기존 shield를 보존하고 시간 종료는 해제하도록 `GetUp/Infrastructure/ScreenTime/RestrictionCoordinator.swift`를 확장한다
 - [ ] T079 [US4] foreground 진입과 권한 변경 시 권한·일정·region·snapshot을 재평가하고 권한 안내 상태를 갱신하도록 `GetUp/App/AppLifecycleCoordinator.swift`를 확장한다
