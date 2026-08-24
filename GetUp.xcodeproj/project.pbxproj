@@ -52,6 +52,18 @@
 		AA0000000000000000000122 /* DiagnosticsLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000009 /* DiagnosticsLogger.swift */; };
 		AA0000000000000000000123 /* DiagnosticsLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000009 /* DiagnosticsLogger.swift */; };
 		AA0000000000000000000124 /* DiagnosticsLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000009 /* DiagnosticsLogger.swift */; };
+		AA0000000000000000000131 /* ScheduleEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000020 /* ScheduleEvaluator.swift */; };
+		AA0000000000000000000132 /* ScheduleEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000020 /* ScheduleEvaluator.swift */; };
+		AA0000000000000000000133 /* ScheduleEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000020 /* ScheduleEvaluator.swift */; };
+		AA0000000000000000000134 /* ScheduleEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000020 /* ScheduleEvaluator.swift */; };
+		AA0000000000000000000141 /* RestrictionRuleValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000021 /* RestrictionRuleValidator.swift */; };
+		AA0000000000000000000142 /* RestrictionRuleValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000021 /* RestrictionRuleValidator.swift */; };
+		AA0000000000000000000143 /* RestrictionRuleValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000021 /* RestrictionRuleValidator.swift */; };
+		AA0000000000000000000144 /* RestrictionRuleValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000021 /* RestrictionRuleValidator.swift */; };
+		AA0000000000000000000151 /* LocationPickerModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000022 /* LocationPickerModel.swift */; };
+		AA0000000000000000000152 /* CurrentLocationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000023 /* CurrentLocationProvider.swift */; };
+		AA0000000000000000000153 /* LocationPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000027 /* LocationPickerView.swift */; };
+		AA0000000000000000000154 /* FamilyActivitySelectionAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000028 /* FamilyActivitySelectionAdapter.swift */; };
 		AA0000000000000000000081 /* TestFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000001 /* TestFixtures.swift */; };
 		AA0000000000000000000082 /* RestrictionStateMachineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000002 /* RestrictionStateMachineTests.swift */; };
 		AA0000000000000000000083 /* SharedSnapshotRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */; };
@@ -61,6 +73,7 @@
 		AA0000000000000000000087 /* LocationPickerModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000007 /* LocationPickerModelTests.swift */; };
 		AA0000000000000000000088 /* CurrentLocationProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000008 /* CurrentLocationProviderTests.swift */; };
 		AA0000000000000000000089 /* UserStory1RuleConfigurationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000001 /* UserStory1RuleConfigurationUITests.swift */; };
+		AA0000000000000000000090 /* FamilyActivitySelectionAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000009 /* FamilyActivitySelectionAdapterTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -139,6 +152,12 @@
 		B40000000000000000000007 /* SharedSnapshotRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSnapshotRepository.swift; sourceTree = "<group>"; };
 		B40000000000000000000008 /* DependencyContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DependencyContainer.swift; sourceTree = "<group>"; };
 		B40000000000000000000009 /* DiagnosticsLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsLogger.swift; sourceTree = "<group>"; };
+		B40000000000000000000020 /* ScheduleEvaluator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleEvaluator.swift; sourceTree = "<group>"; };
+		B40000000000000000000021 /* RestrictionRuleValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionRuleValidator.swift; sourceTree = "<group>"; };
+		B40000000000000000000022 /* LocationPickerModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPickerModel.swift; sourceTree = "<group>"; };
+		B40000000000000000000023 /* CurrentLocationProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrentLocationProvider.swift; sourceTree = "<group>"; };
+		B40000000000000000000027 /* LocationPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPickerView.swift; sourceTree = "<group>"; };
+		B40000000000000000000028 /* FamilyActivitySelectionAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyActivitySelectionAdapter.swift; sourceTree = "<group>"; };
 		B50000000000000000000001 /* TestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFixtures.swift; sourceTree = "<group>"; };
 		B50000000000000000000002 /* RestrictionStateMachineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStateMachineTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSnapshotRepositoryTests.swift; sourceTree = "<group>"; };
@@ -147,6 +166,7 @@
 		B50000000000000000000006 /* RestrictionRuleValidatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionRuleValidatorTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000007 /* LocationPickerModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPickerModelTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000008 /* CurrentLocationProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrentLocationProviderTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000009 /* FamilyActivitySelectionAdapterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyActivitySelectionAdapterTests.swift; sourceTree = "<group>"; };
 		B60000000000000000000001 /* UserStory1RuleConfigurationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory1RuleConfigurationUITests.swift; sourceTree = "<group>"; };
 		BA0000000000000000000001 /* GetUp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GetUp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000002 /* GetUpDeviceActivityMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpDeviceActivityMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -247,6 +267,7 @@
 				B20000000000000000000001 /* GetUp.entitlements */,
 				B40000000000000000000018 /* App */,
 				B40000000000000000000010 /* Core */,
+				B40000000000000000000024 /* Features */,
 				B40000000000000000000016 /* Infrastructure */,
 				B30000000000000000000010 /* Resources */,
 			);
@@ -398,6 +419,8 @@
 			isa = PBXGroup;
 			children = (
 				B40000000000000000000005 /* RestrictionEvaluationModels.swift */,
+				B40000000000000000000020 /* ScheduleEvaluator.swift */,
+				B40000000000000000000021 /* RestrictionRuleValidator.swift */,
 			);
 			path = Evaluation;
 			sourceTree = "<group>";
@@ -414,7 +437,9 @@
 			isa = PBXGroup;
 			children = (
 				B40000000000000000000019 /* Diagnostics */,
+				B40000000000000000000026 /* Location */,
 				B40000000000000000000017 /* Persistence */,
+				B40000000000000000000029 /* ScreenTime */,
 			);
 			path = Infrastructure;
 			sourceTree = "<group>";
@@ -441,6 +466,39 @@
 				B40000000000000000000009 /* DiagnosticsLogger.swift */,
 			);
 			path = Diagnostics;
+			sourceTree = "<group>";
+		};
+		B40000000000000000000024 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				B40000000000000000000025 /* LocationPicker */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		B40000000000000000000025 /* LocationPicker */ = {
+			isa = PBXGroup;
+			children = (
+				B40000000000000000000022 /* LocationPickerModel.swift */,
+				B40000000000000000000027 /* LocationPickerView.swift */,
+			);
+			path = LocationPicker;
+			sourceTree = "<group>";
+		};
+		B40000000000000000000026 /* Location */ = {
+			isa = PBXGroup;
+			children = (
+				B40000000000000000000023 /* CurrentLocationProvider.swift */,
+			);
+			path = Location;
+			sourceTree = "<group>";
+		};
+		B40000000000000000000029 /* ScreenTime */ = {
+			isa = PBXGroup;
+			children = (
+				B40000000000000000000028 /* FamilyActivitySelectionAdapter.swift */,
+			);
+			path = ScreenTime;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -673,6 +731,12 @@
 				AA0000000000000000000101 /* SharedSnapshotRepository.swift in Sources */,
 				AA0000000000000000000111 /* DependencyContainer.swift in Sources */,
 				AA0000000000000000000121 /* DiagnosticsLogger.swift in Sources */,
+				AA0000000000000000000131 /* ScheduleEvaluator.swift in Sources */,
+				AA0000000000000000000141 /* RestrictionRuleValidator.swift in Sources */,
+				AA0000000000000000000151 /* LocationPickerModel.swift in Sources */,
+				AA0000000000000000000152 /* CurrentLocationProvider.swift in Sources */,
+				AA0000000000000000000153 /* LocationPickerView.swift in Sources */,
+				AA0000000000000000000154 /* FamilyActivitySelectionAdapter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -689,6 +753,8 @@
 				AA0000000000000000000102 /* SharedSnapshotRepository.swift in Sources */,
 				AA0000000000000000000112 /* DependencyContainer.swift in Sources */,
 				AA0000000000000000000122 /* DiagnosticsLogger.swift in Sources */,
+				AA0000000000000000000132 /* ScheduleEvaluator.swift in Sources */,
+				AA0000000000000000000142 /* RestrictionRuleValidator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -705,6 +771,8 @@
 				AA0000000000000000000103 /* SharedSnapshotRepository.swift in Sources */,
 				AA0000000000000000000113 /* DependencyContainer.swift in Sources */,
 				AA0000000000000000000123 /* DiagnosticsLogger.swift in Sources */,
+				AA0000000000000000000133 /* ScheduleEvaluator.swift in Sources */,
+				AA0000000000000000000143 /* RestrictionRuleValidator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -721,6 +789,8 @@
 				AA0000000000000000000104 /* SharedSnapshotRepository.swift in Sources */,
 				AA0000000000000000000114 /* DependencyContainer.swift in Sources */,
 				AA0000000000000000000124 /* DiagnosticsLogger.swift in Sources */,
+				AA0000000000000000000134 /* ScheduleEvaluator.swift in Sources */,
+				AA0000000000000000000144 /* RestrictionRuleValidator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -736,6 +806,7 @@
 				AA0000000000000000000086 /* RestrictionRuleValidatorTests.swift in Sources */,
 				AA0000000000000000000087 /* LocationPickerModelTests.swift in Sources */,
 				AA0000000000000000000088 /* CurrentLocationProviderTests.swift in Sources */,
+				AA0000000000000000000090 /* FamilyActivitySelectionAdapterTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

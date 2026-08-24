@@ -4,25 +4,25 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 3 사용자 스토리 1 — T027 실패 UI test 작성 완료
+Phase 3 사용자 스토리 1 — T032 Family Controls 앱 선택 adapter 구현 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T027 — 규칙 설정과 모든 규칙 home pager의 실패 UI test를 먼저 작성하고 red 상태를 확인함
+T032 — 개인용 Family Controls 승인과 앱 선택 결과 adapter를 구현함
 
 ## 다음 작업
-T028 — T025를 통과하도록 `ScheduleEvaluator`를 구현함
+T033 — wheel time picker, 요일, 여섯 단계 반경 component를 구현함
 
 ## 차단 상태
 없음
 
 ## 계획 갱신 필요
-`DEC-015`~`DEC-019`에 따라 `spec.md`, `plan.md`, `data-model.md`, `tasks.md`와 관련 contract는 다중
-규칙, 저장 장소, 직접 시간 설정, 여섯 단계 반경 기준으로 갱신했다. 기존 단일 규칙 저장소와
-500m·1km 모델 구현은 후속 core task에서 collection·저장 장소 구조로 migration해야 하며, 해당
-구현 전까지 현재 로우파이 검토를 계속한다.
+없음. `DEC-015`~`DEC-022`에 따른 다중 규칙, 저장 장소, 직접 시간 설정, 여섯 단계 반경 및 DST
+경계 정책은 기능 문서에 반영되어 있다. `SavedPlaceSnapshot`과 위치 선택 draft 모델은 T030에서
+구현했으며, 기존 단일 규칙 저장소의 collection·저장 장소 구조 migration은 계획된 T034~T036
+범위에서 진행한다.
 
 ## 테스트 상태
 명세 품질 체크리스트 16/16개 항목을 통과함. 계획 산출물의 구조 검증을 통과함.
@@ -36,7 +36,7 @@ Swift 6 strict concurrency type-check를 통과했으며, 실제 production modu
 `ScheduleEvaluator`, `RestrictionRuleValidator`, `RestrictionRuleValidationInput` 미구현 오류로
 red 상태를 확인했다. `xcodebuild build-for-testing`은 앱 target에 실행 entry point가 아직 없어
 linker 단계에서 실패했고 CoreSimulator service 경고도 계속 발생했다. `project.pbxproj` 문법과
-`git diff --check`는 통과했으며, red 테스트는 T028·T029 구현 전까지 예상된 미완료 테스트다.
+`git diff --check`는 통과했으며, validation red 테스트는 T029 구현과 함께 해소됐다.
 T026에서 `LocationPickerModelTests.swift`에 지도 이동, 현재 위치 바로가기, When In Use 권한 부족과
 위치 조회 실패 시 pin 보존, 저장 장소 draft 생성·재사용, 확인·취소 상태를 작성했다.
 `CurrentLocationProviderTests.swift`에는 When In Use 성공, denied·restricted·notDetermined 권한 흐름,
@@ -44,8 +44,7 @@ T026에서 `LocationPickerModelTests.swift`에 지도 이동, 현재 위치 바�
 Swift 6 strict concurrency type-check를 통과했다. 실제 production module에서는 계획대로
 `LocationPickerModel`, `SavedPlaceSnapshot`, `CurrentLocationProvider`, `CurrentLocationSession` 등
 T030 대상 타입의 미구현 오류로 red 상태를 확인했다. 새 테스트의 `GetUpTests` target membership,
-`project.pbxproj` 문법과 `git diff --check`를 확인했으며, red 테스트는 T030 구현 전까지 예상된
-미완료 테스트다.
+`project.pbxproj` 문법과 `git diff --check`를 확인했으며, red 상태는 T030 구현과 함께 해소됐다.
 T027에서 `UserStory1RuleConfigurationUITests.swift`에 필수 입력 validation과 요일·저장 장소·앱
 선택, 유효 규칙 저장 후 process 재실행 재로딩, 세 저장 규칙의 양방향 card swipe, 선택 card 편집 시
 값 보존을 작성했다. 승인된 하이파이의 accessibility identifier를 사용하고, 시스템 소유
@@ -55,6 +54,63 @@ T027에서 `UserStory1RuleConfigurationUITests.swift`에 필수 입력 validatio
 아직 없어 GetUp linker 단계에서 실패했고 CoreSimulator service도 사용할 수 없었으므로 UI assertion은
 실행되지 않았다. 이는 T035~T037 UI·app 구현 전의 예상 red 상태다. `project.pbxproj` 문법과
 `git diff --check`는 통과했다.
+T028에서 `ScheduleEvaluator.swift`에 15분 최소 간격의 종료 시각 선택 여부, 선택 요일, 시작 포함·
+종료 미포함, 자정 초과 구간의 시작 요일 귀속을 구현했다. 현지 시각 경계는 `Calendar.nextDate`의
+`.nextTime` 정책을 사용해 존재하지 않는 시각을 다음 유효 시각으로 이동하고, 반복 시작은 첫 번째,
+반복 종료는 두 번째 발생을 사용한다. `RestrictionStateMachine`의 기존 단순 시·분 판정을
+`ScheduleEvaluator` 호출로 교체해 앱과 extension의 실제 평가 경로도 같은 DST 규칙을 사용하게 했다.
+임시 로컬 Swift package에서 T025의 `ScheduleEvaluatorTests` 7개와 기존 상태 머신 회귀 테스트 10개,
+총 17개가 모두 통과했다. 변경한 core source는 iOS 26 Simulator SDK, Swift 6 strict concurrency 및
+warning-as-error 조건에서 type-check를 통과했고, `ScheduleEvaluator.swift`가 앱과 세 extension의
+Sources phase에 각각 한 번 포함되는지 확인했다. `project.pbxproj` plist 문법과 `git diff --check`도
+통과했다. 전체 Xcode test 실행은 app entry point가 구현되는 T037 전까지 미검증 상태다.
+T029에서 `RestrictionRuleValidator.swift`에 빈 요일, 유효하지 않은 시·분, 같은 시작·종료,
+15분 미만 구간, 저장 장소 누락·삭제, 좌표 누락·범위 초과·비유한 값, 지원하지 않는 반경 및 앱
+token 누락 판정을 구현했다. 반경의 단일 source of truth로 `RadiusOption.allCases`를 사용하고
+`RadiusOption`을 500m·1km·2km·3km·4km·5km 여섯 값으로 확장했다. 기존 T025 테스트에 좌표와
+시·분 모델 범위 경계를 보강했으며, 임시 로컬 Swift package에서 validator 11개, 일정 평가 7개,
+상태 머신 회귀 10개로 총 28개 테스트가 모두 통과했다. 변경한 core source는 iOS 26 Simulator SDK,
+Swift 6 strict concurrency 및 warning-as-error 조건에서 type-check를 통과했고,
+`RestrictionRuleValidator.swift`가 앱과 세 extension의 Sources phase에 각각 한 번 포함되는지
+확인했다. `project.pbxproj` plist 문법과 `git diff --check`도 통과했다. 전체 Xcode test 실행은 app
+entry point가 구현되는 T037 전까지 미검증 상태다.
+T030에서 `SavedPlaceSnapshot`·`SavedPlaceDraft`, 지도 중심·핀 후보·저장 장소 재사용·확정·취소·안내
+상태를 가진 `@MainActor @Observable LocationPickerModel`을 구현했다. 현재 위치 바로가기는
+`CurrentLocationProvider`와 `CurrentLocationSession` 계약으로 분리하고, 승인 상태에서는 단 한 번의
+위치를 요청하며 `.notDetermined`에서만 When In Use 권한을 요청한다. denied·restricted와 Core
+Location 실패를 닫힌 오류로 정규화하고, 실제 `CLLocationManager` delegate callback은
+`CoreLocationCurrentLocationSession`의 main actor 경계에서 continuation으로 변환했다. 임시 로컬
+Swift package에서 위치 선택 모델 9개, 현재 위치 provider 6개와 기존 core 회귀 28개로 총 43개
+테스트가 모두 통과했다. 변경 source는 iOS 26 Simulator SDK, Swift 6 strict concurrency 및
+warning-as-error 조건에서 type-check를 통과했고, 두 새 source가 앱 target Sources phase에 각각 한
+번 포함되는지 확인했다. 실제 시스템 권한 prompt와 `CLLocationManager` callback은 Simulator·실기기
+통합 검증 전까지 미검증 상태이며, 전체 Xcode test 실행은 app entry point가 구현되는 T037 전까지
+미검증 상태다. `project.pbxproj` plist 문법과 `git diff --check`는 통과했다.
+T031에서 승인된 Figma `HF-FLOW-05`와 `location-picker-ui-contract.md`를 기준으로
+`LocationPickerView.swift`를 구현했다. 실제 MapKit 지도에 중심 고정 `mappin.circle.fill`, 선택
+반경의 실제 meter 값을 사용하는 `MapCircle`, 저장 장소 chip, 직접 입력 진입, 적용 CTA와 현재 위치
+바로가기를 구성했다. 프로그램 방식의 카메라 이동과 사용자 지도 이동을 분리해 저장 장소 선택이
+MapKit의 camera 종료 callback으로 해제되지 않도록 했고, 지도 이동·현재 위치 선택 시 기존 장소
+이름을 비워 새 좌표가 이전 장소 이름으로 저장되지 않게 보강했다. 권한 부족·위치 확인 실패 안내는
+지도 핀 직접 선택을 유지하며, 모든 주요 control에 VoiceOver label·value·hint와 UI test identifier를
+부여했다. 반경 값은 `Binding<RadiusOption>`으로 받아 지도 원에 즉시 반영하며 실제 여섯 단계 slider는
+계획된 T033의 `RadiusPicker.swift`에서 연결한다. 관련 core 회귀 43개 테스트가 모두 통과했고,
+`LocationPickerView.swift`를 포함한 변경 source는 iOS 26 Simulator SDK, Swift 6 strict concurrency,
+warning-as-error 조건에서 type-check를 통과했다. 앱 entry point가 T037까지 미구현이므로 실제 화면
+render, 지도 gesture, 시스템 권한 prompt 및 UI test 실행은 아직 미검증 상태다. `project.pbxproj`
+plist 문법과 `git diff --check`는 통과했다.
+T032에서 `FamilyControlsAuthorizationSession`과 `FamilyActivitySelectionAdapter`를 구현했다.
+`AuthorizationCenter.requestAuthorization(for: .individual)`만 요청하고 이미 승인된 경우에는 시스템
+요청을 반복하지 않는다. denied 상태에서 사용자가 명시적으로 재시도할 수 있으며 시스템 반환 상태를
+그대로 안내 계층에 전달한다. iOS 26.4에서 추가된 `approvedWithDataAccess`는 도메인의 `approved`로
+정규화했다. `FamilyActivityPicker` 결과는 앱 이름·bundle identifier로 해석하지 않고 불투명
+`FamilyActivitySelection` 그대로 교체·초기화하며, validation과 요약에 필요한 application token
+개수만 제공한다. 승인 재사용·최초 요청·거부 후 재시도·선택 결과 보존·초기화 5개 테스트를 추가했고,
+기존 회귀를 포함한 6개 suite의 48개 테스트가 모두 통과했다. 실제 iOS 26.5 SDK에서 production
+module을 Swift 6 strict concurrency 및 warning-as-error 조건으로 compile했으며, adapter와 테스트의
+target membership, `project.pbxproj` plist 문법과 `git diff --check`를 확인했다. 실제 Family Controls
+승인 sheet와 `FamilyActivityPicker` 표시는 T035 연결 및 entitlement가 적용된 실기기 검증 전까지
+미검증 상태다.
 `tasks.md`의 87개 task가 연속 ID, 체크박스 및 파일 경로 형식 검증을 통과함.
 T001 검증으로 `project.pbxproj` plist 문법, 공유 scheme XML 및 `xcodebuild -list -json`을 실행해
 Debug/Release 구성, 6개 target과 6개 scheme 인식을 확인함. Simulator service와 기본 DerivedData

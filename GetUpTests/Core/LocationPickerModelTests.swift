@@ -7,7 +7,9 @@ import Testing
 struct LocationPickerModelTests {
     @Test("A settled map movement updates the center and pin candidate")
     func mapMovementUpdatesCandidate() {
-        let model = makeModel()
+        let savedPlace = makeSavedPlace()
+        let model = makeModel(savedPlaces: [savedPlace])
+        model.selectSavedPlace(id: savedPlace.id)
         let movedCoordinate = ReferenceLocation(latitude: 35.1796, longitude: 129.0756)
 
         model.mapDidSettle(at: movedCoordinate)
@@ -15,19 +17,25 @@ struct LocationPickerModelTests {
         #expect(model.cameraCenter == movedCoordinate)
         #expect(model.pinCandidate == movedCoordinate)
         #expect(model.selectedSavedPlaceID == nil)
+        #expect(model.placeName.isEmpty)
     }
 
     @Test("The current-location shortcut moves both map and pin")
     func currentLocationShortcutUpdatesCandidate() async {
         let currentLocation = ReferenceLocation(latitude: 37.4563, longitude: 126.7052)
+        let savedPlace = makeSavedPlace()
         let model = makeModel(
+            savedPlaces: [savedPlace],
             currentLocationResult: .success(currentLocation)
         )
+        model.selectSavedPlace(id: savedPlace.id)
 
         await model.useCurrentLocation()
 
         #expect(model.cameraCenter == currentLocation)
         #expect(model.pinCandidate == currentLocation)
+        #expect(model.selectedSavedPlaceID == nil)
+        #expect(model.placeName.isEmpty)
         #expect(model.guidance == nil)
     }
 
@@ -86,6 +94,7 @@ struct LocationPickerModelTests {
         #expect(model.placeName == savedPlace.name)
         #expect(model.cameraCenter == savedPlace.coordinate)
         #expect(model.pinCandidate == savedPlace.coordinate)
+        #expect(model.savedPlaces == [savedPlace])
     }
 
     @Test("Confirming a reused place returns the existing saved place")
@@ -106,6 +115,20 @@ struct LocationPickerModelTests {
         model.cancel()
 
         #expect(model.completion == .cancelled)
+    }
+
+    @Test("A saved place keeps latitude and longitude at the storage payload root")
+    func savedPlaceUsesFlatCoordinatePayload() throws {
+        let savedPlace = makeSavedPlace()
+        let data = try JSONEncoder().encode(savedPlace)
+        let payload = try #require(
+            JSONSerialization.jsonObject(with: data) as? [String: Any]
+        )
+
+        #expect(payload["latitude"] as? Double == savedPlace.coordinate.latitude)
+        #expect(payload["longitude"] as? Double == savedPlace.coordinate.longitude)
+        #expect(payload["coordinate"] == nil)
+        #expect(try JSONDecoder().decode(SavedPlaceSnapshot.self, from: data) == savedPlace)
     }
 
     private func makeModel(
