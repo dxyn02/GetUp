@@ -36,6 +36,29 @@ struct RestrictionRuleValidatorTests {
         #expect(errors.contains(.savedPlaceNotFound))
     }
 
+    @Test("The selected saved place must have a valid coordinate")
+    func invalidSavedPlaceCoordinateFailsValidation() {
+        let missingCoordinateErrors = RestrictionRuleValidator.errors(
+            in: validInput(referenceLocation: nil)
+        )
+        #expect(missingCoordinateErrors.contains(.invalidReferenceLocation))
+
+        let invalidCoordinates = [
+            ReferenceLocation(latitude: 91, longitude: 127),
+            ReferenceLocation(latitude: 37, longitude: -181),
+            ReferenceLocation(latitude: .infinity, longitude: 127),
+            ReferenceLocation(latitude: 37, longitude: .nan),
+        ]
+
+        for coordinate in invalidCoordinates {
+            let errors = RestrictionRuleValidator.errors(
+                in: validInput(referenceLocation: coordinate)
+            )
+
+            #expect(errors.contains(.invalidReferenceLocation))
+        }
+    }
+
     @Test("Every supported radius is accepted", arguments: [500, 1_000, 2_000, 3_000, 4_000, 5_000])
     func supportedRadiusPassesValidation(radiusMeters: Int) {
         let errors = RestrictionRuleValidator.errors(
@@ -75,6 +98,24 @@ struct RestrictionRuleValidatorTests {
         #expect(errors.contains(.startAndEndMustDiffer))
     }
 
+    @Test("Hours and minutes outside their model ranges are invalid")
+    func invalidTimeComponentsFailValidation() {
+        let invalidTimes = [
+            TimeOfDay(hour: -1, minute: 0),
+            TimeOfDay(hour: 24, minute: 0),
+            TimeOfDay(hour: 6, minute: -1),
+            TimeOfDay(hour: 6, minute: 60),
+        ]
+
+        for time in invalidTimes {
+            let errors = RestrictionRuleValidator.errors(
+                in: validInput(startTime: time)
+            )
+
+            #expect(errors.contains(.invalidTimeOfDay))
+        }
+    }
+
     @Test("A 14-minute interval fails and a 15-minute interval passes")
     func minimumDurationBoundary() {
         let fourteenMinuteErrors = RestrictionRuleValidator.errors(
@@ -93,6 +134,10 @@ struct RestrictionRuleValidatorTests {
         startTime: TimeOfDay = TimeOfDay(hour: 6, minute: 0),
         endTime: TimeOfDay = TimeOfDay(hour: 9, minute: 0),
         savedPlaceID: UUID? = RestrictionRuleValidatorTests.knownSavedPlaceID,
+        referenceLocation: ReferenceLocation? = ReferenceLocation(
+            latitude: 37.5665,
+            longitude: 126.9780
+        ),
         radiusMeters: Int = 500,
         applicationTokenCount: Int = 1
     ) -> RestrictionRuleValidationInput {
@@ -102,6 +147,7 @@ struct RestrictionRuleValidatorTests {
             endTime: endTime,
             savedPlaceID: savedPlaceID,
             availableSavedPlaceIDs: [Self.knownSavedPlaceID],
+            referenceLocation: referenceLocation,
             radiusMeters: radiusMeters,
             applicationTokenCount: applicationTokenCount
         )

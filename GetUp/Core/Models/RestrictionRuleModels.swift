@@ -19,6 +19,10 @@ struct TimeOfDay: Codable, Equatable, Hashable, Sendable {
 enum RadiusOption: Int, Codable, CaseIterable, Sendable {
     case meters500 = 500
     case meters1000 = 1_000
+    case meters2000 = 2_000
+    case meters3000 = 3_000
+    case meters4000 = 4_000
+    case meters5000 = 5_000
 
     var meters: Double {
         Double(rawValue)
@@ -28,6 +32,59 @@ enum RadiusOption: Int, Codable, CaseIterable, Sendable {
 struct ReferenceLocation: Codable, Equatable, Sendable {
     let latitude: Double
     let longitude: Double
+}
+
+struct SavedPlaceSnapshot: Codable, Equatable, Sendable {
+    let id: UUID
+    let name: String
+    let coordinate: ReferenceLocation
+    let createdAt: Date
+    let updatedAt: Date
+
+    init(
+        id: UUID,
+        name: String,
+        coordinate: ReferenceLocation,
+        createdAt: Date,
+        updatedAt: Date
+    ) {
+        self.id = id
+        self.name = name
+        self.coordinate = coordinate
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        coordinate = ReferenceLocation(
+            latitude: try container.decode(Double.self, forKey: .latitude),
+            longitude: try container.decode(Double.self, forKey: .longitude)
+        )
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(coordinate.latitude, forKey: .latitude)
+        try container.encode(coordinate.longitude, forKey: .longitude)
+        try container.encode(createdAt, forKey: .createdAt)
+        try container.encode(updatedAt, forKey: .updatedAt)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case latitude
+        case longitude
+        case createdAt
+        case updatedAt
+    }
 }
 
 struct RestrictionRuleSnapshot: Codable, Equatable, @unchecked Sendable {
