@@ -448,3 +448,19 @@ snapshot으로도 시스템 등록과 제한 상태가 달라질 수 있다. 공
 
 **영향 범위**: `RuleConfigurationService`, `AppModel`, live `AppEnvironment`,
 `platform-events-contract.md`와 저장 후 동기화 테스트에 적용한다.
+
+## DEC-031 — 자동 해제 뒤 별도 완료 UI 미제공
+
+**날짜**: 2026-08-24
+
+**결정**: 시간 종료 또는 신뢰 가능한 위치 이탈로 제한이 자동 해제되면 별도의 완료 화면, 배너,
+toast 또는 완료 전용 VoiceOver announcement를 표시하지 않는다. 현재 활성 규칙 집합과 앱 token
+합집합을 재계산한 뒤 활성 표시와 편집·끄기·삭제 guard가 제거된 기존 예정·비활성 홈 상태를 그대로
+사용한다.
+
+**근거**: 제한이 해제된 뒤 사용자가 수행해야 할 별도 후속 행동이 없으며, 전용 완료 상태는 홈의
+기존 규칙 상태와 중복된다. 제한 대상 앱이 다시 열리고 GetUp 홈의 활성 표시가 사라지는 결과만으로
+자동 해제를 확인할 수 있어 일시 상태와 추가 접근성 focus·announcement를 도입할 필요가 없다.
+
+**영향 범위**: `design/low-fidelity/US3-auto-release.md`, T056·T057 설계 기준과 이후 T058·T064·T065
+UI 구현에 적용한다. 자동 해제 effect, 30초 측정과 다중 규칙 합집합 재계산 동작은 변경하지 않는다.
