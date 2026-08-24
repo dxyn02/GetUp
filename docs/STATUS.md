@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 6 사용자 스토리 4 디자인 — 하이파이 승인 완료
+Phase 6 사용자 스토리 4 테스트 — 권한 상태 합성 실패 계약 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T071 — 사용자가 직접 수정한 US4 하이파이를 구현 기준으로 승인함
+T072 — Family Controls·Always·Full Accuracy·Background App Refresh 상태 합성 실패 테스트를 작성함
 
 ## 다음 작업
-T072 — Family Controls·위치·정확도·Background App Refresh 권한 합성 실패 테스트를 작성함
+T073 — 위치 오류·오래된 fix·음수 accuracy·경계 중첩 상태 보존 실패 테스트를 작성함
 
 ## 차단 상태
 없음. BLK-009은 사용자의 1안 선택으로 해결됨.
@@ -22,6 +22,17 @@ T072 — Family Controls·위치·정확도·Background App Refresh 권한 합�
 없음. 규칙 삭제 UI의 코드·Figma 불일치를 T060·T061로 보정한 뒤 US3 테스트를 시작하도록 계획을 갱신했다.
 
 ## 테스트 상태
+T072에서 `AuthorizationSnapshot`의 Family Controls, 위치 승인, 정확도, Background App Refresh
+상태 조합 5개와 매 조회 시 최신 시스템 상태를 다시 합성하는 계약을
+`AuthorizationAdapterTests.swift`에 작성하고 GetUpTests target에 추가했다. Background App Refresh는
+진단 상태로 snapshot에 보존하되 기존 결정대로 신규 shield 적용의 필수 권한 gate에는 포함하지
+않는다. iPhone 17 Pro iOS 26.5 Simulator의 대상 suite 실행은 아직 구현되지 않은
+`AuthorizationStatusReading`과 `SystemAuthorizationProvider(statusReader:)` 때문에 compile 단계에서
+실패해 의도한 red를 확인했으며, 이 계약은 T075에서 구현한다. 최초 sandbox 실행은
+CoreSimulatorService 접근 제한으로 기기를 찾지 못했으나 Simulator 접근을 허용한 재실행에서는
+환경 오류 없이 위 계약 누락으로 실패했다. `project.pbxproj` plist 문법과 `git diff --check`는
+통과했으며 실패 테스트 task이므로 전체 suite는 실행하지 않았다.
+
 T071에서 사용자가 직접 수정한 현재 US4 하이파이를 구현 기준으로 승인했다. 최종안은 화면 우측
 상단 badge를 제거하고 권한 점검 목록의 `🛡️`, `📍`, `🎯`, `🔄` 표시와 기존 문구·action 구조를
 유지한다. 최종 Figma wrapper를 다시 렌더링하고 여섯 화면, text node 48개, action frame 10개를
