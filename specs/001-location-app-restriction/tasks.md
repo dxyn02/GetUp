@@ -192,7 +192,7 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 
 - [x] T072 [P] [US4] Family Controls, Always, Full Accuracy, Background App Refresh 상태 합성의 실패 테스트를 `GetUpTests/Integration/AuthorizationAdapterTests.swift`에 작성한다
 - [x] T073 [P] [US4] 위치 오류·오래된 fix·음수 accuracy·경계 중첩에서 상태를 보존하는 실패 테스트를 `GetUpTests/Core/LocationUnavailableTests.swift`에 작성한다
-- [ ] T074 [P] [US4] 권한별 안내와 위치 확인 불가 복구 흐름의 실패 UI test를 `GetUpUITests/UserStory4PermissionGuidanceUITests.swift`에 작성한다
+- [x] T074 [P] [US4] 권한별 안내와 위치 확인 불가 복구 흐름의 실패 UI test를 `GetUpUITests/UserStory4PermissionGuidanceUITests.swift`에 작성한다
 
 ### 구현
 
