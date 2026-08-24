@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 3 사용자 스토리 1 — T032 Family Controls 앱 선택 adapter 구현 완료
+Phase 3 사용자 스토리 1 — T033 규칙 편집 입력 component 구현 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T032 — 개인용 Family Controls 승인과 앱 선택 결과 adapter를 구현함
+T033 — wheel time picker, 요일, 여섯 단계 반경 component를 구현함
 
 ## 다음 작업
-T033 — wheel time picker, 요일, 여섯 단계 반경 component를 구현함
+T034 — 편집 draft, validation, 규칙 이름, 여러 규칙과 저장 장소 선택·재사용 model을 구현함
 
 ## 차단 상태
 없음
@@ -111,6 +111,21 @@ module을 Swift 6 strict concurrency 및 warning-as-error 조건으로 compile�
 target membership, `project.pbxproj` plist 문법과 `git diff --check`를 확인했다. 실제 Family Controls
 승인 sheet와 `FamilyActivityPicker` 표시는 T035 연결 및 entitlement가 적용된 실기기 검증 전까지
 미검증 상태다.
+T033에서 승인된 Figma `HF-FLOW-01`·`HF-FLOW-02`·`HF-FLOW-03`·`HF-FLOW-05`를 기준으로
+`TimeRangePicker`, `WeekdayPicker`, `RadiusPicker`를 구현했다. 시간 picker는 시·분·AM/PM을 독립된
+wheel로 제공하고 분을 1분 단위로 선택하며, 종료 시각 변경은 `ScheduleEvaluator`를 사용해 시작
+시각으로부터 15분 미만인 후보를 반영하지 않는다. 요일 chip은 44pt 최소 hit target과 선택 trait,
+요일별 UI test identifier를 제공한다. 반경 slider는 `RadiusOption.allCases`의 500m·1km·2km·3km·
+4km·5km 여섯 값에만 스냅되고 VoiceOver 조절값과 `locationPicker.radius` identifier를 제공하며,
+기존 `LocationPickerView`에 연결해 반경 변경이 지도 원과 카메라에 즉시 반영되도록 했다. 승인된
+accent `#F4D600`을 `AccentColor` asset에 등록했고, 12시간제의 자정·정오 변환과 0 채움 표시 테스트를
+추가했다. 세 component와 관련 core source는 iOS 17 Simulator SDK, Swift 6 strict concurrency 및
+warning-as-error 조건의 독립 type-check를 통과했다. 전체 `build-for-testing`은 앱·component·test
+source compile과 asset compile을 통과한 뒤 아직 앱 entry point가 없어 기존 예상 상태인 `_main`
+linker 오류로 종료됐다. 따라서 새 assertion의 실제 실행, 화면 render, wheel gesture 및 VoiceOver
+동작은 T037의 앱 entry point 구현 후 검증해야 한다. T032에서 누락된
+`FamilyActivitySelectionAdapterTests.swift`의 Xcode `Integration` group 경로도 바로잡았고,
+`project.pbxproj` 문법, asset JSON 및 `git diff --check`를 확인했다.
 `tasks.md`의 87개 task가 연속 ID, 체크박스 및 파일 경로 형식 검증을 통과함.
 T001 검증으로 `project.pbxproj` plist 문법, 공유 scheme XML 및 `xcodebuild -list -json`을 실행해
 Debug/Release 구성, 6개 target과 6개 scheme 인식을 확인함. Simulator service와 기본 DerivedData
