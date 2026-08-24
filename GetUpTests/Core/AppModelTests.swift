@@ -89,7 +89,13 @@ struct AppModelTests {
             rules: RestrictionRuleCollectionSnapshot(revision: 5, rules: [rule]),
             places: SavedPlaceCollectionSnapshot(revision: 2, places: [place])
         )
-        let model = makeModel(repository: repository)
+        let runtimeSync = SavedRuleRuntimeSyncRecorder()
+        let model = makeModel(
+            repository: repository,
+            synchronizeRuntimeAfterSave: { rule in
+                await runtimeSync.record(rule)
+            }
+        )
         await model.load()
 
         model.beginEditingRule(id: rule.id)
@@ -110,6 +116,7 @@ struct AppModelTests {
         #expect(model.homeRules[0].rule.revision == 4)
         #expect(model.selectedRuleID == rule.id)
         #expect(await repository.storedRules?.revision == 6)
+        #expect(await runtimeSync.ruleRevisions == [4])
     }
 
     @Test("A repository read failure exposes a retryable load state")
@@ -190,7 +197,10 @@ struct AppModelTests {
     private func makeModel(
         repository: AppModelRepository,
         now: Date = date(year: 2026, month: 8, day: 24, hour: 12),
-        canDeleteRule: @escaping @Sendable (UUID) async -> Bool = { _ in true }
+        canDeleteRule: @escaping @Sendable (UUID) async -> Bool = { _ in true },
+        synchronizeRuntimeAfterSave: @escaping @Sendable (
+            RestrictionRuleSnapshot
+        ) async throws -> Void = { _ in }
     ) -> AppModel {
         AppModel(
             ruleRepository: repository,
@@ -200,7 +210,8 @@ struct AppModelTests {
             timeZone: Self.timeZone,
             applicationTokenCounter: { _ in 1 },
             applicationCountForRule: { _ in 1 },
-            canDeleteRule: canDeleteRule
+            canDeleteRule: canDeleteRule,
+            synchronizeRuntimeAfterSave: synchronizeRuntimeAfterSave
         )
     }
 
@@ -280,6 +291,14 @@ struct AppModelTests {
     private static let wednesdayRuleID = UUID(
         uuidString: "00000000-0000-4000-8000-000000000613"
     )!
+}
+
+private actor SavedRuleRuntimeSyncRecorder {
+    private(set) var ruleRevisions: [Int] = []
+
+    func record(_ rule: RestrictionRuleSnapshot) {
+        ruleRevisions.append(rule.revision)
+    }
 }
 
 private actor AppModelRepository: RuleRepository, SavedPlaceRepository {

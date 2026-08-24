@@ -112,6 +112,56 @@ struct RuleConfigurationServiceTests {
         #expect(await repository.writeOrder.isEmpty)
     }
 
+    @Test("Runtime recovery starts only after both snapshots are stored")
+    func synchronizesRuntimeAfterPersistence() async throws {
+        let events = RuleConfigurationRuntimeEventRecorder()
+        let repository = InMemoryRuleConfigurationRepository(events: events)
+        let service = makeService(
+            repository: repository,
+            synchronizeRuntimeAfterSave: { rule in
+                await events.record(.runtime(ruleRevision: rule.revision))
+            }
+        )
+        let place = makePlace()
+
+        let saved = try await service.save(
+            draft: makeDraft(savedPlaceID: place.id),
+            savedPlaces: [place]
+        )
+
+        #expect(saved.rule.revision == 1)
+        #expect(await events.values == [
+            .places,
+            .rules,
+            .runtime(ruleRevision: 1),
+        ])
+    }
+
+    @Test("A rule snapshot write failure never changes runtime registrations")
+    func persistenceFailureSkipsRuntimeSynchronization() async throws {
+        let events = RuleConfigurationRuntimeEventRecorder()
+        let repository = InMemoryRuleConfigurationRepository(
+            events: events,
+            shouldFailRuleSave: true
+        )
+        let service = makeService(
+            repository: repository,
+            synchronizeRuntimeAfterSave: { rule in
+                await events.record(.runtime(ruleRevision: rule.revision))
+            }
+        )
+        let place = makePlace()
+
+        await #expect(throws: RuleConfigurationTestFailure.expected) {
+            try await service.save(
+                draft: makeDraft(savedPlaceID: place.id),
+                savedPlaces: [place]
+            )
+        }
+
+        #expect(await events.values == [.places])
+    }
+
     @Test("Deleting a rule preserves other rules and reusable saved places")
     func deletesOnlySelectedRule() async throws {
         let place = makePlace()
@@ -164,13 +214,17 @@ struct RuleConfigurationServiceTests {
     }
 
     private func makeService(
-        repository: InMemoryRuleConfigurationRepository
+        repository: InMemoryRuleConfigurationRepository,
+        synchronizeRuntimeAfterSave: @escaping @Sendable (
+            RestrictionRuleSnapshot
+        ) async throws -> Void = { _ in }
     ) -> RuleConfigurationService {
         RuleConfigurationService(
             ruleRepository: repository,
             savedPlaceRepository: repository,
             now: { Date(timeIntervalSince1970: 2_000) },
-            applicationTokenCounter: { _ in 1 }
+            applicationTokenCounter: { _ in 1 },
+            synchronizeRuntimeAfterSave: synchronizeRuntimeAfterSave
         )
     }
 
@@ -237,6 +291,8 @@ private actor InMemoryRuleConfigurationRepository: RuleRepository, SavedPlaceRep
 
     private var rules: RestrictionRuleCollectionSnapshot?
     private var places: SavedPlaceCollectionSnapshot?
+    private let events: RuleConfigurationRuntimeEventRecorder?
+    private let shouldFailRuleSave: Bool
     private(set) var writeOrder: [Write] = []
 
     var storedRules: RestrictionRuleCollectionSnapshot? { rules }
@@ -244,10 +300,14 @@ private actor InMemoryRuleConfigurationRepository: RuleRepository, SavedPlaceRep
 
     init(
         rules: RestrictionRuleCollectionSnapshot? = nil,
-        places: SavedPlaceCollectionSnapshot? = nil
+        places: SavedPlaceCollectionSnapshot? = nil,
+        events: RuleConfigurationRuntimeEventRecorder? = nil,
+        shouldFailRuleSave: Bool = false
     ) {
         self.rules = rules
         self.places = places
+        self.events = events
+        self.shouldFailRuleSave = shouldFailRuleSave
     }
 
     func loadRuleCollection() async throws -> RestrictionRuleCollectionSnapshot? {
@@ -255,8 +315,12 @@ private actor InMemoryRuleConfigurationRepository: RuleRepository, SavedPlaceRep
     }
 
     func saveRuleCollection(_ collection: RestrictionRuleCollectionSnapshot) async throws {
+        if shouldFailRuleSave {
+            throw RuleConfigurationTestFailure.expected
+        }
         rules = collection
         writeOrder.append(.rules)
+        await events?.record(.rules)
     }
 
     func deleteRuleCollection() async throws {
@@ -270,9 +334,28 @@ private actor InMemoryRuleConfigurationRepository: RuleRepository, SavedPlaceRep
     func saveSavedPlaceCollection(_ collection: SavedPlaceCollectionSnapshot) async throws {
         places = collection
         writeOrder.append(.places)
+        await events?.record(.places)
     }
 
     func deleteSavedPlaceCollection() async throws {
         places = nil
     }
+}
+
+private enum RuleConfigurationRuntimeEvent: Equatable, Sendable {
+    case places
+    case rules
+    case runtime(ruleRevision: Int)
+}
+
+private actor RuleConfigurationRuntimeEventRecorder {
+    private(set) var values: [RuleConfigurationRuntimeEvent] = []
+
+    func record(_ event: RuleConfigurationRuntimeEvent) {
+        values.append(event)
+    }
+}
+
+private enum RuleConfigurationTestFailure: Error {
+    case expected
 }

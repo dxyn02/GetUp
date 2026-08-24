@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 4 사용자 스토리 2 — T053 shield primary action 구현 완료
+Phase 4 사용자 스토리 2 — T054 저장 후 runtime 동기화 구현 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T053 — 우회 없이 제한 앱을 닫는 Shield Action extension을 구현함
+T054 — 규칙 저장 완료 뒤 일정·region 등록과 초기 제한 상태 평가를 연결함
 
 ## 다음 작업
-T054 — 규칙 저장 성공 후 일정·region 등록과 초기 상태 평가를 연결함
+T055 — 현재 활성 상태와 종료 조건 화면을 구현함
 
 ## 차단 상태
 없음. BLK-009은 사용자의 1안 선택으로 해결됨.
@@ -22,6 +22,19 @@ T054 — 규칙 저장 성공 후 일정·region 등록과 초기 상태 평가�
 없음. 다중 규칙용 짧은 요약과 snapshot 불가 fallback을 shield 계약·하이파이·DEC-029에 반영했다.
 
 ## 테스트 상태
+T054에서 `RuleConfigurationService`가 저장 장소와 규칙 collection을 모두 성공적으로 기록한 뒤에만
+새 rule revision을 runtime 동기화 경계로 전달하도록 확장했다. `AppModel`은 이 경계를 보존하고 live
+`AppEnvironment`는 기존 `AppLifecycleCoordinator.restore()`에 연결한다. 따라서 저장 직후 GetUp 소유
+일정·region을 초기화하고 저장된 모든 활성 규칙을 새 revision으로 재등록하며, `.restoration` fresh
+위치 근거를 갱신한 다음 `RestrictionCoordinator`로 제한 앱 합집합을 즉시 재평가한다. 규칙 snapshot
+write가 실패하면 runtime 동기화는 호출되지 않고, 개별 schedule·location 등록 실패는 DEC-028의
+best-effort 복구를 따라 다른 규칙과 최종 제한 재평가를 막지 않는다. 저장 완료 후 새 revision 전달,
+두 snapshot 이전 호출 금지, 규칙 write 실패 시 runtime 미변경과 `AppModel` 전달을 테스트했다.
+iPhone 17 Pro iOS 26.5 Simulator에서 앱과 모든 extension을 함께 build하고 전체 `GetUpTests` 117개가
+동적 인자를 포함해 총 149회 모두 통과했으며 실패·skip은 없다. 실제 Device Activity 일정·Core
+Location region 등록과 저장 즉시 shield 전환은 entitlement·Always·Full Accuracy가 적용된 실기기
+인수 T083에서 확인해야 한다. `project.pbxproj` plist 문법과 `git diff --check`도 통과했다.
+
 T053에서 `ShieldActionResponsePolicy`와 `ShieldActionExtension`을 구현했다. 화면에 제공하는 primary
 `앱 닫기` action은 `.close`를 반환하며 application·category·web domain callback이 모두 같은 정책을
 사용한다. 구성 화면에는 secondary action이 없지만 시스템이 예기치 않게 secondary action을

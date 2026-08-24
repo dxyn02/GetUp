@@ -41,6 +41,9 @@ final class AppModel {
     @ObservationIgnored private let applicationCountForRule: (RestrictionRuleSnapshot) -> Int
     @ObservationIgnored private let ruleAccessibilityID: (RestrictionRuleSnapshot) -> String
     @ObservationIgnored private let bootstrap: @Sendable () async throws -> Void
+    @ObservationIgnored private let synchronizeRuntimeAfterSave: @Sendable (
+        RestrictionRuleSnapshot
+    ) async throws -> Void
     @ObservationIgnored private let canDeleteRule: @Sendable (UUID) async -> Bool
     @ObservationIgnored private let initialEditorDraft: RuleEditorDraft?
 
@@ -66,7 +69,10 @@ final class AppModel {
         },
         initialEditorDraft: RuleEditorDraft? = nil,
         canDeleteRule: @escaping @Sendable (UUID) async -> Bool = { _ in true },
-        bootstrap: @escaping @Sendable () async throws -> Void = {}
+        bootstrap: @escaping @Sendable () async throws -> Void = {},
+        synchronizeRuntimeAfterSave: @escaping @Sendable (
+            RestrictionRuleSnapshot
+        ) async throws -> Void = { _ in }
     ) {
         self.ruleRepository = ruleRepository
         self.savedPlaceRepository = savedPlaceRepository
@@ -82,6 +88,7 @@ final class AppModel {
         self.initialEditorDraft = initialEditorDraft
         self.canDeleteRule = canDeleteRule
         self.bootstrap = bootstrap
+        self.synchronizeRuntimeAfterSave = synchronizeRuntimeAfterSave
     }
 
     var canDeleteEditingRule: Bool {
@@ -158,7 +165,8 @@ final class AppModel {
             ruleRepository: ruleRepository,
             savedPlaceRepository: savedPlaceRepository,
             now: now,
-            applicationTokenCounter: applicationTokenCounter
+            applicationTokenCounter: applicationTokenCounter,
+            synchronizeRuntimeAfterSave: synchronizeRuntimeAfterSave
         )
         let saved = try await service.save(
             draft: draft,

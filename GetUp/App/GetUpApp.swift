@@ -483,6 +483,9 @@ private struct AppEnvironment {
                 savedPlaceRepository: container.savedPlaceRepository,
                 bootstrap: {
                     _ = try await lifecycleCoordinator.restore()
+                },
+                synchronizeRuntimeAfterSave: { _ in
+                    _ = try await lifecycleCoordinator.restore()
                 }
             ),
             lifecycleCoordinator: lifecycleCoordinator,

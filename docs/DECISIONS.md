@@ -428,3 +428,23 @@ App Group snapshot, 적용 상태 또는 app token을 읽지 못하면 제한 �
 
 **영향 범위**: `shield-ui-contract.md`, US2 하이파이, `ShieldContentProvider`,
 `ShieldConfigurationExtension`과 단일·다중·fallback 콘텐츠 테스트에 적용한다.
+
+## DEC-030 — 규칙 저장 후 공통 runtime 복구 경로 재사용
+
+**날짜**: 2026-08-24
+
+**결정**: `RuleConfigurationService`는 저장 장소와 규칙 collection snapshot을 모두 기록한 뒤에만
+새 `RestrictionRuleSnapshot`을 runtime 동기화 경계로 전달한다. 앱의 live 환경은 이 경계를
+`AppLifecycleCoordinator.restore()`에 연결해 GetUp 소유 일정·region을 초기화하고 저장된 모든 활성
+규칙을 새 revision으로 재등록하며, fresh 위치 근거를 갱신한 뒤 제한 합집합을 즉시 재평가한다.
+snapshot 기록이 실패하면 runtime 동기화를 호출하지 않는다. 개별 일정·region 등록 실패는
+`DEC-028`의 best-effort 결과를 따르며 다른 규칙과 최종 제한 재평가를 막지 않는다.
+
+**근거**: 저장 직후 경로가 foreground·재부팅 복구와 다른 순서나 별도 adapter 조립을 사용하면 같은
+snapshot으로도 시스템 등록과 제한 상태가 달라질 수 있다. 공통 coordinator를 재사용하면 여러 규칙,
+권한, 위치 불가와 부분 등록 실패의 기존 검증을 그대로 유지하면서 `FR-022`의 즉시 재평가를
+충족한다. 두 snapshot보다 먼저 runtime을 변경하지 않아 불완전한 저장 상태가 시스템 등록에
+반영되는 것도 방지한다.
+
+**영향 범위**: `RuleConfigurationService`, `AppModel`, live `AppEnvironment`,
+`platform-events-contract.md`와 저장 후 동기화 테스트에 적용한다.

@@ -52,6 +52,9 @@
 - Device Activity extension의 `intervalDidStart`와 앱 foreground 활성화는 같은 복구 coordinator를
   호출한다. 복구는 공유 규칙을 먼저 읽은 뒤 GetUp 소유 일정·region을 초기화하고 활성 규칙별로
   재등록·위치 갱신한 다음 제한 합집합을 재평가한다.
+- 규칙과 저장 장소 snapshot 저장이 모두 성공하면 같은 복구 coordinator를 호출해 새 revision을
+  포함한 모든 활성 규칙의 일정·region·위치 근거를 재등록하고 제한 합집합을 즉시 재평가한다.
+- snapshot 저장이 완료되지 않으면 일정·region·shield를 변경하지 않는다.
 - 첫 잠금 해제 전 파일 보호 등으로 규칙 snapshot을 읽을 수 없으면 일정·region·shield를 변경하지
   않고 다음 시스템 event에서 다시 시도한다.
 - 개별 일정·region 등록 실패는 다른 유효 규칙과 최종 제한 상태 재평가를 막지 않으며 복구 결과에
