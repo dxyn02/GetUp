@@ -4,25 +4,48 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 3 사용자 스토리 1 완료 — T037 앱·홈·편집·삭제 통합 구현 완료
+Phase 4 사용자 스토리 2 — T043 위치 모니터링 adapter 실패 테스트 작성 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T037 — 앱 시작점, 모든 저장 규칙 홈 pager와 선택 규칙 편집·삭제 연결을 구현함
+T043 — 여섯 반경의 내부·경계·외부·오차 중첩과 위치 snapshot 기록의 실패 테스트를 작성함
 
 ## 다음 작업
-T038 — 사용자 스토리 2 제한 활성 상태와 restricted-app shield 로우파이를 제작함
+T044 — 선택 앱 shield 적용, 동일 revision 무효과와 다른 store 보존의 실패 테스트를 작성함
 
 ## 차단 상태
 없음
 
 ## 계획 갱신 필요
-없음. `DEC-015`~`DEC-025`에 따른 다중 규칙, 저장 장소, 직접 시간 설정, 여섯 단계 반경, DST 경계,
+없음. `DEC-015`~`DEC-026`에 따른 다중 규칙, 저장 장소, 직접 시간 설정, 여섯 단계 반경, DST 경계,
 collection migration과 홈 정렬 정책은 기능 문서와 구현에 반영되어 있다.
 
 ## 테스트 상태
+T043에서 `LocationMonitoringAdapterTests.swift`에 500m·1km·2km·3km·4km·5km 각 반경의 확실한
+내부, 정확도 0인 정확한 경계, 확실한 외부와 오차 원 경계 중첩 판정을 매개변수화하고, 최신 위치
+evidence가 규칙 revision·관측 시각·거리·정확도·event source를 보존한
+`LocationConditionSnapshot`으로 기록되는 실패 테스트를 작성했다. 총 5개 test case가 동적 인자를
+포함해 25회 실행될 계약이며 테스트 파일을 `GetUpTests` target에 포함했다. iPhone 17 Pro iOS 26.5
+Simulator 대상 빌드에서 계획된 T047·T048 타입인 `LocationEvidenceEvaluator`, `LocationEvidence`,
+`LocationEvidenceProviding`, `LocationMonitor`가 아직 없어 compile 단계에서 실패하는 red 상태를
+확인했다. `project.pbxproj` plist 문법과 `git diff --check`는 통과했으며 T047·T048 구현 뒤 이
+suite를 다시 실행해야 한다.
+
+현재 작업은 최신 `origin/main`에서 분기한 `codex/us2-restriction-activation` 브랜치에서 진행한다.
+US2의 관련 task를 같은 브랜치에 묶되 설계·운영 지침, T042, T043을 각각 논리적 커밋으로 분리한다.
+
+T042에서 `DeviceActivityScheduleAdapterTests.swift`에 선택한 월·수·금의 반복 일정과 시작·종료
+`DateComponents`, 14분 일정의 사전 거부와 기존 등록 보존, 일요일 자정 초과 일정의 월요일 종료,
+동일 규칙의 이전 요일 일정만 교체하고 다른 규칙 일정은 보존하는 4개 실패 테스트를 작성했다.
+테스트 파일을 `GetUpTests` target에 포함하고 `project.pbxproj` plist 문법과 `git diff --check`를
+통과했다. iPhone 17 Pro iOS 26.5 Simulator에서 대상 suite 빌드를 실행해 테스트 자체의 Swift 6
+동시성 오류는 없고, 계획된 T046 대상인 `DeviceActivityScheduling`,
+`DeviceActivityScheduleAdapter`, `DeviceActivityScheduleAdapterError`가 아직 없어 compile 단계에서
+실패하는 red 상태를 확인했다. 따라서 전체 테스트 통과 상태는 아니며 T046 구현 뒤 이 suite를
+다시 실행해야 한다.
+
 명세 품질 체크리스트 16/16개 항목을 통과함. 계획 산출물의 구조 검증을 통과함.
 T025 착수 전 `xcodebuild -list -project GetUp.xcodeproj`로 6개 target과 공유 scheme을 확인했으나,
 로컬 CoreSimulator service 연결 실패 경고가 발생했다. 이후 사용자가 BLK-006의 1안을 선택해 DST의
@@ -177,6 +200,43 @@ compile과 link가 모두 통과했다. 삭제 보완 후 iPhone 17 Pro iOS 26.5
 실제 파일 보호 속성을 노출하지 않는 환경 차이는 writer option을 직접 검증하고 물리
 기기에서 실제 속성을 확인하도록 기존 테스트를 보정했다. 실제 App Group, Family Controls picker,
 지도 권한과 실기기 Dynamic Type·VoiceOver는 계획된 통합·마무리 task 전까지 미검증 상태다.
+T038에서 기존 US1 Figma 파일의 `GetUp Focus` 변수·text style과 iOS 26 text button component를
+재사용해 별도 wrapper `US2 / 제한 활성 + Restricted App Shield · T038 로우파이`를 작성했다.
+`US2-LF-01`은 제한 앱 개수, 시간·위치 조건 충족 이유와 시간 종료·신뢰 가능한 위치 이탈이라는
+자동 해제 조건을 표시한다. `US2-LF-02`는 정적 GetUp 아이콘, 제한 활성 제목, 자동 해제 설명과 단일
+`앱 닫기` 행동만 제공하며 앱 이름·bundle identifier를 직접 표시하거나 우회·규칙 변경·GetUp 자동
+실행을 약속하지 않는다. 조건 충족부터 제한 앱 종료까지의 4단계 흐름과 VoiceOver 순서, 색상 외 상태
+표현 가설을 Figma와 `design/low-fidelity/US2-active-restriction.md`에 기록했다. 최종 자동 감사에서
+35개 text node의 SF Pro 외 서체, 0폭·0높이 text, 임시 placeholder, shimmer, 화면 overflow와 실제
+앱 식별 정보가 모두 0건이며 primary action instance가 `앱 닫기` 하나뿐임을 확인했다. 디자인·문서
+작업이므로 code test는 실행하지 않았고, T039 사용자 검토 전까지 T040 하이파이를 시작하지 않는다.
+T039 사용자 피드백에 따라 별도 `US2-LF-01` 화면을 기존 홈 카드의 제한 활성 상태로 교체하고,
+`US2-LF-02` 제목과 설명에 저장 장소 `집`, 설정 반경 `1km`, 종료 시각 `09:00 AM`을 직접 표시했다.
+Figma 재렌더링과 node 감사에서 LF-01 21개와 LF-02 5개 text node의 누락 font, 빈 text, placeholder,
+육안상 overflow가 0건이고 shield 행동 instance가 `앱 닫기` 하나뿐임을 확인했다. iOS 26.5 SDK의
+`ShieldConfiguration`과 `ShieldActionResponse`를 확인한 결과 shield 내부 임의 Map UI는 지원되지
+않고 GetUp 앱 열기는 iOS 26.5 이상의 `openParentalControlsApp`과 secondary action·contract 변경이
+필요하다. 이를 `BLK-007`로 기록했으며 결정 전까지 T039를 완료 처리하지 않는다. 디자인·문서
+변경이므로 code test는 실행하지 않았다.
+사용자가 BLK-007의 1안을 선택해 MVP shield는 모든 지원 버전에서 secondary action 없이 장소·반경·
+종료 시각 문구와 primary `앱 닫기`만 제공하기로 확정했다. Figma의 계약·승인 주석,
+`design/low-fidelity/US2-active-restriction.md`, `docs/BLOCKERS.md`와 `DEC-026`에 결정을 반영하고
+T039를 완료했다. 향후 `오늘만 허용`과 인앱결제를 통한 일시 해제는 현재 범위에서 제외하고 별도
+spec과 플랫폼·결제 정책 검토 대상으로 기록했다. 디자인·문서 변경이므로 code test는 실행하지
+않았다.
+T040에서 승인된 기존 홈 활성 상태, 기본 restricted-app shield와 Dynamic Type `AX5` 비교 상태를
+하나의 Figma 하이파이 wrapper로 구성했다. `GetUp Focus` semantic color·spacing token, SF Pro와
+iOS 26 Liquid Glass primary button instance를 재사용하고 장소·반경·종료 시각, 단일 `앱 닫기`,
+VoiceOver 순서, Increase Contrast·Reduce Motion, 명암 계산과 T052·T053·T055 구현 인계를
+`design/high-fidelity/US2-active-restriction.md`에 기록했다. 전체와 개별 frame 렌더링 및 50개 text
+node 감사에서 누락 font, 빈 text, placeholder, shimmer, 화면 경계 overflow가 모두 0건이었고 행동
+instance는 `Primary Action · 앱 닫기` 두 개뿐이었다. 디자인·문서 작업이므로 code test는 실행하지
+않았으며 T041 사용자 승인 전에는 shield UI 구현을 시작하지 않는다.
+T041에서 사용자가 기본·Dynamic Type AX5 restricted-app shield, 장소·반경·종료 시각 안내,
+secondary action 없는 단일 `앱 닫기`, 접근성·명암·구현 인계를 최종 승인했다. Figma wrapper의 승인
+주석과 `design/high-fidelity/US2-active-restriction.md`의 검토 기록·승인 상태를 갱신하고 T041을
+완료했다. 디자인 승인 기록 작업이므로 code test는 실행하지 않았으며 T042부터 US2 선행 실패
+테스트를 진행한다.
 `tasks.md`의 87개 task가 연속 ID, 체크박스 및 파일 경로 형식 검증을 통과함.
 T001 검증으로 `project.pbxproj` plist 문법, 공유 scheme XML 및 `xcodebuild -list -json`을 실행해
 Debug/Release 구성, 6개 target과 6개 scheme 인식을 확인함. Simulator service와 기본 DerivedData

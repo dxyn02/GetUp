@@ -86,6 +86,7 @@
 		AA0000000000000000000089 /* UserStory1RuleConfigurationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000001 /* UserStory1RuleConfigurationUITests.swift */; };
 		AA0000000000000000000090 /* FamilyActivitySelectionAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000009 /* FamilyActivitySelectionAdapterTests.swift */; };
 		AA0000000000000000000170 /* DeviceActivityScheduleAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000018 /* DeviceActivityScheduleAdapterTests.swift */; };
+		AA0000000000000000000171 /* LocationMonitoringAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000019 /* LocationMonitoringAdapterTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -188,6 +189,7 @@
 		B50000000000000000000008 /* CurrentLocationProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrentLocationProviderTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000009 /* FamilyActivitySelectionAdapterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyActivitySelectionAdapterTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000018 /* DeviceActivityScheduleAdapterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceActivityScheduleAdapterTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000019 /* LocationMonitoringAdapterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationMonitoringAdapterTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000015 /* RuleEditorModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleEditorModelTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000016 /* RuleConfigurationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleConfigurationServiceTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000017 /* AppModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModelTests.swift; sourceTree = "<group>"; };
@@ -384,6 +386,7 @@
 				B50000000000000000000008 /* CurrentLocationProviderTests.swift */,
 				B50000000000000000000009 /* FamilyActivitySelectionAdapterTests.swift */,
 				B50000000000000000000018 /* DeviceActivityScheduleAdapterTests.swift */,
+				B50000000000000000000019 /* LocationMonitoringAdapterTests.swift */,
 			);
 			path = Integration;
 			sourceTree = "<group>";
@@ -869,6 +872,7 @@
 				AA0000000000000000000088 /* CurrentLocationProviderTests.swift in Sources */,
 				AA0000000000000000000090 /* FamilyActivitySelectionAdapterTests.swift in Sources */,
 				AA0000000000000000000170 /* DeviceActivityScheduleAdapterTests.swift in Sources */,
+				AA0000000000000000000171 /* LocationMonitoringAdapterTests.swift in Sources */,
 				AA0000000000000000000161 /* RuleEditorModelTests.swift in Sources */,
 				AA0000000000000000000164 /* RuleConfigurationServiceTests.swift in Sources */,
 				AA0000000000000000000167 /* AppModelTests.swift in Sources */,

@@ -108,15 +108,15 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 
 ### 로우파이 및 하이파이
 
-- [ ] T038 [US2] 제한 활성 상태 화면과 restricted-app shield의 제목·설명·닫기 흐름 로우파이를 제작하고 Figma 링크와 상태 설명을 `design/low-fidelity/US2-active-restriction.md`에 기록한다
-- [ ] T039 [US2] US2 로우파이를 사용자와 검토해 피드백·변경 사항·승인 여부를 `design/low-fidelity/US2-active-restriction.md`에 반영한다
-- [ ] T040 [US2] 승인된 로우파이와 `shield-ui-contract.md`를 기준으로 접근성·명암·Dynamic Type을 포함한 하이파이를 제작하고 Figma 링크와 규격을 `design/high-fidelity/US2-active-restriction.md`에 기록한다
-- [ ] T041 [US2] US2 하이파이를 사용자와 검토해 구현 승인 상태와 최종 변경 사항을 `design/high-fidelity/US2-active-restriction.md`에 기록한다
+- [x] T038 [US2] 제한 활성 상태 화면과 restricted-app shield의 제목·설명·닫기 흐름 로우파이를 제작하고 Figma 링크와 상태 설명을 `design/low-fidelity/US2-active-restriction.md`에 기록한다
+- [x] T039 [US2] US2 로우파이를 사용자와 검토해 피드백·변경 사항·승인 여부를 `design/low-fidelity/US2-active-restriction.md`에 반영한다
+- [x] T040 [US2] 승인된 로우파이와 `shield-ui-contract.md`를 기준으로 접근성·명암·Dynamic Type을 포함한 하이파이를 제작하고 Figma 링크와 규격을 `design/high-fidelity/US2-active-restriction.md`에 기록한다
+- [x] T041 [US2] US2 하이파이를 사용자와 검토해 구현 승인 상태와 최종 변경 사항을 `design/high-fidelity/US2-active-restriction.md`에 기록한다
 
 ### 테스트
 
-- [ ] T042 [P] [US2] 선택 요일별 일정 등록, 15분 오류, 자정 초과, 기존 일정 교체의 실패 테스트를 `GetUpTests/Integration/DeviceActivityScheduleAdapterTests.swift`에 작성한다
-- [ ] T043 [P] [US2] 500m/1km/2km/3km/4km/5km 내부·경계·외부·오차 중첩 및 위치 snapshot 기록의 실패 테스트를 `GetUpTests/Integration/LocationMonitoringAdapterTests.swift`에 작성한다
+- [x] T042 [P] [US2] 선택 요일별 일정 등록, 15분 오류, 자정 초과, 기존 일정 교체의 실패 테스트를 `GetUpTests/Integration/DeviceActivityScheduleAdapterTests.swift`에 작성한다
+- [x] T043 [P] [US2] 500m/1km/2km/3km/4km/5km 내부·경계·외부·오차 중첩 및 위치 snapshot 기록의 실패 테스트를 `GetUpTests/Integration/LocationMonitoringAdapterTests.swift`에 작성한다
 - [ ] T044 [P] [US2] 선택 앱만 shield 적용, 동일 revision 무효과, 다른 store 보존의 실패 테스트를 `GetUpTests/Integration/ManagedSettingsRestrictionAdapterTests.swift`에 작성한다
 - [ ] T045 [P] [US2] 시간 활성 × 위치 내부에서만 제한되고 비대상 앱은 열리는 실패 UI test를 `GetUpUITests/UserStory2RestrictionActivationUITests.swift`에 작성한다
 
