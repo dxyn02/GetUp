@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 3 사용자 스토리 1 — T035 규칙 편집 화면 구현 완료
+Phase 3 사용자 스토리 1 — T036 규칙 collection 저장 구현 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T035 — 승인된 Dark Focus 규칙 편집 화면과 시간·장소·앱 선택 진입을 구현함
+T036 — 규칙 collection·저장 장소 collection 저장과 revision 증가를 구현함
 
 ## 다음 작업
-T036 — 규칙 collection·저장 장소 collection 저장과 revision 증가를 구현함
+T037 — 저장된 모든 규칙과 장소를 불러오는 앱 시작점·홈 pager·편집 화면 연결을 구현함
 
 ## 차단 상태
 없음
@@ -151,6 +151,16 @@ label, value, hint를 적용했다. `RuleEditorView.swift`와 관련 앱·테스
 arm64·x86_64에서 Swift 6 compile을 통과했다. 전체 `build-for-testing`은 source와 test compile 뒤
 T037 전의 기존 예상 상태인 앱 entry point `_main` linker 오류로 종료되어 실제 화면 render, 시스템
 Family Controls 승인·picker 및 UI test 실행은 아직 미검증 상태다. `project.pbxproj` 문법과
+`git diff --check`를 확인했다.
+T036에서 `RuleConfigurationService`와 collection repository 계약을 구현했다. 새 규칙과 대상 규칙의
+revision, 전체 규칙 collection revision 및 저장 장소 collection revision을 저장마다 각각 증가시키고,
+편집 시작 revision이 현재 값과 다른 stale write는 파일을 쓰기 전에 거부한다. 다른 규칙은 그대로
+보존하며 새·수정 장소를 ID로 병합하고, 장소를 규칙보다 먼저 atomic write해 존재하지 않는 장소 참조를
+방지한다. schema 1의 기존 `restriction-rule.json`은 좌표와 시각을 보존한 결정론적 규칙·장소
+aggregate로 읽으며, 새 plural collection 파일이 생기면 이를 우선한다. 임시 Swift package에서
+`RuleConfigurationServiceTests` 4개와 `SharedSnapshotRepositoryTests` 12개, 총 16개 테스트가 모두
+통과했다. `xcodebuild build-for-testing`은 앱과 새 test source의 arm64·x86_64 compile을 통과한 뒤
+T037 전의 기존 예상 상태인 앱 entry point `_main` linker 오류로 종료됐다. `project.pbxproj` 문법과
 `git diff --check`를 확인했다.
 `tasks.md`의 87개 task가 연속 ID, 체크박스 및 파일 경로 형식 검증을 통과함.
 T001 검증으로 `project.pbxproj` plist 문법, 공유 scheme XML 및 `xcodebuild -list -json`을 실행해

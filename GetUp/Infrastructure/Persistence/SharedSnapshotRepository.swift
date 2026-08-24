@@ -1,3 +1,4 @@
+@preconcurrency import FamilyControls
 import Foundation
 
 enum SharedSnapshotRepositoryError: Error, Equatable, Sendable {
@@ -26,7 +27,7 @@ struct AtomicSnapshotFileWriter: SnapshotFileWriting {
     }
 }
 
-actor SharedSnapshotRepository: RuleRepository, LocationConditionRepository {
+actor SharedSnapshotRepository: RuleRepository, SavedPlaceRepository, LocationConditionRepository {
     private let containerURL: URL
     private let fileWriter: any SnapshotFileWriting
 
@@ -38,23 +39,64 @@ actor SharedSnapshotRepository: RuleRepository, LocationConditionRepository {
         self.fileWriter = fileWriter
     }
 
-    func loadRule() async throws -> RestrictionRuleSnapshot? {
-        try loadSnapshot(
-            RestrictionRuleSnapshot.self,
-            fileName: SharedIdentifiers.restrictionRuleFileName,
-            supportedSchemaVersion: RestrictionRuleSnapshot.currentSchemaVersion
+    func loadRuleCollection() async throws -> RestrictionRuleCollectionSnapshot? {
+        if let collection: RestrictionRuleCollectionSnapshot = try loadSnapshot(
+            RestrictionRuleCollectionSnapshot.self,
+            fileName: SharedIdentifiers.restrictionRulesFileName,
+            supportedSchemaVersion: RestrictionRuleCollectionSnapshot.currentSchemaVersion
+        ) {
+            return collection
+        }
+
+        return try loadLegacyConfiguration()?.rules
+    }
+
+    func saveRuleCollection(_ collection: RestrictionRuleCollectionSnapshot) async throws {
+        try saveSnapshot(
+            collection,
+            fileName: SharedIdentifiers.restrictionRulesFileName
         )
     }
 
+    func deleteRuleCollection() async throws {
+        try deleteSnapshot(fileName: SharedIdentifiers.restrictionRulesFileName)
+    }
+
+    func loadRule() async throws -> RestrictionRuleSnapshot? {
+        try await loadRuleCollection()?.rules.first
+    }
+
     func saveRule(_ rule: RestrictionRuleSnapshot) async throws {
-        try saveSnapshot(
-            rule,
-            fileName: SharedIdentifiers.restrictionRuleFileName
+        try await saveRuleCollection(
+            RestrictionRuleCollectionSnapshot(
+                revision: rule.revision,
+                rules: [rule]
+            )
         )
     }
 
     func deleteRule() async throws {
-        try deleteSnapshot(fileName: SharedIdentifiers.restrictionRuleFileName)
+        try await deleteRuleCollection()
+    }
+
+    func loadSavedPlaceCollection() async throws -> SavedPlaceCollectionSnapshot? {
+        if let collection: SavedPlaceCollectionSnapshot = try loadSnapshot(
+            SavedPlaceCollectionSnapshot.self,
+            fileName: SharedIdentifiers.savedPlacesFileName,
+            supportedSchemaVersion: SavedPlaceCollectionSnapshot.currentSchemaVersion
+        ) {
+            return collection
+        }
+
+        return try loadLegacyConfiguration()?.places
+    }
+
+    func saveSavedPlaceCollection(_ collection: SavedPlaceCollectionSnapshot) async throws {
+        try saveSnapshot(collection, fileName: SharedIdentifiers.savedPlacesFileName)
+    }
+
+    func deleteSavedPlaceCollection() async throws {
+        try deleteSnapshot(fileName: SharedIdentifiers.savedPlacesFileName)
     }
 
     func loadLocationCondition() async throws -> LocationConditionSnapshot? {
@@ -68,12 +110,12 @@ actor SharedSnapshotRepository: RuleRepository, LocationConditionRepository {
             return nil
         }
 
-        guard let rule = try await loadRule() else {
+        guard let rules = try await loadRuleCollection() else {
             return nil
         }
-        guard condition.ruleRevision == rule.revision else {
+        guard condition.ruleRevision == rules.revision else {
             throw SharedSnapshotRepositoryError.revisionMismatch(
-                expected: rule.revision,
+                expected: rules.revision,
                 actual: condition.ruleRevision
             )
         }
@@ -166,6 +208,49 @@ actor SharedSnapshotRepository: RuleRepository, LocationConditionRepository {
         }
     }
 
+    private func loadLegacyConfiguration() throws -> LegacyConfiguration? {
+        guard let legacy: LegacyRestrictionRuleSnapshot = try loadSnapshot(
+            LegacyRestrictionRuleSnapshot.self,
+            fileName: SharedIdentifiers.legacyRestrictionRuleFileName,
+            supportedSchemaVersion: LegacyRestrictionRuleSnapshot.currentSchemaVersion
+        ) else {
+            return nil
+        }
+
+        let rule = RestrictionRuleSnapshot(
+            id: LegacyConfiguration.ruleID,
+            revision: legacy.revision,
+            name: nil,
+            isEnabled: legacy.isEnabled,
+            weekdays: legacy.weekdays,
+            startTime: legacy.startTime,
+            endTime: legacy.endTime,
+            savedPlaceID: LegacyConfiguration.placeID,
+            radius: legacy.radius,
+            activitySelection: legacy.activitySelection,
+            createdAt: legacy.createdAt,
+            updatedAt: legacy.updatedAt
+        )
+        let place = SavedPlaceSnapshot(
+            id: LegacyConfiguration.placeID,
+            name: "기존 장소",
+            coordinate: legacy.referenceLocation,
+            createdAt: legacy.createdAt,
+            updatedAt: legacy.updatedAt
+        )
+
+        return LegacyConfiguration(
+            rules: RestrictionRuleCollectionSnapshot(
+                revision: legacy.revision,
+                rules: [rule]
+            ),
+            places: SavedPlaceCollectionSnapshot(
+                revision: legacy.revision,
+                places: [place]
+            )
+        )
+    }
+
     private func makeEncoder() -> JSONEncoder {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -182,4 +267,42 @@ actor SharedSnapshotRepository: RuleRepository, LocationConditionRepository {
 
 private struct SchemaHeader: Decodable {
     let schemaVersion: Int
+}
+
+private struct LegacyRestrictionRuleSnapshot: Codable, @unchecked Sendable {
+    static let currentSchemaVersion = 1
+
+    let schemaVersion: Int
+    let revision: Int
+    let isEnabled: Bool
+    let weekdays: Set<Weekday>
+    let startTime: TimeOfDay
+    let endTime: TimeOfDay
+    let referenceLocation: ReferenceLocation
+    let radius: RadiusOption
+    let activitySelection: FamilyActivitySelection
+    let createdAt: Date
+    let updatedAt: Date
+
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion
+        case revision
+        case isEnabled
+        case weekdays
+        case startTime
+        case endTime
+        case referenceLocation
+        case radius = "radiusMeters"
+        case activitySelection
+        case createdAt
+        case updatedAt
+    }
+}
+
+private struct LegacyConfiguration {
+    static let ruleID = UUID(uuidString: "00000000-0000-4000-8000-000000000001")!
+    static let placeID = UUID(uuidString: "00000000-0000-4000-8000-000000000002")!
+
+    let rules: RestrictionRuleCollectionSnapshot
+    let places: SavedPlaceCollectionSnapshot
 }

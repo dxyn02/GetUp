@@ -5,9 +5,15 @@ protocol Clock: Sendable {
 }
 
 protocol RuleRepository: Sendable {
-    func loadRule() async throws -> RestrictionRuleSnapshot?
-    func saveRule(_ rule: RestrictionRuleSnapshot) async throws
-    func deleteRule() async throws
+    func loadRuleCollection() async throws -> RestrictionRuleCollectionSnapshot?
+    func saveRuleCollection(_ collection: RestrictionRuleCollectionSnapshot) async throws
+    func deleteRuleCollection() async throws
+}
+
+protocol SavedPlaceRepository: Sendable {
+    func loadSavedPlaceCollection() async throws -> SavedPlaceCollectionSnapshot?
+    func saveSavedPlaceCollection(_ collection: SavedPlaceCollectionSnapshot) async throws
+    func deleteSavedPlaceCollection() async throws
 }
 
 protocol LocationConditionRepository: Sendable {

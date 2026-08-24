@@ -282,3 +282,25 @@ pager에 제공한다. 오늘 적용되는 규칙을 먼저 배치하고 나머�
 **근거**: 선택한 요일의 규칙이 DST 전환만으로 하루 전체 누락되는 것을 막고, 반복되는 시각에서
 사용자가 의도한 현지 시각 구간을 조기에 종료하지 않는다. `ScheduleEvaluator`는 주입된 `Calendar`와
 `TimeZone`만 사용해 이 경계를 결정론적으로 계산한다.
+
+## DEC-023 — 다중 규칙·저장 장소 collection 저장과 revision 정책
+
+**날짜**: 2026-08-24
+
+**결정**: 다중 규칙은 schema 2의 `restriction-rules.json`, 저장 장소는 schema 1의
+`saved-places.json`에 각각 collection snapshot으로 저장한다. 규칙 저장 시 대상 규칙 revision과 규칙
+collection revision을 각각 1 증가시키고, 저장 장소 collection revision도 1 증가시킨다. 편집 draft의
+`sourceRevision`이 현재 대상 규칙 revision과 다르면 stale write로 거부한다. 두 파일을 함께 저장할
+때는 저장 장소를 먼저 atomic write한 뒤 규칙을 기록해 새 규칙이 존재하지 않는 장소를 참조하는
+상태를 만들지 않는다. 두 번째 write가 실패하면 사용되지 않는 장소가 남을 수 있으나 기존 규칙
+snapshot은 온전하게 유지한다.
+
+기존 schema 1의 `restriction-rule.json`만 존재하면 고정된 migration용 규칙 ID와 장소 ID를 부여하고,
+기존 좌표를 이름 `기존 장소`인 저장 장소로 변환해 읽는다. 새 collection 파일이 저장되기 전까지
+legacy 파일을 fallback으로 사용하며, 데이터 복구 가능성을 위해 legacy 파일을 즉시 삭제하지 않는다.
+
+**근거**: 규칙별 revision은 서로 다른 규칙의 독립 편집을 보존하고 collection revision은 확장이 읽은
+전체 구성과 위치 판정의 일관성을 확인하게 한다. stale write 차단은 오래 열린 편집 화면이 더 최신인
+변경을 덮어쓰는 것을 막는다. 파일 간 transaction을 제공하지 않는 App Group 파일 저장에서 장소 우선
+순서는 dangling reference보다 복구 가능한 미사용 장소를 선택하며, 결정론적인 legacy ID는 migration을
+여러 번 읽어도 동일한 aggregate를 생성한다.

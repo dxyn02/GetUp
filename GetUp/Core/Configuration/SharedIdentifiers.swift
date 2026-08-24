@@ -3,7 +3,10 @@ import Foundation
 enum SharedIdentifiers {
     static let appGroupIdentifierInfoDictionaryKey = "GetUpAppGroupIdentifier"
 
-    static let restrictionRuleFileName = "restriction-rule.json"
+    static let restrictionRulesFileName = "restriction-rules.json"
+    static let savedPlacesFileName = "saved-places.json"
+    static let legacyRestrictionRuleFileName = "restriction-rule.json"
+    static let restrictionRuleFileName = restrictionRulesFileName
     static let locationConditionFileName = "location-condition.json"
 
     static let managedSettingsStoreName = "getup.restriction"
