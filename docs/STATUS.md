@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 6 사용자 스토리 4 디자인 — 로우파이 승인 완료
+Phase 6 사용자 스토리 4 디자인 — 하이파이 제작 완료·사용자 검토 대기
 
 ## 진행 중
-없음
+T071 — US4 하이파이 사용자 검토와 구현 승인
 
 ## 마지막 완료 작업
-T069 — 사용자가 직접 수정한 US4 로우파이를 최종 승인함
+T070 — 승인된 US4 로우파이를 기준으로 오류별 하이파이와 접근성·구현 인계를 작성함
 
 ## 다음 작업
-T070 — 승인된 US4 로우파이를 기준으로 오류별 하이파이를 제작함
+T071 — US4 하이파이를 사용자와 검토하고 피드백·구현 승인 여부를 반영함
 
 ## 차단 상태
 없음. BLK-009은 사용자의 1안 선택으로 해결됨.
@@ -22,6 +22,17 @@ T070 — 승인된 US4 로우파이를 기준으로 오류별 하이파이를 �
 없음. 규칙 삭제 UI의 코드·Figma 불일치를 T060·T061로 보정한 뒤 US3 테스트를 시작하도록 계획을 갱신했다.
 
 ## 테스트 상태
+T070에서 T069 승인 로우파이를 보존한 채 별도 Figma wrapper에 권한 점검, Family Controls 복구,
+Always·Full Accuracy, Background App Refresh, 위치 `unavailable`의 비활성·활성 하이파이 6개 화면과
+접근성·구현 인계 panel을 작성했다. GetUp Focus `Eyebrow`·`Title`·`Subtitle`·`Button` text style과
+semantic color·radius token을 적용하고, 권한별 emoji badge와 상태 → 원인 → 제한 영향 → 복구 행동
+위계를 추가했다. 전체 wrapper와 각 화면을 렌더링하고 text node 54개, icon badge 6개, action frame
+10개를 감사한 결과 제품 font는 SF Pro Bold·Regular·Semibold만 사용했으며 빈 text, placeholder,
+shimmer와 393×852pt 화면 직접 자식 overflow는 모두 0건이었다. action은 단일 화면 `y=768`, 두 행동
+화면 `y=692`·`y=768`, `353×56pt`로 일치한다. 디자인·문서 task이므로 code test는 실행하지 않았고,
+실제 Accessibility Inspector·VoiceOver·AX1~AX5·시스템 설정 복귀 focus는 구현 후 물리 기기에서
+검증한다. 다음 작업은 T071 사용자 검토와 구현 승인이다.
+
 T069에서 사용자가 직접 수정한 현재 Figma 상태를 최종 승인했다. 승인본은 권한 설명에 `🛡️`, `📍`,
 `🎯`, `🔄` 표시를 사용하고 여섯 화면의 하단 action을 공통 baseline에 정렬한다. 최종 wrapper를
 다시 렌더링하고 text node 48개와 버튼 frame 10개를 검사했으며, 빈 text, placeholder와 비정상

@@ -185,7 +185,7 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 
 - [x] T068 [US4] 권한 종류별 안내, 시스템 설정 이동, 위치 확인 불가, 재선택 흐름의 로우파이를 제작하고 Figma 링크와 상태 설명을 `design/low-fidelity/US4-permission-location-errors.md`에 기록한다
 - [x] T069 [US4] US4 로우파이를 사용자와 검토해 피드백·변경 사항·승인 여부를 `design/low-fidelity/US4-permission-location-errors.md`에 반영한다
-- [ ] T070 [US4] 승인된 로우파이를 기준으로 오류별 hierarchy, icon, 문구, 접근성을 포함한 하이파이를 제작하고 Figma 링크와 규격을 `design/high-fidelity/US4-permission-location-errors.md`에 기록한다
+- [x] T070 [US4] 승인된 로우파이를 기준으로 오류별 hierarchy, icon, 문구, 접근성을 포함한 하이파이를 제작하고 Figma 링크와 규격을 `design/high-fidelity/US4-permission-location-errors.md`에 기록한다
 - [ ] T071 [US4] US4 하이파이를 사용자와 검토해 구현 승인 상태와 최종 변경 사항을 `design/high-fidelity/US4-permission-location-errors.md`에 기록한다
 
 ### 테스트
