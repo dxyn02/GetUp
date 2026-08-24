@@ -89,6 +89,8 @@
 		AA0000000000000000000171 /* LocationMonitoringAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000019 /* LocationMonitoringAdapterTests.swift */; };
 		AA0000000000000000000172 /* ManagedSettingsRestrictionAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000020 /* ManagedSettingsRestrictionAdapterTests.swift */; };
 		AA0000000000000000000173 /* UserStory2RestrictionActivationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000002 /* UserStory2RestrictionActivationUITests.swift */; };
+		AA0000000000000000000174 /* DeviceActivityScheduleAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000040 /* DeviceActivityScheduleAdapter.swift */; };
+		AA0000000000000000000175 /* DeviceActivityScheduleAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000040 /* DeviceActivityScheduleAdapter.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -181,6 +183,7 @@
 		B40000000000000000000037 /* RuleConfigurationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleConfigurationService.swift; sourceTree = "<group>"; };
 		B40000000000000000000038 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		B40000000000000000000039 /* GetUpApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GetUpApp.swift; sourceTree = "<group>"; };
+		B40000000000000000000040 /* DeviceActivityScheduleAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceActivityScheduleAdapter.swift; sourceTree = "<group>"; };
 		B50000000000000000000001 /* TestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFixtures.swift; sourceTree = "<group>"; };
 		B50000000000000000000002 /* RestrictionStateMachineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStateMachineTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSnapshotRepositoryTests.swift; sourceTree = "<group>"; };
@@ -477,6 +480,7 @@
 				B40000000000000000000019 /* Diagnostics */,
 				B40000000000000000000026 /* Location */,
 				B40000000000000000000017 /* Persistence */,
+				B40000000000000000000041 /* Scheduling */,
 				B40000000000000000000029 /* ScreenTime */,
 			);
 			path = Infrastructure;
@@ -540,6 +544,14 @@
 				B40000000000000000000028 /* FamilyActivitySelectionAdapter.swift */,
 			);
 			path = ScreenTime;
+			sourceTree = "<group>";
+		};
+		B40000000000000000000041 /* Scheduling */ = {
+			isa = PBXGroup;
+			children = (
+				B40000000000000000000040 /* DeviceActivityScheduleAdapter.swift */,
+			);
+			path = Scheduling;
 			sourceTree = "<group>";
 		};
 		B40000000000000000000030 /* RuleEditor */ = {
@@ -807,6 +819,7 @@
 				AA0000000000000000000163 /* RuleConfigurationService.swift in Sources */,
 				AA0000000000000000000165 /* AppModel.swift in Sources */,
 				AA0000000000000000000166 /* GetUpApp.swift in Sources */,
+				AA0000000000000000000174 /* DeviceActivityScheduleAdapter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -825,6 +838,7 @@
 				AA0000000000000000000122 /* DiagnosticsLogger.swift in Sources */,
 				AA0000000000000000000132 /* ScheduleEvaluator.swift in Sources */,
 				AA0000000000000000000142 /* RestrictionRuleValidator.swift in Sources */,
+				AA0000000000000000000175 /* DeviceActivityScheduleAdapter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

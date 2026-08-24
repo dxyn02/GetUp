@@ -122,7 +122,7 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 
 ### 구현
 
-- [ ] T046 [P] [US2] 선택 요일별 `DeviceActivitySchedule` 등록·교체·복구를 `GetUp/Infrastructure/Scheduling/DeviceActivityScheduleAdapter.swift`에 구현한다
+- [x] T046 [P] [US2] 선택 요일별 `DeviceActivitySchedule` 등록·교체·복구를 `GetUp/Infrastructure/Scheduling/DeviceActivityScheduleAdapter.swift`에 구현한다
 - [ ] T047 [P] [US2] 거리·horizontal accuracy 판정 공식을 `GetUp/Infrastructure/Location/LocationEvidenceEvaluator.swift`에 구현한다
 - [ ] T048 [US2] Always·Full Accuracy 아래 원형 region 등록과 최신 위치 snapshot 갱신을 `GetUp/Infrastructure/Location/LocationMonitor.swift`에 구현한다
 - [ ] T049 [P] [US2] named `ManagedSettingsStore`의 선택 앱 shield 적용을 `GetUp/Infrastructure/ScreenTime/ManagedSettingsRestrictionAdapter.swift`에 구현한다

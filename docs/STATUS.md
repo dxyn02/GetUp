@@ -4,16 +4,16 @@
 001-location-app-restriction
 
 ## 현재 단계
-Phase 4 사용자 스토리 2 — T045 제한 활성화 실패 UI test 작성 완료
+Phase 4 사용자 스토리 2 — T046 Device Activity 일정 adapter 구현 완료
 
 ## 진행 중
 없음
 
 ## 마지막 완료 작업
-T045 — 시간 활성 × 위치 내부에서만 제한되고 비대상 앱은 열리는 실패 UI test를 작성함
+T046 — 선택 요일별 Device Activity 일정 등록·교체·복구 adapter를 구현함
 
 ## 다음 작업
-T046 — 선택 요일별 Device Activity 일정 등록·교체·복구 adapter를 구현함
+T047 — 거리·horizontal accuracy 판정 공식을 구현함
 
 ## 차단 상태
 없음
@@ -23,6 +23,14 @@ T046 — 선택 요일별 Device Activity 일정 등록·교체·복구 adapter�
 collection migration과 홈 정렬 정책은 기능 문서와 구현에 반영되어 있다.
 
 ## 테스트 상태
+T046에서 `DeviceActivityScheduleAdapter.swift`를 앱과 Device Activity Monitor extension target에
+추가했다. 규칙 UUID와 요일을 포함하는 안정적인 activity name으로 선택 요일별 반복 일정을
+등록하고, 동일 규칙의 이전 일정만 제거한 뒤 현재 규칙으로 복구하며, GetUp 소유 일정 전체 제거도
+지원한다. 15분 미만 구간은 기존 일정 변경 전에 거부하고 자정 초과 구간의 종료 요일은 다음 날로
+계산한다. 후속 T047·T048·T049의 계획된 red 테스트를 검증 중에만 target에서 제외하고 iPhone 17 Pro
+iOS 26.5 Simulator에서 `DeviceActivityScheduleAdapterTests` 4개가 모두 통과했으며, target membership은
+즉시 복구했다. `project.pbxproj` plist 문법과 `git diff --check`도 통과했다.
+
 T045에서 `UserStory2RestrictionActivationUITests.swift`에 고정된 유효 규칙과 주입 시각·위치 상태를
 사용하는 3개 실패 UI test를 작성했다. 시간 활성·위치 내부에서는 선택 앱 probe만 shield로 이동하고
 비선택 앱 probe는 콘텐츠로 열려야 하며, 시간 비활성·위치 내부와 시간 활성·위치 외부에서는 선택
