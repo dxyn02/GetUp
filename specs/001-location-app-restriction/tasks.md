@@ -147,22 +147,27 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 
 ### 로우파이 및 하이파이
 
-- [ ] T056 [US3] 활성 중 편집 차단, 종료 조건 안내, 자동 해제 완료 상태의 로우파이를 제작하고 Figma 링크와 상태 설명을 `design/low-fidelity/US3-auto-release.md`에 기록한다
-- [ ] T057 [US3] US3 로우파이를 사용자와 검토해 피드백·변경 사항·승인 여부를 `design/low-fidelity/US3-auto-release.md`에 반영한다
-- [ ] T058 [US3] 승인된 로우파이를 기준으로 차단 안내와 해제 전환의 하이파이를 제작하고 Figma 링크와 접근성 규격을 `design/high-fidelity/US3-auto-release.md`에 기록한다
-- [ ] T059 [US3] US3 하이파이를 사용자와 검토해 구현 승인 상태와 최종 변경 사항을 `design/high-fidelity/US3-auto-release.md`에 기록한다
+- [x] T056 [US3] 활성 중 편집 차단, 종료 조건 안내, 조건 종료 뒤 별도 완료 UI 없이 기존 홈으로 복귀하는 상태의 로우파이를 제작하고 Figma 링크와 상태 설명을 `design/low-fidelity/US3-auto-release.md`에 기록한다
+- [x] T057 [US3] US3 로우파이를 사용자와 검토해 피드백·변경 사항·승인 여부를 `design/low-fidelity/US3-auto-release.md`에 반영한다
+- [x] T058 [US3] 승인된 로우파이를 기준으로 차단 안내와 해제 전환의 하이파이를 제작하고 Figma 링크와 접근성 규격을 `design/high-fidelity/US3-auto-release.md`에 기록한다
+- [x] T059 [US3] US3 하이파이를 사용자와 검토해 구현 승인 상태와 최종 변경 사항을 `design/high-fidelity/US3-auto-release.md`에 기록한다
+
+### 디자인 정합성 보정
+
+- [x] T060 [US3] T037에서 구현됐지만 최종 US1 하이파이에서 누락된 비활성 규칙 삭제 버튼·파괴적 삭제 확인 Alert를 Figma 최종 wrapper에 반영하고, 활성 중 같은 삭제 진입점이 US3 guard Alert로 이어지는 상태·접근성·문구 규격을 `design/high-fidelity/US1-rule-configuration.md`와 `design/high-fidelity/US3-auto-release.md`에 기록한다
+- [x] T061 [US3] T060의 규칙 삭제 UI Figma 동기화 결과를 사용자와 검토해 피드백·승인 여부를 `design/high-fidelity/US1-rule-configuration.md`와 `design/high-fidelity/US3-auto-release.md`에 기록한다
 
 ### 테스트
 
-- [ ] T060 [P] [US3] 시간 종료·신뢰 가능한 위치 이탈·위치 `unavailable`·반복 해제의 실패 테스트를 `GetUpTests/Core/RestrictionReleaseTests.swift`에 작성한다
-- [ ] T061 [P] [US3] 활성 중 편집·끄기·삭제 거부와 해제 후 허용의 실패 UI test를 `GetUpUITests/UserStory3AutoReleaseUITests.swift`에 작성한다
+- [x] T062 [P] [US3] 시간 종료·신뢰 가능한 위치 이탈·위치 `unavailable`·반복 해제의 실패 테스트를 `GetUpTests/Core/RestrictionReleaseTests.swift`에 작성한다
+- [x] T063 [P] [US3] 활성 중 편집·끄기·삭제 거부와 해제 후 허용의 실패 UI test를 `GetUpUITests/UserStory3AutoReleaseUITests.swift`에 작성한다
 
 ### 구현
 
-- [ ] T062 [US3] 위치 이탈과 시간 종료의 remove effect 및 30초 측정 event를 `GetUp/Infrastructure/ScreenTime/RestrictionCoordinator.swift`에 구현한다
-- [ ] T063 [US3] `intervalDidEnd`에서 위치와 무관하게 GetUp shield를 제거하도록 `GetUpDeviceActivityMonitor/DeviceActivityMonitorExtension.swift`를 구현한다
-- [ ] T064 [US3] 활성 제한 중 편집·끄기·삭제 guard와 종료 조건 안내를 `GetUp/Features/RuleEditor/RuleEditorModel.swift` 및 `GetUp/Features/RestrictionStatus/RestrictionStatusView.swift`에 구현한다
-- [ ] T065 [US3] 해제 후 규칙 편집 재진입과 상태 갱신을 `GetUp/App/AppModel.swift`에 연결한다
+- [x] T064 [US3] 위치 이탈과 시간 종료의 remove effect 및 30초 측정 event를 `GetUp/Infrastructure/ScreenTime/RestrictionCoordinator.swift`에 구현한다
+- [x] T065 [US3] `intervalDidEnd`에서 위치와 무관하게 GetUp shield를 제거하도록 `GetUpDeviceActivityMonitor/DeviceActivityMonitorExtension.swift`를 구현한다
+- [x] T066 [US3] 활성 제한 중 편집·끄기·삭제 guard와 종료 조건 안내를 `GetUp/Features/RuleEditor/RuleEditorModel.swift` 및 `GetUp/Features/RestrictionStatus/RestrictionStatusView.swift`에 구현한다
+- [x] T067 [US3] 해제 후 규칙 편집 재진입과 상태 갱신을 `GetUp/App/AppModel.swift`에 연결한다
 
 **Checkpoint**: US3을 독립 검증해 두 자동 해제 경로와 활성 중 앱 내부 우회 차단을 확인한다.
 
@@ -178,24 +183,24 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 
 ### 로우파이 및 하이파이
 
-- [ ] T066 [US4] 권한 종류별 안내, 시스템 설정 이동, 위치 확인 불가, 재선택 흐름의 로우파이를 제작하고 Figma 링크와 상태 설명을 `design/low-fidelity/US4-permission-location-errors.md`에 기록한다
-- [ ] T067 [US4] US4 로우파이를 사용자와 검토해 피드백·변경 사항·승인 여부를 `design/low-fidelity/US4-permission-location-errors.md`에 반영한다
-- [ ] T068 [US4] 승인된 로우파이를 기준으로 오류별 hierarchy, icon, 문구, 접근성을 포함한 하이파이를 제작하고 Figma 링크와 규격을 `design/high-fidelity/US4-permission-location-errors.md`에 기록한다
-- [ ] T069 [US4] US4 하이파이를 사용자와 검토해 구현 승인 상태와 최종 변경 사항을 `design/high-fidelity/US4-permission-location-errors.md`에 기록한다
+- [ ] T068 [US4] 권한 종류별 안내, 시스템 설정 이동, 위치 확인 불가, 재선택 흐름의 로우파이를 제작하고 Figma 링크와 상태 설명을 `design/low-fidelity/US4-permission-location-errors.md`에 기록한다
+- [ ] T069 [US4] US4 로우파이를 사용자와 검토해 피드백·변경 사항·승인 여부를 `design/low-fidelity/US4-permission-location-errors.md`에 반영한다
+- [ ] T070 [US4] 승인된 로우파이를 기준으로 오류별 hierarchy, icon, 문구, 접근성을 포함한 하이파이를 제작하고 Figma 링크와 규격을 `design/high-fidelity/US4-permission-location-errors.md`에 기록한다
+- [ ] T071 [US4] US4 하이파이를 사용자와 검토해 구현 승인 상태와 최종 변경 사항을 `design/high-fidelity/US4-permission-location-errors.md`에 기록한다
 
 ### 테스트
 
-- [ ] T070 [P] [US4] Family Controls, Always, Full Accuracy, Background App Refresh 상태 합성의 실패 테스트를 `GetUpTests/Integration/AuthorizationAdapterTests.swift`에 작성한다
-- [ ] T071 [P] [US4] 위치 오류·오래된 fix·음수 accuracy·경계 중첩에서 상태를 보존하는 실패 테스트를 `GetUpTests/Core/LocationUnavailableTests.swift`에 작성한다
-- [ ] T072 [P] [US4] 권한별 안내와 위치 확인 불가 복구 흐름의 실패 UI test를 `GetUpUITests/UserStory4PermissionGuidanceUITests.swift`에 작성한다
+- [ ] T072 [P] [US4] Family Controls, Always, Full Accuracy, Background App Refresh 상태 합성의 실패 테스트를 `GetUpTests/Integration/AuthorizationAdapterTests.swift`에 작성한다
+- [ ] T073 [P] [US4] 위치 오류·오래된 fix·음수 accuracy·경계 중첩에서 상태를 보존하는 실패 테스트를 `GetUpTests/Core/LocationUnavailableTests.swift`에 작성한다
+- [ ] T074 [P] [US4] 권한별 안내와 위치 확인 불가 복구 흐름의 실패 UI test를 `GetUpUITests/UserStory4PermissionGuidanceUITests.swift`에 작성한다
 
 ### 구현
 
-- [ ] T073 [P] [US4] Family Controls·위치·정확도·Background App Refresh 상태와 설정 URL을 `GetUp/Infrastructure/Permissions/AuthorizationAdapter.swift`에 구현한다
-- [ ] T074 [US4] 권한별 원인·복구·앱 재선택 상태를 `GetUp/Features/PermissionGuide/PermissionGuideModel.swift`에 구현한다
-- [ ] T075 [US4] 승인된 하이파이에 맞춰 권한 및 설정 안내를 `GetUp/Features/PermissionGuide/PermissionGuideView.swift`에 구현한다
-- [ ] T076 [US4] 위치 확인 불가에서 기존 shield를 보존하고 시간 종료는 해제하도록 `GetUp/Infrastructure/ScreenTime/RestrictionCoordinator.swift`를 확장한다
-- [ ] T077 [US4] foreground 진입과 권한 변경 시 권한·일정·region·snapshot을 재평가하고 권한 안내 상태를 갱신하도록 `GetUp/App/AppLifecycleCoordinator.swift`를 확장한다
+- [ ] T075 [P] [US4] Family Controls·위치·정확도·Background App Refresh 상태와 설정 URL을 `GetUp/Infrastructure/Permissions/AuthorizationAdapter.swift`에 구현한다
+- [ ] T076 [US4] 권한별 원인·복구·앱 재선택 상태를 `GetUp/Features/PermissionGuide/PermissionGuideModel.swift`에 구현한다
+- [ ] T077 [US4] 승인된 하이파이에 맞춰 권한 및 설정 안내를 `GetUp/Features/PermissionGuide/PermissionGuideView.swift`에 구현한다
+- [ ] T078 [US4] 위치 확인 불가에서 기존 shield를 보존하고 시간 종료는 해제하도록 `GetUp/Infrastructure/ScreenTime/RestrictionCoordinator.swift`를 확장한다
+- [ ] T079 [US4] foreground 진입과 권한 변경 시 권한·일정·region·snapshot을 재평가하고 권한 안내 상태를 갱신하도록 `GetUp/App/AppLifecycleCoordinator.swift`를 확장한다
 
 **Checkpoint**: US4를 독립 검증해 사용자가 기능 미동작 원인을 이해하고 안전하게 복구할 수 있다.
 
@@ -205,16 +210,16 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 
 **목적**: 전체 스토리의 접근성, 개인정보 보호, 성능, 실기기 동작 및 문서를 검증한다.
 
-- [ ] T078 [P] Dynamic Type, VoiceOver, Reduce Motion, 명암 및 색상 외 상태 표현을 `GetUpUITests/AccessibilityUITests.swift`에 검증한다
-- [ ] T079 [P] 좌표와 앱 token이 log·analytics에 기록되지 않는지 `GetUpTests/Integration/PrivacyLoggingTests.swift`와 `GetUp/Infrastructure/Diagnostics/DiagnosticsLogger.swift`에서 검증·보강한다
-- [ ] T080 [P] Family Controls 배포 entitlement와 App Group 설정·승인 절차를 `docs/ENTITLEMENTS.md`에 한국어로 문서화하고 app 및 각 extension bundle ID의 신청·승인 상태와 확인 증적을 기록한다
-- [ ] T081 신뢰 가능한 event timestamp부터 실제 `ManagedSettingsStore` 반영 확인까지 활성화·해제 경로를 각각 100회 이상 계측해 활성화 p95 30초 이내와 모든 해제 사례 30초 이내를 판정하고, 자동 계측과 실기기 관찰을 구분한 결과 형식을 `GetUpTests/Performance/RestrictionLatencyTests.swift`, `docs/TEST_RESULTS.md`에 구현한다
-- [ ] T082 `GetUp.xctestplan`의 전체 Swift Testing·XCTest suite를 실행하고 실패·skip·미검증 동작을 `docs/STATUS.md`와 `docs/TEST_RESULTS.md`에 한국어로 기록한다
-- [ ] T083 `specs/001-location-app-restriction/quickstart.md`의 여섯 반경, 저장 장소 재사용, background/terminated, 재부팅 첫 잠금 해제, 권한 철회, 자정 초과 시나리오를 실기기에서 수행하고 결과를 `docs/TEST_RESULTS.md`에 기록한다
-- [ ] T084 구현과 설계 차이를 `design/high-fidelity/US1-rule-configuration.md`, `US2-active-restriction.md`, `US3-auto-release.md`, `US4-permission-location-errors.md`에서 대조하고 승인되지 않은 편차를 수정한다
-- [ ] T085 [P] 신규 사용자가 안내 없이 유효 규칙을 저장하는 과제의 참여자 기준·시작·종료·성공 정의와 3분 이내 완료율 측정 절차를 `docs/USABILITY_TEST_PLAN.md`에 작성하고 SC-001 결과를 `docs/USABILITY_TEST_RESULTS.md`에 기록한다
-- [ ] T086 [P] 제한 활성 여부와 권한·위치 문제 해결 방법을 첫 시도에 설명하는 상태별 과제와 85% 이해 기준을 `docs/USABILITY_TEST_PLAN.md`에 작성하고 SC-007 결과를 `docs/USABILITY_TEST_RESULTS.md`에 기록한다
-- [ ] T087 spec·plan·contract·결정 문서 추적성과 알려진 제약, entitlement 승인, 성능·사용성·실기기 검증 결과를 검토해 `docs/DECISIONS.md`, `docs/BLOCKERS.md`, `docs/STATUS.md`를 한국어로 최종 갱신한다
+- [ ] T080 [P] Dynamic Type, VoiceOver, Reduce Motion, 명암 및 색상 외 상태 표현을 `GetUpUITests/AccessibilityUITests.swift`에 검증한다
+- [ ] T081 [P] 좌표와 앱 token이 log·analytics에 기록되지 않는지 `GetUpTests/Integration/PrivacyLoggingTests.swift`와 `GetUp/Infrastructure/Diagnostics/DiagnosticsLogger.swift`에서 검증·보강한다
+- [ ] T082 [P] Family Controls 배포 entitlement와 App Group 설정·승인 절차를 `docs/ENTITLEMENTS.md`에 한국어로 문서화하고 app 및 각 extension bundle ID의 신청·승인 상태와 확인 증적을 기록한다
+- [ ] T083 신뢰 가능한 event timestamp부터 실제 `ManagedSettingsStore` 반영 확인까지 활성화·해제 경로를 각각 100회 이상 계측해 활성화 p95 30초 이내와 모든 해제 사례 30초 이내를 판정하고, 자동 계측과 실기기 관찰을 구분한 결과 형식을 `GetUpTests/Performance/RestrictionLatencyTests.swift`, `docs/TEST_RESULTS.md`에 구현한다
+- [ ] T084 `GetUp.xctestplan`의 전체 Swift Testing·XCTest suite를 실행하고 실패·skip·미검증 동작을 `docs/STATUS.md`와 `docs/TEST_RESULTS.md`에 한국어로 기록한다
+- [ ] T085 `specs/001-location-app-restriction/quickstart.md`의 여섯 반경, 저장 장소 재사용, background/terminated, 재부팅 첫 잠금 해제, 권한 철회, 자정 초과 시나리오를 실기기에서 수행하고 결과를 `docs/TEST_RESULTS.md`에 기록한다
+- [ ] T086 구현과 설계 차이를 `design/high-fidelity/US1-rule-configuration.md`, `US2-active-restriction.md`, `US3-auto-release.md`, `US4-permission-location-errors.md`에서 대조하고 승인되지 않은 편차를 수정한다
+- [ ] T087 [P] 신규 사용자가 안내 없이 유효 규칙을 저장하는 과제의 참여자 기준·시작·종료·성공 정의와 3분 이내 완료율 측정 절차를 `docs/USABILITY_TEST_PLAN.md`에 작성하고 SC-001 결과를 `docs/USABILITY_TEST_RESULTS.md`에 기록한다
+- [ ] T088 [P] 제한 활성 여부와 권한·위치 문제 해결 방법을 첫 시도에 설명하는 상태별 과제와 85% 이해 기준을 `docs/USABILITY_TEST_PLAN.md`에 작성하고 SC-007 결과를 `docs/USABILITY_TEST_RESULTS.md`에 기록한다
+- [ ] T089 spec·plan·contract·결정 문서 추적성과 알려진 제약, entitlement 승인, 성능·사용성·실기기 검증 결과를 검토해 `docs/DECISIONS.md`, `docs/BLOCKERS.md`, `docs/STATUS.md`를 한국어로 최종 갱신한다
 
 **Checkpoint**: 자동 테스트, 필수 실기기 검증, entitlement 승인 및 SC-001·SC-007 사용성 평가가
 모두 기록된 경우에만 feature 완료로 표시한다.
@@ -286,9 +291,9 @@ Task T045: GetUpUITests/UserStory2RestrictionActivationUITests.swift
 ### 병렬 예시: US4
 
 ```text
-Task T070: GetUpTests/Integration/AuthorizationAdapterTests.swift
-Task T071: GetUpTests/Core/LocationUnavailableTests.swift
-Task T072: GetUpUITests/UserStory4PermissionGuidanceUITests.swift
+Task T072: GetUpTests/Integration/AuthorizationAdapterTests.swift
+Task T073: GetUpTests/Core/LocationUnavailableTests.swift
+Task T074: GetUpUITests/UserStory4PermissionGuidanceUITests.swift
 ```
 
 ## 구현 전략

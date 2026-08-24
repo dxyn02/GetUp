@@ -10,6 +10,17 @@ struct RestrictionCoordinationResult: Equatable, Sendable {
     let event: RestrictionEvaluationEvent
     let decisions: [UUID: EvaluationDecision]
     let appliedState: AppliedRestrictionState
+    let transitionMeasurement: RestrictionTransitionMeasurement?
+}
+
+struct RestrictionTransitionMeasurement: Equatable, Sendable {
+    let effect: RestrictionEffect
+    let eventConfirmedAt: Date
+    let effectCompletedAt: Date
+
+    var latencySeconds: TimeInterval {
+        max(0, effectCompletedAt.timeIntervalSince(eventConfirmedAt))
+    }
 }
 
 struct SystemRestrictionClock: Clock {
@@ -43,22 +54,32 @@ actor RestrictionCoordinator {
         self.timeZone = timeZone
     }
 
-    func handleTimeEvent() async throws -> RestrictionCoordinationResult {
-        try await evaluate(event: .timeChanged)
+    func handleTimeEvent(
+        confirmedAt: Date? = nil
+    ) async throws -> RestrictionCoordinationResult {
+        try await evaluate(
+            event: .timeChanged,
+            eventConfirmedAt: confirmedAt ?? clock.now
+        )
     }
 
     func handleLocationEvent(
-        ruleID: UUID
+        ruleID: UUID,
+        confirmedAt: Date? = nil
     ) async throws -> RestrictionCoordinationResult {
-        try await evaluate(event: .locationChanged(ruleID: ruleID))
+        try await evaluate(
+            event: .locationChanged(ruleID: ruleID),
+            eventConfirmedAt: confirmedAt ?? clock.now
+        )
     }
 
     func restore() async throws -> RestrictionCoordinationResult {
-        try await evaluate(event: .restoration)
+        try await evaluate(event: .restoration, eventConfirmedAt: nil)
     }
 
     private func evaluate(
-        event: RestrictionEvaluationEvent
+        event: RestrictionEvaluationEvent,
+        eventConfirmedAt: Date?
     ) async throws -> RestrictionCoordinationResult {
         let rules = try await ruleRepository.loadRuleCollection()?.rules ?? []
         let locationConditions = try await locationConditionRepository
@@ -103,19 +124,36 @@ actor RestrictionCoordinator {
                 ActiveRuleRevision(ruleID: $0.id, revision: $0.revision)
             }
         )
+        var performedEffect: RestrictionEffect?
         if currentAppliedState.requiresReset
             || desiredRuleRevisions != currentAppliedState.activeRuleRevisions {
             if desiredRules.isEmpty {
                 try await restrictionAdapter.removeRestriction()
+                performedEffect = .removeShield
             } else {
                 try await restrictionAdapter.applyRestriction(for: desiredRules)
+                performedEffect = desiredRuleRevisions.isStrictSubset(
+                    of: currentAppliedState.activeRuleRevisions
+                ) ? .removeShield : .applyShield
+            }
+        }
+
+        let appliedState = await restrictionAdapter.currentAppliedState()
+        let transitionMeasurement = eventConfirmedAt.flatMap { confirmedAt in
+            performedEffect.map { effect in
+                RestrictionTransitionMeasurement(
+                    effect: effect,
+                    eventConfirmedAt: confirmedAt,
+                    effectCompletedAt: clock.now
+                )
             }
         }
 
         return RestrictionCoordinationResult(
             event: event,
             decisions: decisions,
-            appliedState: await restrictionAdapter.currentAppliedState()
+            appliedState: appliedState,
+            transitionMeasurement: transitionMeasurement
         )
     }
 
@@ -138,5 +176,19 @@ actor RestrictionCoordinator {
         _ rhs: RestrictionRuleSnapshot
     ) -> Bool {
         lhs.id.uuidString < rhs.id.uuidString
+    }
+}
+
+@MainActor
+extension DependencyContainer {
+    func makeRestrictionCoordinator(
+        bundle: Bundle = .main
+    ) throws -> RestrictionCoordinator {
+        RestrictionCoordinator(
+            ruleRepository: ruleRepository,
+            locationConditionRepository: locationConditionRepository,
+            authorizationProvider: SystemAuthorizationProvider(),
+            restrictionAdapter: try makeRestrictionAdapter(bundle: bundle)
+        )
     }
 }

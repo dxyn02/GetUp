@@ -94,15 +94,8 @@ actor AppLifecycleCoordinator {
         container: DependencyContainer,
         bundle: Bundle = .main
     ) throws -> AppLifecycleCoordinator {
-        let authorizationProvider = SystemAuthorizationProvider()
-        let restrictionAdapter = try ManagedSettingsRestrictionAdapter.live(
+        let restrictionCoordinator = try container.makeRestrictionCoordinator(
             bundle: bundle
-        )
-        let restrictionCoordinator = RestrictionCoordinator(
-            ruleRepository: container.ruleRepository,
-            locationConditionRepository: container.locationConditionRepository,
-            authorizationProvider: authorizationProvider,
-            restrictionAdapter: restrictionAdapter
         )
 
         return AppLifecycleCoordinator(

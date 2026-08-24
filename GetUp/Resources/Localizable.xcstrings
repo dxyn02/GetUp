@@ -1,6 +1,61 @@
 {
   "sourceLanguage" : "ko",
   "strings" : {
+    "restriction_guard.confirm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "확인"
+          }
+        }
+      }
+    },
+    "restriction_guard.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ %@ 밖으로 이동하거나 %@이 지나면 규칙을 수정·끄기·삭제할 수 있어요."
+          }
+        }
+      }
+    },
+    "restriction_guard.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "제한 중에는 수정할 수 없어요"
+          }
+        }
+      }
+    },
+    "restriction_status.active" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RESTRICTION ACTIVE"
+          }
+        }
+      }
+    },
+    "restriction_status.edit_disabled" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "조건 종료 후 수정 가능"
+          }
+        }
+      }
+    },
     "shield.primary.close" : {
       "extractionState" : "manual",
       "localizations" : {

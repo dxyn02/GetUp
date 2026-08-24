@@ -21,6 +21,41 @@ struct RuleEditorDraft: Equatable, @unchecked Sendable {
     let createdAt: Date
 }
 
+struct RestrictionModificationGuard: Equatable, Sendable {
+    let savedPlaceName: String
+    let radius: RadiusOption
+    let endTime: TimeOfDay
+
+    var message: String {
+        String(
+            format: String(
+                localized: "restriction_guard.message",
+                defaultValue: "%@ %@ 밖으로 이동하거나 %@이 지나면 규칙을 수정·끄기·삭제할 수 있어요."
+            ),
+            savedPlaceName,
+            radiusDisplayName,
+            endTimeDisplayName
+        )
+    }
+
+    private var radiusDisplayName: String {
+        switch radius {
+        case .meters500: "500m"
+        case .meters1000: "1km"
+        case .meters2000: "2km"
+        case .meters3000: "3km"
+        case .meters4000: "4km"
+        case .meters5000: "5km"
+        }
+    }
+
+    private var endTimeDisplayName: String {
+        let period = endTime.hour < 12 ? "AM" : "PM"
+        let hour = endTime.hour % 12 == 0 ? 12 : endTime.hour % 12
+        return String(format: "%02d:%02d %@", hour, endTime.minute, period)
+    }
+}
+
 @MainActor
 @Observable
 final class RuleEditorModel {
@@ -32,6 +67,7 @@ final class RuleEditorModel {
     let ruleID: UUID
     let sourceRevision: Int?
     let createdAt: Date
+    private(set) var modificationGuard: RestrictionModificationGuard?
 
     var isEnabled: Bool
     var ruleName: String
@@ -76,8 +112,10 @@ final class RuleEditorModel {
     }
 
     var canSave: Bool {
-        validationErrors.isEmpty
+        validationErrors.isEmpty && modificationGuard == nil
     }
+
+    var canModify: Bool { modificationGuard == nil }
 
     var preparedDraft: RuleEditorDraft {
         RuleEditorDraft(
@@ -98,6 +136,7 @@ final class RuleEditorModel {
     init(
         draft: RuleEditorDraft? = nil,
         savedPlaces: [SavedPlaceSnapshot],
+        modificationGuard: RestrictionModificationGuard? = nil,
         makeID: @escaping () -> UUID = UUID.init,
         now: @escaping () -> Date = Date.init,
         applicationTokenCounter: @escaping (FamilyActivitySelection) -> Int = {
@@ -108,6 +147,7 @@ final class RuleEditorModel {
         self.now = now
         self.applicationTokenCounter = applicationTokenCounter
         self.savedPlaces = savedPlaces
+        self.modificationGuard = modificationGuard
 
         let source = draft ?? RuleEditorDraft(
             id: makeID(),
@@ -143,6 +183,20 @@ final class RuleEditorModel {
         }
 
         selectedSavedPlaceID = id
+    }
+
+    @discardableResult
+    func setEnabled(_ isEnabled: Bool) -> Bool {
+        guard canModify else {
+            return false
+        }
+
+        self.isEnabled = isEnabled
+        return true
+    }
+
+    func updateModificationGuard(_ modificationGuard: RestrictionModificationGuard?) {
+        self.modificationGuard = modificationGuard
     }
 
     func replaceSavedPlaces(with savedPlaces: [SavedPlaceSnapshot]) {

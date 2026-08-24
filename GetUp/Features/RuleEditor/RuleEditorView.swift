@@ -29,6 +29,7 @@ struct RuleEditorView: View {
     @State private var saveState: RuleEditorSaveState = .idle
     @State private var deleteState: RuleEditorDeleteState = .idle
     @State private var isDeleteConfirmationPresented = false
+    @State private var isRestrictionGuardPresented = false
 
     init(
         model: RuleEditorModel,
@@ -58,6 +59,10 @@ struct RuleEditorView: View {
                 scheduleCard
                 weekdaySection
                 conditionCard
+
+                if model.mode == .editing {
+                    enabledSection
+                }
 
                 if onDelete != nil {
                     deleteSection
@@ -105,6 +110,14 @@ struct RuleEditorView: View {
             }
         } message: {
             Text("규칙만 삭제되며 저장한 장소는 다른 규칙에서 계속 사용할 수 있어요.")
+        }
+        .alert(
+            Text("restriction_guard.title"),
+            isPresented: $isRestrictionGuardPresented
+        ) {
+            Button("restriction_guard.confirm", role: .cancel) {}
+        } message: {
+            Text(model.modificationGuard?.message ?? "조건이 종료되면 규칙을 변경할 수 있어요.")
         }
         .familyActivityPicker(
             isPresented: $isApplicationPickerPresented,
@@ -340,9 +353,41 @@ struct RuleEditorView: View {
         .accessibilityIdentifier("ruleSaveError.card")
     }
 
+    private var enabledSection: some View {
+        Toggle(isOn: enabledBinding) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("규칙 활성화")
+                    .font(.headline)
+                Text("끄면 예약된 시간에도 앱을 제한하지 않아요.")
+                    .font(.footnote)
+                    .foregroundStyle(RuleEditorColor.textSecondary)
+            }
+        }
+        .tint(RuleEditorColor.accent)
+        .padding(18)
+        .background(RuleEditorColor.surface, in: .rect(cornerRadius: 22))
+        .accessibilityHint("이 규칙의 자동 제한을 켜거나 끕니다.")
+        .accessibilityIdentifier("ruleEditor.enabled")
+    }
+
+    private var enabledBinding: Binding<Bool> {
+        Binding(
+            get: { model.isEnabled },
+            set: { isEnabled in
+                if !model.setEnabled(isEnabled) {
+                    isRestrictionGuardPresented = true
+                }
+            }
+        )
+    }
+
     private var deleteSection: some View {
         Button(role: .destructive) {
-            isDeleteConfirmationPresented = true
+            if model.canModify {
+                isDeleteConfirmationPresented = true
+            } else {
+                isRestrictionGuardPresented = true
+            }
         } label: {
             Group {
                 if deleteState == .deleting {

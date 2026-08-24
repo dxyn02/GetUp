@@ -14,6 +14,10 @@ enum AppRuleDeletionError: Error, Equatable, Sendable {
     case activeRestriction
 }
 
+enum AppRuleSaveError: Error, Equatable, Sendable {
+    case activeRestriction
+}
+
 struct HomeRuleItem: Equatable, Identifiable, @unchecked Sendable {
     let rule: RestrictionRuleSnapshot
     let savedPlace: SavedPlaceSnapshot
@@ -120,6 +124,7 @@ final class AppModel {
 
             if let initialEditorDraft, editorModel == nil {
                 editorModel = makeEditorModel(draft: initialEditorDraft)
+                refreshEditorModificationGuard()
             }
         } catch is CancellationError {
             loadingState = .idle
@@ -158,6 +163,7 @@ final class AppModel {
         let count = item.applicationCount
         editorModel = makeEditorModel(
             draft: draft,
+            modificationGuard: modificationGuard(for: item),
             tokenCounter: { _ in count }
         )
     }
@@ -170,6 +176,10 @@ final class AppModel {
         draft: RuleEditorDraft,
         savedPlaces: [SavedPlaceSnapshot]
     ) async throws {
+        if editorModel?.ruleID == draft.id, editorModel?.canModify == false {
+            throw AppRuleSaveError.activeRestriction
+        }
+
         let service = RuleConfigurationService(
             ruleRepository: ruleRepository,
             savedPlaceRepository: savedPlaceRepository,
@@ -192,6 +202,7 @@ final class AppModel {
         restrictionStatus = RestrictionStatusModel(
             appliedState: await loadAppliedRestrictionState()
         )
+        refreshEditorModificationGuard()
     }
 
     func deleteEditingRule() async throws {
@@ -202,6 +213,9 @@ final class AppModel {
             throw AppRuleDeletionError.persistedRuleRequired
         }
         let ruleID = editorModel.preparedDraft.id
+        guard editorModel.canModify else {
+            throw AppRuleDeletionError.activeRestriction
+        }
         guard await canDeleteRule(ruleID) else {
             throw AppRuleDeletionError.activeRestriction
         }
@@ -223,14 +237,39 @@ final class AppModel {
 
     private func makeEditorModel(
         draft: RuleEditorDraft?,
+        modificationGuard: RestrictionModificationGuard? = nil,
         tokenCounter: ((FamilyActivitySelection) -> Int)? = nil
     ) -> RuleEditorModel {
         RuleEditorModel(
             draft: draft,
             savedPlaces: savedPlaces,
+            modificationGuard: modificationGuard,
             makeID: makeID,
             now: now,
             applicationTokenCounter: tokenCounter ?? applicationTokenCounter
+        )
+    }
+
+    private func refreshEditorModificationGuard() {
+        guard let editorModel, editorModel.mode == .editing else {
+            return
+        }
+
+        let item = homeRules.first { $0.id == editorModel.ruleID }
+        editorModel.updateModificationGuard(item.flatMap(modificationGuard(for:)))
+    }
+
+    private func modificationGuard(
+        for item: HomeRuleItem
+    ) -> RestrictionModificationGuard? {
+        guard restrictionStatus.isActive(item.rule) else {
+            return nil
+        }
+
+        return RestrictionModificationGuard(
+            savedPlaceName: item.savedPlace.name,
+            radius: item.rule.radius,
+            endTime: item.rule.endTime
         )
     }
 
