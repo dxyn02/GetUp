@@ -30,6 +30,7 @@
 | `US2-HF-01` | [기존 홈 활성 상태](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=113-1983) | `active` | `RESTRICTION ACTIVE`, `집 · 1km`, `09:00 AM`, 제한 앱 3개 | 상태 확인; 조건 종료 전 규칙 수정·삭제 불가 |
 | `US2-HF-02` | [Restricted App Shield 기본](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=113-2025) | `shielded/default` | 정적 GetUp 아이콘, 장소·반경 제목, 해제 조건 설명 | `앱 닫기` |
 | `US2-HF-03` | [Restricted App Shield AX5](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=113-2045) | `shielded/AX5` | 확대된 제목·설명의 자연 줄바꿈과 같은 해제 정보 | `앱 닫기` |
+| `US2-HF-04` | 구현 보완 상태 | `shielded/multiple-rules` | 활성 규칙 수, 각 규칙의 위치 또는 시간이 모두 끝나야 한다는 짧은 요약 | `앱 닫기` |
 | `US2-HF-SPEC` | [구현 규격](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=113-2033) | `handoff` | component 치수, Dynamic Type, VoiceOver, 명암 결과 | 해당 없음 |
 
 기준 frame은 iPhone `393×852pt` 세로 방향이다. `US2-HF-01`은 별도 화면이 아니라 승인된
@@ -82,6 +83,10 @@ component instance를 사용한다. 구현에서는 시스템이 제공하는 bu
 | `shield.title.outside_radius` | `%@ %@ 밖으로 이동하세요` | 장소 이름, 반경 | 자연 줄바꿈, 축약 금지 |
 | `shield.subtitle.release_condition` | `현재 ‘%@’의 %@ 범위 안에 있어요. %@의 중심에서 %@ 밖으로 이동하거나 %@이 되면 자동으로 다시 사용할 수 있어요.` | 장소 이름, 반경, 종료 시각 | 고정 높이 금지 |
 | `shield.primary.close` | `앱 닫기` | 없음 | 축약 금지 |
+| `shield.title.multiple_rules` | `%d개 제한 규칙이 활성화 중이에요` | 활성 규칙 수 | 자연 줄바꿈 |
+| `shield.subtitle.multiple_rules` | `각 규칙의 위치 또는 시간이 모두 끝나면 다시 사용할 수 있어요.` | 없음 | 최대한 짧게 유지 |
+| `shield.title.fallback` | `앱 사용 제한이 활성화되었어요` | 없음 | 자연 줄바꿈 |
+| `shield.subtitle.fallback` | `설정한 위치 또는 시간이 끝나면 자동으로 다시 사용할 수 있어요.` | 없음 | 자연 줄바꿈 |
 | `restriction_status.active` | `RESTRICTION ACTIVE` | 없음 | 색상 외 상태 문구로 유지 |
 | `restriction_status.edit_disabled` | `조건 종료 후 수정 가능` | 없음 | 최대 두 줄 허용 |
 

@@ -57,9 +57,10 @@ actor UserDefaultsRestrictionApplicationStateStore:
     RestrictionApplicationStateStoring
 {
     private enum Key {
-        static let activeRuleRevisions = "getup.restriction.active-rule-revisions"
-        static let legacyIsApplied = "getup.restriction.is-applied"
-        static let legacyRuleRevision = "getup.restriction.rule-revision"
+        static let activeRuleRevisions = SharedIdentifiers.activeRuleRevisionsDefaultsKey
+        static let legacyIsApplied = SharedIdentifiers.legacyRestrictionIsAppliedDefaultsKey
+        static let legacyRuleRevision = SharedIdentifiers
+            .legacyRestrictionRuleRevisionDefaultsKey
     }
 
     private let defaults: UserDefaults

@@ -1,6 +1,83 @@
 {
   "sourceLanguage" : "ko",
   "strings" : {
+    "shield.primary.close" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "앱 닫기"
+          }
+        }
+      }
+    },
+    "shield.subtitle.fallback" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "설정한 위치 또는 시간이 끝나면 자동으로 다시 사용할 수 있어요."
+          }
+        }
+      }
+    },
+    "shield.subtitle.multiple_rules" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "각 규칙의 위치 또는 시간이 모두 끝나면 다시 사용할 수 있어요."
+          }
+        }
+      }
+    },
+    "shield.subtitle.release_condition" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "현재 ‘%@’의 %@ 범위 안에 있어요. %@의 중심에서 %@ 밖으로 이동하거나 %@이 되면 자동으로 다시 사용할 수 있어요."
+          }
+        }
+      }
+    },
+    "shield.title.fallback" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "앱 사용 제한이 활성화되었어요"
+          }
+        }
+      }
+    },
+    "shield.title.multiple_rules" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d개 제한 규칙이 활성화 중이에요"
+          }
+        }
+      }
+    },
+    "shield.title.outside_radius" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ %@ 밖으로 이동하세요"
+          }
+        }
+      }
+    }
   },
   "version" : "1.0"
 }
