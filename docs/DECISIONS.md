@@ -707,3 +707,20 @@ Background App Refresh는 사용자가 앱별 설정에서 직접 복구할 수 
 **영향 범위**: `PermissionGuideAction`, `PermissionGuideModel`, `PermissionGuideView`, US4 모델·UI·
 접근성 테스트, `FR-052`와 US4 하이파이 구현 인계에 적용하며 `DEC-037`, `DEC-039`의 `나중에` 행동을
 대체한다.
+
+## DEC-043 — 시스템 권한·설정 안내의 코드 기반 목업
+
+**날짜**: 2026-08-25
+
+**결정**: Family Controls와 위치 최초 요청에는 iOS alert 구조를 본뜬 비대화형 목업을, 위치와
+Background App Refresh 복구에는 Settings row·toggle 구조를 본뜬 비대화형 목업을 표시한다. 실제로
+사용자가 선택해야 할 버튼, 설정 값과 toggle만 GetUp accent로 강조한다. 위치 복구 본문의
+`‘항상 허용’으로 변경해 주세요.`와 `‘정확한 위치’를 켜 주세요.` 문구도 같은 색으로 강조한다.
+목업은 raster screenshot 대신 SwiftUI로 구성하고, 전체 목업을 하나의 설명용 접근성 요소로 제공한다.
+
+**근거**: 시스템 화면 캡처는 언어·OS 버전·기기 크기에 따라 빠르게 달라지고 Dynamic Type에 대응하지
+못한다. 코드 기반 목업은 실제 시스템 UI와 구분되는 GetUp 시각 체계를 유지하면서도 사용자가 눌러야
+할 항목의 위치와 이름을 미리 학습할 수 있고, VoiceOver에는 간결한 절차 설명을 제공할 수 있다.
+
+**영향 범위**: `PermissionGuideView`, US4 UI·접근성 테스트, `FR-053`, 권한 platform contract와 US4
+하이파이 구현 인계에 적용한다.

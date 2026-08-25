@@ -11,8 +11,8 @@ T083 — 자동 latency 100회 계측과 결과 형식은 구현·검증했으�
 앱 사용 가능 상태의 실기기 관찰을 진행 중
 
 ## 마지막 완료 작업
-T093 — 위치 권한 복구 화면에서 `나중에`를 제거하고 Background App Refresh 제한 안내의 단일
-종료 행동을 `확인`으로 변경함
+T094 — 권한 상세 화면에 비대화형 system alert·Settings 목업과 선택 항목 강조를 추가하고 위치의
+Always·정확한 위치 안내 문구를 accent 처리함
 
 ## 다음 작업
 T083 — 승인된 entitlement·profile을 사용한 실기기 활성화·해제 latency 관찰 완료
@@ -26,6 +26,14 @@ BLK-010 열림. `com.dxyn02.GetUp` namespace의 네 App ID 등록과
 없음. 규칙 삭제 UI의 코드·Figma 불일치를 T060·T061로 보정한 뒤 US3 테스트를 시작하도록 계획을 갱신했다.
 
 ## 테스트 상태
+2026-08-25 T094에서 `PermissionGuideView`에 재사용 가능한 system mockup card, option, setting row와
+toggle을 추가했다. Family Controls는 `Face ID로 허용`, 위치 최초 요청은 `앱을 사용하는 동안 허용`,
+위치 설정은 `항상`·`정확한 위치`, Background App Refresh는 `켬`·`GetUp` toggle을 accent로 강조한다.
+위치 복구 본문의 Always·정확한 위치 행동 문구도 accent로 강조하고 각 목업을 간결한 VoiceOver 설명과
+고유 identifier로 제공했다. iPhone 17 Pro iOS 26.5 Simulator에서 경고 없는 app build와 US4 UI test
+13개, 최대 Dynamic Type 권한 복구 접근성 UI test 1개가 실패·skip 없이 통과했으며 세 목업 화면을
+직접 캡처해 레이아웃과 하단 action 노출을 확인했다.
+
 2026-08-25 T093에서 위치 권한 요구 수준 미달 화면의 secondary action을 제거해 `설정 열기`만
 표시하고, Background App Refresh 제한 화면에는 별도 `.confirm` action과
 `permissionGuide.confirm` identifier를 도입해 버튼 문구를 `확인`으로 변경했다. 모델·US4 UI·최대

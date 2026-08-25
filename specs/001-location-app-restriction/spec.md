@@ -311,6 +311,11 @@
 - **FR-052**: 위치 권한이 거부되거나 Always location·Full Accuracy 요구 수준에 미달한 복구 화면은
   `설정 열기`만 제공해야 한다. 제한된 Background App Refresh 안내는 `확인` 버튼으로 닫아야 하며
   `나중에` 문구를 사용해서는 안 된다.
+- **FR-053**: Family Controls, 위치 접근과 Background App Refresh 상세 안내는 시스템 alert 또는
+  Settings 구조를 본뜬 비대화형 목업으로 사용자가 선택할 항목을 시각화해야 한다. 목업은 실제 시스템
+  UI로 오인되지 않아야 하며 선택할 버튼·설정 값만 accent 색으로 강조해야 한다. 위치 설정 안내의
+  `‘항상 허용’으로 변경해 주세요.`와 `‘정확한 위치’를 켜 주세요.` 문구도 같은 accent 색으로
+  강조해야 한다.
 
 ### Key Entities *(include if feature involves data)*
 

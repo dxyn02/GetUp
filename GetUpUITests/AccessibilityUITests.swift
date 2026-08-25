@@ -43,6 +43,7 @@ final class AccessibilityUITests: XCTestCase {
         )
         XCTAssertTrue(app.otherElements["permissionGuide.screen"].exists)
         XCTAssertTrue(app.staticTexts["LOCATION ACCESS"].exists)
+        XCTAssertTrue(app.otherElements["permissionGuide.mockup.locationSettings"].exists)
 
         let settings = app.buttons["permissionGuide.openSettings"]
         XCTAssertTrue(settings.exists)

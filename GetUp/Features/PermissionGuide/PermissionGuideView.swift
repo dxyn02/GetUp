@@ -96,13 +96,32 @@ struct PermissionGuideView: View {
         case .overview:
             capabilityList(screen.capabilityItems)
         case .familyControls:
-            EmptyView()
+            familyControlsPermissionMockup
         case .location:
             locationSettings
         case .backgroundRefresh:
             backgroundRefreshSettings
         case .locationUnavailable(let isRestrictionApplied):
             unavailableLocationState(isRestrictionApplied: isRestrictionApplied)
+        }
+    }
+
+    private var familyControlsPermissionMockup: some View {
+        systemMockupCard(
+            icon: "hourglass",
+            title: "화면 사용 시간 접근",
+            accessibilityIdentifier: "permissionGuide.mockup.familyControls",
+            accessibilityLabel: "화면 사용 시간 권한 팝업 예시. Face ID로 허용을 선택해 주세요."
+        ) {
+            Text("‘GetUp’이 화면 사용 시간에 접근하도록 허용할까요?")
+                .font(.headline)
+
+            Text("선택한 앱을 제한하려면 화면 사용 시간 접근이 필요해요.")
+                .font(.footnote)
+                .foregroundStyle(HomeColor.textSecondary)
+
+            mockupOption("Face ID로 허용", isHighlighted: true)
+            mockupOption("허용 안 함", isHighlighted: false)
         }
     }
 
@@ -132,6 +151,12 @@ struct PermissionGuideView: View {
 
     private var locationSettings: some View {
         VStack(alignment: .leading, spacing: 18) {
+            if model.authorization.locationAuthorization == .notDetermined {
+                locationPermissionAlertMockup
+            } else {
+                locationSettingsMockup
+            }
+
             VStack(alignment: .leading, spacing: 4) {
                 Text("위치 접근 · 항상 허용")
                     .fontWeight(.semibold)
@@ -139,14 +164,20 @@ struct PermissionGuideView: View {
                     .foregroundStyle(HomeColor.textSecondary)
             }
 
-            Text("최초 권한 팝업에서는 ‘앱을 사용하는 동안 허용’을 선택한 뒤, 위 경로에서 ‘항상 허용’으로 변경해 주세요.")
+            Text("최초 권한 팝업에서는 ‘앱을 사용하는 동안 허용’을 선택해 주세요.")
                 .foregroundStyle(HomeColor.textSecondary)
+
+            Text("위 경로에서 \(Text("‘항상 허용’으로 변경해 주세요.").foregroundColor(HomeColor.accent).fontWeight(.semibold))")
+            .foregroundStyle(HomeColor.textSecondary)
+            .accessibilityIdentifier("permissionGuide.location.alwaysInstruction")
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("정확한 위치 · 켬")
                     .fontWeight(.semibold)
-                Text("같은 화면에서 ‘정확한 위치’를 켜 주세요.")
-                    .foregroundStyle(HomeColor.textSecondary)
+                Text("‘정확한 위치’를 켜 주세요.")
+                    .foregroundStyle(HomeColor.accent)
+                    .fontWeight(.semibold)
+                    .accessibilityIdentifier("permissionGuide.location.accuracyInstruction")
             }
 
             Text("‘대략적인 위치’에서는 위치만으로 새 제한을 적용하거나 기존 제한을 해제하지 않아요.")
@@ -161,8 +192,54 @@ struct PermissionGuideView: View {
         .accessibilityElement(children: .contain)
     }
 
+    private var locationPermissionAlertMockup: some View {
+        systemMockupCard(
+            icon: "location.fill",
+            title: "위치 접근 허용",
+            accessibilityIdentifier: "permissionGuide.mockup.locationPrompt",
+            accessibilityLabel: "위치 권한 팝업 예시. 앱을 사용하는 동안 허용을 선택해 주세요."
+        ) {
+            Text("‘GetUp’이 사용자의 위치를 사용하도록 허용할까요?")
+                .font(.headline)
+
+            mockupOption("한 번 허용", isHighlighted: false)
+            mockupOption("앱을 사용하는 동안 허용", isHighlighted: true)
+            mockupOption("허용 안 함", isHighlighted: false)
+        }
+    }
+
+    private var locationSettingsMockup: some View {
+        systemMockupCard(
+            icon: "gearshape.fill",
+            title: "설정 · GetUp · 위치",
+            accessibilityIdentifier: "permissionGuide.mockup.locationSettings",
+            accessibilityLabel: "위치 설정 예시. 위치 접근은 항상, 정확한 위치는 켬으로 설정해 주세요."
+        ) {
+            mockupSettingRow(
+                title: "위치 접근",
+                value: "항상",
+                isHighlighted: true
+            )
+            mockupToggleRow(title: "정확한 위치", isOn: true)
+        }
+    }
+
     private var backgroundRefreshSettings: some View {
         VStack(alignment: .leading, spacing: 14) {
+            systemMockupCard(
+                icon: "arrow.clockwise",
+                title: "설정 · 일반",
+                accessibilityIdentifier: "permissionGuide.mockup.backgroundRefresh",
+                accessibilityLabel: "백그라운드 앱 새로 고침 설정 예시. 기능과 GetUp을 켜 주세요."
+            ) {
+                mockupSettingRow(
+                    title: "백그라운드 앱 새로 고침",
+                    value: "켬",
+                    isHighlighted: true
+                )
+                mockupToggleRow(title: "GetUp", isOn: true)
+            }
+
             Text("설정  ›  일반  ›  백그라운드 앱 새로 고침")
                 .fontWeight(.semibold)
             Text("GetUp 사용 가능 상태를 확인해 주세요. 저전력 모드에서는 시스템이 동작을 제한할 수 있어요.")
@@ -176,6 +253,101 @@ struct PermissionGuideView: View {
         .padding(.vertical, 20)
         .background(HomeColor.surface, in: .rect(cornerRadius: 20))
         .accessibilityElement(children: .contain)
+    }
+
+    private func systemMockupCard<Content: View>(
+        icon: String,
+        title: String,
+        accessibilityIdentifier: String,
+        accessibilityLabel: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: icon)
+                    .font(.headline)
+                    .foregroundStyle(HomeColor.accent)
+                    .frame(width: 32, height: 32)
+                    .background(HomeColor.accent.opacity(0.14), in: .rect(cornerRadius: 9))
+
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+            }
+
+            content()
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(HomeColor.surfaceElevated, in: .rect(cornerRadius: 22))
+        .overlay {
+            RoundedRectangle(cornerRadius: 22)
+                .stroke(HomeColor.textTertiary.opacity(0.3), lineWidth: 1)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityIdentifier(accessibilityIdentifier)
+    }
+
+    private func mockupOption(
+        _ title: String,
+        isHighlighted: Bool
+    ) -> some View {
+        Text(title)
+            .font(.subheadline)
+            .fontWeight(isHighlighted ? .bold : .medium)
+            .foregroundStyle(
+                isHighlighted ? HomeColor.background : HomeColor.textSecondary
+            )
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .background(
+                isHighlighted ? HomeColor.accent : HomeColor.disabled.opacity(0.45),
+                in: .rect(cornerRadius: 13)
+            )
+    }
+
+    private func mockupSettingRow(
+        title: String,
+        value: String,
+        isHighlighted: Bool
+    ) -> some View {
+        HStack(spacing: 12) {
+            Text(title)
+            Spacer(minLength: 12)
+            Text(value)
+                .fontWeight(.bold)
+                .foregroundStyle(isHighlighted ? HomeColor.accent : HomeColor.textSecondary)
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(HomeColor.textTertiary)
+        }
+        .font(.subheadline)
+        .frame(minHeight: 44)
+        .padding(.horizontal, 12)
+        .background(HomeColor.surface, in: .rect(cornerRadius: 13))
+    }
+
+    private func mockupToggleRow(
+        title: String,
+        isOn: Bool
+    ) -> some View {
+        HStack(spacing: 12) {
+            Text(title)
+            Spacer(minLength: 12)
+            ZStack(alignment: isOn ? .trailing : .leading) {
+                Capsule()
+                    .fill(isOn ? HomeColor.accent : HomeColor.disabled)
+                    .frame(width: 48, height: 28)
+                Circle()
+                    .fill(isOn ? HomeColor.background : HomeColor.textSecondary)
+                    .frame(width: 22, height: 22)
+                    .padding(3)
+            }
+        }
+        .font(.subheadline)
+        .frame(minHeight: 44)
+        .padding(.horizontal, 12)
+        .background(HomeColor.surface, in: .rect(cornerRadius: 13))
     }
 
     private func unavailableLocationState(

@@ -39,6 +39,10 @@
   수정본에서 제거한 화면 우측 상단 badge는 추가하지 않는다.
 - 위치 확인 불가 화면의 `위치 다시 확인`은 보조 행동, `설정 열기`는 주요 행동으로 token과 layer
   이름을 정규화했다.
+- Family Controls와 위치 최초 요청은 system alert 형태, 위치와 Background App Refresh 설정은
+  Settings row 형태의 비대화형 목업을 제공하고 실제로 선택할 버튼·값·toggle만 accent로 강조한다.
+- 위치 복구 본문의 `‘항상 허용’으로 변경해 주세요.`와 `‘정확한 위치’를 켜 주세요.` 문구는
+  GetUp Focus accent를 사용한다.
 - Figma handoff panel에 안전 계약, 접근성, 플랫폼 소유 경계, 개인정보 보호와 구현 identifier를
   기록했다.
 
@@ -83,6 +87,7 @@ Family Controls 승인 UI와 권한 prompt는 iOS appearance를 그대로 따른
 | 최상위 배경 | `GetUp Focus/color/background` | `#08090B` | 주요 text와 약 `19.92:1` |
 | card surface | `GetUp Focus/color/surface` | `#15171B` | 보조 text와 약 `7.54:1` |
 | 주요 text | `GetUp Focus/color/textPrimary` | `#FFFFFF` | 제목·상태·핵심 원인 |
+| 목업 선택 항목·설정 강조 | `GetUp Focus/color/accent` | `#F4D600` | 눌러야 할 버튼·설정 값·toggle과 위치 복구 핵심 문구 |
 | 보조 text | `GetUp Focus/color/textSecondary` | `#A6A8AD` | 설명·안전 안내 |
 | 주요 action | `GetUp Focus/color/accent` | `#F4D600` | `onAccent`와 약 `13.64:1` |
 | 오류 eyebrow | `GetUp Focus/color/error` | `#FF6961` | `LOCATION UNAVAILABLE` 문구와 함께 사용 |
@@ -203,6 +208,10 @@ AX1~AX5, Increase Contrast와 시스템 설정 복귀 focus는 구현 후 물리
 - UI test identifier는 `permissionGuide.screen`, `permissionGuide.permissionList`,
   `permissionGuide.next`, `permissionGuide.openSettings`, `permissionGuide.retryLocation`,
   `permissionGuide.confirm`을 사용한다.
+- 설명용 목업은 `permissionGuide.mockup.familyControls`, `permissionGuide.mockup.locationPrompt`,
+  `permissionGuide.mockup.locationSettings`, `permissionGuide.mockup.backgroundRefresh`를 사용하고,
+  위치 강조 문구는 `permissionGuide.location.alwaysInstruction`,
+  `permissionGuide.location.accuracyInstruction`으로 검증한다.
 - 별도 image·raster asset은 필요하지 않으며 권한 목록 emoji는 같은 행의 text와 함께 구현한다.
 
 ## 검토 체크리스트
@@ -234,6 +243,7 @@ AX1~AX5, Increase Contrast와 시스템 설정 복귀 focus는 구현 후 물리
 | `2026-08-25` | 사용자·`Codex` | 전체 권한 개요와 정상 승인 화면은 온보딩에만 유지하고, 이후에는 거부·요구 수준 미달 권한의 상세 복구 화면으로 직접 진입하도록 라우팅 분리 | 정상 권한 화면 재등장 제거 |
 | `2026-08-25` | 사용자·`Codex` | 권한 온보딩을 설치 후 최초 실행 1회로 한정하고 표시 여부를 영구 저장해 앱 종료·재실행 뒤에는 복구 대상 화면만 표시 | 프로세스 재실행 시 온보딩 재등장 결함 보정 |
 | `2026-08-25` | 사용자·`Codex` | 위치 권한 복구 화면의 `나중에`를 제거하고 Background App Refresh 제한 안내의 종료 문구를 `확인`으로 변경 | 권한 화면 행동 문구 보정 |
+| `2026-08-25` | 사용자·`Codex` | 첨부 실기기 화면을 참고해 Family Controls·위치·Background App Refresh에 설명용 alert·Settings 목업을 추가하고 눌러야 할 항목과 Always·정확한 위치 문구를 accent로 강조 | 권한 복구 행동의 시각적 이해 보강 |
 
 ## 구현 승인
 
