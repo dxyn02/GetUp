@@ -308,6 +308,9 @@
   복구 화면만 직접 표시해야 한다.
 - **FR-051**: 시스템은 DST 전환으로 존재하지 않는 시작·종료 현지 시각을 다음 유효 시각으로
   이동하고, 반복되는 시작 시각은 첫 번째 발생, 반복되는 종료 시각은 두 번째 발생으로 평가해야 한다.
+- **FR-052**: 위치 권한이 거부되거나 Always location·Full Accuracy 요구 수준에 미달한 복구 화면은
+  `설정 열기`만 제공해야 한다. 제한된 Background App Refresh 안내는 `확인` 버튼으로 닫아야 하며
+  `나중에` 문구를 사용해서는 안 된다.
 
 ### Key Entities *(include if feature involves data)*
 

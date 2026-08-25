@@ -11,8 +11,8 @@ T083 — 자동 latency 100회 계측과 결과 형식은 구현·검증했으�
 앱 사용 가능 상태의 실기기 관찰을 진행 중
 
 ## 마지막 완료 작업
-T092 — 권한 온보딩 표시 여부를 영구 저장해 앱 종료·재실행 뒤에는 전체 권한 흐름을 반복하지 않고
-거부·요구 수준 미달 권한의 복구 화면만 표시하도록 변경함
+T093 — 위치 권한 복구 화면에서 `나중에`를 제거하고 Background App Refresh 제한 안내의 단일
+종료 행동을 `확인`으로 변경함
 
 ## 다음 작업
 T083 — 승인된 entitlement·profile을 사용한 실기기 활성화·해제 latency 관찰 완료
@@ -26,6 +26,13 @@ BLK-010 열림. `com.dxyn02.GetUp` namespace의 네 App ID 등록과
 없음. 규칙 삭제 UI의 코드·Figma 불일치를 T060·T061로 보정한 뒤 US3 테스트를 시작하도록 계획을 갱신했다.
 
 ## 테스트 상태
+2026-08-25 T093에서 위치 권한 요구 수준 미달 화면의 secondary action을 제거해 `설정 열기`만
+표시하고, Background App Refresh 제한 화면에는 별도 `.confirm` action과
+`permissionGuide.confirm` identifier를 도입해 버튼 문구를 `확인`으로 변경했다. 모델·US4 UI·최대
+Dynamic Type 접근성 회귀를 함께 갱신했다. iPhone 17 Pro iOS 26.5 Simulator에서 전체
+`GetUpTests` 166회와 `UserStory4PermissionGuidanceUITests` 13개, 대상 접근성 UI test 1개가 모두
+실패·skip 없이 통과했다.
+
 2026-08-25 T092에서 `PermissionOnboardingStateStore`와 `PermissionGuideLaunchRouter`를 추가해 권한
 온보딩의 최초 표시를 versioned `UserDefaults` 표식으로 영구 보존했다. 첫 화면 생성 즉시 표식을
 기록하므로 온보딩 도중 앱 프로세스가 종료되어도 다음 실행은 일반 복구 모드로 진입한다. 전용 단위

@@ -142,7 +142,7 @@ private struct GetUpRootView: View {
                     ),
                 presentationState: state
             )
-        case .next, .later:
+        case .next, .confirm:
             return nil
         }
     }

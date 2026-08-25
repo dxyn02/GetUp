@@ -22,6 +22,7 @@
 - Background App Refresh는 필수 권한 gate가 아니며 이 상태만으로 foreground 권한 안내를 열지 않는다.
 - Background App Refresh는 앱별 설정에서 변경할 수 없으므로 시스템 전체
   `설정 > 일반 > 백그라운드 앱 새로 고침` 경로만 안내하고 앱별 Settings action을 제공하지 않는다.
+- 위치 권한 복구 화면은 `설정 열기`만 제공하고, Background App Refresh 제한 안내는 `확인`으로 닫는다.
 - Family Controls 재승인 뒤에는 앱 선택을 다시 확인한다.
 
 ## Schedule Adapter

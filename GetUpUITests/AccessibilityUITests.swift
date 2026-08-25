@@ -44,13 +44,9 @@ final class AccessibilityUITests: XCTestCase {
         XCTAssertTrue(app.otherElements["permissionGuide.screen"].exists)
         XCTAssertTrue(app.staticTexts["LOCATION ACCESS"].exists)
 
-        let later = app.buttons["permissionGuide.later"]
         let settings = app.buttons["permissionGuide.openSettings"]
-        XCTAssertTrue(later.exists)
         XCTAssertTrue(settings.exists)
-        XCTAssertTrue(later.isHittable)
         XCTAssertTrue(settings.isHittable)
-        assertMinimumTouchTarget(later)
         assertMinimumTouchTarget(settings)
     }
 

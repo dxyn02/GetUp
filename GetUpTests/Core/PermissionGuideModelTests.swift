@@ -236,7 +236,7 @@ struct PermissionGuideModelTests {
             .fullAccuracy,
         ])
         #expect(screen?.primaryAction == .openSettings)
-        #expect(screen?.secondaryAction == .later)
+        #expect(screen?.secondaryAction == nil)
         #expect(screen?.automaticAction == nil)
         #expect(screen?.message.contains("항상 허용") == true)
         #expect(screen?.message.contains("앱을 사용하는 동안 허용") == true)
@@ -267,7 +267,7 @@ struct PermissionGuideModelTests {
         #expect(model.currentScreen?.kind == .backgroundRefresh)
         #expect(model.currentScreen?.message.contains("복구가 늦어질") == true)
         #expect(model.currentScreen?.message.contains("저전력 모드") == true)
-        #expect(model.currentScreen?.primaryAction == .later)
+        #expect(model.currentScreen?.primaryAction == .confirm)
         #expect(model.currentScreen?.secondaryAction == nil)
     }
 

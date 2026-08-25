@@ -691,3 +691,19 @@ Family Controls를 먼저 표시하고 해결 후 위치 화면으로 전환한�
 **영향 범위**: `PermissionOnboardingStateStore`, `PermissionGuideLaunchRouter`, `GetUpRootView`,
 US4 단위·UI 테스트, `FR-050`과 권한 platform contract에 적용하며 `DEC-040`의 프로세스 내 모델 교체
 규칙을 설치 단위 실행 경계로 보강한다.
+
+## DEC-042 — 위치 복구와 Background App Refresh 종료 행동
+
+**날짜**: 2026-08-25
+
+**결정**: Always location 또는 Full Accuracy가 부족한 위치 권한 복구 화면에서는 우회 종료 행동인
+`나중에`를 제거하고 `설정 열기`만 제공한다. Background App Refresh 제한 안내는 필수 권한 복구가
+아닌 정보 확인 화면이므로 단일 주요 행동을 `확인`으로 표시하고 안내를 닫는다.
+
+**근거**: 위치 권한은 자동 제한에 필수이므로 복구 화면에서 행동 선택지를 설정 복구로 집중한다.
+Background App Refresh는 사용자가 앱별 설정에서 직접 복구할 수 없는 진단 상태이므로 `나중에`보다
+안내를 읽었음을 명확히 표현하는 `확인`이 실제 행동과 일치한다.
+
+**영향 범위**: `PermissionGuideAction`, `PermissionGuideModel`, `PermissionGuideView`, US4 모델·UI·
+접근성 테스트, `FR-052`와 US4 하이파이 구현 인계에 적용하며 `DEC-037`, `DEC-039`의 `나중에` 행동을
+대체한다.

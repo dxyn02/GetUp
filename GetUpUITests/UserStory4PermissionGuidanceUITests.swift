@@ -114,7 +114,7 @@ final class UserStory4PermissionGuidanceUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["원활한 사용을 위해 아래 권한이 필요해요"].exists)
         assertElement(containing: "항상 허용", in: app)
         assertElement(containing: "정확한 위치", in: app)
-        XCTAssertTrue(app.buttons["permissionGuide.later"].exists)
+        XCTAssertFalse(app.buttons["permissionGuide.confirm"].exists)
         XCTAssertTrue(app.buttons["permissionGuide.openSettings"].exists)
     }
 
@@ -141,7 +141,9 @@ final class UserStory4PermissionGuidanceUITests: XCTestCase {
         )
         assertElement(containing: "복구가 늦어질", in: app)
         assertElement(containing: "저전력 모드", in: app)
-        XCTAssertTrue(app.buttons["permissionGuide.later"].exists)
+        let confirm = app.buttons["permissionGuide.confirm"]
+        XCTAssertTrue(confirm.exists)
+        XCTAssertEqual(confirm.label, "확인")
         XCTAssertFalse(app.buttons["permissionGuide.openSettings"].exists)
     }
 

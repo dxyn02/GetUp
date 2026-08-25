@@ -243,7 +243,7 @@ struct PermissionGuideView: View {
             perform(action)
         } label: {
             Group {
-                if isPerformingAction && action != .later {
+                if isPerformingAction {
                     ProgressView()
                         .tint(prominence == .primary ? HomeColor.background : HomeColor.textPrimary)
                 } else {
@@ -255,14 +255,12 @@ struct PermissionGuideView: View {
             .frame(maxWidth: .infinity, minHeight: 56)
             .foregroundStyle(
                 foregroundColor(
-                    for: action,
                     prominence: prominence,
                     isEnabled: isEnabled
                 )
             )
             .background(
                 backgroundColor(
-                    for: action,
                     prominence: prominence,
                     isEnabled: isEnabled
                 ),
@@ -282,7 +280,7 @@ struct PermissionGuideView: View {
         switch action {
         case .next:
             model.advancePermissionSetup()
-        case .later:
+        case .confirm:
             model.dismiss()
         case .requestFamilyControlsAuthorization,
              .requestLocationAuthorization,
@@ -363,24 +361,24 @@ struct PermissionGuideView: View {
     private func label(for action: PermissionGuideAction) -> String {
         switch action {
         case .next: "다음"
+        case .confirm: "확인"
         case .requestFamilyControlsAuthorization: "권한 허용하기"
         case .requestLocationAuthorization: "위치 권한 허용하기"
         case .openSettings: "설정 열기"
         case .retryLocation: "위치 다시 확인"
-        case .later: "나중에"
         }
     }
 
     private func identifier(for action: PermissionGuideAction) -> String {
         switch action {
         case .next: "permissionGuide.next"
+        case .confirm: "permissionGuide.confirm"
         case .requestFamilyControlsAuthorization:
             "permissionGuide.requestFamilyControlsAuthorization"
         case .requestLocationAuthorization:
             "permissionGuide.requestLocationAuthorization"
         case .openSettings: "permissionGuide.openSettings"
         case .retryLocation: "permissionGuide.retryLocation"
-        case .later: "permissionGuide.later"
         }
     }
 
@@ -391,18 +389,17 @@ struct PermissionGuideView: View {
     private func hint(for action: PermissionGuideAction) -> String {
         switch action {
         case .next: "다음 권한 안내로 이동합니다."
+        case .confirm: "안내를 확인하고 닫습니다."
         case .requestFamilyControlsAuthorization:
             "앱 사용 제한을 위한 iOS 권한 요청을 표시합니다."
         case .requestLocationAuthorization:
             "위치 접근을 위한 iOS 권한 요청을 표시합니다."
         case .openSettings: "GetUp의 권한을 변경할 수 있는 시스템 설정을 엽니다."
         case .retryLocation: "현재 위치를 다시 확인하고 제한 상태를 재평가합니다."
-        case .later: "현재 상태를 유지하고 권한 안내를 닫습니다."
         }
     }
 
     private func foregroundColor(
-        for action: PermissionGuideAction,
         prominence: ActionProminence,
         isEnabled: Bool
     ) -> Color {
@@ -412,11 +409,10 @@ struct PermissionGuideView: View {
         if prominence == .primary {
             return HomeColor.background
         }
-        return action == .later ? HomeColor.textTertiary : HomeColor.textPrimary
+        return HomeColor.textPrimary
     }
 
     private func backgroundColor(
-        for action: PermissionGuideAction,
         prominence: ActionProminence,
         isEnabled: Bool
     ) -> Color {
@@ -426,6 +422,6 @@ struct PermissionGuideView: View {
         if prominence == .primary {
             return HomeColor.accent
         }
-        return action == .later ? .clear : HomeColor.surfaceElevated
+        return HomeColor.surfaceElevated
     }
 }

@@ -110,11 +110,11 @@ enum PermissionGuideLaunchRouter {
 
 enum PermissionGuideAction: Equatable, Hashable, Sendable {
     case next
+    case confirm
     case requestFamilyControlsAuthorization
     case requestLocationAuthorization
     case openSettings
     case retryLocation
-    case later
 }
 
 struct PermissionGuideScreenState: Equatable, Sendable {
@@ -372,7 +372,7 @@ final class PermissionGuideModel {
                     makeCapabilityItem(.fullAccuracy),
                 ],
                 primaryAction: isApproved || isNotDetermined ? .next : .openSettings,
-                secondaryAction: isApproved || isNotDetermined ? nil : .later,
+                secondaryAction: nil,
                 isPrimaryActionEnabled: !isNotDetermined,
                 automaticAction: isNotDetermined ? .requestLocationAuthorization : nil
             )
@@ -384,7 +384,7 @@ final class PermissionGuideModel {
                 title: "백그라운드 새로 고침을 확인해 주세요",
                 message: "Background App Refresh가 제한되면 앱을 다시 열기 전까지 상태 복구가 늦어질 수 있어요. 저전력 모드에서도 시스템이 실행을 제한할 수 있어요.",
                 capabilityItems: [makeCapabilityItem(.backgroundRefresh)],
-                primaryAction: isApproved ? .next : .later,
+                primaryAction: isApproved ? .next : .confirm,
                 secondaryAction: nil,
                 isPrimaryActionEnabled: true,
                 automaticAction: nil
