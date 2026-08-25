@@ -11,8 +11,8 @@ T083 — 자동 latency 100회 계측과 결과 형식은 구현·검증했으�
 앱 사용 가능 상태의 실기기 관찰을 진행 중
 
 ## 마지막 완료 작업
-T090 — 사용자 실기기 검수에서 확인된 권한·시간·장소·홈·활성 상태 결함과 현재 Figma 하이파이
-편차를 코드·테스트·명세·설계 인계에 반영함
+T091 — 권한 안내를 온보딩과 일반 복구로 분리하고, 일반 실행에서는 거부·요구 수준 미달 권한의
+상세 복구 화면만 직접 표시하도록 변경함
 
 ## 다음 작업
 T083 — 승인된 entitlement·profile을 사용한 실기기 활성화·해제 latency 관찰 완료
@@ -26,6 +26,16 @@ BLK-010 열림. `com.dxyn02.GetUp` namespace의 네 App ID 등록과
 없음. 규칙 삭제 UI의 코드·Figma 불일치를 T060·T061로 보정한 뒤 US3 테스트를 시작하도록 계획을 갱신했다.
 
 ## 테스트 상태
+2026-08-25 T091에서 `PermissionGuidePresentationMode`를 도입해 온보딩은 권한 개요와 승인 상태를
+순차 확인하고, 일반 실행·foreground 복구는 승인 상태에서 아무 화면도 표시하지 않도록 분리했다.
+Family Controls `denied`는 Family Controls 화면으로, Always location 미충족 또는 Full Accuracy
+`reduced`는 위치 화면으로 전체 개요 없이 직접 이동한다. 일반 복구의 `notDetermined`는 자동 표시하지
+않고 최초 요청은 온보딩에 한정한다. 여러 권한이 문제면 Family Controls 해결 후 위치 화면으로
+전환하며, 종료된 온보딩 객체는 다음 lifecycle 갱신에서 일반 복구 모델로 교체한다. iPhone 17 Pro
+iOS 26.5 Simulator에서 `PermissionGuideModelTests`와 전체 `GetUpTests`, 승인 시 홈 진입·거부 시 상세
+화면 직접 진입을 포함한 `UserStory4PermissionGuidanceUITests`와 `AccessibilityUITests`가 모두
+통과했고 실패·skip은 없다.
+
 2026-08-25 T090에서 위치 권한 안내에 최초 `앱을 사용하는 동안 허용` 뒤 `항상 허용`·`정확한 위치`
 설정을 명시하고, Background App Refresh는 앱별 Settings action을 제거해 시스템 전체 설정 경로만
 안내하도록 변경했다. 이 진단 상태만 제한된 foreground 복귀에서는 권한 화면을 자동 표시하지 않는다.

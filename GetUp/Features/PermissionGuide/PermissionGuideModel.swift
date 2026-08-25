@@ -50,6 +50,11 @@ enum PermissionGuideScreenKind: Equatable, Sendable {
     case locationUnavailable(isRestrictionApplied: Bool)
 }
 
+enum PermissionGuidePresentationMode: Equatable, Sendable {
+    case onboarding
+    case recovery
+}
+
 enum PermissionGuideAction: Equatable, Hashable, Sendable {
     case next
     case requestFamilyControlsAuthorization
@@ -77,18 +82,26 @@ final class PermissionGuideModel {
     private(set) var authorization: AuthorizationSnapshot
     private(set) var presentationState: RestrictionPresentationState
     private(set) var selectedScreenKind: PermissionGuideScreenKind?
+    let presentationMode: PermissionGuidePresentationMode
 
     init(
         authorization: AuthorizationSnapshot,
         presentationState: RestrictionPresentationState,
-        initialScreenKind: PermissionGuideScreenKind? = nil
+        initialScreenKind: PermissionGuideScreenKind? = nil,
+        presentationMode: PermissionGuidePresentationMode? = nil
     ) {
         self.authorization = authorization
         self.presentationState = presentationState
+        self.presentationMode = presentationMode
+            ?? Self.inferredPresentationMode(
+                authorization: authorization,
+                initialScreenKind: initialScreenKind
+            )
         selectedScreenKind = initialScreenKind
             ?? Self.recommendedScreenKind(
                 authorization: authorization,
-                presentationState: presentationState
+                presentationState: presentationState,
+                presentationMode: self.presentationMode
             )
     }
 
@@ -147,12 +160,14 @@ final class PermissionGuideModel {
 
         let recommended = Self.recommendedScreenKind(
             authorization: authorization,
-            presentationState: presentationState
+            presentationState: presentationState,
+            presentationMode: presentationMode
         )
-        if selectedScreenKind == nil || selectedScreenIsLocationUnavailable {
+
+        if presentationMode == .recovery {
             selectedScreenKind = recommended
-        } else if selectedScreenKind == .overview, recommended == nil {
-            selectedScreenKind = nil
+        } else if selectedScreenIsLocationUnavailable {
+            selectedScreenKind = recommended
         }
     }
 
@@ -165,20 +180,43 @@ final class PermissionGuideModel {
 
     private static func recommendedScreenKind(
         authorization: AuthorizationSnapshot,
-        presentationState: RestrictionPresentationState
+        presentationState: RestrictionPresentationState,
+        presentationMode: PermissionGuidePresentationMode
     ) -> PermissionGuideScreenKind? {
+        if presentationMode == .onboarding {
+            return .overview
+        }
+
+        if authorization.familyControls == .denied {
+            return .familyControls
+        }
+
+        let locationRequiresRecovery: Bool = switch authorization.locationAuthorization {
+        case .whenInUse, .denied, .restricted:
+            true
+        case .always, .notDetermined:
+            false
+        }
+        if locationRequiresRecovery || authorization.locationAccuracy == .reduced {
+            return .location
+        }
+
         if case .locationUnavailable(let isRestrictionApplied) = presentationState {
             return .locationUnavailable(isRestrictionApplied: isRestrictionApplied)
         }
-        if case .permissionRequired = presentationState {
-            return .overview
-        }
-        if authorization.familyControls != .approved
-            || authorization.locationAuthorization != .always
-            || authorization.locationAccuracy != .full {
-            return .overview
-        }
         return nil
+    }
+
+    private static func inferredPresentationMode(
+        authorization: AuthorizationSnapshot,
+        initialScreenKind: PermissionGuideScreenKind?
+    ) -> PermissionGuidePresentationMode {
+        if initialScreenKind == .overview
+            || authorization.familyControls == .notDetermined
+            || authorization.locationAuthorization == .notDetermined {
+            return .onboarding
+        }
+        return .recovery
     }
 
     private func makeCapabilityItem(

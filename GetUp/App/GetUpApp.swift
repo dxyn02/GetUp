@@ -160,20 +160,10 @@ private struct GetUpRootView: View {
         }
 
         guard let presentationState = result.presentationState else {
-            if let permissionGuideModel {
-                permissionGuideModel.update(
-                    authorization: result.authorization,
-                    presentationState: permissionGuideModel.presentationState
-                )
-            } else {
-                let candidate = PermissionGuideModel(
-                    authorization: result.authorization,
-                    presentationState: .inactive
-                )
-                if candidate.isPresented {
-                    permissionGuideModel = candidate
-                }
-            }
+            reconcilePermissionGuide(
+                authorization: result.authorization,
+                presentationState: permissionGuideModel?.presentationState ?? .inactive
+            )
             return nil
         }
 
@@ -181,21 +171,40 @@ private struct GetUpRootView: View {
             authorization: result.authorization,
             presentationState: presentationState
         )
-        if let permissionGuideModel {
-            permissionGuideModel.update(
-                authorization: update.authorization,
-                presentationState: update.presentationState
-            )
-        } else {
-            let candidate = PermissionGuideModel(
-                authorization: update.authorization,
-                presentationState: update.presentationState
-            )
-            if candidate.isPresented {
-                permissionGuideModel = candidate
-            }
-        }
+        reconcilePermissionGuide(
+            authorization: update.authorization,
+            presentationState: update.presentationState
+        )
         return update
+    }
+
+    private func reconcilePermissionGuide(
+        authorization: AuthorizationSnapshot,
+        presentationState: RestrictionPresentationState
+    ) {
+        if let permissionGuideModel {
+            if permissionGuideModel.isPresented {
+                permissionGuideModel.update(
+                    authorization: authorization,
+                    presentationState: presentationState
+                )
+                return
+            }
+
+            let recoveryModel = PermissionGuideModel(
+                authorization: authorization,
+                presentationState: presentationState,
+                presentationMode: .recovery
+            )
+            self.permissionGuideModel = recoveryModel
+            return
+        }
+
+        let initialModel = PermissionGuideModel(
+            authorization: authorization,
+            presentationState: presentationState
+        )
+        permissionGuideModel = initialModel
     }
 
     @ViewBuilder
@@ -892,7 +901,8 @@ private enum UITestConfiguration {
                         .fullAccuracy,
                     ]
                 ),
-                initialScreenKind: .overview
+                initialScreenKind: .overview,
+                presentationMode: .onboarding
             )
         case "permission-family-controls-undetermined":
             return PermissionGuideModel(
@@ -905,13 +915,15 @@ private enum UITestConfiguration {
                 presentationState: .permissionRequired(
                     missingPermissions: [.familyControls]
                 ),
-                initialScreenKind: .familyControls
+                initialScreenKind: .familyControls,
+                presentationMode: .onboarding
             )
         case "permission-family-controls-approved":
             return PermissionGuideModel(
                 authorization: approved,
                 presentationState: .inactive,
-                initialScreenKind: .familyControls
+                initialScreenKind: .familyControls,
+                presentationMode: .onboarding
             )
         case "permission-family-controls-denied":
             return PermissionGuideModel(
@@ -924,7 +936,7 @@ private enum UITestConfiguration {
                 presentationState: .permissionRequired(
                     missingPermissions: [.familyControls]
                 ),
-                initialScreenKind: .familyControls
+                presentationMode: .recovery
             )
         case "permission-location-undetermined":
             return PermissionGuideModel(
@@ -937,13 +949,15 @@ private enum UITestConfiguration {
                 presentationState: .permissionRequired(
                     missingPermissions: [.alwaysLocation]
                 ),
-                initialScreenKind: .location
+                initialScreenKind: .location,
+                presentationMode: .onboarding
             )
         case "permission-location-approved":
             return PermissionGuideModel(
                 authorization: approved,
                 presentationState: .inactive,
-                initialScreenKind: .location
+                initialScreenKind: .location,
+                presentationMode: .onboarding
             )
         case "permission-location-denied":
             return PermissionGuideModel(
@@ -956,13 +970,14 @@ private enum UITestConfiguration {
                 presentationState: .permissionRequired(
                     missingPermissions: [.alwaysLocation, .fullAccuracy]
                 ),
-                initialScreenKind: .location
+                presentationMode: .recovery
             )
         case "permission-background-refresh-approved":
             return PermissionGuideModel(
                 authorization: approved,
                 presentationState: .inactive,
-                initialScreenKind: .backgroundRefresh
+                initialScreenKind: .backgroundRefresh,
+                presentationMode: .onboarding
             )
         case "permission-background-refresh-denied":
             return PermissionGuideModel(
@@ -973,7 +988,14 @@ private enum UITestConfiguration {
                     backgroundRefresh: .restricted
                 ),
                 presentationState: .inactive,
-                initialScreenKind: .backgroundRefresh
+                initialScreenKind: .backgroundRefresh,
+                presentationMode: .onboarding
+            )
+        case "permission-runtime-approved":
+            return PermissionGuideModel(
+                authorization: approved,
+                presentationState: .inactive,
+                presentationMode: .recovery
             )
         case "location-unavailable-inactive":
             return PermissionGuideModel(

@@ -16,7 +16,8 @@ struct PermissionGuideModelTests {
             ),
             presentationState: .permissionRequired(
                 missingPermissions: [.familyControls, .alwaysLocation, .fullAccuracy]
-            )
+            ),
+            presentationMode: .onboarding
         )
 
         #expect(model.currentScreen?.kind == .overview)
@@ -85,6 +86,78 @@ struct PermissionGuideModelTests {
         #expect(model.currentScreen?.primaryAction == .next)
 
         model.advancePermissionSetup()
+        #expect(!model.isPresented)
+    }
+
+    @Test("A fully approved recovery never presents the onboarding permission check")
+    func approvedRecoveryDoesNotPresentGuide() {
+        let model = PermissionGuideModel(
+            authorization: TestFixtures.makeAuthorization(),
+            presentationState: .inactive,
+            presentationMode: .recovery
+        )
+
+        #expect(!model.isPresented)
+    }
+
+    @Test("Recovery opens only the denied Family Controls screen")
+    func recoveryRoutesDirectlyToDeniedFamilyControls() {
+        let model = PermissionGuideModel(
+            authorization: TestFixtures.makeAuthorization(familyControls: .denied),
+            presentationState: .permissionRequired(missingPermissions: [.familyControls]),
+            presentationMode: .recovery
+        )
+
+        #expect(model.currentScreen?.kind == .familyControls)
+    }
+
+    @Test("Recovery opens only the insufficient location screen")
+    func recoveryRoutesDirectlyToLocation() {
+        let model = PermissionGuideModel(
+            authorization: TestFixtures.makeAuthorization(
+                locationAuthorization: .whenInUse,
+                locationAccuracy: .reduced
+            ),
+            presentationState: .permissionRequired(
+                missingPermissions: [.alwaysLocation, .fullAccuracy]
+            ),
+            presentationMode: .recovery
+        )
+
+        #expect(model.currentScreen?.kind == .location)
+    }
+
+    @Test("Recovery advances from a repaired permission to the next denied permission")
+    func recoveryTracksOnlyCurrentDeniedPermission() {
+        let model = PermissionGuideModel(
+            authorization: TestFixtures.makeAuthorization(
+                familyControls: .denied,
+                locationAuthorization: .whenInUse
+            ),
+            presentationState: .permissionRequired(
+                missingPermissions: [.familyControls, .alwaysLocation]
+            ),
+            presentationMode: .recovery
+        )
+
+        model.update(
+            authorization: TestFixtures.makeAuthorization(
+                locationAuthorization: .whenInUse
+            ),
+            presentationState: .permissionRequired(missingPermissions: [.alwaysLocation])
+        )
+
+        #expect(model.currentScreen?.kind == .location)
+    }
+
+    @Test("Undetermined permission screens are reserved for onboarding")
+    func undeterminedRecoveryDoesNotPresentGuide() {
+        let model = PermissionGuideModel(
+            authorization: TestFixtures.makeAuthorization(familyControls: .notDetermined),
+            presentationState: .permissionRequired(missingPermissions: [.familyControls]),
+            presentationMode: .recovery
+        )
+
         #expect(!model.isPresented)
     }
 
@@ -187,8 +260,8 @@ struct PermissionGuideModelTests {
         #expect(model.currentScreen == nil)
     }
 
-    @Test("A fully recovered permission overview closes")
-    func recoveredPermissionsCloseOverview() {
+    @Test("An approved onboarding flow stays visible until the user advances")
+    func approvedOnboardingWaitsForUserAdvance() {
         let model = makeModel(locationAuthorization: .whenInUse)
 
         model.update(
@@ -196,7 +269,8 @@ struct PermissionGuideModelTests {
             presentationState: .inactive
         )
 
-        #expect(!model.isPresented)
+        #expect(model.currentScreen?.kind == .overview)
+        #expect(model.currentScreen?.primaryAction == .next)
     }
 
     private func makeModel(
@@ -215,7 +289,8 @@ struct PermissionGuideModelTests {
             authorization: authorization,
             presentationState: .permissionRequired(
                 missingPermissions: missingPermissions(in: authorization)
-            )
+            ),
+            presentationMode: .onboarding
         )
     }
 

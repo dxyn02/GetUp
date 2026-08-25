@@ -22,6 +22,14 @@ final class UserStory4PermissionGuidanceUITests: XCTestCase {
     }
 
     @MainActor
+    func testApprovedRecoverySkipsTheOnboardingPermissionGuide() {
+        let app = launchApp(scenario: "permission-runtime-approved")
+
+        XCTAssertTrue(app.buttons["home.createRule"].waitForExistence(timeout: 2))
+        XCTAssertFalse(app.otherElements["permissionGuide.screen"].exists)
+    }
+
+    @MainActor
     func testUndeterminedFamilyControlsShowsDisabledNextDuringSystemRequest() {
         let app = launchApp(scenario: "permission-family-controls-undetermined")
 
@@ -47,6 +55,7 @@ final class UserStory4PermissionGuidanceUITests: XCTestCase {
         let app = launchApp(scenario: "permission-family-controls-denied")
 
         assertPermissionScreen(titled: "앱 사용 제한 권한이 필요해요", in: app)
+        XCTAssertFalse(app.staticTexts["원활한 사용을 위해 아래 권한이 필요해요"].exists)
         XCTAssertTrue(app.buttons["permissionGuide.openSettings"].exists)
         XCTAssertFalse(app.buttons["permissionGuide.next"].exists)
     }
@@ -77,6 +86,7 @@ final class UserStory4PermissionGuidanceUITests: XCTestCase {
         let app = launchApp(scenario: "permission-location-denied")
 
         assertPermissionScreen(titled: "정확한 위치 접근 권한이 필요해요", in: app)
+        XCTAssertFalse(app.staticTexts["원활한 사용을 위해 아래 권한이 필요해요"].exists)
         assertElement(containing: "항상 허용", in: app)
         assertElement(containing: "정확한 위치", in: app)
         XCTAssertTrue(app.buttons["permissionGuide.later"].exists)
