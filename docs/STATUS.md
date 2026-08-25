@@ -17,13 +17,23 @@ T082 — Family Controls 배포 entitlement·App Group 승인 절차와 현재 �
 T083 — 승인된 entitlement·profile을 사용한 실기기 활성화·해제 latency 관찰 완료
 
 ## 차단 상태
-BLK-010 열림. Apple Developer 계정의 네 Bundle ID별 Family Controls 배포 승인, App Group 할당과
-갱신된 provisioning profile 증적이 필요함.
+BLK-010 열림. `com.dxyn02.GetUp` namespace의 네 App ID 등록과
+`group.com.dxyn02.GetUp` 할당은 사용자 확인됐으며, extension별 Family Controls 배포 `Assigned`·
+`Provisioning Support`, 갱신된 profile과 서명 archive 증적이 필요함.
 
 ## 계획 갱신 필요
 없음. 규칙 삭제 UI의 코드·Figma 불일치를 T060·T061로 보정한 뒤 US3 테스트를 시작하도록 계획을 갱신했다.
 
 ## 테스트 상태
+Apple Developer에서 기존 `com.getup.GetUp`을 사용할 수 없어 사용자가 등록 가능한
+`com.dxyn02.GetUp` namespace로 네 App ID를 등록하고 `group.com.dxyn02.GetUp`을 모두 할당했다.
+Xcode가 만든 네 target Bundle ID·entitlement 변경을 보존하고 `Configuration/Base.xcconfig`, 진단
+fallback과 배포 문서를 같은 identifier로 맞췄다. 계정 등록·그룹 할당은 사용자 확인으로 기록했지만,
+extension별 Family Controls `Assigned`와 `Provisioning Support`, 새 profile 및 archive의 실제 서명
+entitlement는 아직 확인하지 못해 BLK-010을 유지한다. `xcodebuild -showBuildSettings`에서 네 target의
+새 Bundle ID와 `group.com.dxyn02.GetUp` 상속을 확인했고, iPhone 17 Pro iOS 26.5 Simulator에서 전체
+`GetUpTests` 147개 test case가 동적 인자를 포함해 총 190회 모두 통과했으며 실패·skip은 없다.
+
 T083의 자동 계측 부분에서 `ManagedSettingsRestrictionAdapter`가 named store write 후 같은 store를
 read-back해 기대 application token 집합 또는 해제 `nil`이 확인된 뒤에만 성공하도록 보강했다.
 read-back 불일치 시 `storeVerificationFailed`를 반환하고 적용 상태 snapshot과 coordinator 완료
@@ -39,7 +49,7 @@ double을 사용하므로 실제 시스템 store와 선택 앱 사용 가능 상
 
 T082에서 Apple 2026 공식 Family Controls·Xcode·Developer Account 문서를 기준으로
 `docs/ENTITLEMENTS.md`를 작성했다. app과 세 Screen Time extension의 resolved Bundle ID, 각 entitlement
-파일, `com.apple.developer.family-controls = true`와 공통 `group.com.getup.GetUp` 선언은 로컬에서
+파일, `com.apple.developer.family-controls = true`와 당시 공통 `group.com.getup.GetUp` 선언은 로컬에서
 확인했다. 계정의 App ID 등록, Bundle ID별 배포 요청 `Assigned` 상태, provisioning support, App Group
 할당, Development·App Store Connect profile과 서명 archive 증적은 저장소에 없어 `확인 필요`로
 기록하고 BLK-010을 열었다. 문서에는 Account Holder의 네 건 요청, Account Holder·Admin의 App Group
@@ -718,7 +728,7 @@ Simulator service와 일부 provisioning profile 경고가 있었으나 build se
 T003 검증으로 네 entitlements와 `project.pbxproj`의 plist 문법을 확인하고, Family Controls 값이
 모두 `true`이며 App Group 항목이 공통 `GETUP_APP_GROUP_IDENTIFIER` build setting을 참조하는지
 검증함. Debug·Release의 앱과 세 확장 build settings에서 각 `CODE_SIGN_ENTITLEMENTS` 경로와
-`GETUP_APP_GROUP_IDENTIFIER = group.com.getup.GetUp` 상속을 확인함. 실제 개발·배포 서명 및
+현재는 `DEC-035`에 따라 `GETUP_APP_GROUP_IDENTIFIER = group.com.dxyn02.GetUp` 상속을 확인함. 실제 개발·배포 서명 및
 entitlement 승인은 T082와 실기기 검증 전까지 미검증 상태임.
 T004 검증으로 앱과 세 extension `Info.plist`, `project.pbxproj`의 plist 문법을 확인하고 위치 권한
 문구, `NSExtensionPointIdentifier`, `NSExtensionPrincipalClass` 값을 Xcode 26.6 템플릿과 대조함.

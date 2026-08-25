@@ -6,7 +6,7 @@
 	<true/>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>$(GETUP_APP_GROUP_IDENTIFIER)</string>
+		<string>group.com.dxyn02.GetUp</string>
 	</array>
 </dict>
 </plist>

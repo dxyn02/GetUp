@@ -5,9 +5,10 @@
 **상태**: 열림(OPEN) — 2026-08-25
 
 저장소에서는 app과 세 Screen Time extension의 Family Controls·App Group entitlement 선언 및 resolved
-Bundle ID를 확인할 수 있다. 그러나 Apple Developer 계정의 네 명시적 App ID, Bundle ID별 Family
-Controls 배포 요청 `Assigned` 상태, `Provisioning Support`, App Group 등록·할당과 갱신된 배포
-provisioning profile 증적은 현재 작업 환경에서 확인할 수 없다.
+Bundle ID를 확인할 수 있다. 사용자는 Apple Developer에 `com.dxyn02.GetUp` namespace의 네 명시적
+App ID를 등록하고 `group.com.dxyn02.GetUp`을 네 App ID에 할당했다고 확인했다. 그러나 extension을
+포함한 네 Bundle ID별 Family Controls 배포 요청 `Assigned` 상태와 `Provisioning Support`, 갱신된
+배포 provisioning profile 및 archive 증적은 현재 작업 환경에서 확인할 수 없다.
 
 이 상태는 미신청 또는 거절을 의미하지 않지만, 승인 완료로 추정할 수도 없다. Account Holder 또는
 Admin이 `docs/ENTITLEMENTS.md`의 승인 증적 기록표를 갱신하고, 네 target이 포함된 서명 archive와
@@ -17,7 +18,8 @@ Family Controls·App Group 인수 검증을 완료할 수 없다.
 **해결 조건**:
 
 1. Account Holder가 네 Bundle ID의 Family Controls 요청 상태와 필요한 provisioning support를 확인한다.
-2. Account Holder 또는 Admin이 `group.com.getup.GetUp` 등록과 네 App ID 할당을 확인한다.
+2. Account Holder 또는 Admin이 `group.com.dxyn02.GetUp` 등록과 네 App ID 할당의 지속 가능한 증적을
+   기록한다.
 3. 네 배포 profile을 갱신하고 서명 archive의 실제 entitlement를 검사한다.
 4. 개인정보를 제거한 증적 reference와 확인자·확인일을 `docs/ENTITLEMENTS.md`에 기록한다.
 

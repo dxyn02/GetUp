@@ -51,8 +51,9 @@ app target과 Device Activity Monitor, Shield Configuration, Shield Action exten
 
 **날짜**: 2026-08-20
 
-**상태**: 단일 규칙 payload 범위는 2026-08-21에 `DEC-015`·`DEC-016`으로 대체됨. 보호된 App Group
-JSON, atomic replacement 및 파일 보호 원칙은 유지됨.
+**상태**: 단일 규칙 payload 범위는 2026-08-21에 `DEC-015`·`DEC-016`으로, App Group identifier는
+2026-08-25에 `DEC-035`로 대체됨. 보호된 App Group JSON, atomic replacement 및 파일 보호 원칙은
+유지됨.
 
 **결정**: 단일 규칙과 최신 위치 조건을 별도의 versioned Codable JSON 파일로 App Group container에
 저장한다. 공통 App Group identifier는 `group.com.getup.GetUp`으로 정의하고 앱과 세 Screen Time
@@ -554,3 +555,21 @@ SwiftUI Alert의 system-owned action에는 별도 accessibility identifier를 �
 
 **영향 범위**: `AppLifecycleCoordinator`, `GetUpRootView`, `SystemAuthorizationProvider`,
 `RestrictionCoordinator` 조립과 `AppLifecycleCoordinatorTests`, US4 UI test에 적용한다.
+
+## DEC-035 — 배포 식별자 namespace 확정
+
+**날짜**: 2026-08-25
+
+**결정**: Apple Developer에서 기존 `com.getup.GetUp`이 사용 불가능함을 확인해 GetUp의 배포
+namespace를 `com.dxyn02.GetUp`으로 확정한다. 메인 앱과 세 Screen Time extension의 Bundle ID는
+각각 `com.dxyn02.GetUp`, `.DeviceActivityMonitor`, `.ShieldConfiguration`, `.ShieldAction` suffix를
+사용하며 공통 App Group은 `group.com.dxyn02.GetUp`을 사용한다.
+
+**근거**: 네 실행 target과 공유 container는 Apple Developer에 등록 가능한 하나의 고유 namespace를
+사용해야 한다. 사용자가 네 명시적 App ID 등록과 공통 App Group의 네 App ID 할당을 완료했으며,
+같은 prefix를 사용하면 Xcode build setting, entitlement와 계정 구성을 일관되게 검증할 수 있다.
+
+**영향 범위**: `Configuration/Base.xcconfig`, 네 entitlement, `DiagnosticsLogger` fallback subsystem,
+Apple Developer App ID·App Group·provisioning profile 및 배포 준비 문서에 적용한다. 기존 개발 중
+`group.com.getup.GetUp` container의 로컬 데이터는 새 App Group으로 자동 이전되지 않으며, 배포 전
+개발 데이터이므로 새 namespace에서 다시 생성한다.
