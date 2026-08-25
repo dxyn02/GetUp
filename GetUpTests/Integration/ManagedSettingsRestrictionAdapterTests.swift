@@ -157,6 +157,59 @@ struct ManagedSettingsRestrictionAdapterTests {
         ))
     }
 
+    @Test("Applying reports failure when the named store does not reflect the write")
+    func applyingRequiresStoreReadbackConfirmation() async throws {
+        let selected = try Set([applicationToken(seed: 10)])
+        let rule = TestFixtures.makeRule(
+            activitySelection: selection(applicationTokens: selected)
+        )
+        let store = RecordingManagedSettingsStoreAccess(ignoresWrites: true)
+        let stateStore = RecordingRestrictionApplicationStateStore()
+        let adapter = ManagedSettingsRestrictionAdapter(
+            storeAccess: store,
+            stateStore: stateStore
+        )
+
+        await #expect(
+            throws: ManagedSettingsRestrictionAdapterError.storeVerificationFailed
+        ) {
+            try await adapter.applyRestriction(for: [rule])
+        }
+
+        #expect(await stateStore.writeCount == 0)
+    }
+
+    @Test("Removing reports failure when the named store remains shielded")
+    func removingRequiresStoreReadbackConfirmation() async throws {
+        let selected = try Set([applicationToken(seed: 11)])
+        let rule = TestFixtures.makeRule(
+            activitySelection: selection(applicationTokens: selected)
+        )
+        let store = RecordingManagedSettingsStoreAccess(
+            stores: [SharedIdentifiers.managedSettingsStoreName: selected],
+            ignoresWrites: true
+        )
+        let stateStore = RecordingRestrictionApplicationStateStore(
+            initialState: AppliedRestrictionState(
+                activeRuleRevisions: [
+                    ActiveRuleRevision(ruleID: rule.id, revision: rule.revision),
+                ]
+            )
+        )
+        let adapter = ManagedSettingsRestrictionAdapter(
+            storeAccess: store,
+            stateStore: stateStore
+        )
+
+        await #expect(
+            throws: ManagedSettingsRestrictionAdapterError.storeVerificationFailed
+        ) {
+            try await adapter.removeRestriction()
+        }
+
+        #expect(await stateStore.writeCount == 0)
+    }
+
     private func selection(
         applicationTokens: Set<ApplicationToken>
     ) -> FamilyActivitySelection {
@@ -179,12 +232,17 @@ private final class RecordingManagedSettingsStoreAccess:
     ManagedSettingsStoreAccess
 {
     private var stores: [String: Set<ApplicationToken>]
+    private let ignoresWrites: Bool
 
     private(set) var writeCount = 0
     private(set) var writtenStoreNames: [String] = []
 
-    init(stores: [String: Set<ApplicationToken>] = [:]) {
+    init(
+        stores: [String: Set<ApplicationToken>] = [:],
+        ignoresWrites: Bool = false
+    ) {
         self.stores = stores
+        self.ignoresWrites = ignoresWrites
     }
 
     func shieldedApplications(named storeName: String)
@@ -199,7 +257,9 @@ private final class RecordingManagedSettingsStoreAccess:
     ) {
         writeCount += 1
         writtenStoreNames.append(storeName)
-        stores[storeName] = applications
+        if !ignoresWrites {
+            stores[storeName] = applications
+        }
     }
 }
 

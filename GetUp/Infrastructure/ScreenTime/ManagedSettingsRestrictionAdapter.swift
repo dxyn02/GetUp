@@ -5,6 +5,7 @@ import Foundation
 enum ManagedSettingsRestrictionAdapterError: Error, Equatable, Sendable {
     case missingAppGroupIdentifier
     case sharedDefaultsUnavailable
+    case storeVerificationFailed
 }
 
 @MainActor
@@ -158,6 +159,11 @@ final class ManagedSettingsRestrictionAdapter: RestrictionApplying {
             applications,
             named: SharedIdentifiers.managedSettingsStoreName
         )
+        guard storeAccess.shieldedApplications(
+            named: SharedIdentifiers.managedSettingsStoreName
+        ) == applications else {
+            throw ManagedSettingsRestrictionAdapterError.storeVerificationFailed
+        }
         await stateStore.saveState(
             AppliedRestrictionState(
                 activeRuleRevisions: activeRuleRevisions
@@ -175,6 +181,11 @@ final class ManagedSettingsRestrictionAdapter: RestrictionApplying {
             nil,
             named: SharedIdentifiers.managedSettingsStoreName
         )
+        guard storeAccess.shieldedApplications(
+            named: SharedIdentifiers.managedSettingsStoreName
+        ) == nil else {
+            throw ManagedSettingsRestrictionAdapterError.storeVerificationFailed
+        }
         await stateStore.saveState(
             AppliedRestrictionState(
                 activeRuleRevisions: []

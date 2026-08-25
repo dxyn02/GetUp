@@ -7,13 +7,14 @@
 Phase 7 마무리 및 교차 관심사 진행 중
 
 ## 진행 중
-없음
+T083 — 자동 latency 100회 계측과 결과 형식은 구현·검증했으며, 실제 `ManagedSettingsStore`와 선택
+앱 사용 가능 상태의 실기기 관찰은 BLK-010 해결을 기다리는 중
 
 ## 마지막 완료 작업
 T082 — Family Controls 배포 entitlement·App Group 승인 절차와 현재 증적 상태를 문서화함
 
 ## 다음 작업
-T083 — 제한 활성화·해제 latency 100회 이상 계측과 결과 형식 구현
+T083 — 승인된 entitlement·profile을 사용한 실기기 활성화·해제 latency 관찰 완료
 
 ## 차단 상태
 BLK-010 열림. Apple Developer 계정의 네 Bundle ID별 Family Controls 배포 승인, App Group 할당과
@@ -23,6 +24,19 @@ BLK-010 열림. Apple Developer 계정의 네 Bundle ID별 Family Controls 배�
 없음. 규칙 삭제 UI의 코드·Figma 불일치를 T060·T061로 보정한 뒤 US3 테스트를 시작하도록 계획을 갱신했다.
 
 ## 테스트 상태
+T083의 자동 계측 부분에서 `ManagedSettingsRestrictionAdapter`가 named store write 후 같은 store를
+read-back해 기대 application token 집합 또는 해제 `nil`이 확인된 뒤에만 성공하도록 보강했다.
+read-back 불일치 시 `storeVerificationFailed`를 반환하고 적용 상태 snapshot과 coordinator 완료
+measurement를 남기지 않는 회귀 테스트 2개를 추가했다. `RestrictionLatencyTests`는 신뢰 가능한
+`confirmedAt`부터 이 확인 경계까지 활성화 100회와 해제 100회를 반복했다. iPhone 17 Pro iOS 26.5
+Simulator에서 활성화 p95는 0.000149초, 해제 최대값은 0.000152초로 각각 30초 기준을 통과했고,
+adapter 회귀를 포함한 대상 테스트 8개가 실패·skip 없이 통과했다. 자동 테스트는 protocol test
+double을 사용하므로 실제 시스템 store와 선택 앱 사용 가능 상태를 입증하지 않는다. 해당 실기기
+관찰은 BLK-010이 열려 있어 미실행이며 T083은 완료 처리하지 않았다. 결과와 실기기 기록 형식은
+`docs/TEST_RESULTS.md`에 분리해 기록했다. 같은 Simulator에서 전체 `GetUpTests` 147개 test case가
+동적 인자를 포함해 총 190회 모두 통과했으며 실패·skip은 없다. `project.pbxproj` plist 문법과
+`git diff --check`도 통과했다.
+
 T082에서 Apple 2026 공식 Family Controls·Xcode·Developer Account 문서를 기준으로
 `docs/ENTITLEMENTS.md`를 작성했다. app과 세 Screen Time extension의 resolved Bundle ID, 각 entitlement
 파일, `com.apple.developer.family-controls = true`와 공통 `group.com.getup.GetUp` 선언은 로컬에서

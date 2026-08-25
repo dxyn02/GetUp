@@ -22,7 +22,9 @@ Family Controls·App Group 인수 검증을 완료할 수 없다.
 4. 개인정보를 제거한 증적 reference와 확인자·확인일을 `docs/ENTITLEMENTS.md`에 기록한다.
 
 **후속 작업 영향**: T082 문서화는 완료할 수 있다. T083의 자동 계측 구조와 문서 형식은 진행할 수
-있지만 실제 Managed Settings 반영 관찰, T085 실기기 인수 및 feature 완료 판정은 위 조건에 의존한다.
+있으며 2026-08-25에 활성화 100회·해제 100회 자동 계측은 통과했다. 다만 실제
+`ManagedSettingsStore`와 선택 앱 사용 가능 상태의 실기기 관찰, T085 실기기 인수 및 feature 완료
+판정은 위 조건에 의존한다.
 
 ## BLK-001 — 사용자 지정 일정 최소 길이
 

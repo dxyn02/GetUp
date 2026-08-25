@@ -27,6 +27,14 @@
 합집합을 다시 적용하는 경우에도 사용자 관점의 부분 해제이므로 측정 effect는 `removeShield`로
 분류한다.
 
+**구현 메모 (2026-08-25)**: T083에서 `ManagedSettingsRestrictionAdapter`의 성공 경계를 named
+`ManagedSettingsStore` write 호출이 아니라 write 직후 같은 store의 `shield.applications`를 다시
+읽어 기대 token 집합 또는 해제 `nil`과 일치하는 시점으로 강화했다. read-back이 일치하지 않으면
+`storeVerificationFailed`를 반환하고 적용 상태 snapshot을 갱신하지 않으므로 coordinator도 완료
+measurement를 만들지 않는다. 자동 계측은 이 경계의 100회 활성화와 100회 해제를 측정하지만
+Simulator의 test double 결과이므로 실제 선택 앱 사용 가능 상태와 물리적 event 전달은 실기기
+관찰 결과와 분리한다.
+
 ## DEC-003 — iOS target 및 target 구성
 
 **날짜**: 2026-08-20
