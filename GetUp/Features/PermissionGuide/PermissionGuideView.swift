@@ -123,7 +123,7 @@ struct PermissionGuideView: View {
     private var familyControlsSteps: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text("1  앱 사용 제한 권한 허용하기")
-            Text("2  제한할 앱을 다시 선택하기")
+            Text("2  규칙에서 제한할 앱 선택하기")
         }
         .font(.subheadline)
         .fontWeight(.semibold)
@@ -264,7 +264,7 @@ struct PermissionGuideView: View {
             model.beginPermissionSetup()
         case .later:
             model.dismiss()
-        case .reauthorizeAndReselectApplications, .openSettings, .retryLocation:
+        case .requestFamilyControlsAuthorization, .openSettings, .retryLocation:
             isPerformingAction = true
             Task { @MainActor in
                 let update = await onAction(action)
@@ -336,7 +336,8 @@ struct PermissionGuideView: View {
     private func label(for action: PermissionGuideAction) -> String {
         switch action {
         case .beginPermissionSetup: "권한 설정하기"
-        case .reauthorizeAndReselectApplications, .openSettings: "설정 열기"
+        case .requestFamilyControlsAuthorization: "권한 허용하기"
+        case .openSettings: "설정 열기"
         case .retryLocation: "위치 다시 확인"
         case .later: "나중에"
         }
@@ -345,8 +346,9 @@ struct PermissionGuideView: View {
     private func identifier(for action: PermissionGuideAction) -> String {
         switch action {
         case .beginPermissionSetup: "permissionGuide.beginSetup"
-        case .reauthorizeAndReselectApplications, .openSettings:
-            "permissionGuide.openSettings"
+        case .requestFamilyControlsAuthorization:
+            "permissionGuide.requestFamilyControlsAuthorization"
+        case .openSettings: "permissionGuide.openSettings"
         case .retryLocation: "permissionGuide.retryLocation"
         case .later: "permissionGuide.later"
         }
@@ -359,8 +361,8 @@ struct PermissionGuideView: View {
     private func hint(for action: PermissionGuideAction) -> String {
         switch action {
         case .beginPermissionSetup: "가장 먼저 복구할 권한 안내로 이동합니다."
-        case .reauthorizeAndReselectApplications:
-            "앱 사용 제한 권한을 다시 승인하고 앱을 다시 선택합니다."
+        case .requestFamilyControlsAuthorization:
+            "앱 사용 제한을 위한 iOS 권한 요청을 표시합니다."
         case .openSettings: "GetUp의 권한을 변경할 수 있는 시스템 설정을 엽니다."
         case .retryLocation: "현재 위치를 다시 확인하고 제한 상태를 재평가합니다."
         case .later: "현재 상태를 유지하고 권한 안내를 닫습니다."

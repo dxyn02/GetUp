@@ -18,8 +18,8 @@
 
 1. 필수 권한 중 하나 이상이 부족하면 권한 점검 화면이 앱 사용 제한, Always 위치 접근,
    Full Accuracy와 Background App Refresh 상태를 서로 다른 표시로 보여준다.
-2. Family Controls가 부족하면 사용자는 개인용 앱 사용 제한을 다시 승인하고 제한할 앱을 다시
-   선택한다. 기존 opaque token이 그대로 유효하다고 가정하지 않는다.
+2. Family Controls가 부족하면 앱은 `AuthorizationCenter`의 개인용 승인 UI를 표시한다. 승인 뒤
+   제한할 앱은 규칙 편집 화면의 시스템 picker에서 선택한다.
 3. Always 또는 Full Accuracy가 부족하면 시스템 설정 경로와 위치를 추정하지 않는 안전 원칙을
    확인하고 설정으로 이동한다.
 4. Background App Refresh가 제한되면 foreground 이전의 상태 복구가 늦어질 수 있음을 확인하고
@@ -46,7 +46,7 @@
 | 화면 ID | Figma frame | 상태 | 발생 조건 | 표시 내용 | 가능한 행동 |
 |---|---|---|---|---|---|
 | `US4-HF-01` | [권한 점검](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=174-2097) | `permission required` | 하나 이상의 필수 권한 부족 | 네 권한의 용도와 자동 제한 영향 | 권한 설정 시작 |
-| `US4-HF-02` | [Family Controls 복구](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=174-2108) | `family controls denied` | Family Controls 미승인·철회 | 재승인 뒤 앱 재선택 순서 | 설정 열기 |
+| `US4-HF-02` | [Family Controls 복구](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=174-2108) | `family controls denied` | Family Controls 미승인·철회 | 시스템 승인 뒤 규칙에서 앱 선택 | 권한 허용하기 |
 | `US4-HF-03` | [위치 권한 복구](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=174-2117) | `always/full accuracy denied` | Always 또는 Full Accuracy 부족 | 시스템 설정 경로와 위치 추정 금지 | 나중에, 설정 열기 |
 | `US4-HF-04` | [Background App Refresh](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=174-2128) | `background refresh restricted` | Background App Refresh 제한 | 복구 지연 가능성과 저전력 모드 제약 | 나중에, 설정 열기 |
 | `US4-HF-05` | [위치 확인 불가 · 비활성](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=174-2138) | `location unavailable / inactive` | 제한 비활성 + 위치 `unavailable` | 새 제한 미적용과 확인 항목 | 위치 다시 확인, 설정 열기 |
@@ -129,6 +129,7 @@ Family Controls 승인 UI와 권한 prompt는 iOS appearance를 그대로 따른
 | `permission_guide.location_unavailable.inactive.title` | `현재 위치를 확인할 수 없어요` | 없음 | 축약 금지 |
 | `permission_guide.location_unavailable.active.title` | `위치를 확인할 수 없어 제한이 유지돼요` | 없음 | 제한 유지 정보 보존 |
 | `permission_guide.action.open_settings` | `설정 열기` | 없음 | 축약 금지 |
+| `permission_guide.action.request_family_controls` | `권한 허용하기` | 없음 | 축약 금지 |
 | `permission_guide.action.retry_location` | `위치 다시 확인` | 없음 | 축약 금지 |
 | `permission_guide.action.later` | `나중에` | 없음 | 축약 금지 |
 
@@ -157,6 +158,8 @@ AX1~AX5, Increase Contrast와 시스템 설정 복귀 focus는 구현 후 물리
 
 - Family Controls 승인 UI, 시스템 권한 prompt와 Settings 화면은 iOS가 소유하며 GetUp이 재설계하지
   않는다.
+- Family Controls action은 앱별 Settings URL을 열지 않고
+  `AuthorizationCenter.requestAuthorization(for: .individual)`을 호출한다.
 - 앱은 개인 사용자가 시스템 설정에서 권한을 철회하거나 앱을 삭제하는 플랫폼 우회를 막는다고
   안내하지 않는다.
 - Background App Refresh는 진단·복구 지연 정보이며 특정 background 실행 시각을 보장하지 않는다.
@@ -200,6 +203,7 @@ AX1~AX5, Increase Contrast와 시스템 설정 복귀 focus는 구현 후 물리
 |---|---|---|---|
 | `2026-08-24` | `Codex` | 승인된 로우파이를 GetUp Focus text style·semantic token으로 정규화하고 권한별 icon badge, 상태 위계, 접근성·구현 인계 panel을 추가 | 최초 초안 |
 | `2026-08-24` | 사용자 | 화면 우측 상단 badge를 제거하고 권한 점검 목록 emoji와 기존 문구·action 구조를 유지한 최종안을 확정 | 최종 승인 |
+| `2026-08-25` | `Codex` | 실기기 검증에서 Family Controls가 앱별 Settings에 노출되지 않음을 확인해 `US4-HF-02`의 action을 `권한 허용하기`로 보정 | 실기기 결함 보고 |
 
 ## 구현 승인
 

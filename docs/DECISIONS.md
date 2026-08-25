@@ -573,3 +573,19 @@ namespace를 `com.dxyn02.GetUp`으로 확정한다. 메인 앱과 세 Screen Tim
 Apple Developer App ID·App Group·provisioning profile 및 배포 준비 문서에 적용한다. 기존 개발 중
 `group.com.getup.GetUp` container의 로컬 데이터는 새 App Group으로 자동 이전되지 않으며, 배포 전
 개발 데이터이므로 새 namespace에서 다시 생성한다.
+
+## DEC-036 — Family Controls 승인과 전체 화면 실행 경계
+
+**날짜**: 2026-08-25
+
+**결정**: Family Controls 미승인 화면의 주요 행동은 `UIApplication.openSettingsURLString`을 열지
+않고 `AuthorizationCenter.requestAuthorization(for: .individual)`을 호출한다. 위치 접근과
+Background App Refresh만 앱별 Settings 이동을 유지한다. 메인 앱 `Info.plist`에는 빈
+`UILaunchScreen` dictionary를 선언해 현대 iPhone의 native 화면 크기로 실행한다.
+
+**근거**: 실기기에서 앱별 Settings에 Family Controls 승인 항목이 없고, Apple 공식 API가 최초
+개인용 승인 시 시스템 alert와 생체 인증 sheet를 표시하는 것을 확인했다. 또한 launch screen 선언이
+없으면 최신 iPhone에서 앱이 구형 호환 canvas로 실행되어 위아래 letterboxing이 발생한다.
+
+**영향 범위**: `GetUpApp`, `PermissionGuideModel`, `PermissionGuideView`, `Info.plist`, US4 모델·UI
+테스트와 US4 로우·하이파이 구현 인계에 적용한다.

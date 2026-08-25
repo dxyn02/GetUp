@@ -100,7 +100,17 @@ private struct GetUpRootView: View {
         _ action: PermissionGuideAction
     ) async -> PermissionGuideUpdate? {
         switch action {
-        case .reauthorizeAndReselectApplications, .openSettings:
+        case .requestFamilyControlsAuthorization:
+            do {
+                _ = try await SystemFamilyControlsAuthorizationSession()
+                    .requestIndividualAuthorization()
+                return await restoreRuntimeState()
+            } catch is CancellationError {
+                return nil
+            } catch {
+                return await restoreRuntimeState()
+            }
+        case .openSettings:
             openSettings()
             return nil
         case .retryLocation:

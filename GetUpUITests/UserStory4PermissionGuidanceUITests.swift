@@ -26,8 +26,12 @@ final class UserStory4PermissionGuidanceUITests: XCTestCase {
         let app = launchApp(scenario: "permission-family-controls")
 
         assertPermissionScreen(titled: "앱 사용 제한 권한이 필요해요", in: app)
-        assertElement(containing: "앱을 다시 선택", in: app)
-        XCTAssertTrue(app.buttons["permissionGuide.openSettings"].exists)
+        assertElement(containing: "제한할 앱 선택", in: app)
+        XCTAssertTrue(
+            app.buttons["permissionGuide.requestFamilyControlsAuthorization"].exists
+        )
+        XCTAssertTrue(app.buttons["권한 허용하기"].exists)
+        XCTAssertFalse(app.buttons["permissionGuide.openSettings"].exists)
         XCTAssertFalse(app.buttons["permissionGuide.later"].exists)
     }
 

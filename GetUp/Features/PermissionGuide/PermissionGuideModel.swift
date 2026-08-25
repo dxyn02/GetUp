@@ -52,7 +52,7 @@ enum PermissionGuideScreenKind: Equatable, Sendable {
 
 enum PermissionGuideAction: Equatable, Sendable {
     case beginPermissionSetup
-    case reauthorizeAndReselectApplications
+    case requestFamilyControlsAuthorization
     case openSettings
     case retryLocation
     case later
@@ -148,6 +148,10 @@ final class PermissionGuideModel {
         authorization: AuthorizationSnapshot,
         presentationState: RestrictionPresentationState
     ) {
+        if self.authorization.familyControls != .approved,
+           authorization.familyControls == .approved {
+            applicationReselectionState = .completed
+        }
         if self.authorization.familyControls == .approved,
            authorization.familyControls != .approved {
             applicationReselectionState = .requiredAfterFamilyControlsRecovery
@@ -306,9 +310,9 @@ final class PermissionGuideModel {
                 kind: kind,
                 eyebrow: "APP RESTRICTION",
                 title: "앱 사용 제한 권한이 필요해요",
-                message: "개인용 앱 사용 제한을 다시 승인한 뒤 제한할 앱을 다시 선택해 주세요. 이전 앱 선택이 그대로 유효하다고 가정하지 않아요.",
+                message: "개인용 앱 사용 제한을 승인해 주세요. 제한할 앱은 규칙 편집 화면의 시스템 선택기에서 선택할 수 있어요.",
                 capabilityItems: [makeCapabilityItem(.familyControls)],
-                primaryAction: .reauthorizeAndReselectApplications,
+                primaryAction: .requestFamilyControlsAuthorization,
                 secondaryAction: nil
             )
         case .location:

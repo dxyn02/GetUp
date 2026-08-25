@@ -8,7 +8,8 @@ Phase 7 마무리 및 교차 관심사 진행 중
 
 ## 진행 중
 T083 — 자동 latency 100회 계측과 결과 형식은 구현·검증했으며, 실제 `ManagedSettingsStore`와 선택
-앱 사용 가능 상태의 실기기 관찰은 BLK-010 해결을 기다리는 중
+앱 사용 가능 상태의 실기기 관찰을 진행 중. 첫 실기기 설치에서 발견한 화면 letterboxing과
+Family Controls 승인 진입 결함을 수정하고 재검증 대기 중
 
 ## 마지막 완료 작업
 T082 — Family Controls 배포 entitlement·App Group 승인 절차와 현재 증적 상태를 문서화함
@@ -18,13 +19,22 @@ T083 — 승인된 entitlement·profile을 사용한 실기기 활성화·해제
 
 ## 차단 상태
 BLK-010 열림. `com.dxyn02.GetUp` namespace의 네 App ID 등록과
-`group.com.dxyn02.GetUp` 할당은 사용자 확인됐으며, extension별 Family Controls 배포 `Assigned`·
-`Provisioning Support`, 갱신된 profile과 서명 archive 증적이 필요함.
+`group.com.dxyn02.GetUp` 할당, Family Controls Distribution `Assigned`와 갱신 profile을 사용한
+실기기 설치·실행은 사용자 확인됐으며, extension별 서명 entitlement와 archive 증적이 추가로 필요함.
 
 ## 계획 갱신 필요
 없음. 규칙 삭제 UI의 코드·Figma 불일치를 T060·T061로 보정한 뒤 US3 테스트를 시작하도록 계획을 갱신했다.
 
 ## 테스트 상태
+2026-08-25 첫 실기기 실행에서 앱이 화면 중앙의 구형 호환 canvas로 표시되고 Family Controls
+복구 버튼이 앱별 Settings로 이동하는 결함을 확인했다. 메인 앱 `Info.plist`에 `UILaunchScreen`을
+선언해 native 전체 화면 실행을 복구하고, Family Controls action을
+`AuthorizationCenter.requestAuthorization(for: .individual)` 직접 호출로 변경했다. 위치와
+Background App Refresh의 Settings action은 유지했다. 관련 모델·UI 회귀를 갱신했으며 iPhone 17 Pro
+iOS 26.5 Simulator에서 전체 `GetUpTests`와 `UserStory4PermissionGuidanceUITests`가 모두 통과했다.
+`Info.plist` 문법과 `git diff --check`도 통과했다. 실제 승인 alert·생체 인증 sheet와 letterboxing
+제거는 수정본을 실기기에 재설치해 확인해야 한다.
+
 Apple Developer에서 기존 `com.getup.GetUp`을 사용할 수 없어 사용자가 등록 가능한
 `com.dxyn02.GetUp` namespace로 네 App ID를 등록하고 `group.com.dxyn02.GetUp`을 모두 할당했다.
 Xcode가 만든 네 target Bundle ID·entitlement 변경을 보존하고 `Configuration/Base.xcconfig`, 진단

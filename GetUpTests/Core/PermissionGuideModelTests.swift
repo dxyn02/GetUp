@@ -34,8 +34,8 @@ struct PermissionGuideModelTests {
         ])
     }
 
-    @Test("Recovery starts with Family Controls and retains app reselection")
-    func familyControlsRecoveryRequiresApplicationReselection() {
+    @Test("Family Controls recovery requests authorization and closes after approval")
+    func familyControlsRecoveryRequestsSystemAuthorization() {
         let model = makeModel(familyControls: .denied)
 
         model.beginPermissionSetup()
@@ -43,17 +43,13 @@ struct PermissionGuideModelTests {
         #expect(model.requiresApplicationReselection)
         #expect(
             model.currentScreen?.primaryAction
-                == .reauthorizeAndReselectApplications
+                == .requestFamilyControlsAuthorization
         )
 
         model.update(
             authorization: TestFixtures.makeAuthorization(),
             presentationState: .inactive
         )
-        #expect(model.currentScreen?.kind == .familyControls)
-        #expect(model.requiresApplicationReselection)
-
-        model.markApplicationsReselected()
         #expect(!model.requiresApplicationReselection)
         #expect(!model.isPresented)
     }
