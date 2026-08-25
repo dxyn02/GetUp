@@ -55,6 +55,59 @@ enum PermissionGuidePresentationMode: Equatable, Sendable {
     case recovery
 }
 
+struct PermissionOnboardingStateStore {
+    private static let liveKey = "permissionOnboarding.hasBeenPresented.v1"
+
+    private let defaults: UserDefaults
+    private let key: String
+
+    init(
+        defaults: UserDefaults = .standard,
+        key: String = Self.liveKey
+    ) {
+        self.defaults = defaults
+        self.key = key
+    }
+
+    var hasBeenPresented: Bool {
+        defaults.bool(forKey: key)
+    }
+
+    func markPresented() {
+        defaults.set(true, forKey: key)
+    }
+
+    func reset() {
+        defaults.removeObject(forKey: key)
+    }
+}
+
+@MainActor
+enum PermissionGuideLaunchRouter {
+    static func makeInitialModel(
+        authorization: AuthorizationSnapshot,
+        presentationState: RestrictionPresentationState,
+        onboardingStateStore: PermissionOnboardingStateStore
+    ) -> PermissionGuideModel {
+        let presentationMode: PermissionGuidePresentationMode
+        if onboardingStateStore.hasBeenPresented {
+            presentationMode = .recovery
+        } else {
+            onboardingStateStore.markPresented()
+            let isFreshAuthorizationState =
+                authorization.familyControls == .notDetermined
+                && authorization.locationAuthorization == .notDetermined
+            presentationMode = isFreshAuthorizationState ? .onboarding : .recovery
+        }
+
+        return PermissionGuideModel(
+            authorization: authorization,
+            presentationState: presentationState,
+            presentationMode: presentationMode
+        )
+    }
+}
+
 enum PermissionGuideAction: Equatable, Hashable, Sendable {
     case next
     case requestFamilyControlsAuthorization

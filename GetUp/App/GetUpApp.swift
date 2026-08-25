@@ -30,6 +30,7 @@ private struct GetUpRootView: View {
     private let applicationSelectionOverride: (@MainActor () -> FamilyActivitySelection?)?
     private let showsRestrictionProbe: Bool
     private let permissionGuideRetryResult: String?
+    private let permissionOnboardingStateStore: PermissionOnboardingStateStore
 
     init(environment: AppEnvironment) {
         _model = State(initialValue: environment.model)
@@ -40,6 +41,7 @@ private struct GetUpRootView: View {
         applicationSelectionOverride = environment.applicationSelectionOverride
         showsRestrictionProbe = environment.showsRestrictionProbe
         permissionGuideRetryResult = environment.permissionGuideRetryResult
+        permissionOnboardingStateStore = environment.permissionOnboardingStateStore
     }
 
     var body: some View {
@@ -200,9 +202,10 @@ private struct GetUpRootView: View {
             return
         }
 
-        let initialModel = PermissionGuideModel(
+        let initialModel = PermissionGuideLaunchRouter.makeInitialModel(
             authorization: authorization,
-            presentationState: presentationState
+            presentationState: presentationState,
+            onboardingStateStore: permissionOnboardingStateStore
         )
         permissionGuideModel = initialModel
     }
@@ -725,6 +728,7 @@ private struct AppEnvironment {
     let showsRestrictionProbe: Bool
     let permissionGuideModel: PermissionGuideModel?
     let permissionGuideRetryResult: String?
+    let permissionOnboardingStateStore: PermissionOnboardingStateStore
 
     static func live() throws -> AppEnvironment {
         let container = try DependencyContainer.live()
@@ -751,7 +755,8 @@ private struct AppEnvironment {
             applicationSelectionOverride: nil,
             showsRestrictionProbe: false,
             permissionGuideModel: nil,
-            permissionGuideRetryResult: nil
+            permissionGuideRetryResult: nil,
+            permissionOnboardingStateStore: PermissionOnboardingStateStore()
         )
     }
 }
@@ -778,6 +783,9 @@ private enum UITestConfiguration {
         let permissionGuideRetryResult = value(
             after: "--ui-test-location-retry-result"
         )
+        let permissionOnboardingStateStore = PermissionOnboardingStateStore(
+            key: "permissionOnboarding.hasBeenPresented.uiTest.\(storeID)"
+        )
         let fileManager = FileManager.default
         let root = fileManager.urls(for: .cachesDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("GetUpUITests", isDirectory: true)
@@ -785,6 +793,9 @@ private enum UITestConfiguration {
 
         if shouldReset, fileManager.fileExists(atPath: root.path) {
             try fileManager.removeItem(at: root)
+        }
+        if shouldReset {
+            permissionOnboardingStateStore.reset()
         }
         try fileManager.createDirectory(at: root, withIntermediateDirectories: true)
 
@@ -870,13 +881,18 @@ private enum UITestConfiguration {
             defaultCoordinate: fixtures.home.coordinate,
             applicationSelectionOverride: selectionOverride,
             showsRestrictionProbe: scenario == "restriction-activation",
-            permissionGuideModel: permissionGuideModel(for: scenario),
-            permissionGuideRetryResult: permissionGuideRetryResult
+            permissionGuideModel: permissionGuideModel(
+                for: scenario,
+                onboardingStateStore: permissionOnboardingStateStore
+            ),
+            permissionGuideRetryResult: permissionGuideRetryResult,
+            permissionOnboardingStateStore: permissionOnboardingStateStore
         )
     }
 
     private static func permissionGuideModel(
-        for scenario: String?
+        for scenario: String?,
+        onboardingStateStore: PermissionOnboardingStateStore
     ) -> PermissionGuideModel? {
         let approved = AuthorizationSnapshot(
             familyControls: .approved,
@@ -996,6 +1012,19 @@ private enum UITestConfiguration {
                 authorization: approved,
                 presentationState: .inactive,
                 presentationMode: .recovery
+            )
+        case "permission-onboarding-persistence":
+            return PermissionGuideLaunchRouter.makeInitialModel(
+                authorization: AuthorizationSnapshot(
+                    familyControls: .notDetermined,
+                    locationAuthorization: .notDetermined,
+                    locationAccuracy: .full,
+                    backgroundRefresh: .available
+                ),
+                presentationState: .permissionRequired(
+                    missingPermissions: [.familyControls, .alwaysLocation]
+                ),
+                onboardingStateStore: onboardingStateStore
             )
         case "location-unavailable-inactive":
             return PermissionGuideModel(

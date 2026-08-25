@@ -100,6 +100,65 @@ struct PermissionGuideModelTests {
         #expect(!model.isPresented)
     }
 
+    @Test("Permission onboarding is presented only once across app launches")
+    func permissionOnboardingPersistsFirstPresentation() {
+        let suiteName = "PermissionGuideModelTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let store = PermissionOnboardingStateStore(
+            defaults: defaults,
+            key: "hasPresented"
+        )
+
+        let firstLaunch = PermissionGuideLaunchRouter.makeInitialModel(
+            authorization: TestFixtures.makeAuthorization(
+                familyControls: .notDetermined,
+                locationAuthorization: .notDetermined
+            ),
+            presentationState: .permissionRequired(
+                missingPermissions: [.familyControls, .alwaysLocation]
+            ),
+            onboardingStateStore: store
+        )
+        let secondLaunch = PermissionGuideLaunchRouter.makeInitialModel(
+            authorization: TestFixtures.makeAuthorization(
+                familyControls: .notDetermined,
+                locationAuthorization: .notDetermined
+            ),
+            presentationState: .permissionRequired(
+                missingPermissions: [.familyControls, .alwaysLocation]
+            ),
+            onboardingStateStore: store
+        )
+
+        #expect(firstLaunch.presentationMode == .onboarding)
+        #expect(firstLaunch.currentScreen?.kind == .overview)
+        #expect(store.hasBeenPresented)
+        #expect(secondLaunch.presentationMode == .recovery)
+        #expect(!secondLaunch.isPresented)
+    }
+
+    @Test("A legacy install with determined permissions migrates directly to recovery")
+    func determinedPermissionsWithoutMarkerSkipOnboarding() {
+        let suiteName = "PermissionGuideModelTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let store = PermissionOnboardingStateStore(
+            defaults: defaults,
+            key: "hasPresented"
+        )
+
+        let model = PermissionGuideLaunchRouter.makeInitialModel(
+            authorization: TestFixtures.makeAuthorization(),
+            presentationState: .inactive,
+            onboardingStateStore: store
+        )
+
+        #expect(store.hasBeenPresented)
+        #expect(model.presentationMode == .recovery)
+        #expect(!model.isPresented)
+    }
+
     @Test("Recovery opens only the denied Family Controls screen")
     func recoveryRoutesDirectlyToDeniedFamilyControls() {
         let model = PermissionGuideModel(

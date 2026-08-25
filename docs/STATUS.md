@@ -11,8 +11,8 @@ T083 — 자동 latency 100회 계측과 결과 형식은 구현·검증했으�
 앱 사용 가능 상태의 실기기 관찰을 진행 중
 
 ## 마지막 완료 작업
-T091 — 권한 안내를 온보딩과 일반 복구로 분리하고, 일반 실행에서는 거부·요구 수준 미달 권한의
-상세 복구 화면만 직접 표시하도록 변경함
+T092 — 권한 온보딩 표시 여부를 영구 저장해 앱 종료·재실행 뒤에는 전체 권한 흐름을 반복하지 않고
+거부·요구 수준 미달 권한의 복구 화면만 표시하도록 변경함
 
 ## 다음 작업
 T083 — 승인된 entitlement·profile을 사용한 실기기 활성화·해제 latency 관찰 완료
@@ -26,6 +26,15 @@ BLK-010 열림. `com.dxyn02.GetUp` namespace의 네 App ID 등록과
 없음. 규칙 삭제 UI의 코드·Figma 불일치를 T060·T061로 보정한 뒤 US3 테스트를 시작하도록 계획을 갱신했다.
 
 ## 테스트 상태
+2026-08-25 T092에서 `PermissionOnboardingStateStore`와 `PermissionGuideLaunchRouter`를 추가해 권한
+온보딩의 최초 표시를 versioned `UserDefaults` 표식으로 영구 보존했다. 첫 화면 생성 즉시 표식을
+기록하므로 온보딩 도중 앱 프로세스가 종료되어도 다음 실행은 일반 복구 모드로 진입한다. 전용 단위
+테스트와 동일 UI test 저장소를 사용하는 최초 실행 → 앱 종료 → 재실행 회귀가 통과했다. 기존 설치는
+이미 결정된 Family Controls 또는 위치 상태를 감지해 업데이트 직후에도 온보딩을 다시 표시하지 않는다.
+iPhone 17 Pro iOS 26.5 Simulator를 브라우저에 미러링해 같은 절차를 직접 수행했으며, 재실행 화면이
+권한 개요 없이 홈으로 진입하는 것을 확인했다. 전체 `GetUpTests`는 동적 사례를 포함해 166회,
+`UserStory4PermissionGuidanceUITests`는 재실행 회귀를 포함해 13개가 실패·skip 없이 통과했다.
+
 2026-08-25 T091에서 `PermissionGuidePresentationMode`를 도입해 온보딩은 권한 개요와 승인 상태를
 순차 확인하고, 일반 실행·foreground 복구는 승인 상태에서 아무 화면도 표시하지 않도록 분리했다.
 Family Controls `denied`는 Family Controls 화면으로, Always location 미충족 또는 Full Accuracy

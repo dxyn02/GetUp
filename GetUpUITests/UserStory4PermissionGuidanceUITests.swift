@@ -30,6 +30,31 @@ final class UserStory4PermissionGuidanceUITests: XCTestCase {
     }
 
     @MainActor
+    func testPermissionOnboardingDoesNotReturnAfterAppRelaunch() {
+        let storeID = "permissionOnboardingPersistence"
+        let firstLaunch = launchApp(
+            scenario: "permission-onboarding-persistence",
+            storeID: storeID,
+            resetsStore: true
+        )
+
+        assertPermissionScreen(
+            titled: "원활한 사용을 위해 아래 권한이 필요해요",
+            in: firstLaunch
+        )
+        firstLaunch.terminate()
+
+        let secondLaunch = launchApp(
+            scenario: "permission-onboarding-persistence",
+            storeID: storeID,
+            resetsStore: false
+        )
+
+        XCTAssertTrue(secondLaunch.buttons["home.createRule"].waitForExistence(timeout: 2))
+        XCTAssertFalse(secondLaunch.otherElements["permissionGuide.screen"].exists)
+    }
+
+    @MainActor
     func testUndeterminedFamilyControlsShowsDisabledNextDuringSystemRequest() {
         let app = launchApp(scenario: "permission-family-controls-undetermined")
 
@@ -173,15 +198,19 @@ final class UserStory4PermissionGuidanceUITests: XCTestCase {
     @MainActor
     private func launchApp(
         scenario: String,
-        locationRetryResult: String? = nil
+        locationRetryResult: String? = nil,
+        storeID: String = #function,
+        resetsStore: Bool = true
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [
             "--ui-testing",
-            "--ui-test-store-id", #function,
-            "--ui-test-reset-store",
+            "--ui-test-store-id", storeID,
             "--ui-test-scenario", scenario,
         ]
+        if resetsStore {
+            app.launchArguments.append("--ui-test-reset-store")
+        }
         if let locationRetryResult {
             app.launchArguments += [
                 "--ui-test-location-retry-result", locationRetryResult,
