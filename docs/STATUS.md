@@ -10,10 +10,10 @@ Phase 7 마무리 및 교차 관심사 진행 중
 없음
 
 ## 마지막 완료 작업
-T080 — Dynamic Type·VoiceOver·Reduce Motion·명암·색상 외 상태 표현을 검증함
+T081 — 좌표·앱 token이 log·analytics에 기록되지 않도록 검증·보강함
 
 ## 다음 작업
-T081 — 진단 log·analytics의 좌표·앱 token 비기록 검증 및 보강
+T082 — Family Controls 배포 entitlement와 App Group 신청·승인 절차 문서화
 
 ## 차단 상태
 없음. BLK-009은 사용자의 1안 선택으로 해결됨.
@@ -22,6 +22,17 @@ T081 — 진단 log·analytics의 좌표·앱 token 비기록 검증 및 보강
 없음. 규칙 삭제 UI의 코드·Figma 불일치를 T060·T061로 보정한 뒤 US3 테스트를 시작하도록 계획을 갱신했다.
 
 ## 테스트 상태
+T081에서 `DiagnosticsLogger`의 최종 출력 경계를 임의 문자열 대신 닫힌 `DiagnosticEvent`만 받는
+`DiagnosticEventWriting`으로 분리했다. production writer는 기존과 동일하게 안전한 고정 code만
+`OSLog`에 public 값으로 기록하며, 테스트 writer로 실제 출력 직전 메시지와 log level을 검증할 수
+있다. `PrivacyLoggingTests` 3개를 추가해 좌표·경도·horizontal accuracy·장소명·opaque app token을
+포함한 알 수 없는 오류 설명과 저장소 file name·schema·revision 세부값이 writer에 도달하지 않고,
+모든 operation·result·error가 닫힌 code로만 기록되며 success·cancelled·failure가 각각
+info·notice·error 수준을 유지하는지 확인했다. production source 전역 감사에서 `OSLog` 외 print,
+별도 logger, analytics·telemetry 경로는 발견되지 않았다. iPhone 17 Pro iOS 26.5 Simulator에서 T081
+전용 test 3개와 전체 `GetUpTests` 144개 test case가 동적 인자를 포함해 총 187회 모두 통과했으며
+실패·skip은 없다.
+
 T080에서 `AccessibilityUITests.swift`를 추가해 최대 Dynamic Type `AX5`에서 규칙 편집과 권한 복구의
 핵심 내용·하단 행동이 손실 없이 노출되고 최소 `44×44pt` touch target을 유지하는지 검증했다. 활성
 제한의 VoiceOver용 상태·제목·시간·위치·앱 수·수정 차단 정보가 시각적 읽기 순서와 명시적 문구로

@@ -69,23 +69,56 @@ protocol DiagnosticsLogging: Sendable {
     func record(_ error: any Error, operation: DiagnosticOperation)
 }
 
-struct DiagnosticsLogger: DiagnosticsLogging {
+enum DiagnosticLogLevel: Equatable, Sendable {
+    case info
+    case notice
+    case error
+}
+
+protocol DiagnosticEventWriting: Sendable {
+    func write(_ event: DiagnosticEvent, level: DiagnosticLogLevel)
+}
+
+private struct OSLogDiagnosticEventWriter: DiagnosticEventWriting {
     private let logger: Logger
+
+    init(subsystem: String) {
+        logger = Logger(subsystem: subsystem, category: "diagnostics")
+    }
+
+    func write(_ event: DiagnosticEvent, level: DiagnosticLogLevel) {
+        switch level {
+        case .info:
+            logger.info("\(event.logMessage, privacy: .public)")
+        case .notice:
+            logger.notice("\(event.logMessage, privacy: .public)")
+        case .error:
+            logger.error("\(event.logMessage, privacy: .public)")
+        }
+    }
+}
+
+struct DiagnosticsLogger: DiagnosticsLogging {
+    private let writer: any DiagnosticEventWriting
 
     init(
         subsystem: String = Bundle.main.bundleIdentifier ?? "com.getup.GetUp"
     ) {
-        logger = Logger(subsystem: subsystem, category: "diagnostics")
+        writer = OSLogDiagnosticEventWriter(subsystem: subsystem)
+    }
+
+    init(writer: any DiagnosticEventWriting) {
+        self.writer = writer
     }
 
     func record(_ event: DiagnosticEvent) {
         switch event.result {
         case .success:
-            logger.info("\(event.logMessage, privacy: .public)")
+            writer.write(event, level: .info)
         case .failure(.cancelled):
-            logger.notice("\(event.logMessage, privacy: .public)")
+            writer.write(event, level: .notice)
         case .failure:
-            logger.error("\(event.logMessage, privacy: .public)")
+            writer.write(event, level: .error)
         }
     }
 

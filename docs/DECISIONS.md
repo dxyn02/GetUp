@@ -179,6 +179,12 @@ process마다 하나의 `SharedSnapshotRepository` actor를 생성해 `RuleRepos
 민감 데이터 수집 자체를 막지 못하므로 선택하지 않는다. 필요한 운영 진단은 안정적인 operation과
 오류 분류만으로 수행하고 상세 개인정보는 처음부터 event에 포함하지 않는다.
 
+**구현 메모 (2026-08-25)**: T081에서 `DiagnosticsLogger`의 출력 경계를
+`DiagnosticEventWriting`으로 분리하되 writer가 임의 문자열이나 metadata를 받지 않고 닫힌
+`DiagnosticEvent`만 받도록 제한했다. production writer는 event의 고정 `logMessage`만 `OSLog`에
+기록하고, 테스트 writer는 좌표·정확도·장소명·opaque app token을 포함한 오류 입력이 최종 메시지에
+도달하지 않는지 검증한다. production source에는 이 경로 외 logger·analytics·telemetry가 없다.
+
 ## DEC-014 — 최소 지원 운영체제를 iOS 26으로 상향
 
 **날짜**: 2026-08-21
