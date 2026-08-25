@@ -10,18 +10,29 @@ Phase 7 마무리 및 교차 관심사 진행 중
 없음
 
 ## 마지막 완료 작업
-T081 — 좌표·앱 token이 log·analytics에 기록되지 않도록 검증·보강함
+T082 — Family Controls 배포 entitlement·App Group 승인 절차와 현재 증적 상태를 문서화함
 
 ## 다음 작업
-T082 — Family Controls 배포 entitlement와 App Group 신청·승인 절차 문서화
+T083 — 제한 활성화·해제 latency 100회 이상 계측과 결과 형식 구현
 
 ## 차단 상태
-없음. BLK-009은 사용자의 1안 선택으로 해결됨.
+BLK-010 열림. Apple Developer 계정의 네 Bundle ID별 Family Controls 배포 승인, App Group 할당과
+갱신된 provisioning profile 증적이 필요함.
 
 ## 계획 갱신 필요
 없음. 규칙 삭제 UI의 코드·Figma 불일치를 T060·T061로 보정한 뒤 US3 테스트를 시작하도록 계획을 갱신했다.
 
 ## 테스트 상태
+T082에서 Apple 2026 공식 Family Controls·Xcode·Developer Account 문서를 기준으로
+`docs/ENTITLEMENTS.md`를 작성했다. app과 세 Screen Time extension의 resolved Bundle ID, 각 entitlement
+파일, `com.apple.developer.family-controls = true`와 공통 `group.com.getup.GetUp` 선언은 로컬에서
+확인했다. 계정의 App ID 등록, Bundle ID별 배포 요청 `Assigned` 상태, provisioning support, App Group
+할당, Development·App Store Connect profile과 서명 archive 증적은 저장소에 없어 `확인 필요`로
+기록하고 BLK-010을 열었다. 문서에는 Account Holder의 네 건 요청, Account Holder·Admin의 App Group
+등록·할당, 자동·수동 signing별 profile 갱신, 개인정보를 제거한 증적 기록표와 archive 검증 명령을
+포함했다. 문서 task이므로 code test는 실행하지 않았으며 네 entitlement의 plist, target별 resolved
+build setting, `project.pbxproj` 문법과 `git diff --check`를 검증한다.
+
 T081에서 `DiagnosticsLogger`의 최종 출력 경계를 임의 문자열 대신 닫힌 `DiagnosticEvent`만 받는
 `DiagnosticEventWriting`으로 분리했다. production writer는 기존과 동일하게 안전한 고정 code만
 `OSLog`에 public 값으로 기록하며, 테스트 writer로 실제 출력 직전 메시지와 log level을 검증할 수
