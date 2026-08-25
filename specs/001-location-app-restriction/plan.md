@@ -41,7 +41,8 @@ Shield Action 확장
 30초 이내로 하며, 자동 계측에서 활성화 경로의 p95와 해제 경로 전체 통과율을 기록한다.
 물리적 경계 통과부터 이벤트 전달까지는 별도로 관찰하고 기록한다.
 
-**Constraints**: 완전 로컬 동작, 여러 독립 규칙, 직접 시간 입력, 500m/1km/2km/3km/4km/5km 반경, Always 및 Full Accuracy
+**Constraints**: 완전 로컬 동작, 여러 독립 규칙, 15분 이상 12시간 이하 직접 시간 입력,
+중복 없는 10자 이내 저장 장소 이름, 500m/1km/2km/3km/4km/5km 반경, Always 및 Full Accuracy
 위치 권한, 개인용 Family Controls 승인, App Group, Family Controls 배포 entitlement 필요;
 Core Location region monitoring과 event 시점의 단발성 위치 확인을 사용하며 지속적인 background
 location update나 일반 background processing을 사용하지 않는다. 재부팅 후 첫 잠금 해제 전에는

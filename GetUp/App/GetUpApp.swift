@@ -253,7 +253,7 @@ private struct HomeView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 22) {
                 header
 
                 if model.homeRules.isEmpty {
@@ -263,7 +263,8 @@ private struct HomeView: View {
                 }
             }
             .padding(.horizontal, 20)
-            .padding(.vertical, 24)
+            .padding(.top, 12)
+            .padding(.bottom, 24)
         }
         .background(HomeColor.background.ignoresSafeArea())
         .foregroundStyle(HomeColor.textPrimary)
@@ -273,43 +274,64 @@ private struct HomeView: View {
                 RestrictionActivationProbeView(
                     isRestrictionActive: model.restrictionStatus.hasActiveRestriction
                 )
-            } else if !model.homeRules.isEmpty {
-                newRuleButton
             }
         }
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        HStack {
             Text("GETUP")
-                .font(.caption)
+                .font(.title3)
                 .fontWeight(.bold)
-                .foregroundStyle(HomeColor.accent)
-
-            Text(model.homeRules.isEmpty ? "집중을 시작해 볼까요?" : "준비된 규칙")
-                .font(.largeTitle)
-                .fontWeight(.bold)
+            Spacer()
+            Button {
+                model.beginCreatingRule()
+            } label: {
+                Image(systemName: "plus")
+                    .font(.title2)
+                    .foregroundStyle(HomeColor.accent)
+                    .frame(width: 48, height: 48)
+                    .background(HomeColor.surfaceElevated, in: .circle)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("새 규칙")
+            .accessibilityIdentifier("home.createRule")
         }
     }
 
     private var emptyState: some View {
-        VStack(spacing: 22) {
-            Image(systemName: "door.left.hand.open")
-                .font(.system(size: 58, weight: .light))
-                .foregroundStyle(HomeColor.accent)
-                .accessibilityHidden(true)
-
-            VStack(spacing: 8) {
-                Text("시간과 장소를 정하면")
-                    .font(.title2)
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("NO FOCUS RULES")
+                    .font(.caption2)
                     .fontWeight(.bold)
-                Text("그곳을 벗어나거나 시간이 끝날 때까지\n선택한 앱에서 잠시 멀어질 수 있어요.")
-                    .font(.body)
+                    .foregroundStyle(HomeColor.textTertiary)
+                Text("첫 규칙을\n만들어보세요")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                Text("소중한 내 시간을 지켜요")
+                    .font(.headline)
                     .foregroundStyle(HomeColor.textSecondary)
-                    .multilineTextAlignment(.center)
             }
 
-            Button("첫 규칙 만들기") {
+            VStack(spacing: 24) {
+                Image(systemName: "door.left.hand.open")
+                    .font(.system(size: 72, weight: .light))
+                    .foregroundStyle(HomeColor.accent)
+                    .frame(maxWidth: .infinity)
+                    .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 14) {
+                    emptyInstruction("01", "기상 후 휴대폰 보는 시간을 줄여봐요")
+                    emptyInstruction("02", "취침 전 휴대폰 보는 시간을 줄여봐요")
+                    emptyInstruction("03", "근무 또는 학습 중 휴대폰 보는 시간을 줄여봐요")
+                }
+            }
+            .padding(24)
+            .frame(maxWidth: .infinity)
+            .background(HomeColor.surface, in: .rect(cornerRadius: 28))
+
+            Button("새 규칙 만들기") {
                 model.beginCreatingRule()
             }
             .fontWeight(.bold)
@@ -320,9 +342,18 @@ private struct HomeView: View {
             .foregroundStyle(HomeColor.background)
             .accessibilityIdentifier("home.createRule")
         }
-        .frame(maxWidth: .infinity)
-        .padding(24)
-        .background(HomeColor.surface, in: .rect(cornerRadius: 28))
+    }
+
+    private func emptyInstruction(_ number: String, _ text: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(number)
+                .font(.caption)
+                .fontWeight(.bold)
+                .foregroundStyle(HomeColor.accent)
+            Text(text)
+                .font(.body)
+                .fontWeight(.semibold)
+        }
     }
 
     private var rulePager: some View {
@@ -339,7 +370,11 @@ private struct HomeView: View {
                             .padding(.horizontal, 2)
                             .tag(item.id)
                         } else {
-                            HomeRuleCard(item: item) {
+                            HomeRuleCard(
+                                item: item,
+                                rulePosition: index + 1,
+                                ruleCount: model.homeRules.count
+                            ) {
                                 model.beginEditingRule(id: item.id)
                             }
                             .padding(.horizontal, 2)
@@ -353,32 +388,21 @@ private struct HomeView: View {
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("home.rulePager")
 
-            Text(pageIndicatorLabel)
-                .font(.footnote)
-                .fontWeight(.bold)
-                .foregroundStyle(HomeColor.textSecondary)
+            HStack(spacing: 7) {
+                ForEach(model.homeRules.indices, id: \.self) { index in
+                    Circle()
+                        .fill(index == selectedIndex ? HomeColor.accent : HomeColor.textTertiary)
+                        .frame(width: 8, height: 8)
+                }
+            }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(pageIndicatorLabel)
                 .accessibilityIdentifier("home.rulePageIndicator")
 
-            Text("좌우로 밀어 모든 규칙 보기")
+            Text("좌우로 밀어 보기")
                 .font(.caption)
                 .foregroundStyle(HomeColor.textTertiary)
         }
-    }
-
-    private var newRuleButton: some View {
-        Button("새 규칙") {
-            model.beginCreatingRule()
-        }
-        .fontWeight(.bold)
-        .frame(maxWidth: .infinity, minHeight: 56)
-        .buttonStyle(.borderedProminent)
-        .buttonBorderShape(.roundedRectangle(radius: 18))
-        .tint(HomeColor.accent)
-        .foregroundStyle(HomeColor.background)
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-        .background(HomeColor.background)
-        .accessibilityIdentifier("home.createRule")
     }
 
     private var selectedRuleBinding: Binding<UUID> {
@@ -389,134 +413,145 @@ private struct HomeView: View {
     }
 
     private var pageIndicatorLabel: String {
-        let selectedIndex = model.homeRules.firstIndex {
-            $0.id == model.selectedRuleID
-        } ?? 0
         return "\(selectedIndex + 1) / \(model.homeRules.count)"
     }
 
+    private var selectedIndex: Int {
+        model.homeRules.firstIndex { $0.id == model.selectedRuleID } ?? 0
+    }
+
     private var rulePagerHeight: CGFloat {
-        dynamicTypeSize.isAccessibilitySize ? 680 : 440
+        dynamicTypeSize.isAccessibilitySize ? 760 : 548
     }
 }
 
 private struct HomeRuleCard: View {
     let item: HomeRuleItem
+    let rulePosition: Int
+    let ruleCount: Int
     let onEdit: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(item.isScheduledToday ? "TODAY" : "NEXT")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundStyle(HomeColor.accent)
-                        .accessibilityIdentifier("restrictionStatus.inactive")
-                    Text(item.rule.name ?? item.savedPlace.name)
-                        .font(.title)
-                        .fontWeight(.bold)
-                }
+        VStack(alignment: .leading, spacing: 10) {
+            Text(occurrenceEyebrow)
+                .font(.caption2)
+                .fontWeight(.bold)
+                .foregroundStyle(HomeColor.accent)
+                .accessibilityIdentifier("restrictionStatus.inactive")
+            Text(item.rule.name ?? item.savedPlace.name)
+                .font(.largeTitle)
+                .fontWeight(.bold)
 
-                Spacer()
-
-                Button("수정") {
-                    onEdit()
-                }
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .frame(minWidth: 44, minHeight: 44)
-                .accessibilityIdentifier("home.ruleCard.\(item.accessibilityID).edit")
-            }
-
-            Divider().overlay(HomeColor.surfaceElevated)
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text(timeLabel)
-                    .font(.title2)
+            VStack(alignment: .leading, spacing: 16) {
+                Text("RULE \(rulePosition) OF \(ruleCount) · \(weekdayLabel)")
+                    .font(.caption2)
                     .fontWeight(.bold)
+                    .foregroundStyle(HomeColor.textTertiary)
+                    .accessibilityIdentifier("home.ruleCard.\(item.accessibilityID).schedule")
+
+                timeText
                     .accessibilityIdentifier("home.ruleCard.\(item.accessibilityID).time")
 
-                Text(weekdayLabel)
+                Divider().overlay(HomeColor.disabled)
+
+                HStack(alignment: .top, spacing: 18) {
+                    Image(systemName: "door.left.hand.open")
+                        .font(.system(size: 52, weight: .light))
+                        .foregroundStyle(HomeColor.accent)
+                        .frame(width: 78, height: 78)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("\(item.savedPlace.name)에서 \(radiusLabel) 나가면")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                        Text("선택한 앱 \(item.applicationCount)개를\n다시 사용할 수 있어요")
+                            .font(.subheadline)
+                            .foregroundStyle(HomeColor.textSecondary)
+                    }
+                }
+
+                conditionRow(label: "LOCATION", value: "\(item.savedPlace.name) · \(radiusLabel)", identifier: "home.ruleCard.\(item.accessibilityID).location")
+                conditionRow(label: "BLOCKED", value: "\(item.applicationCount)개 앱", identifier: "home.ruleCard.\(item.accessibilityID).applications")
+
+                Spacer(minLength: 0)
+                Button("규칙 수정", action: onEdit)
                     .font(.subheadline)
-                    .foregroundStyle(HomeColor.textSecondary)
-                    .accessibilityIdentifier("home.ruleCard.\(item.accessibilityID).schedule")
+                    .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity, minHeight: 42)
+                    .background(HomeColor.surfaceElevated, in: .rect(cornerRadius: 14))
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("home.ruleCard.\(item.accessibilityID).edit")
             }
-
-            VStack(spacing: 0) {
-                conditionRow(
-                    icon: "location.fill",
-                    text: "\(item.savedPlace.name) · \(RadiusPicker.displayName(for: item.rule.radius))",
-                    identifier: "home.ruleCard.\(item.accessibilityID).location"
-                )
-                Divider().overlay(HomeColor.surfaceElevated)
-                conditionRow(
-                    icon: "square.grid.3x3.fill",
-                    text: "\(item.applicationCount)개 앱",
-                    identifier: "home.ruleCard.\(item.accessibilityID).applications"
-                )
+            .padding(16)
+            .frame(maxWidth: .infinity, minHeight: 456, alignment: .topLeading)
+            .background(HomeColor.surface, in: .rect(cornerRadius: 28))
+            .overlay {
+                RoundedRectangle(cornerRadius: 28).stroke(HomeColor.accent, lineWidth: 1)
             }
-            .background(HomeColor.surfaceElevated.opacity(0.52), in: .rect(cornerRadius: 18))
-
-            Text(nextOccurrenceLabel)
-                .font(.footnote)
-                .foregroundStyle(HomeColor.textTertiary)
-        }
-        .padding(22)
-        .frame(maxWidth: .infinity, minHeight: 410, alignment: .topLeading)
-        .background(HomeColor.surface, in: .rect(cornerRadius: 28))
-        .overlay {
-            RoundedRectangle(cornerRadius: 28)
-                .stroke(HomeColor.surfaceElevated, lineWidth: 1)
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("home.ruleCard.\(item.accessibilityID)")
     }
 
     private func conditionRow(
-        icon: String,
-        text: String,
+        label: String,
+        value: String,
         identifier: String
     ) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: icon)
+            Image(systemName: label == "LOCATION" ? "scope" : "square.grid.3x3.fill")
                 .foregroundStyle(HomeColor.accent)
-                .frame(width: 24)
+                .frame(width: 18)
                 .accessibilityHidden(true)
-            Text(text)
-                .font(.body)
-                .fontWeight(.semibold)
-                .accessibilityIdentifier(identifier)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(label).font(.caption2).fontWeight(.bold).foregroundStyle(HomeColor.textTertiary)
+                Text(value).font(.subheadline).fontWeight(.bold).accessibilityIdentifier(identifier)
+            }
             Spacer()
         }
         .frame(minHeight: 54)
-        .padding(.horizontal, 14)
     }
 
-    private var timeLabel: String {
-        "\(Self.time(item.rule.startTime))–\(Self.time(item.rule.endTime))"
+    private var timeText: Text {
+        Text(
+            "\(Text(Self.clock(item.rule.startTime)).font(.system(size: 38, weight: .bold))) \(Text(Self.period(item.rule.startTime)).font(.caption).foregroundColor(HomeColor.textSecondary)) \(Text("→").font(.title2).foregroundColor(HomeColor.accent)) \(Text(Self.clock(item.rule.endTime)).font(.system(size: 38, weight: .bold))) \(Text(Self.period(item.rule.endTime)).font(.caption).foregroundColor(HomeColor.textSecondary))"
+        )
     }
 
     private var weekdayLabel: String {
         Weekday.allCases
             .filter(item.rule.weekdays.contains)
-            .map(\.shortKoreanName)
-            .joined(separator: " · ")
+            .map(Self.shortWeekday)
+            .joined(separator: "–")
     }
 
-    private var nextOccurrenceLabel: String {
+    private var occurrenceEyebrow: String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ko_KR")
-        formatter.dateFormat = "M월 d일 EEEE"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "EEEE"
         return item.isScheduledToday
-            ? "오늘 적용되는 규칙"
-            : "다음 적용 · \(formatter.string(from: item.nextStart))"
+            ? "TODAY · \(formatter.string(from: item.nextStart).uppercased())"
+            : "NEXT · \(formatter.string(from: item.nextStart).uppercased())"
     }
 
-    private static func time(_ time: TimeOfDay) -> String {
-        let period = time.hour < 12 ? "AM" : "PM"
+    private var radiusLabel: String { RadiusPicker.displayName(for: item.rule.radius) }
+    private static func clock(_ time: TimeOfDay) -> String {
         let hour = time.hour % 12 == 0 ? 12 : time.hour % 12
-        return String(format: "%02d:%02d %@", hour, time.minute, period)
+        return String(format: "%02d:%02d", hour, time.minute)
+    }
+
+    private static func period(_ time: TimeOfDay) -> String { time.hour < 12 ? "AM" : "PM" }
+
+    private static func shortWeekday(_ weekday: Weekday) -> String {
+        switch weekday {
+        case .monday: "MON"
+        case .tuesday: "TUE"
+        case .wednesday: "WED"
+        case .thursday: "THU"
+        case .friday: "FRI"
+        case .saturday: "SAT"
+        case .sunday: "SUN"
+        }
     }
 }
 

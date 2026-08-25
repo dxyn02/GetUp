@@ -13,13 +13,17 @@
 
 - 권한 요청은 사용자가 기능을 설정하는 맥락에서 단계적으로 수행한다.
 - 권한 미승인 또는 철회 시 새 제한을 적용하지 않는다.
-- 권한 종류와 시스템 설정에서 복구하는 방법을 화면 상태로 제공한다.
+- 위치가 미결정이면 먼저 `앱을 사용하는 동안 허용`을 요청하고 이후 앱 설정에서 `항상 허용`과
+  `정확한 위치`를 켜는 순서를 화면 상태로 제공한다.
+- Background App Refresh는 필수 권한 gate가 아니며 이 상태만으로 foreground 권한 안내를 열지 않는다.
+- Background App Refresh는 앱별 설정에서 변경할 수 없으므로 시스템 전체
+  `설정 > 일반 > 백그라운드 앱 새로 고침` 경로만 안내하고 앱별 Settings action을 제공하지 않는다.
 - Family Controls 재승인 뒤에는 앱 선택을 다시 확인한다.
 
 ## Schedule Adapter
 
 - 선택 요일마다 안정적인 activity name을 생성한다.
-- 각 schedule은 15분 이상이며 자정 초과 종료를 지원한다.
+- 각 schedule은 15분 이상 12시간 이하이며 자정 초과 종료를 지원한다.
 - 저장 성공 시 기존 등록을 새 rule revision의 일정으로 교체한다.
 - interval start/end callback은 공유 규칙을 읽고 평가 계약을 호출한다.
 - `intervalDidEnd`는 callback 진입 시각을 신뢰 가능한 time event 확인 시각으로 기록하고 저장된 모든

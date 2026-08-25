@@ -220,6 +220,7 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 - [ ] T087 [P] 신규 사용자가 안내 없이 유효 규칙을 저장하는 과제의 참여자 기준·시작·종료·성공 정의와 3분 이내 완료율 측정 절차를 `docs/USABILITY_TEST_PLAN.md`에 작성하고 SC-001 결과를 `docs/USABILITY_TEST_RESULTS.md`에 기록한다
 - [ ] T088 [P] 제한 활성 여부와 권한·위치 문제 해결 방법을 첫 시도에 설명하는 상태별 과제와 85% 이해 기준을 `docs/USABILITY_TEST_PLAN.md`에 작성하고 SC-007 결과를 `docs/USABILITY_TEST_RESULTS.md`에 기록한다
 - [ ] T089 spec·plan·contract·결정 문서 추적성과 알려진 제약, entitlement 승인, 성능·사용성·실기기 검증 결과를 검토해 `docs/DECISIONS.md`, `docs/BLOCKERS.md`, `docs/STATUS.md`를 한국어로 최종 갱신한다
+- [x] T090 [US1] [US2] [US4] 사용자 검수에서 확인된 15분~12시간 wheel 경계, 저장 장소 프리셋·10자·중복 정책, Background App Refresh·Always 안내, foreground 권한 화면 재등장 방지와 홈·활성·장소 하이파이 편차를 코드·테스트·설계 문서에 반영한다
 
 **Checkpoint**: 자동 테스트, 필수 실기기 검증, entitlement 승인 및 SC-001·SC-007 사용성 평가가
 모두 기록된 경우에만 feature 완료로 표시한다.

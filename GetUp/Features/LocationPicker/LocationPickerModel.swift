@@ -9,6 +9,8 @@ enum LocationPickerGuidance: Equatable, Sendable {
     case whenInUseRequired
     case locationUnavailable
     case placeNameRequired
+    case placeNameTooLong
+    case duplicatePlaceName
 }
 
 struct SavedPlaceDraft: Equatable, Sendable {
@@ -45,6 +47,29 @@ final class LocationPickerModel {
             && pinCandidate.longitude.isFinite
             && (-90...90).contains(pinCandidate.latitude)
             && (-180...180).contains(pinCandidate.longitude)
+    }
+
+    var canApplySelection: Bool {
+        canConfirmPinSelection && placeNameValidationGuidance == nil
+    }
+
+    var placeNameValidationGuidance: LocationPickerGuidance? {
+        validationGuidance(for: placeName)
+    }
+
+    private func validationGuidance(for name: String) -> LocationPickerGuidance? {
+        let normalized = SavedPlaceNamePolicy.normalized(name)
+        guard !normalized.isEmpty else { return .placeNameRequired }
+        guard normalized.count <= SavedPlaceNamePolicy.maximumLength else {
+            return .placeNameTooLong
+        }
+        if let duplicate = savedPlaces.first(where: {
+            SavedPlaceNamePolicy.uniquenessKey($0.name)
+                == SavedPlaceNamePolicy.uniquenessKey(normalized)
+        }), duplicate.id != selectedSavedPlaceID {
+            return .duplicatePlaceName
+        }
+        return nil
     }
 
     init(
@@ -114,10 +139,33 @@ final class LocationPickerModel {
         guidance = nil
     }
 
+    func selectPreset(named name: String) {
+        if let saved = savedPlaces.first(where: {
+            SavedPlaceNamePolicy.uniquenessKey($0.name)
+                == SavedPlaceNamePolicy.uniquenessKey(name)
+        }) {
+            selectSavedPlace(id: saved.id)
+            return
+        }
+
+        selectedSavedPlaceID = nil
+        placeName = name
+        guidance = nil
+    }
+
+    func updatePlaceName(_ name: String) {
+        placeName = String(name.prefix(SavedPlaceNamePolicy.maximumLength))
+        if let selectedSavedPlaceID,
+           savedPlacesByID[selectedSavedPlaceID]?.name != placeName {
+            self.selectedSavedPlaceID = nil
+        }
+        guidance = placeNameValidationGuidance
+    }
+
     func confirm(placeName: String) {
-        let normalizedName = placeName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !normalizedName.isEmpty else {
-            guidance = .placeNameRequired
+        let normalizedName = SavedPlaceNamePolicy.normalized(placeName)
+        if let validation = validationGuidance(for: normalizedName) {
+            guidance = validation
             return
         }
         guard let pinCandidate, canConfirmPinSelection else {

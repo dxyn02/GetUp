@@ -43,6 +43,16 @@ struct ScheduleEvaluatorTests {
         )
     }
 
+    @Test("The selectable window accepts 12 hours and rejects longer intervals")
+    func maximumDurationBoundary() {
+        let start = TimeOfDay(hour: 18, minute: 0)
+        #expect(ScheduleEvaluator.isEndTimeSelectable(startTime: start, endTime: TimeOfDay(hour: 6, minute: 0)))
+        #expect(!ScheduleEvaluator.isEndTimeSelectable(startTime: start, endTime: TimeOfDay(hour: 6, minute: 1)))
+        #expect(ScheduleEvaluator.selectableEndTimes(startTime: start).count == 706)
+        #expect(ScheduleEvaluator.selectableEndTimes(startTime: start).first == TimeOfDay(hour: 18, minute: 15))
+        #expect(ScheduleEvaluator.selectableEndTimes(startTime: start).last == TimeOfDay(hour: 6, minute: 0))
+    }
+
     @Test("A same-day interval includes its start and excludes its end")
     func sameDayBoundaries() {
         let calendar = calendar(in: utc)

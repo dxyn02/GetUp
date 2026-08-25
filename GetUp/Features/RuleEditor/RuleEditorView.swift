@@ -22,8 +22,6 @@ struct RuleEditorView: View {
     @State private var presentedTimeBoundary: TimeRangeBoundary?
     @State private var locationPickerModel: LocationPickerModel?
     @State private var isLocationPickerPresented = false
-    @State private var isPlaceNamePromptPresented = false
-    @State private var placeNameInput = ""
     @State private var isApplicationPickerPresented = false
     @State private var applicationPickerGuidance: String?
     @State private var saveState: RuleEditorSaveState = .idle
@@ -93,16 +91,6 @@ struct RuleEditorView: View {
         .navigationDestination(isPresented: $isLocationPickerPresented) {
             locationPickerDestination
         }
-        .alert("장소 이름", isPresented: $isPlaceNamePromptPresented) {
-            TextField("예: 집", text: $placeNameInput)
-                .accessibilityIdentifier("locationPicker.placeName")
-            Button("취소", role: .cancel) {}
-            Button("저장") {
-                confirmPlaceName()
-            }
-        } message: {
-            Text("다른 규칙에서도 다시 사용할 수 있도록 이름을 입력해 주세요.")
-        }
         .alert("규칙을 삭제할까요?", isPresented: $isDeleteConfirmationPresented) {
             Button("취소", role: .cancel) {}
             Button("삭제", role: .destructive) {
@@ -162,7 +150,7 @@ struct RuleEditorView: View {
 
             if hasTimeValidationError {
                 validationMessage(
-                    "종료 시각은 시작 시각으로부터 최소 15분 이후여야 해요.",
+                    "종료 시각은 시작 시각으로부터 15분 이상, 12시간 이내여야 해요.",
                     identifier: "ruleEditor.time.validation"
                 )
             }
@@ -490,7 +478,6 @@ struct RuleEditorView: View {
             LocationPickerView(
                 model: locationPickerModel,
                 radius: $model.radius,
-                onRequestPlaceName: requestPlaceName,
                 onApply: applyLocationSelection,
                 onOpenSettings: onOpenSettings
             )
@@ -528,6 +515,7 @@ struct RuleEditorView: View {
         return errors.contains(.invalidTimeOfDay)
             || errors.contains(.startAndEndMustDiffer)
             || errors.contains(.timeRangeTooShort)
+            || errors.contains(.timeRangeTooLong)
     }
 
     private var hasLocationValidationError: Bool {
@@ -556,18 +544,6 @@ struct RuleEditorView: View {
             currentLocationProvider: currentLocationProvider
         )
         isLocationPickerPresented = true
-    }
-
-    private func requestPlaceName() {
-        placeNameInput = locationPickerModel?.placeName ?? ""
-        isPlaceNamePromptPresented = true
-    }
-
-    private func confirmPlaceName() {
-        locationPickerModel?.confirm(placeName: placeNameInput)
-        if locationPickerModel?.completion != nil {
-            applyLocationSelection()
-        }
     }
 
     private func applyLocationSelection() {

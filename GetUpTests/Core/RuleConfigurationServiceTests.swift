@@ -112,6 +112,51 @@ struct RuleConfigurationServiceTests {
         #expect(await repository.writeOrder.isEmpty)
     }
 
+    @Test("Duplicate saved-place names are rejected before persistence")
+    func rejectsDuplicateSavedPlaceNames() async throws {
+        let first = makePlace()
+        let duplicate = SavedPlaceSnapshot(
+            id: UUID(),
+            name: " 집 ",
+            coordinate: ReferenceLocation(latitude: 35, longitude: 129),
+            createdAt: Date(timeIntervalSince1970: 1_000),
+            updatedAt: Date(timeIntervalSince1970: 1_000)
+        )
+        let repository = InMemoryRuleConfigurationRepository()
+        let service = makeService(repository: repository)
+
+        await #expect(throws: RuleConfigurationServiceError.invalidSavedPlaces) {
+            try await service.save(
+                draft: makeDraft(savedPlaceID: first.id),
+                savedPlaces: [first, duplicate]
+            )
+        }
+
+        #expect(await repository.writeOrder.isEmpty)
+    }
+
+    @Test("Saved-place names longer than ten characters are rejected before persistence")
+    func rejectsLongSavedPlaceName() async throws {
+        let place = SavedPlaceSnapshot(
+            id: UUID(),
+            name: "12345678901",
+            coordinate: ReferenceLocation(latitude: 37, longitude: 127),
+            createdAt: Date(timeIntervalSince1970: 1_000),
+            updatedAt: Date(timeIntervalSince1970: 1_000)
+        )
+        let repository = InMemoryRuleConfigurationRepository()
+        let service = makeService(repository: repository)
+
+        await #expect(throws: RuleConfigurationServiceError.invalidSavedPlaces) {
+            try await service.save(
+                draft: makeDraft(savedPlaceID: place.id),
+                savedPlaces: [place]
+            )
+        }
+
+        #expect(await repository.writeOrder.isEmpty)
+    }
+
     @Test("Runtime recovery starts only after both snapshots are stored")
     func synchronizesRuntimeAfterPersistence() async throws {
         let events = RuleConfigurationRuntimeEventRecorder()

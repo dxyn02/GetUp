@@ -38,27 +38,24 @@ struct TimeRangePicker: View {
                     wheelPicker(
                         title: "시",
                         selection: hourSelection,
-                        values: Array(1...12),
+                        values: selectableHours,
                         label: String.init,
-                        isSelectable: { canSelect(hour: $0) },
                         identifier: "hour"
                     )
 
                     wheelPicker(
                         title: "분",
                         selection: minuteSelection,
-                        values: Array(0...59),
+                        values: selectableMinutes,
                         label: { String(format: "%02d", $0) },
-                        isSelectable: { canSelect(minute: $0) },
                         identifier: "minute"
                     )
 
                     wheelPicker(
                         title: "오전 또는 오후",
                         selection: periodSelection,
-                        values: TimePickerPeriod.allCases,
+                        values: selectablePeriods,
                         label: \.displayName,
-                        isSelectable: { canSelect(period: $0) },
                         identifier: "period"
                     )
                 }
@@ -100,7 +97,6 @@ struct TimeRangePicker: View {
         selection: Binding<Value>,
         values: [Value],
         label: @escaping (Value) -> String,
-        isSelectable: @escaping (Value) -> Bool,
         identifier: String
     ) -> some View {
         Picker(title, selection: selection) {
@@ -109,7 +105,6 @@ struct TimeRangePicker: View {
                     .font(.title2)
                     .fontWeight(.semibold)
                     .tag(value)
-                    .disabled(!isSelectable(value))
             }
         }
         .pickerStyle(.wheel)
@@ -149,22 +144,39 @@ struct TimeRangePicker: View {
     }
 
     private var minimumDurationMessage: String {
-        "\(TimePickerComponents(time: startTime).displayName)부터 최소 15분 이후만 선택할 수 있어요"
+        "\(TimePickerComponents(time: startTime).displayName)부터 15분 이상, 12시간 이내만 선택할 수 있어요"
     }
 
-    private func canSelect(
-        hour: Int? = nil,
-        minute: Int? = nil,
-        period: TimePickerPeriod? = nil
-    ) -> Bool {
-        guard boundary == .end else {
-            return true
-        }
+    private var selectableEndTimes: [TimeOfDay] {
+        ScheduleEvaluator.selectableEndTimes(startTime: startTime)
+    }
 
-        return ScheduleEvaluator.isEndTimeSelectable(
-            startTime: startTime,
-            endTime: candidateTime(hour: hour, minute: minute, period: period)
-        )
+    private var selectableHours: [Int] {
+        guard boundary == .end else { return Array(1...12) }
+        let period = components.period
+        let hours = Set(selectableEndTimes.compactMap { time -> Int? in
+            let candidate = TimePickerComponents(time: time)
+            return candidate.period == period ? candidate.hour : nil
+        })
+        return Array(1...12).filter(hours.contains)
+    }
+
+    private var selectableMinutes: [Int] {
+        guard boundary == .end else { return Array(0...59) }
+        let current = components
+        let minutes = Set(selectableEndTimes.compactMap { time -> Int? in
+            let candidate = TimePickerComponents(time: time)
+            return candidate.hour == current.hour && candidate.period == current.period
+                ? candidate.minute
+                : nil
+        })
+        return Array(0...59).filter(minutes.contains)
+    }
+
+    private var selectablePeriods: [TimePickerPeriod] {
+        guard boundary == .end else { return TimePickerPeriod.allCases }
+        let periods = Set(selectableEndTimes.map { TimePickerComponents(time: $0).period })
+        return TimePickerPeriod.allCases.filter(periods.contains)
     }
 
     private func updateSelection(
@@ -173,19 +185,31 @@ struct TimeRangePicker: View {
         period: TimePickerPeriod? = nil
     ) {
         let candidateTime = candidateTime(hour: hour, minute: minute, period: period)
-        guard boundary == .start || ScheduleEvaluator.isEndTimeSelectable(
-            startTime: startTime,
-            endTime: candidateTime
-        ) else {
-            return
-        }
 
         switch boundary {
         case .start:
             startTime = candidateTime
+            if !ScheduleEvaluator.isEndTimeSelectable(startTime: candidateTime, endTime: endTime) {
+                endTime = ScheduleEvaluator.minimumEndTime(startTime: candidateTime)
+            }
         case .end:
-            endTime = candidateTime
+            let matching = selectableEndTimes.filter { time in
+                let value = TimePickerComponents(time: time)
+                return (hour == nil || value.hour == hour)
+                    && (minute == nil || value.minute == minute)
+                    && (period == nil || value.period == period)
+            }
+            if let nearest = matching.min(by: { clockDistance($0, endTime) < clockDistance($1, endTime) }) {
+                endTime = nearest
+            }
         }
+    }
+
+    private func clockDistance(_ lhs: TimeOfDay, _ rhs: TimeOfDay) -> Int {
+        let left = lhs.hour * 60 + lhs.minute
+        let right = rhs.hour * 60 + rhs.minute
+        let distance = abs(left - right)
+        return min(distance, 24 * 60 - distance)
     }
 
     private func candidateTime(

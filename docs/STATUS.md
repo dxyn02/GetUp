@@ -8,11 +8,11 @@ Phase 7 마무리 및 교차 관심사 진행 중
 
 ## 진행 중
 T083 — 자동 latency 100회 계측과 결과 형식은 구현·검증했으며, 실제 `ManagedSettingsStore`와 선택
-앱 사용 가능 상태의 실기기 관찰을 진행 중. 사용자 수정 US4 하이파이의 권한 `notDetermined`·허용·거부
-상태 분기를 코드와 회귀 테스트에 반영함
+앱 사용 가능 상태의 실기기 관찰을 진행 중
 
 ## 마지막 완료 작업
-T082 — Family Controls 배포 entitlement·App Group 승인 절차와 현재 증적 상태를 문서화함
+T090 — 사용자 실기기 검수에서 확인된 권한·시간·장소·홈·활성 상태 결함과 현재 Figma 하이파이
+편차를 코드·테스트·명세·설계 인계에 반영함
 
 ## 다음 작업
 T083 — 승인된 entitlement·profile을 사용한 실기기 활성화·해제 latency 관찰 완료
@@ -26,6 +26,19 @@ BLK-010 열림. `com.dxyn02.GetUp` namespace의 네 App ID 등록과
 없음. 규칙 삭제 UI의 코드·Figma 불일치를 T060·T061로 보정한 뒤 US3 테스트를 시작하도록 계획을 갱신했다.
 
 ## 테스트 상태
+2026-08-25 T090에서 위치 권한 안내에 최초 `앱을 사용하는 동안 허용` 뒤 `항상 허용`·`정확한 위치`
+설정을 명시하고, Background App Refresh는 앱별 Settings action을 제거해 시스템 전체 설정 경로만
+안내하도록 변경했다. 이 진단 상태만 제한된 foreground 복귀에서는 권한 화면을 자동 표시하지 않는다.
+시간 wheel과 저장 validation은 자정 초과를 포함한 15분 이상 12시간 이하 후보만 허용한다. 장소
+화면은 `집`·`회사`·`직접 입력`을 항상 표시하고, 직접 입력을 같은 화면의 10자 필드로 제공하며
+정규화된 중복 이름을 UI·모델·저장 service에서 거절한다. 홈과 활성 상태는 Figma의 GETUP header,
+통합 456pt card, 큰 시간 위계, 조건 행, page indicator와 종료 후 수정 CTA 구조로 맞췄다.
+iPhone 17 Pro iOS 26.5 Simulator에서 generic app build, 전체 `GetUpTests`, US1 UI test 5개(직접 입력
+단일 재실행 포함), US2·US3·US4 UI test와 접근성 UI test가 모두 통과했고 실패·skip은 없다.
+`git diff --check`와 `project.pbxproj` plist 검사도 통과했다. Xcode의 debugger version store 경고는
+반복됐지만 test 결과에는 영향을 주지 않았다. 실제 Always 전환, 시스템 전체 Background App Refresh
+경로와 Figma 시각 일치는 실기기에서 최종 확인해야 한다.
+
 2026-08-25 사용자가 수정한 US4 하이파이에 맞춰 권한 개요부터 Family Controls → 위치 → Background
 App Refresh를 순차 진행하도록 변경했다. Family Controls와 위치 `notDetermined`에서는 시스템 요청을
 자동 표시하고 `다음`을 비활성화하며, 허용 후에는 활성 `다음`, 거부 후에는 설정 복구 행동을 표시한다.

@@ -30,6 +30,17 @@ final class UserStory1RuleConfigurationUITests: XCTestCase {
         XCTAssertTrue(monday.isSelected)
 
         app.buttons["ruleEditor.locationRow"].tap()
+        XCTAssertTrue(app.buttons["locationPicker.savedPlace.home"].exists)
+        XCTAssertTrue(app.buttons["locationPicker.savedPlace.work"].exists)
+        app.buttons["locationPicker.customPlace"].tap()
+        let placeName = app.textFields["locationPicker.placeName"]
+        XCTAssertTrue(placeName.waitForExistence(timeout: 2))
+        placeName.typeText("12345678901")
+        let cappedValue = expectation(
+            for: NSPredicate(format: "value == %@", "1234567890"),
+            evaluatedWith: placeName
+        )
+        wait(for: [cappedValue], timeout: 2)
         app.buttons["locationPicker.savedPlace.home"].tap()
         app.buttons["locationPicker.confirm"].tap()
         XCTAssertEqual(app.staticTexts["ruleEditor.locationSummary"].label, "집 · 1km")
@@ -77,19 +88,19 @@ final class UserStory1RuleConfigurationUITests: XCTestCase {
 
         XCTAssertTrue(pager.waitForExistence(timeout: 2))
         XCTAssertTrue(app.otherElements["home.ruleCard.rule-1"].exists)
-        XCTAssertEqual(app.staticTexts["home.rulePageIndicator"].label, "1 / 3")
+        XCTAssertEqual(app.otherElements["home.rulePageIndicator"].label, "1 / 3")
 
         pager.swipeLeft()
         XCTAssertTrue(app.otherElements["home.ruleCard.rule-2"].waitForExistence(timeout: 2))
-        XCTAssertEqual(app.staticTexts["home.rulePageIndicator"].label, "2 / 3")
+        XCTAssertEqual(app.otherElements["home.rulePageIndicator"].label, "2 / 3")
 
         pager.swipeLeft()
         XCTAssertTrue(app.otherElements["home.ruleCard.rule-3"].waitForExistence(timeout: 2))
-        XCTAssertEqual(app.staticTexts["home.rulePageIndicator"].label, "3 / 3")
+        XCTAssertEqual(app.otherElements["home.rulePageIndicator"].label, "3 / 3")
 
         pager.swipeRight()
         XCTAssertTrue(app.otherElements["home.ruleCard.rule-2"].waitForExistence(timeout: 2))
-        XCTAssertEqual(app.staticTexts["home.rulePageIndicator"].label, "2 / 3")
+        XCTAssertEqual(app.otherElements["home.rulePageIndicator"].label, "2 / 3")
     }
 
     @MainActor
@@ -132,12 +143,12 @@ final class UserStory1RuleConfigurationUITests: XCTestCase {
         confirmation.buttons["삭제"].tap()
 
         XCTAssertTrue(app.otherElements["home.rulePager"].waitForExistence(timeout: 2))
-        XCTAssertEqual(app.staticTexts["home.rulePageIndicator"].label, "1 / 2")
+        XCTAssertEqual(app.otherElements["home.rulePageIndicator"].label, "1 / 2")
 
         app.terminate()
         app = launchApp(storeID: storeID)
         XCTAssertTrue(app.otherElements["home.rulePager"].waitForExistence(timeout: 2))
-        XCTAssertEqual(app.staticTexts["home.rulePageIndicator"].label, "1 / 2")
+        XCTAssertEqual(app.otherElements["home.rulePageIndicator"].label, "1 / 2")
     }
 
     @MainActor
@@ -177,13 +188,13 @@ final class UserStory1RuleConfigurationUITests: XCTestCase {
         XCTAssertTrue(card.waitForExistence(timeout: 2), file: file, line: line)
         XCTAssertEqual(
             app.staticTexts["home.ruleCard.rule-1.time"].label,
-            "06:00 AM–09:00 AM",
+            "06:00 AM → 09:00 AM",
             file: file,
             line: line
         )
         XCTAssertEqual(
             app.staticTexts["home.ruleCard.rule-1.schedule"].label,
-            "월 · 수 · 금",
+            "RULE 1 OF 1 · MON–WED–FRI",
             file: file,
             line: line
         )
@@ -200,7 +211,7 @@ final class UserStory1RuleConfigurationUITests: XCTestCase {
             line: line
         )
         XCTAssertEqual(
-            app.staticTexts["home.rulePageIndicator"].label,
+            app.otherElements["home.rulePageIndicator"].label,
             "1 / 1",
             file: file,
             line: line

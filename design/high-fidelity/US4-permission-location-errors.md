@@ -177,11 +177,16 @@ AX1~AX5, Increase Contrast와 시스템 설정 복귀 focus는 구현 후 물리
 - Family Controls 승인 UI, 시스템 권한 prompt와 Settings 화면은 iOS가 소유하며 GetUp이 재설계하지
   않는다.
 - Family Controls가 `notDetermined`이면
-  `AuthorizationCenter.requestAuthorization(for: .individual)`을 자동 호출하고, `denied`이면 피그마의
-  복구 동작에 따라 앱별 Settings URL을 연다.
+  `AuthorizationCenter.requestAuthorization(for: .individual)`을 자동 호출하고, `denied`이면 승인된
+  복구 상태에 따라 Settings 행동을 제공한다.
 - 앱은 개인 사용자가 시스템 설정에서 권한을 철회하거나 앱을 삭제하는 플랫폼 우회를 막는다고
   안내하지 않는다.
+- 위치는 첫 요청에서 `앱을 사용하는 동안 허용`을 받은 뒤 앱 설정에서 `항상 허용`과 `정확한 위치`를
+  켜는 두 단계로 안내한다.
 - Background App Refresh는 진단·복구 지연 정보이며 특정 background 실행 시각을 보장하지 않는다.
+  앱별 Settings에서 변경할 수 없으므로 시스템 전체 `설정 > 일반 > 백그라운드 앱 새로 고침` 경로를
+  설명하고 앱별 Settings action을 제공하지 않는다. 이 진단만 제한된 foreground 복귀에서는 권한
+  화면을 자동으로 다시 열지 않는다.
 - 위치 오류, 오래된 fix, 음수 accuracy, Reduced Accuracy와 반경 경계 중첩은 좌표를 추정하지 않고
   `unavailable`로 처리한다.
 - `unavailable / inactive`는 새 shield를 적용하지 않고, `unavailable / active`는 기존 shield를
@@ -225,6 +230,7 @@ AX1~AX5, Increase Contrast와 시스템 설정 복귀 focus는 구현 후 물리
 | `2026-08-24` | 사용자 | 화면 우측 상단 badge를 제거하고 권한 점검 목록 emoji와 기존 문구·action 구조를 유지한 최종안을 확정 | 최종 승인 |
 | `2026-08-25` | `Codex` | 실기기 검증에서 Family Controls가 앱별 Settings에 노출되지 않음을 확인해 `US4-HF-02`의 action을 `권한 허용하기`로 보정 | 실기기 결함 보고 |
 | `2026-08-25` | 사용자·`Codex` | 권한 흐름을 `notDetermined`·허용·거부 세 묶음으로 확장하고, 자동 시스템 요청·활성 `다음`·설정 복구 상태를 구현 기준으로 반영 | 수정 하이파이 반영 요청 |
+| `2026-08-25` | 사용자·`Codex` | 위치의 `앱을 사용하는 동안 허용` → `항상 허용` 순서를 명시하고, 앱별 Settings에 없는 Background App Refresh action과 foreground 자동 재등장을 제거 | 실기기 권한 복구 결함 보정 |
 
 ## 구현 승인
 

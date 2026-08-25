@@ -143,6 +143,24 @@ struct RuleEditorModelTests {
         )
     }
 
+    @Test("A duplicate place name never appends another saved place")
+    func duplicatePlaceNameDoesNotAppend() {
+        let savedPlace = makeSavedPlace()
+        let model = makeModel(savedPlaces: [savedPlace])
+
+        model.applyLocationCompletion(
+            .confirmed(
+                SavedPlaceDraft(
+                    name: " 회사 ",
+                    coordinate: ReferenceLocation(latitude: 35, longitude: 129)
+                )
+            )
+        )
+
+        #expect(model.savedPlaces == [savedPlace])
+        #expect(model.selectedSavedPlaceID == savedPlace.id)
+    }
+
     @Test("Cancelling location selection preserves the current draft")
     func cancelledLocationPreservesDraft() {
         let savedPlace = makeSavedPlace()

@@ -610,3 +610,42 @@ Background App Refresh는 플랫폼이 미결정 상태를 제공하지 않으�
 
 **영향 범위**: `PermissionGuideModel`, `PermissionGuideView`, `GetUpRootView`, US4 모델·UI 테스트와
 US4 로우·하이파이 구현 인계에 적용한다.
+
+## DEC-038 — 직접 시간대와 저장 장소 입력 경계
+
+**날짜**: 2026-08-25
+
+**결정**: 반복 시간대는 시작 시각부터 다음 종료 시각까지 15분 이상 12시간 이하로 제한한다.
+종료 시각이 시작 시각보다 이르면 자정을 넘는 구간으로 해석하며, 15분 미만과 12시간 초과 후보는
+저장 validation에서만 거절하지 않고 time wheel의 선택 가능한 조합에서도 제거한다.
+
+장소 선택 화면은 저장 여부와 관계없이 `집`, `회사`, `직접 입력`을 항상 표시한다. 저장되지 않은
+`집` 또는 `회사`를 적용하면 현재 지도 핀 좌표로 새 저장 장소를 만들고, `직접 입력`은 같은 화면에
+이름 필드를 연다. 장소 이름은 앞뒤 공백을 제거한 1자 이상 10자 이하이며 대소문자를 구분하지 않은
+정규화 key가 collection 안에서 고유해야 한다.
+
+**근거**: 사용자는 자정을 넘는 생활 패턴을 설정할 수 있어야 하지만 지나치게 긴 제한을 실수로
+만들어서는 안 된다. 잘못된 시간 조합을 wheel에서 애초에 제공하지 않으면 저장 시점 오류보다 직접적이다.
+항상 보이는 생활 장소 프리셋과 같은 화면의 직접 입력은 지도 좌표와 이름 저장의 관계를 명확히 하고,
+이름 길이·중복 경계는 카드와 선택 목록의 식별 가능성을 보존한다.
+
+**영향 범위**: `ScheduleEvaluator`, `RestrictionRuleValidator`, `TimeRangePicker`,
+`SavedPlaceNamePolicy`, `LocationPickerModel`, `LocationPickerView`, `RuleConfigurationService`, US1 테스트와
+저장·platform event 계약에 적용한다.
+
+## DEC-039 — Background App Refresh의 비차단 진단 경계
+
+**날짜**: 2026-08-25
+
+**결정**: Background App Refresh는 Family Controls, Always location, Full Accuracy와 달리 필수 권한
+gate가 아니다. 이 진단 상태만 `denied` 또는 `restricted`인 경우 앱 실행·foreground 복귀 때 권한
+안내를 자동 표시하지 않는다. 사용자가 순차 안내에서 해당 화면을 확인할 때는 앱별 Settings action을
+제공하지 않고 `설정 > 일반 > 백그라운드 앱 새로 고침` 시스템 전체 경로와 저전력 모드 영향을
+설명한 뒤 `나중에`로 닫을 수 있게 한다.
+
+**근거**: iOS 앱별 Settings에는 GetUp의 Background App Refresh 변경 항목이 표시되지 않을 수 있고,
+앱 전용 URL로는 시스템 전체 토글을 직접 열 수 없다. 진단 상태가 foreground마다 필수 권한 화면을
+재등장시키면 사용 가능한 핵심 기능을 방해하고 사용자가 해결할 수 없는 action을 반복 제공한다.
+
+**영향 범위**: `PermissionGuideModel`, `PermissionGuideView`, foreground 권한 갱신, US4 모델·UI 테스트,
+권한 platform contract와 US4 하이파이 구현 인계에 적용한다.

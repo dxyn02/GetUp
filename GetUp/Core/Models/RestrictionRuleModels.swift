@@ -87,6 +87,28 @@ struct SavedPlaceSnapshot: Codable, Equatable, Sendable {
     }
 }
 
+enum SavedPlaceNamePolicy {
+    static let maximumLength = 10
+
+    static func normalized(_ name: String) -> String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    static func uniquenessKey(_ name: String) -> String {
+        normalized(name).lowercased()
+    }
+
+    static func isValid(_ name: String) -> Bool {
+        let value = normalized(name)
+        return !value.isEmpty && value.count <= maximumLength
+    }
+
+    static func hasUniqueValidNames(_ places: [SavedPlaceSnapshot]) -> Bool {
+        let keys = places.map { uniquenessKey($0.name) }
+        return places.allSatisfy { isValid($0.name) } && Set(keys).count == keys.count
+    }
+}
+
 struct RestrictionRuleSnapshot: Codable, Equatable, @unchecked Sendable {
     static let currentSchemaVersion = 2
 

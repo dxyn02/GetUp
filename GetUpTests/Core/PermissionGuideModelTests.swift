@@ -107,6 +107,7 @@ struct PermissionGuideModelTests {
         #expect(screen?.secondaryAction == .later)
         #expect(screen?.automaticAction == nil)
         #expect(screen?.message.contains("항상 허용") == true)
+        #expect(screen?.message.contains("앱을 사용하는 동안 허용") == true)
         #expect(screen?.message.contains("정확한 위치") == true)
     }
 
@@ -134,8 +135,18 @@ struct PermissionGuideModelTests {
         #expect(model.currentScreen?.kind == .backgroundRefresh)
         #expect(model.currentScreen?.message.contains("복구가 늦어질") == true)
         #expect(model.currentScreen?.message.contains("저전력 모드") == true)
-        #expect(model.currentScreen?.primaryAction == .openSettings)
-        #expect(model.currentScreen?.secondaryAction == .later)
+        #expect(model.currentScreen?.primaryAction == .later)
+        #expect(model.currentScreen?.secondaryAction == nil)
+    }
+
+    @Test("Background refresh alone does not interrupt an active app session")
+    func backgroundRefreshAloneDoesNotPresentGuide() {
+        let model = PermissionGuideModel(
+            authorization: TestFixtures.makeAuthorization(backgroundRefresh: .restricted),
+            presentationState: .inactive
+        )
+
+        #expect(!model.isPresented)
     }
 
     @Test("Unavailable location distinguishes inactive and preserved active states", arguments: [false, true])

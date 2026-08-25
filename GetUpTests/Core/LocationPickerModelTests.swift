@@ -83,6 +83,42 @@ struct LocationPickerModelTests {
         )
     }
 
+    @Test("Home and work presets name the current pin before they have saved coordinates")
+    func unsavedPresetNamesCurrentPin() {
+        let coordinate = ReferenceLocation(latitude: 35.8714, longitude: 128.6014)
+        let model = makeModel(initialCoordinate: coordinate)
+
+        model.selectPreset(named: "집")
+        model.confirm(placeName: model.placeName)
+
+        #expect(model.placeName == "집")
+        #expect(model.completion == .confirmed(SavedPlaceDraft(name: "집", coordinate: coordinate)))
+    }
+
+    @Test("Custom names are capped at ten characters")
+    func customNameIsCappedAtTenCharacters() {
+        let model = makeModel()
+
+        model.updatePlaceName("12345678901")
+
+        #expect(model.placeName == "1234567890")
+        #expect(model.placeName.count == SavedPlaceNamePolicy.maximumLength)
+    }
+
+    @Test("A duplicate saved-place name cannot be confirmed for another coordinate")
+    func duplicateNameIsRejected() {
+        let savedPlace = makeSavedPlace()
+        let model = makeModel(savedPlaces: [savedPlace])
+        model.mapDidSettle(at: ReferenceLocation(latitude: 35, longitude: 129))
+        model.updatePlaceName(" 회사 ")
+
+        model.confirm(placeName: model.placeName)
+
+        #expect(model.completion == nil)
+        #expect(model.guidance == .duplicatePlaceName)
+        #expect(!model.canApplySelection)
+    }
+
     @Test("Selecting a saved place reuses its name and coordinate")
     func savedPlaceCanBeReused() {
         let savedPlace = makeSavedPlace()

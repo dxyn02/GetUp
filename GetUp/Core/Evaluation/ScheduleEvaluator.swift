@@ -1,7 +1,8 @@
 import Foundation
 
 enum ScheduleEvaluator {
-    private static let minimumDurationMinutes = 15
+    static let minimumDurationMinutes = 15
+    static let maximumDurationMinutes = 12 * 60
 
     static func isEndTimeSelectable(
         startTime: TimeOfDay,
@@ -12,7 +13,18 @@ enum ScheduleEvaluator {
         }
 
         let duration = durationInMinutes(from: startTime, to: endTime)
-        return duration >= minimumDurationMinutes
+        return (minimumDurationMinutes...maximumDurationMinutes).contains(duration)
+    }
+
+    static func selectableEndTimes(startTime: TimeOfDay) -> [TimeOfDay] {
+        guard isValid(startTime) else { return [] }
+        return (minimumDurationMinutes...maximumDurationMinutes).map { offset in
+            time(adding: offset, to: startTime)
+        }
+    }
+
+    static func minimumEndTime(startTime: TimeOfDay) -> TimeOfDay {
+        time(adding: minimumDurationMinutes, to: startTime)
     }
 
     static func isActive(
@@ -116,7 +128,7 @@ enum ScheduleEvaluator {
         )
     }
 
-    private static func durationInMinutes(
+    static func durationInMinutes(
         from startTime: TimeOfDay,
         to endTime: TimeOfDay
     ) -> Int {
@@ -127,6 +139,11 @@ enum ScheduleEvaluator {
 
     private static func minutes(for time: TimeOfDay) -> Int {
         time.hour * 60 + time.minute
+    }
+
+    private static func time(adding minutesToAdd: Int, to time: TimeOfDay) -> TimeOfDay {
+        let total = (minutes(for: time) + minutesToAdd) % (24 * 60)
+        return TimeOfDay(hour: total / 60, minute: total % 60)
     }
 
     private static func isValid(_ time: TimeOfDay) -> Bool {

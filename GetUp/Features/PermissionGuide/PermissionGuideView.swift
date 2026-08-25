@@ -139,6 +139,9 @@ struct PermissionGuideView: View {
                     .foregroundStyle(HomeColor.textSecondary)
             }
 
+            Text("최초 권한 팝업에서는 ‘앱을 사용하는 동안 허용’을 선택한 뒤, 위 경로에서 ‘항상 허용’으로 변경해 주세요.")
+                .foregroundStyle(HomeColor.textSecondary)
+
             VStack(alignment: .leading, spacing: 4) {
                 Text("정확한 위치 · 켬")
                     .fontWeight(.semibold)
@@ -163,6 +166,8 @@ struct PermissionGuideView: View {
             Text("설정  ›  일반  ›  백그라운드 앱 새로 고침")
                 .fontWeight(.semibold)
             Text("GetUp 사용 가능 상태를 확인해 주세요. 저전력 모드에서는 시스템이 동작을 제한할 수 있어요.")
+                .foregroundStyle(HomeColor.textSecondary)
+            Text("앱별 설정에서는 변경할 수 없어요. 위의 시스템 경로에서 직접 켜 주세요.")
                 .foregroundStyle(HomeColor.textSecondary)
         }
         .font(.subheadline)

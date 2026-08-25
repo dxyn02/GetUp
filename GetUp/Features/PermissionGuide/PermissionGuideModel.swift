@@ -175,8 +175,7 @@ final class PermissionGuideModel {
         }
         if authorization.familyControls != .approved
             || authorization.locationAuthorization != .always
-            || authorization.locationAccuracy != .full
-            || authorization.backgroundRefresh != .available {
+            || authorization.locationAccuracy != .full {
             return .overview
         }
         return nil
@@ -276,7 +275,7 @@ final class PermissionGuideModel {
                 kind: kind,
                 eyebrow: "LOCATION PERMISSION",
                 title: "정확한 위치 접근 권한이 필요해요",
-                message: "설정에서 위치 접근을 ‘항상 허용’으로 바꾸고 ‘정확한 위치’를 켜 주세요. 확인할 수 없는 위치는 추정하지 않아요.",
+                message: "처음 요청에서는 ‘앱을 사용하는 동안 허용’을 선택해 주세요. 이후 설정에서 위치 접근을 ‘항상 허용’으로 바꾸고 ‘정확한 위치’를 켜야 자동 제한이 동작해요.",
                 capabilityItems: [
                     makeCapabilityItem(.alwaysLocation),
                     makeCapabilityItem(.fullAccuracy),
@@ -294,8 +293,8 @@ final class PermissionGuideModel {
                 title: "백그라운드 새로 고침을 확인해 주세요",
                 message: "Background App Refresh가 제한되면 앱을 다시 열기 전까지 상태 복구가 늦어질 수 있어요. 저전력 모드에서도 시스템이 실행을 제한할 수 있어요.",
                 capabilityItems: [makeCapabilityItem(.backgroundRefresh)],
-                primaryAction: isApproved ? .next : .openSettings,
-                secondaryAction: isApproved ? nil : .later,
+                primaryAction: isApproved ? .next : .later,
+                secondaryAction: nil,
                 isPrimaryActionEnabled: true,
                 automaticAction: nil
             )

@@ -225,7 +225,8 @@ final class RuleEditorModel {
 
     private func selectOrCreateSavedPlace(from draft: SavedPlaceDraft) {
         if let existing = savedPlaces.first(where: {
-            $0.name == draft.name && $0.coordinate == draft.coordinate
+            SavedPlaceNamePolicy.uniquenessKey($0.name)
+                == SavedPlaceNamePolicy.uniquenessKey(draft.name)
         }) {
             selectedSavedPlaceID = existing.id
             return

@@ -107,7 +107,7 @@ final class UserStory4PermissionGuidanceUITests: XCTestCase {
         assertElement(containing: "복구가 늦어질", in: app)
         assertElement(containing: "저전력 모드", in: app)
         XCTAssertTrue(app.buttons["permissionGuide.later"].exists)
-        XCTAssertTrue(app.buttons["permissionGuide.openSettings"].exists)
+        XCTAssertFalse(app.buttons["permissionGuide.openSettings"].exists)
     }
 
     @MainActor
