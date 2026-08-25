@@ -8,8 +8,8 @@ Phase 7 마무리 및 교차 관심사 진행 중
 
 ## 진행 중
 T083 — 자동 latency 100회 계측과 결과 형식은 구현·검증했으며, 실제 `ManagedSettingsStore`와 선택
-앱 사용 가능 상태의 실기기 관찰을 진행 중. 첫 실기기 설치에서 발견한 화면 letterboxing과
-Family Controls 승인 진입 결함을 수정하고 재검증 대기 중
+앱 사용 가능 상태의 실기기 관찰을 진행 중. 사용자 수정 US4 하이파이의 권한 `notDetermined`·허용·거부
+상태 분기를 코드와 회귀 테스트에 반영함
 
 ## 마지막 완료 작업
 T082 — Family Controls 배포 entitlement·App Group 승인 절차와 현재 증적 상태를 문서화함
@@ -26,6 +26,16 @@ BLK-010 열림. `com.dxyn02.GetUp` namespace의 네 App ID 등록과
 없음. 규칙 삭제 UI의 코드·Figma 불일치를 T060·T061로 보정한 뒤 US3 테스트를 시작하도록 계획을 갱신했다.
 
 ## 테스트 상태
+2026-08-25 사용자가 수정한 US4 하이파이에 맞춰 권한 개요부터 Family Controls → 위치 → Background
+App Refresh를 순차 진행하도록 변경했다. Family Controls와 위치 `notDetermined`에서는 시스템 요청을
+자동 표시하고 `다음`을 비활성화하며, 허용 후에는 활성 `다음`, 거부 후에는 설정 복구 행동을 표시한다.
+Background App Refresh는 플랫폼에 미결정 상태가 없어 `available`과 `denied`·`restricted`로 정규화한다.
+기존 앱 재선택 중간 상태는 새 승인 흐름과 중복되어 제거했다. iPhone 17 Pro iOS 26.5 Simulator에서
+전체 `GetUpTests`, 권한 상태·위치 오류를 포함한 `UserStory4PermissionGuidanceUITests` 11개가 모두
+통과했다. 최대 Dynamic Type 접근성 회귀에서 투명 `나중에` 버튼의 접근성 frame이 39pt로 축소되는
+문제를 발견해 button 자체에 56pt frame과 content shape를 적용했고, 실패했던 접근성 테스트 재실행도
+통과했다. Xcode의 debugger version store 경고는 반복됐지만 test 결과에는 영향을 주지 않았다.
+
 2026-08-25 첫 실기기 실행에서 앱이 화면 중앙의 구형 호환 canvas로 표시되고 Family Controls
 복구 버튼이 앱별 Settings로 이동하는 결함을 확인했다. 메인 앱 `Info.plist`에 `UILaunchScreen`을
 선언해 native 전체 화면 실행을 복구하고, Family Controls action을

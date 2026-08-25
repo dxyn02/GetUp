@@ -18,26 +18,63 @@ final class UserStory4PermissionGuidanceUITests: XCTestCase {
         assertElement(containing: "📍 위치 접근", in: app)
         assertElement(containing: "🎯 정확한 위치", in: app)
         assertElement(containing: "🔄 Background App Refresh", in: app)
-        XCTAssertTrue(app.buttons["권한 설정 시작"].exists)
+        XCTAssertTrue(app.buttons["permissionGuide.next"].exists)
     }
 
     @MainActor
-    func testFamilyControlsRecoveryRequiresReauthorizationAndApplicationReselection() {
-        let app = launchApp(scenario: "permission-family-controls")
+    func testUndeterminedFamilyControlsShowsDisabledNextDuringSystemRequest() {
+        let app = launchApp(scenario: "permission-family-controls-undetermined")
 
         assertPermissionScreen(titled: "앱 사용 제한 권한이 필요해요", in: app)
-        assertElement(containing: "제한할 앱 선택", in: app)
-        XCTAssertTrue(
-            app.buttons["permissionGuide.requestFamilyControlsAuthorization"].exists
-        )
-        XCTAssertTrue(app.buttons["권한 허용하기"].exists)
+        let next = app.buttons["permissionGuide.next"]
+        XCTAssertTrue(next.exists)
+        XCTAssertFalse(next.isEnabled)
         XCTAssertFalse(app.buttons["permissionGuide.openSettings"].exists)
-        XCTAssertFalse(app.buttons["permissionGuide.later"].exists)
     }
 
     @MainActor
-    func testAlwaysAndFullAccuracyRecoveryExplainsBothLocationSettings() {
-        let app = launchApp(scenario: "permission-location")
+    func testApprovedFamilyControlsShowsEnabledNext() {
+        let app = launchApp(scenario: "permission-family-controls-approved")
+
+        assertPermissionScreen(titled: "앱 사용 제한 권한이 필요해요", in: app)
+        let next = app.buttons["permissionGuide.next"]
+        XCTAssertTrue(next.exists)
+        XCTAssertTrue(next.isEnabled)
+    }
+
+    @MainActor
+    func testDeniedFamilyControlsShowsSettingsRecovery() {
+        let app = launchApp(scenario: "permission-family-controls-denied")
+
+        assertPermissionScreen(titled: "앱 사용 제한 권한이 필요해요", in: app)
+        XCTAssertTrue(app.buttons["permissionGuide.openSettings"].exists)
+        XCTAssertFalse(app.buttons["permissionGuide.next"].exists)
+    }
+
+    @MainActor
+    func testUndeterminedLocationShowsDisabledNextDuringSystemRequest() {
+        let app = launchApp(scenario: "permission-location-undetermined")
+
+        assertPermissionScreen(titled: "정확한 위치 접근 권한이 필요해요", in: app)
+        let next = app.buttons["permissionGuide.next"]
+        XCTAssertTrue(next.exists)
+        XCTAssertFalse(next.isEnabled)
+        XCTAssertFalse(app.buttons["permissionGuide.openSettings"].exists)
+    }
+
+    @MainActor
+    func testApprovedLocationShowsEnabledNext() {
+        let app = launchApp(scenario: "permission-location-approved")
+
+        assertPermissionScreen(titled: "정확한 위치 접근 권한이 필요해요", in: app)
+        let next = app.buttons["permissionGuide.next"]
+        XCTAssertTrue(next.exists)
+        XCTAssertTrue(next.isEnabled)
+    }
+
+    @MainActor
+    func testDeniedLocationExplainsBothSettingsAndRecoveryActions() {
+        let app = launchApp(scenario: "permission-location-denied")
 
         assertPermissionScreen(titled: "정확한 위치 접근 권한이 필요해요", in: app)
         assertElement(containing: "항상 허용", in: app)
@@ -47,8 +84,21 @@ final class UserStory4PermissionGuidanceUITests: XCTestCase {
     }
 
     @MainActor
-    func testBackgroundRefreshRecoveryExplainsDelayedRestoration() {
-        let app = launchApp(scenario: "permission-background-refresh")
+    func testApprovedBackgroundRefreshShowsEnabledNext() {
+        let app = launchApp(scenario: "permission-background-refresh-approved")
+
+        assertPermissionScreen(
+            titled: "백그라운드 새로 고침을 확인해 주세요",
+            in: app
+        )
+        let next = app.buttons["permissionGuide.next"]
+        XCTAssertTrue(next.exists)
+        XCTAssertTrue(next.isEnabled)
+    }
+
+    @MainActor
+    func testDeniedBackgroundRefreshExplainsDelayedRestoration() {
+        let app = launchApp(scenario: "permission-background-refresh-denied")
 
         assertPermissionScreen(
             titled: "백그라운드 새로 고침을 확인해 주세요",

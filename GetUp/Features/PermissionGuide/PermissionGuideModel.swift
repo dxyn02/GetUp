@@ -50,18 +50,13 @@ enum PermissionGuideScreenKind: Equatable, Sendable {
     case locationUnavailable(isRestrictionApplied: Bool)
 }
 
-enum PermissionGuideAction: Equatable, Sendable {
-    case beginPermissionSetup
+enum PermissionGuideAction: Equatable, Hashable, Sendable {
+    case next
     case requestFamilyControlsAuthorization
+    case requestLocationAuthorization
     case openSettings
     case retryLocation
     case later
-}
-
-enum ApplicationReselectionState: Equatable, Sendable {
-    case notRequired
-    case requiredAfterFamilyControlsRecovery
-    case completed
 }
 
 struct PermissionGuideScreenState: Equatable, Sendable {
@@ -72,6 +67,8 @@ struct PermissionGuideScreenState: Equatable, Sendable {
     let capabilityItems: [PermissionGuideCapabilityItem]
     let primaryAction: PermissionGuideAction
     let secondaryAction: PermissionGuideAction?
+    let isPrimaryActionEnabled: Bool
+    let automaticAction: PermissionGuideAction?
 }
 
 @MainActor
@@ -80,7 +77,6 @@ final class PermissionGuideModel {
     private(set) var authorization: AuthorizationSnapshot
     private(set) var presentationState: RestrictionPresentationState
     private(set) var selectedScreenKind: PermissionGuideScreenKind?
-    private(set) var applicationReselectionState: ApplicationReselectionState
 
     init(
         authorization: AuthorizationSnapshot,
@@ -89,22 +85,14 @@ final class PermissionGuideModel {
     ) {
         self.authorization = authorization
         self.presentationState = presentationState
-        applicationReselectionState = authorization.familyControls == .approved
-            ? .notRequired
-            : .requiredAfterFamilyControlsRecovery
         selectedScreenKind = initialScreenKind
             ?? Self.recommendedScreenKind(
                 authorization: authorization,
-                presentationState: presentationState,
-                requiresApplicationReselection: authorization.familyControls != .approved
+                presentationState: presentationState
             )
     }
 
     var isPresented: Bool { selectedScreenKind != nil }
-
-    var requiresApplicationReselection: Bool {
-        applicationReselectionState == .requiredAfterFamilyControlsRecovery
-    }
 
     var missingRequiredPermissions: Set<RequiredPermission> {
         var permissions: Set<RequiredPermission> = []
@@ -128,8 +116,14 @@ final class PermissionGuideModel {
         selectedScreenKind.map(makeScreen)
     }
 
-    func beginPermissionSetup() {
-        selectedScreenKind = firstRecoveryScreenKind ?? .overview
+    func advancePermissionSetup() {
+        selectedScreenKind = switch selectedScreenKind {
+        case .overview: .familyControls
+        case .familyControls: .location
+        case .location: .backgroundRefresh
+        case .backgroundRefresh: nil
+        case .locationUnavailable, .none: selectedScreenKind
+        }
     }
 
     func select(_ screenKind: PermissionGuideScreenKind) {
@@ -148,77 +142,17 @@ final class PermissionGuideModel {
         authorization: AuthorizationSnapshot,
         presentationState: RestrictionPresentationState
     ) {
-        if self.authorization.familyControls != .approved,
-           authorization.familyControls == .approved {
-            applicationReselectionState = .completed
-        }
-        if self.authorization.familyControls == .approved,
-           authorization.familyControls != .approved {
-            applicationReselectionState = .requiredAfterFamilyControlsRecovery
-        }
-
         self.authorization = authorization
         self.presentationState = presentationState
 
         let recommended = Self.recommendedScreenKind(
             authorization: authorization,
-            presentationState: presentationState,
-            requiresApplicationReselection: requiresApplicationReselection
+            presentationState: presentationState
         )
-        if selectedScreenKind == nil
-            || selectedScreenIsResolved
-            || selectedScreenIsLocationUnavailable {
+        if selectedScreenKind == nil || selectedScreenIsLocationUnavailable {
             selectedScreenKind = recommended
-        }
-    }
-
-    func markApplicationsReselected() {
-        guard authorization.familyControls == .approved else {
-            return
-        }
-        applicationReselectionState = .completed
-        if selectedScreenKind == .familyControls {
-            selectedScreenKind = Self.recommendedScreenKind(
-                authorization: authorization,
-                presentationState: presentationState,
-                requiresApplicationReselection: false
-            )
-        }
-    }
-
-    private var firstRecoveryScreenKind: PermissionGuideScreenKind? {
-        if authorization.familyControls != .approved || requiresApplicationReselection {
-            return .familyControls
-        }
-        if authorization.locationAuthorization != .always
-            || authorization.locationAccuracy != .full {
-            return .location
-        }
-        if authorization.backgroundRefresh != .available {
-            return .backgroundRefresh
-        }
-        return nil
-    }
-
-    private var selectedScreenIsResolved: Bool {
-        switch selectedScreenKind {
-        case .familyControls:
-            authorization.familyControls == .approved && !requiresApplicationReselection
-        case .location:
-            authorization.locationAuthorization == .always
-                && authorization.locationAccuracy == .full
-        case .backgroundRefresh:
-            authorization.backgroundRefresh == .available
-        case .locationUnavailable:
-            if case .locationUnavailable = presentationState { false } else { true }
-        case .overview:
-            Self.recommendedScreenKind(
-                authorization: authorization,
-                presentationState: presentationState,
-                requiresApplicationReselection: requiresApplicationReselection
-            ) == nil
-        case .none:
-            false
+        } else if selectedScreenKind == .overview, recommended == nil {
+            selectedScreenKind = nil
         }
     }
 
@@ -231,8 +165,7 @@ final class PermissionGuideModel {
 
     private static func recommendedScreenKind(
         authorization: AuthorizationSnapshot,
-        presentationState: RestrictionPresentationState,
-        requiresApplicationReselection: Bool
+        presentationState: RestrictionPresentationState
     ) -> PermissionGuideScreenKind? {
         if case .locationUnavailable(let isRestrictionApplied) = presentationState {
             return .locationUnavailable(isRestrictionApplied: isRestrictionApplied)
@@ -240,8 +173,7 @@ final class PermissionGuideModel {
         if case .permissionRequired = presentationState {
             return .overview
         }
-        if requiresApplicationReselection
-            || authorization.familyControls != .approved
+        if authorization.familyControls != .approved
             || authorization.locationAuthorization != .always
             || authorization.locationAccuracy != .full
             || authorization.backgroundRefresh != .available {
@@ -296,27 +228,51 @@ final class PermissionGuideModel {
     private func makeScreen(_ kind: PermissionGuideScreenKind) -> PermissionGuideScreenState {
         switch kind {
         case .overview:
-            PermissionGuideScreenState(
+            return PermissionGuideScreenState(
                 kind: kind,
                 eyebrow: "PERMISSION REQUIRED",
                 title: "원활한 사용을 위해 아래 권한이 필요해요",
                 message: "필요한 항목을 확인하면 자동 제한 상태를 안전하게 다시 평가해요.",
                 capabilityItems: capabilityItems,
-                primaryAction: .beginPermissionSetup,
-                secondaryAction: nil
+                primaryAction: .next,
+                secondaryAction: nil,
+                isPrimaryActionEnabled: true,
+                automaticAction: nil
             )
         case .familyControls:
-            PermissionGuideScreenState(
+            let action: PermissionGuideAction
+            let isEnabled: Bool
+            let automaticAction: PermissionGuideAction?
+            switch authorization.familyControls {
+            case .notDetermined:
+                action = .next
+                isEnabled = false
+                automaticAction = .requestFamilyControlsAuthorization
+            case .approved:
+                action = .next
+                isEnabled = true
+                automaticAction = nil
+            case .denied:
+                action = .openSettings
+                isEnabled = true
+                automaticAction = nil
+            }
+            return PermissionGuideScreenState(
                 kind: kind,
                 eyebrow: "APP RESTRICTION",
                 title: "앱 사용 제한 권한이 필요해요",
                 message: "개인용 앱 사용 제한을 승인해 주세요. 제한할 앱은 규칙 편집 화면의 시스템 선택기에서 선택할 수 있어요.",
                 capabilityItems: [makeCapabilityItem(.familyControls)],
-                primaryAction: .requestFamilyControlsAuthorization,
-                secondaryAction: nil
+                primaryAction: action,
+                secondaryAction: nil,
+                isPrimaryActionEnabled: isEnabled,
+                automaticAction: automaticAction
             )
         case .location:
-            PermissionGuideScreenState(
+            let isNotDetermined = authorization.locationAuthorization == .notDetermined
+            let isApproved = authorization.locationAuthorization == .always
+                && authorization.locationAccuracy == .full
+            return PermissionGuideScreenState(
                 kind: kind,
                 eyebrow: "LOCATION PERMISSION",
                 title: "정확한 위치 접근 권한이 필요해요",
@@ -325,21 +281,26 @@ final class PermissionGuideModel {
                     makeCapabilityItem(.alwaysLocation),
                     makeCapabilityItem(.fullAccuracy),
                 ],
-                primaryAction: .openSettings,
-                secondaryAction: .later
+                primaryAction: isApproved || isNotDetermined ? .next : .openSettings,
+                secondaryAction: isApproved || isNotDetermined ? nil : .later,
+                isPrimaryActionEnabled: !isNotDetermined,
+                automaticAction: isNotDetermined ? .requestLocationAuthorization : nil
             )
         case .backgroundRefresh:
-            PermissionGuideScreenState(
+            let isApproved = authorization.backgroundRefresh == .available
+            return PermissionGuideScreenState(
                 kind: kind,
                 eyebrow: "BACKGROUND REFRESH",
                 title: "백그라운드 새로 고침을 확인해 주세요",
                 message: "Background App Refresh가 제한되면 앱을 다시 열기 전까지 상태 복구가 늦어질 수 있어요. 저전력 모드에서도 시스템이 실행을 제한할 수 있어요.",
                 capabilityItems: [makeCapabilityItem(.backgroundRefresh)],
-                primaryAction: .openSettings,
-                secondaryAction: .later
+                primaryAction: isApproved ? .next : .openSettings,
+                secondaryAction: isApproved ? nil : .later,
+                isPrimaryActionEnabled: true,
+                automaticAction: nil
             )
         case .locationUnavailable(let isRestrictionApplied):
-            PermissionGuideScreenState(
+            return PermissionGuideScreenState(
                 kind: kind,
                 eyebrow: "LOCATION UNAVAILABLE",
                 title: isRestrictionApplied
@@ -350,7 +311,9 @@ final class PermissionGuideModel {
                     : "위치를 확인할 수 없어 새 제한을 시작하지 않아요. 권한과 정확한 위치를 확인한 뒤 다시 시도해 주세요.",
                 capabilityItems: [],
                 primaryAction: .openSettings,
-                secondaryAction: .retryLocation
+                secondaryAction: .retryLocation,
+                isPrimaryActionEnabled: true,
+                automaticAction: nil
             )
         }
     }

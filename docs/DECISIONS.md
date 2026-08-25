@@ -589,3 +589,24 @@ Background App Refresh만 앱별 Settings 이동을 유지한다. 메인 앱 `In
 
 **영향 범위**: `GetUpApp`, `PermissionGuideModel`, `PermissionGuideView`, `Info.plist`, US4 모델·UI
 테스트와 US4 로우·하이파이 구현 인계에 적용한다.
+
+## DEC-037 — 권한 결정 상태별 순차 안내
+
+**날짜**: 2026-08-25
+
+**결정**: 권한 개요의 `다음`부터 Family Controls, 위치, Background App Refresh를 순서대로 확인한다.
+Family Controls와 위치가 `notDetermined`이면 상세 화면 진입 시 시스템 권한 요청을 자동 표시하고 결과가
+정해질 때까지 `다음`을 비활성화한다. 허용 상태는 활성화된 `다음`, 거부 또는 요구 수준 미충족 상태는
+`설정 열기`를 제공하며 위치와 Background App Refresh에는 `나중에`도 제공한다. 이 결정은
+`notDetermined`와 `denied`를 같은 Family Controls 직접 요청으로 처리하던 `DEC-036`의 권한 행동 부분을
+대체한다. `UILaunchScreen` 결정은 그대로 유지한다.
+
+Background App Refresh는 플랫폼이 미결정 상태를 제공하지 않으므로 `available`을 허용으로,
+`denied`·`restricted`를 거부 복구 상태로 정규화하고 별도 상태를 추정하지 않는다.
+
+**근거**: 사용자가 수정한 US4 하이파이는 최초 요청 중, 승인 완료, 복구 필요 상태에서 행동 가능 여부를
+명확히 다르게 정의한다. 시스템 prompt가 표시되는 동안 다음 단계로 진행하지 않게 하고, 승인 후 같은
+화면에서 진행을 이어 가면 현재 시스템 상태와 안내가 어긋나지 않는다.
+
+**영향 범위**: `PermissionGuideModel`, `PermissionGuideView`, `GetUpRootView`, US4 모델·UI 테스트와
+US4 로우·하이파이 구현 인계에 적용한다.

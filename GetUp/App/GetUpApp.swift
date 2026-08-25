@@ -101,6 +101,9 @@ private struct GetUpRootView: View {
     ) async -> PermissionGuideUpdate? {
         switch action {
         case .requestFamilyControlsAuthorization:
+            guard lifecycleCoordinator != nil else {
+                return nil
+            }
             do {
                 _ = try await SystemFamilyControlsAuthorizationSession()
                     .requestIndividualAuthorization()
@@ -110,6 +113,12 @@ private struct GetUpRootView: View {
             } catch {
                 return await restoreRuntimeState()
             }
+        case .requestLocationAuthorization:
+            guard lifecycleCoordinator != nil else {
+                return nil
+            }
+            _ = try? await currentLocationProvider.currentLocation()
+            return await restoreRuntimeState()
         case .openSettings:
             openSettings()
             return nil
@@ -131,7 +140,7 @@ private struct GetUpRootView: View {
                     ),
                 presentationState: state
             )
-        case .beginPermissionSetup, .later:
+        case .next, .later:
             return nil
         }
     }
@@ -559,6 +568,7 @@ enum HomeColor {
     static let background = Color(red: 8 / 255, green: 9 / 255, blue: 11 / 255)
     static let surface = Color(red: 21 / 255, green: 23 / 255, blue: 27 / 255)
     static let surfaceElevated = Color(red: 32 / 255, green: 35 / 255, blue: 41 / 255)
+    static let disabled = Color(red: 58 / 255, green: 61 / 255, blue: 68 / 255)
     static let accent = Color(red: 244 / 255, green: 214 / 255, blue: 0)
     static let textPrimary = Color.white
     static let textSecondary = Color(red: 166 / 255, green: 168 / 255, blue: 173 / 255)
@@ -849,7 +859,26 @@ private enum UITestConfiguration {
                 ),
                 initialScreenKind: .overview
             )
-        case "permission-family-controls":
+        case "permission-family-controls-undetermined":
+            return PermissionGuideModel(
+                authorization: AuthorizationSnapshot(
+                    familyControls: .notDetermined,
+                    locationAuthorization: .always,
+                    locationAccuracy: .full,
+                    backgroundRefresh: .available
+                ),
+                presentationState: .permissionRequired(
+                    missingPermissions: [.familyControls]
+                ),
+                initialScreenKind: .familyControls
+            )
+        case "permission-family-controls-approved":
+            return PermissionGuideModel(
+                authorization: approved,
+                presentationState: .inactive,
+                initialScreenKind: .familyControls
+            )
+        case "permission-family-controls-denied":
             return PermissionGuideModel(
                 authorization: AuthorizationSnapshot(
                     familyControls: .denied,
@@ -862,7 +891,26 @@ private enum UITestConfiguration {
                 ),
                 initialScreenKind: .familyControls
             )
-        case "permission-location":
+        case "permission-location-undetermined":
+            return PermissionGuideModel(
+                authorization: AuthorizationSnapshot(
+                    familyControls: .approved,
+                    locationAuthorization: .notDetermined,
+                    locationAccuracy: .full,
+                    backgroundRefresh: .available
+                ),
+                presentationState: .permissionRequired(
+                    missingPermissions: [.alwaysLocation]
+                ),
+                initialScreenKind: .location
+            )
+        case "permission-location-approved":
+            return PermissionGuideModel(
+                authorization: approved,
+                presentationState: .inactive,
+                initialScreenKind: .location
+            )
+        case "permission-location-denied":
             return PermissionGuideModel(
                 authorization: AuthorizationSnapshot(
                     familyControls: .approved,
@@ -875,7 +923,13 @@ private enum UITestConfiguration {
                 ),
                 initialScreenKind: .location
             )
-        case "permission-background-refresh":
+        case "permission-background-refresh-approved":
+            return PermissionGuideModel(
+                authorization: approved,
+                presentationState: .inactive,
+                initialScreenKind: .backgroundRefresh
+            )
+        case "permission-background-refresh-denied":
             return PermissionGuideModel(
                 authorization: AuthorizationSnapshot(
                     familyControls: .approved,

@@ -32,17 +32,19 @@ struct PermissionGuideModelTests {
             .alwaysLocation,
             .fullAccuracy,
         ])
+        #expect(model.currentScreen?.primaryAction == .next)
     }
 
-    @Test("Family Controls recovery requests authorization and closes after approval")
-    func familyControlsRecoveryRequestsSystemAuthorization() {
-        let model = makeModel(familyControls: .denied)
+    @Test("Undetermined Family Controls requests authorization with Next disabled")
+    func undeterminedFamilyControlsRequestsAuthorization() {
+        let model = makeModel(familyControls: .notDetermined)
 
-        model.beginPermissionSetup()
+        model.select(.familyControls)
         #expect(model.currentScreen?.kind == .familyControls)
-        #expect(model.requiresApplicationReselection)
+        #expect(model.currentScreen?.primaryAction == .next)
+        #expect(model.currentScreen?.isPrimaryActionEnabled == false)
         #expect(
-            model.currentScreen?.primaryAction
+            model.currentScreen?.automaticAction
                 == .requestFamilyControlsAuthorization
         )
 
@@ -50,7 +52,39 @@ struct PermissionGuideModelTests {
             authorization: TestFixtures.makeAuthorization(),
             presentationState: .inactive
         )
-        #expect(!model.requiresApplicationReselection)
+        #expect(model.currentScreen?.kind == .familyControls)
+        #expect(model.currentScreen?.primaryAction == .next)
+        #expect(model.currentScreen?.isPrimaryActionEnabled == true)
+    }
+
+    @Test("Denied Family Controls opens Settings")
+    func deniedFamilyControlsOpensSettings() {
+        let model = makeModel(familyControls: .denied)
+
+        model.select(.familyControls)
+
+        #expect(model.currentScreen?.primaryAction == .openSettings)
+        #expect(model.currentScreen?.isPrimaryActionEnabled == true)
+        #expect(model.currentScreen?.automaticAction == nil)
+    }
+
+    @Test("Approved permissions advance through every detail screen")
+    func approvedPermissionsAdvanceSequentially() {
+        let model = makeModel()
+
+        model.advancePermissionSetup()
+        #expect(model.currentScreen?.kind == .familyControls)
+        #expect(model.currentScreen?.primaryAction == .next)
+
+        model.advancePermissionSetup()
+        #expect(model.currentScreen?.kind == .location)
+        #expect(model.currentScreen?.primaryAction == .next)
+
+        model.advancePermissionSetup()
+        #expect(model.currentScreen?.kind == .backgroundRefresh)
+        #expect(model.currentScreen?.primaryAction == .next)
+
+        model.advancePermissionSetup()
         #expect(!model.isPresented)
     }
 
@@ -61,7 +95,7 @@ struct PermissionGuideModelTests {
             locationAccuracy: .reduced
         )
 
-        model.beginPermissionSetup()
+        model.select(.location)
         let screen = model.currentScreen
 
         #expect(screen?.kind == .location)
@@ -71,20 +105,37 @@ struct PermissionGuideModelTests {
         ])
         #expect(screen?.primaryAction == .openSettings)
         #expect(screen?.secondaryAction == .later)
+        #expect(screen?.automaticAction == nil)
         #expect(screen?.message.contains("항상 허용") == true)
         #expect(screen?.message.contains("정확한 위치") == true)
+    }
+
+    @Test("Undetermined location requests the first system prompt with Next disabled")
+    func undeterminedLocationRequestsAuthorization() {
+        let model = makeModel(locationAuthorization: .notDetermined)
+
+        model.select(.location)
+
+        #expect(model.currentScreen?.primaryAction == .next)
+        #expect(model.currentScreen?.isPrimaryActionEnabled == false)
+        #expect(
+            model.currentScreen?.automaticAction
+                == .requestLocationAuthorization
+        )
     }
 
     @Test("Background refresh is a diagnostic limitation, not a required permission")
     func backgroundRefreshIsDiagnostic() {
         let model = makeModel(backgroundRefresh: .restricted)
 
-        model.beginPermissionSetup()
+        model.select(.backgroundRefresh)
 
         #expect(model.missingRequiredPermissions.isEmpty)
         #expect(model.currentScreen?.kind == .backgroundRefresh)
         #expect(model.currentScreen?.message.contains("복구가 늦어질") == true)
         #expect(model.currentScreen?.message.contains("저전력 모드") == true)
+        #expect(model.currentScreen?.primaryAction == .openSettings)
+        #expect(model.currentScreen?.secondaryAction == .later)
     }
 
     @Test("Unavailable location distinguishes inactive and preserved active states", arguments: [false, true])

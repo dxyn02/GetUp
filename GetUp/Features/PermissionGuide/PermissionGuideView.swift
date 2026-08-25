@@ -15,6 +15,7 @@ struct PermissionGuideView: View {
     private let onAction: ActionHandler
 
     @State private var isPerformingAction = false
+    @State private var performedAutomaticActions: Set<PermissionGuideAction> = []
     @AccessibilityFocusState private var isHeadingFocused: Bool
 
     init(
@@ -49,6 +50,15 @@ struct PermissionGuideView: View {
                 .onAppear { isHeadingFocused = true }
                 .onChange(of: screen.kind) { _, _ in
                     isHeadingFocused = true
+                }
+                .task(id: screen.automaticAction) {
+                    guard
+                        let action = screen.automaticAction,
+                        performedAutomaticActions.insert(action).inserted
+                    else {
+                        return
+                    }
+                    await performAsynchronousAction(action)
                 }
             }
         }
@@ -86,7 +96,7 @@ struct PermissionGuideView: View {
         case .overview:
             capabilityList(screen.capabilityItems)
         case .familyControls:
-            familyControlsSteps
+            EmptyView()
         case .location:
             locationSettings
         case .backgroundRefresh:
@@ -118,20 +128,6 @@ struct PermissionGuideView: View {
         .background(HomeColor.surface, in: .rect(cornerRadius: 20))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("permissionGuide.permissionList")
-    }
-
-    private var familyControlsSteps: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("1  앱 사용 제한 권한 허용하기")
-            Text("2  규칙에서 제한할 앱 선택하기")
-        }
-        .font(.subheadline)
-        .fontWeight(.semibold)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 18)
-        .padding(.vertical, 20)
-        .background(HomeColor.surface, in: .rect(cornerRadius: 20))
-        .accessibilityElement(children: .contain)
     }
 
     private var locationSettings: some View {
@@ -210,9 +206,17 @@ struct PermissionGuideView: View {
     private func actions(_ screen: PermissionGuideScreenState) -> some View {
         VStack(spacing: 20) {
             if let secondaryAction = screen.secondaryAction {
-                actionButton(secondaryAction, prominence: .secondary)
+                actionButton(
+                    secondaryAction,
+                    prominence: .secondary,
+                    isEnabled: true
+                )
             }
-            actionButton(screen.primaryAction, prominence: .primary)
+            actionButton(
+                screen.primaryAction,
+                prominence: .primary,
+                isEnabled: screen.isPrimaryActionEnabled
+            )
         }
         .padding(.horizontal, 20)
         .padding(.top, 12)
@@ -227,7 +231,8 @@ struct PermissionGuideView: View {
 
     private func actionButton(
         _ action: PermissionGuideAction,
-        prominence: ActionProminence
+        prominence: ActionProminence,
+        isEnabled: Bool
     ) -> some View {
         Button {
             perform(action)
@@ -244,15 +249,25 @@ struct PermissionGuideView: View {
             }
             .frame(maxWidth: .infinity, minHeight: 56)
             .foregroundStyle(
-                prominence == .primary ? HomeColor.background : HomeColor.textPrimary
+                foregroundColor(
+                    for: action,
+                    prominence: prominence,
+                    isEnabled: isEnabled
+                )
             )
             .background(
-                prominence == .primary ? HomeColor.accent : HomeColor.surfaceElevated,
+                backgroundColor(
+                    for: action,
+                    prominence: prominence,
+                    isEnabled: isEnabled
+                ),
                 in: .rect(cornerRadius: 18)
             )
         }
         .buttonStyle(.plain)
-        .disabled(isPerformingAction)
+        .frame(maxWidth: .infinity, minHeight: 56)
+        .contentShape(.rect)
+        .disabled(isPerformingAction || !isEnabled)
         .accessibilityLabel(accessibilityLabel(for: action))
         .accessibilityIdentifier(identifier(for: action))
         .accessibilityHint(hint(for: action))
@@ -260,23 +275,30 @@ struct PermissionGuideView: View {
 
     private func perform(_ action: PermissionGuideAction) {
         switch action {
-        case .beginPermissionSetup:
-            model.beginPermissionSetup()
+        case .next:
+            model.advancePermissionSetup()
         case .later:
             model.dismiss()
-        case .requestFamilyControlsAuthorization, .openSettings, .retryLocation:
-            isPerformingAction = true
+        case .requestFamilyControlsAuthorization,
+             .requestLocationAuthorization,
+             .openSettings,
+             .retryLocation:
             Task { @MainActor in
-                let update = await onAction(action)
-                if let update {
-                    model.update(
-                        authorization: update.authorization,
-                        presentationState: update.presentationState
-                    )
-                }
-                isPerformingAction = false
+                await performAsynchronousAction(action)
             }
         }
+    }
+
+    private func performAsynchronousAction(_ action: PermissionGuideAction) async {
+        isPerformingAction = true
+        let update = await onAction(action)
+        if let update {
+            model.update(
+                authorization: update.authorization,
+                presentationState: update.presentationState
+            )
+        }
+        isPerformingAction = false
     }
 
     private func eyebrow(for kind: PermissionGuideScreenKind) -> String {
@@ -335,8 +357,9 @@ struct PermissionGuideView: View {
 
     private func label(for action: PermissionGuideAction) -> String {
         switch action {
-        case .beginPermissionSetup: "권한 설정하기"
+        case .next: "다음"
         case .requestFamilyControlsAuthorization: "권한 허용하기"
+        case .requestLocationAuthorization: "위치 권한 허용하기"
         case .openSettings: "설정 열기"
         case .retryLocation: "위치 다시 확인"
         case .later: "나중에"
@@ -345,9 +368,11 @@ struct PermissionGuideView: View {
 
     private func identifier(for action: PermissionGuideAction) -> String {
         switch action {
-        case .beginPermissionSetup: "permissionGuide.beginSetup"
+        case .next: "permissionGuide.next"
         case .requestFamilyControlsAuthorization:
             "permissionGuide.requestFamilyControlsAuthorization"
+        case .requestLocationAuthorization:
+            "permissionGuide.requestLocationAuthorization"
         case .openSettings: "permissionGuide.openSettings"
         case .retryLocation: "permissionGuide.retryLocation"
         case .later: "permissionGuide.later"
@@ -355,17 +380,47 @@ struct PermissionGuideView: View {
     }
 
     private func accessibilityLabel(for action: PermissionGuideAction) -> String {
-        action == .beginPermissionSetup ? "권한 설정 시작" : label(for: action)
+        label(for: action)
     }
 
     private func hint(for action: PermissionGuideAction) -> String {
         switch action {
-        case .beginPermissionSetup: "가장 먼저 복구할 권한 안내로 이동합니다."
+        case .next: "다음 권한 안내로 이동합니다."
         case .requestFamilyControlsAuthorization:
             "앱 사용 제한을 위한 iOS 권한 요청을 표시합니다."
+        case .requestLocationAuthorization:
+            "위치 접근을 위한 iOS 권한 요청을 표시합니다."
         case .openSettings: "GetUp의 권한을 변경할 수 있는 시스템 설정을 엽니다."
         case .retryLocation: "현재 위치를 다시 확인하고 제한 상태를 재평가합니다."
         case .later: "현재 상태를 유지하고 권한 안내를 닫습니다."
         }
+    }
+
+    private func foregroundColor(
+        for action: PermissionGuideAction,
+        prominence: ActionProminence,
+        isEnabled: Bool
+    ) -> Color {
+        guard isEnabled else {
+            return HomeColor.textTertiary
+        }
+        if prominence == .primary {
+            return HomeColor.background
+        }
+        return action == .later ? HomeColor.textTertiary : HomeColor.textPrimary
+    }
+
+    private func backgroundColor(
+        for action: PermissionGuideAction,
+        prominence: ActionProminence,
+        isEnabled: Bool
+    ) -> Color {
+        guard isEnabled else {
+            return HomeColor.disabled
+        }
+        if prominence == .primary {
+            return HomeColor.accent
+        }
+        return action == .later ? .clear : HomeColor.surfaceElevated
     }
 }

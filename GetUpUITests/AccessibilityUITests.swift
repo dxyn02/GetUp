@@ -33,7 +33,7 @@ final class AccessibilityUITests: XCTestCase {
     @MainActor
     func testPermissionRecoveryKeepsContentAndActionsAtLargestDynamicTypeSize() {
         let app = launchApp(
-            scenario: "permission-location",
+            scenario: "permission-location-denied",
             accessibilityArguments: Self.maximumDynamicTypeArguments
         )
 
