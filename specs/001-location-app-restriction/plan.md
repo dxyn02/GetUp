@@ -92,6 +92,7 @@ specs/001-location-app-restriction/
 
 ```text
 GetUp.xcodeproj/
+Icon.icon                  # primary app icon의 Icon Composer 원본
 GetUp/
 ├── App/
 ├── Features/
@@ -136,7 +137,8 @@ docs/
 확장이 함께 사용하는 모델·판정·저장 계약은 `GetUp/Core`의 타깃 공유 소스로 유지한다. 별도
 서버나 외부 아키텍처 패키지는 도입하지 않는다. Shield Action은 제한 화면 버튼의 닫기 동작을
 명시적으로 처리하기 위해 포함한다. 모든 SwiftUI 화면은 `design/low-fidelity/`의 로우파이와
-`design/high-fidelity/`의 하이파이가 검토된 후 구현한다.
+`design/high-fidelity/`의 하이파이가 검토된 후 구현한다. 앱 아이콘은 `Icon.icon`을 primary icon
+원본으로 직접 컴파일해 appearance별 PNG export를 수동 동기화하지 않는다.
 
 ## Complexity Tracking
 

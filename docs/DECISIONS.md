@@ -724,3 +724,378 @@ Background App Refresh 복구에는 Settings row·toggle 구조를 본뜬 비대
 
 **영향 범위**: `PermissionGuideView`, US4 UI·접근성 테스트, `FR-053`, 권한 platform contract와 US4
 하이파이 구현 인계에 적용한다.
+
+## DEC-044 — 권한 요청 목업의 명시적 탭과 문맥별 결과 전환
+
+**날짜**: 2026-08-25
+
+**결정**: Family Controls, 위치 `앱을 사용하는 동안 허용`, 위치 `항상 허용으로 변경` 요청은 화면
+진입 시 자동 실행하지 않는다. 승인된 Figma의 중앙 alert 목업 안에서 강조된 주요 버튼을 사용자가
+직접 누르면 해당 시스템 권한 요청을 실행한다. 요청 결과가 요구 수준을 충족하면 온보딩에서는 다음
+권한 화면으로 자동 이동하고, 일반 사용 중 복구 화면에서는 안내를 닫는다. 요청이 거부되거나 요구
+수준을 충족하지 못하면 같은 권한 화면을 유지하되 다음 주요 행동을 `설정 열기`로 변경한다.
+
+Core Location의 Always 요청을 거부해도 시스템 승인 상태가 기존 `.whenInUse`로 유지될 수 있으므로,
+앱은 해당 명시적 요청 직후 Always를 얻지 못한 결과를 현재 안내 세션의 거부로 기록한다. 이후 주요
+버튼은 동일 Always prompt를 반복하지 않고 Settings 복구를 제공한다. alert 외형은 SwiftUI로
+구성하지만 위치 지도 preview는 승인된 Figma export asset을 사용한다.
+
+**근거**: 시스템 prompt를 화면 진입과 동시에 띄우면 사용자가 사전 설명을 읽기 어렵고, 거부 뒤 같은
+요청을 반복하는 행동도 예측하기 어렵다. 앱 소유 목업의 명시적 탭과 문맥별 결과 전환은 교육용
+온보딩과 사용 중 복구의 목적을 분리하면서 시스템 권한 요청 시점을 사용자가 통제하게 한다.
+
+**영향 범위**: `PermissionGuideModel`, `PermissionGuideView`, `GetUpRootView`,
+`CurrentLocationProvider`, US4 모델·통합·UI 테스트, `FR-054`와 US4 하이파이 구현 인계에 적용한다.
+권한 요청 화면에 한해 `DEC-043`의 비대화형 목업·raster 불필요 결정을 대체한다.
+
+## DEC-045 — 온보딩 완료 표식과 마지막 시작하기 행동
+
+**날짜**: 2026-08-25
+
+**결정**: 권한 온보딩을 처음 표시할 때 완료로 기록하지 않는다. 마지막
+`백그라운드 새로 고침을 확인해 주세요` 화면에서 사용자가 `시작하기`를 누른 뒤에만 versioned
+`UserDefaults` 완료 표식을 저장한다. 완료 전 앱 프로세스가 종료되면 다음 실행에서 온보딩 개요부터
+다시 시작하고, 완료 후에는 일반 복구 라우터가 승인 상태에서는 홈으로, 부족한 권한이 있으면 해당
+복구 화면으로 직접 진입한다. 현재 권한이 이미 결정되어 있다는 사실만으로 완료를 추정하지 않는다.
+
+**근거**: 권한 승인과 제품 온보딩 완료는 서로 다른 상태다. 사용자가 권한 요청 도중 앱을 이탈했거나
+시스템 prompt에서 돌아오지 않은 경우에도 최초 화면 표식이나 현재 권한 snapshot으로 완료를 추정하면
+남은 설명을 보지 못한 채 홈으로 진입한다. 사용자가 마지막 행동을 명시적으로 누르는 시점을 단일 완료
+경계로 삼으면 중단 복구와 이후 일반 실행을 결정론적으로 구분할 수 있다.
+
+**영향 범위**: `PermissionOnboardingStateStore`, `PermissionGuideLaunchRouter`,
+`PermissionGuideAction`, `PermissionGuideView`, `GetUpRootView`, US4 단위·UI 테스트, `FR-050`,
+`FR-055`, 권한 platform contract와 US4 하이파이 구현 인계에 적용한다. 최초 표시 즉시 완료하고
+결정된 권한으로 기존 설치를 추정하던 `DEC-041`을 대체하며, 온보딩 Background App Refresh 행동을
+`확인`으로 정의한 `DEC-042`는 일반 복구에만 유지한다.
+
+## DEC-046 — 장소 선택 초기 상태와 앱 선택 권한 경계
+
+**날짜**: 2026-08-25
+
+**결정**: 새 규칙에서 저장 장소가 아직 선택되지 않은 장소 화면은 사용자 현재 위치를 최초 한 번
+조회해 지도 중심과 핀으로 사용한다. 기존 규칙이나 저장 장소 재사용 흐름은 저장 좌표를 보존한다.
+장소 이름 선택은 `집`, `회사`, 저장 장소, `직접 입력` 중 하나의 명시적 상태로 관리하고 선택 색상과
+VoiceOver 선택 trait에 함께 반영한다. 이름이 비어 있을 때는 `장소 이름을 입력해 주세요.`를 화면에
+한 번만 표시한다.
+
+제한 앱 선택 행은 Family Controls 승인 상태를 먼저 확인한다. 승인 상태에서만 system-owned
+`FamilyActivityPicker`를 열며, `notDetermined` 또는 `denied`이면 앱 선택 행을 비활성화하지 않고
+Family Controls 권한 상세 화면으로 전환한다. 실제 시스템 권한 요청은 상세 화면의 명시적 목업 버튼을
+누른 뒤에만 실행한다.
+
+**근거**: 새 장소 지도의 고정 기본 좌표는 사용자가 실제 생활 장소를 고르기 위해 불필요하게 지도를
+이동하게 한다. 장소 이름을 문자열로만 추론하거나 동일 검증을 두 위치에서 출력하면 선택 강조가
+사라지고 같은 오류가 중복 표시될 수 있다. 앱 선택 행에서 직접 권한을 요청하거나 아무 반응 없이
+실패하는 흐름은 `DEC-044`의 사전 설명과 명시적 요청 경계를 우회하므로 기존 권한 상세 화면을 단일
+진입점으로 재사용한다.
+
+**영향 범위**: `LocationPickerModel`, `LocationPickerView`, `RuleEditorView`, `GetUpRootView`, US1
+단위·UI 테스트, `FR-056`~`FR-058`에 적용한다.
+
+## DEC-047 — Family Activity 선택 대상의 통합 계산과 shield 적용
+
+**날짜**: 2026-08-25
+
+**결정**: `FamilyActivitySelection`의 개별 앱, 카테고리와 웹 도메인 token을 모두 유효한 제한
+대상으로 계산한다. 화면에 표시하는 선택 수는 각 token 선택 항목 수의 합이며 카테고리 내부의 실제
+앱 개수를 추정하지 않는다. 실제 제한은 개별 앱 token을 `shield.applications`, 카테고리 token을
+`shield.applicationCategories = .specific(...)`, 웹 도메인 token을 `shield.webDomains`에 적용한다.
+여러 활성 규칙은 각 종류별 합집합을 사용한다. 저장된 활성 revision 집합이 같아도 실제 GetUp store의
+shield가 기대값과 다르면 idempotency 조기 종료를 하지 않고 다시 적용한다.
+
+**근거**: Family Activity Picker의 카테고리 선택은 `applicationTokens`가 아니라
+`categoryTokens`에 저장되므로 앱 token 수만 검사하면 사용자 선택을 0개로 오인한다. 유효성만
+수정하고 runtime에서 앱 token만 적용하면 저장은 되지만 실제 제한이 동작하지 않으므로 편집·저장·
+홈과 Managed Settings 적용 경계를 같은 선택 모델로 맞춰야 한다. 카테고리 내부 앱 수는 opaque
+system token만으로 안전하게 계산할 수 없어 선택 항목 수만 표시한다. 기존 설치에서 이미 같은
+revision이 활성 상태로 기록된 경우에도 누락된 category shield를 복구하려면 store 내용 비교가
+필요하다.
+
+**영향 범위**: `FamilyActivitySelection.restrictionTargetCount`, `RuleEditorModel`,
+`RuleConfigurationService`, `AppModel`, `FamilyActivitySelectionAdapter`,
+`ManagedSettingsRestrictionAdapter`, 관련 단위·통합 테스트, `FR-008`, `FR-062`와 플랫폼 이벤트
+계약에 적용한다.
+
+## DEC-048 — 시간 선택의 전용 화면과 단일 wheel 선택 행
+
+**날짜**: 2026-08-25
+
+**결정**: 시작·종료 시각 선택은 sheet가 아니라 승인된 Figma `80:2010`·`80:2033`과 같은 전용
+navigation destination으로 제공한다. app-owned 시간 화면은 Liquid Glass navigation control을 쓰지
+않고 44pt 노란 꺾쇠를 사용한다. 시스템 `Picker(.wheel)`의 입력·접근성 동작은 유지하되 iOS 26에서
+열마다 표시되는 선택 배경 위에 불투명한 단일 accent 행과 현재 시·분·AM/PM 값을 표시한다. wheel
+card는 410pt, 하단 완료 CTA는 64pt로 고정한다.
+
+**근거**: 기존 large sheet, toolbar 완료와 열별 선택 pill은 승인된 전체 화면 계층·강조 방식과 크게
+달랐다. wheel 자체를 다시 구현하면 관성·접근성·값 선택 회귀 위험이 커지므로 native interaction을
+보존하면서 승인된 하나의 선택 행만 시각적으로 합성한다. 전용 화면과 명시적 뒤로가기는 시작·종료
+편집 맥락을 유지하면서 Figma의 editorial hierarchy를 재현한다.
+
+**영향 범위**: `RuleEditorView`, `TimeRangePicker`, US1 UI 회귀, `FR-063`,
+`design/high-fidelity/US1-rule-configuration.md`에 적용한다.
+
+## DEC-049 — 홈 요일 구간 축약과 한국어 localization fallback
+
+**날짜**: 2026-08-25
+
+**결정**: 활성·비활성 홈 카드는 `HomeWeekdayFormatter` 하나를 공유한다. 월요일부터 일요일까지
+정렬한 선택 요일을 최대 연속 구간으로 나누고, 구간 길이가 2 이상이면 `시작-끝`, 단일 요일이면
+요일 약어로 표시하며 각 구간은 ` · `로 구분한다. 따라서 월~금은 `MON-FRI`, 월~일은 `MON-SUN`,
+토~일은 `SAT-SUN`, 수~금은 `WED-FRI`가 된다. 일요일과 월요일은 주간 표시 경계를 넘어 하나의
+구간으로 합치지 않는다.
+
+프로젝트 `developmentRegion`과 `Localizable.xcstrings`의 `sourceLanguage`는 모두 `ko`로 맞춘다.
+활성 상태, 수정 차단과 guard Alert의 필수 문구는 `String(localized:defaultValue:)`를 통해 한국어
+기본값도 함께 제공해 지원하지 않는 기기 언어에서도 resource key가 화면에 노출되지 않게 한다.
+
+**근거**: 활성·비활성 카드의 별도 요일 formatter는 같은 규칙을 서로 다르게 표시하고 연속 요일을
+불필요하게 길게 나열했다. 또한 한국어 string catalog와 영어 development region의 불일치 때문에
+영어 기기 언어에서 `restriction_status.*`와 `restriction_guard.*` key가 그대로 fallback됐다.
+단일 formatter와 일치하는 source language를 사용하면 표시 규칙과 현지화 fallback을 결정론적으로
+유지할 수 있다.
+
+**영향 범위**: `HomeWeekdayFormatter`, `RestrictionStatusView`, `HomeRuleCard`,
+`RestrictionCopy`, Xcode project localization 설정, US1·US3·접근성 UI 회귀, `FR-064`·`FR-065`에
+적용한다.
+
+## DEC-050 — 시스템 BackButton과 opaque 카테고리 선택 요약
+
+**날짜**: 2026-08-25
+
+**결정**: `NavigationStack`으로 push되는 앱 소유 하위 화면은 custom chevron을 만들지 않고 iOS 기본
+BackButton을 사용한다. 시간 선택 화면도 navigation bar를 숨기지 않으며 시스템 BackButton의 label,
+hit area와 접근성 동작을 유지한다.
+
+`FamilyActivitySelection`에 카테고리 token이 하나라도 포함되면 편집 화면은 `여러 앱 선택됨`, 홈은
+`여러 앱`으로 표시한다. 카테고리가 없고 개별 제한 대상 수를 정확히 아는 경우에만 숫자를 표시한다.
+유효성 검증과 Managed Settings 적용은 기존처럼 카테고리 token을 하나의 제한 대상으로 계산하며,
+이번 결정은 카테고리 내부 앱 수를 나타내는 사용자 표시만 변경한다.
+
+**근거**: 시스템 BackButton은 iOS navigation의 일관된 복귀 제스처, hit area와 VoiceOver 의미를
+제공한다. Apple의 `FamilyActivitySelection`과 `ActivityCategoryToken`은 개인정보 보호를 위해
+카테고리 내부 앱 목록이나 개수를 앱에 노출하지 않는 opaque token 경계이므로 숫자를 추정하면 실제
+선택과 다른 정보를 표시할 수 있다.
+
+**영향 범위**: `RuleEditorView`, `FamilyActivitySelection.restrictionSelectionSummary`,
+`HomeRuleItem`, `HomeRuleCard`, `RestrictionStatusView`, US1 단위·UI 회귀, `FR-063`, `FR-066`,
+`FR-067`과 US1 하이파이 구현 인계에 적용한다. 시간 화면의 custom 44pt 노란 꺾쇠를 정한
+`DEC-048`의 해당 부분을 대체한다.
+
+## DEC-051 — 고정 시간 설정 화면과 순차 완료 흐름
+
+**날짜**: 2026-08-26
+
+**결정**: 시작·종료 시각 설정 화면의 root는 `ScrollView`가 아닌 고정 `VStack`으로 구성해 화면
+전체가 움직이지 않게 한다. 사용자는 각 native wheel만 위아래로 조작한다. 시작 화면의 `완료`는
+규칙 편집 화면으로 복귀하지 않고 현재 navigation destination을 종료 시각 화면으로 전환하며, 종료
+화면의 `완료`가 규칙 편집 화면으로 복귀한다.
+
+시간 wheel 위에는 native 선택값을 다시 그리는 불투명 overlay나 별도 custom 선택 강조를 두지 않는다.
+wheel 자체의 값과 iOS 기본 선택 표시를 그대로 사용한다. 각 picker에 추가했던 명시적 `.clipped()`도
+제거해 인접 숫자의 glyph가 별도 view clipping에 잘리지 않게 한다. 이 시간 wheel의 세부 시각은 사용자
+승인에 따라 Figma 하이파이보다 숫자 가독성을 우선한다.
+
+**근거**: 화면 root scroll과 wheel scroll이 중첩되면 시간 조작 중 전체 화면이 움직일 수 있다.
+또한 picker 위의 58pt 불투명 선택 행과 별도 선택값 text는 native wheel의 중앙 및 인접 숫자를
+가렸다. 화면과 wheel의 scroll 책임을 분리하고 native 값을 직접 노출하면 조작 대상과 표시 결과가
+일치한다. 시작·종료 설정을 순차로 연결하면 시작 완료 뒤 규칙 편집 화면에서 종료 행을 다시 누르는
+불필요한 단계를 제거한다.
+
+**영향 범위**: `RuleEditorView.timePickerDestination`, `TimeRangePicker`, US1 UI 회귀,
+`FR-063`, `FR-068`과 US1 하이파이 구현 인계에 적용한다. 410pt card와 불투명 단일 accent 선택 행을
+정한 `DEC-048`의 해당 부분을 대체한다.
+
+## DEC-052 — 제한 안내의 Figma SVG와 불투명 배경
+
+**날짜**: 2026-08-26
+
+**결정**: 제한 안내 화면의 정적 아이콘은 승인된 Figma shield `113:2025` 안의 `113:2028` GetUp
+아이콘을 SVG로 직접 export해 Shield Configuration extension 전용 asset catalog에 보존한다.
+`ShieldConfigurationExtension`은 이 이미지를 extension bundle에서 읽고 `.alwaysOriginal`로 표시한다.
+기존 범용 `figure.stand` SF Symbol은 사용하지 않는다.
+
+배경에는 material blur를 적용하지 않고 승인 색상 `#08090B`를 직접 지정한다. 제목·설명과 primary
+`앱 닫기`의 동적 내용·동작은 기존 계약을 유지하며, content layout과 system button rendering은
+`ManagedSettingsUI` 소유 경계를 존중한다.
+
+**근거**: 첨부된 실제 화면의 범용 사람 아이콘과 회색 material 배경은 승인된 Dark Focus
+하이파이의 제품 정체성과 명암을 반영하지 못했다. Figma 원본 SVG를 직접 bundle에 포함하면 만료되는
+export URL이나 SF Symbol에 의존하지 않고 동일한 88×88 자산을 재현할 수 있다. blur를 제거해야
+배경색이 주변 앱 화면의 영향 없이 결정적으로 유지된다.
+
+**영향 범위**: `GetUpShieldConfiguration/ShieldConfigurationExtension.swift`, Shield Configuration
+전용 `Assets.xcassets`, Xcode resource build phase, US2 하이파이 구현 인계, `FR-069`와 T104에
+적용한다. 실기기의 system-owned layout·Dynamic Type·VoiceOver 최종 검증은 T085에 남긴다.
+
+## DEC-053 — 로컬 홈 우선 표시와 비차단 runtime 복구
+
+**날짜**: 2026-08-26
+
+**결정**: 앱 시작 시 `AppModel.load()`로 보호된 로컬 규칙·저장 장소와 기존 적용 상태를 먼저 읽고,
+성공하는 즉시 홈을 표시한다. `AppLifecycleCoordinator.restore()`가 수행하는 일정·region 초기화,
+규칙별 재등록, 현재 위치 갱신, 권한 확인과 제한 합집합 재평가는 홈 표시 뒤 같은 view lifecycle의
+후속 비동기 작업으로 실행한다. 복구 완료 뒤 제한 상태와 권한 안내를 최신 결과로 갱신한다.
+
+시작 복구가 진행되는 동안 동일 view에서 foreground 복구가 요청되면 두 번째 복구는 시작하지 않는다.
+복구 호출은 `AppEnvironment.RuntimeRecovery` closure로 주입해 앱 shell이 구체 actor 대신 비동기 복구
+계약에만 의존하고, 지연된 복구를 UI 회귀에서 결정적으로 검증한다.
+
+**근거**: 기존 시작 순서는 홈 데이터와 무관한 Core Location 단발성 fix를 규칙마다 기다린 뒤
+로컬 파일을 다시 읽어, 위치 응답이 느리거나 규칙 수가 많을수록 `규칙을 불러오는 중` 전체 화면을
+오래 유지했다. runtime 복구는 `FR-026`의 상태 일치를 위해 필요하지만 시스템 제한과 적용 상태는
+앱 화면과 독립적으로 보존되므로 로컬 홈 표시를 막을 이유가 없다. 화면 표시와 복구 책임을 분리하면
+안전한 재평가는 유지하면서 재실행 체감 시간을 로컬 snapshot read 시간으로 제한할 수 있다.
+
+**영향 범위**: `GetUpRootView`, `AppEnvironment.RuntimeRecovery`, UI test 시작 fixture,
+`FR-070`, T105와 foreground 복구 흐름에 적용한다. 실제 위치 fix 시간과 전체 복구 latency는 T083·
+T085의 실기기 관찰 범위를 유지한다.
+
+## DEC-054 — 제한 안내의 appearance별 대비와 시스템 layout 경계
+
+**날짜**: 2026-08-26
+
+**결정**: Shield Configuration은 다크 모드에서 승인된 `#08090B` 배경, `#FFFFFF` 제목과
+`#A6A8AD` 설명을 유지한다. 라이트 모드에서는 `#F5F5F7` 배경, `#090A0C` 제목과 `#51535A` 설명을
+사용한다. primary action은 appearance에 따라 색이 변하는 `.systemYellow` 대신 두 모드 모두 GetUp
+`#F4D600`과 `#090A0C` label을 사용한다. fallback 설명은 `설정한 위치에서 벗어나거나 시간이 끝나면
+자동으로 다시 사용할 수 있어요.`로 고정한다.
+
+글꼴 크기와 icon·제목·설명·버튼 사이의 padding은 `ManagedSettingsUI`가 소유하므로 custom view로
+대체하지 않는다. 앱이 제공할 수 있는 title·subtitle의 의미적 순서, adaptive text/background 색과
+primary 색으로 시각 위계와 가독성을 보완한다.
+
+**근거**: 실제 라이트 모드 화면에서 다크 모드용 흰 제목과 밝은 회색 설명이 밝은 배경 위에 그대로
+표시되어 내용을 읽기 어려웠고 `.systemYellow` 버튼은 어두운 올리브색으로 변했다. appearance별
+foreground/background를 함께 결정하고 브랜드 accent를 명시하면 시스템 layout을 침범하지 않으면서
+두 모드의 대비를 안정적으로 유지할 수 있다.
+
+**영향 범위**: `ShieldConfigurationExtension`, `ShieldContentProvider`, `Localizable.xcstrings`,
+shield contract, US2 하이파이 구현 인계, `FR-069`, `FR-071`과 T106에 적용한다. 실제 restricted app의
+system-owned layout, Dynamic Type·VoiceOver와 appearance 최종 확인은 T085 실기기 인수에서 수행한다.
+
+## DEC-055 — Shield callback의 전체 제한 대상 token 매칭
+
+**날짜**: 2026-08-26
+
+**결정**: `ShieldContentProvider`는 `ApplicationToken`뿐 아니라 Shield callback에서 제공되는
+`ActivityCategoryToken`과 `WebDomainToken`도 활성 규칙의 `FamilyActivitySelection`과 비교한다.
+application-in-category와 web-domain-in-category callback은 전달받은 두 token을 모두 사용하되,
+규칙 배열을 한 번만 filter해 같은 규칙을 중복 계산하지 않는다. 일치하는 단일 규칙의 저장 장소는
+프리셋과 직접 입력을 구분하지 않고 ID로 찾아 상세 콘텐츠를 만든다.
+
+**근거**: Managed Settings는 카테고리로 선택한 앱에 대해 application과 category를 함께 전달하지만,
+기존 extension은 category를 버리고 application token만 비교했다. opaque category 선택에는 개별 앱
+token이 저장되지 않으므로 활성 규칙이 0개로 오인되어 fallback이 표시됐다. 웹 도메인 callback도
+같은 이유로 token을 버리고 있었다.
+
+**영향 범위**: `ShieldContentProvider`, `ShieldConfigurationExtension`, shield contract,
+`FR-072`, T107과 카테고리·웹 도메인 직접 입력 장소 회귀 테스트에 적용한다. snapshot 자체를 읽지
+못하거나 일치 규칙·저장 장소가 실제로 없을 때의 fallback 계약은 유지한다.
+
+## DEC-056 — 시간 완료 CTA 전체 hit area와 Shield 순수 검정 label
+
+**날짜**: 2026-08-26
+
+**결정**: 시간 설정 화면의 완료 CTA는 `Button` 바깥에 frame과 배경을 붙이지 않고 label 내부에
+실제 `RoundedRectangle` fill과 text를 겹친 64pt `ZStack`을 둔다. label과 `Button` 양쪽에 전체 사각
+content shape를 적용해 보이는 버튼 좌우 끝도 동일한 완료 행동을 실행한다.
+
+Shield primary label은 기존 브랜드 near-black `#090A0C` 대신 순수 검정 `#000000`으로 지정한다.
+GetUp `#F4D600` 배경은 유지하며 계산상 대비는 약 `14.47:1`이다. 시스템 소유 글꼴 굵기와 layout은
+변경하지 않는다.
+
+**근거**: plain button에서 label 바깥에 적용한 frame·background는 accessibility frame을 넓혔지만
+실제 hit testing은 텍스트 부근에 남았다. 채워진 shape를 label의 실제 view로 만들었을 때 좌측 8%와
+우측 92% 좌표 탭이 모두 전환을 실행했다. 첨부된 다크 Shield에서는 버튼 글자가 노란 배경 위에서
+옅게 보여 앱이 제공 가능한 가장 어두운 불투명 색으로 대비를 강화할 필요가 있었다.
+
+**영향 범위**: `RuleEditorView.timePickerDestination`, `ShieldPalette.primaryButtonText`, US1 UI 회귀,
+US1·US2 하이파이 구현 인계, shield contract, `FR-071`, `FR-073`과 T108에 적용한다. 실제 Shield의
+system compositing 결과는 T085 실기기 인수에서 다시 확인한다.
+
+## DEC-057 — 종료 시간 wheel의 독립 상태와 명시적 유효성 차단
+
+**날짜**: 2026-08-26
+
+**결정**: 종료 시간의 시·분·AM/PM Picker는 각자 독립된 `@State`에 직접 바인딩하고, 사용자가 한
+wheel을 움직일 때 선택된 세 구성요소를 조합해 `endTime`에 반영한다. 다른 wheel의 후보 배열을 현재
+값으로 필터링하거나 가장 가까운 유효 시간을 다시 선택하지 않는다. 시작 후 15분 미만 또는 12시간
+초과의 임시 조합은 그대로 표시하되 안내를 오류색으로 바꾸고 종료 화면의 `완료` CTA를 비활성화한다.
+
+시작 화면에서 종료 화면으로 전환할 때는 `TimeRangePicker` identity를 boundary별로 분리해, 시작 시각
+변경에 따라 계산된 최초 유효 종료 시각으로 종료 wheel의 로컬 상태를 새로 초기화한다.
+
+**근거**: 종료 후보를 현재 period·hour·minute으로 교차 필터링하고 변경된 구성요소와 일치하는 가장
+가까운 시간을 고르면 분을 움직였을 때 시가 바뀌고 AM/PM을 움직였을 때 시·분까지 바뀐다. 필터만
+제거해도 세 Picker가 하나의 계산 binding을 공유하면 SwiftUI의 선택 동기화 중 다른 열이 재설정될 수
+있다. 독립 상태와 완료 시점 검증을 분리하면 `10:00~10:15`처럼 경계에 가까운 시간도 예측 가능하게
+조작하면서 15분~12시간 제품 규칙은 유지할 수 있다.
+
+**영향 범위**: `TimeRangePicker`, `RuleEditorView.timePickerDestination`,
+`ScheduleEvaluatorTests`, US1 시간 UI 회귀, `FR-063`과 T109에 적용한다. 종료 후보를 wheel에서 아예
+제거하던 기존 US1 acceptance 15와 `DEC-051`의 유효성 표현을 이 결정으로 보완한다.
+
+## DEC-058 — Icon Composer 원본 기반 앱 아이콘 브랜딩
+
+**날짜**: 2026-08-26
+
+**결정**: 사용자 제공 `Icon.icon`을 GetUp 앱 target의 primary app icon 원본으로 직접 연결한다.
+`ASSETCATALOG_COMPILER_APPICON_NAME`은 파일명과 같은 `Icon`을 사용하고, `.icon` package를 app resource
+build phase에 포함한다. Xcode가 원본의 노란 배경, 검정 GetUp glyph, appearance별 fill·opacity·glass
+설정에서 default·dark·clear·tinted icon과 iPhone·iPad 크기를 생성하게 한다.
+
+기존 `AppIcon.appiconset`의 PNG export는 사용자가 준비한 비교·fallback 산출물로 보존하지만 primary
+icon으로 선택하지 않는다. 브랜딩 appearance 변경은 중복 export를 직접 교체하지 않고 `Icon.icon`
+원본에서 수행한다.
+
+**근거**: 프로젝트 최소 지원 버전은 iOS 26이며 제공된 브랜딩 원본이 Icon Composer의 layer와
+appearance specialization을 이미 포함한다. 원본을 직접 컴파일하면 clear·tinted를 포함한 시스템
+appearance와 크기를 Xcode가 일관되게 생성하고, asset catalog의 세 PNG slot을 수동 동기화할 때 생길
+수 있는 appearance 누락을 피할 수 있다.
+
+**영향 범위**: `Icon.icon`, `GetUp.xcodeproj/project.pbxproj`, `FR-074`, T110과 T085의 실기기
+appearance 인수에 적용한다. 실제 Home Screen의 wallpaper·clear·tinted 조합 시각 확인은 T085에 남긴다.
+
+## DEC-059 — 외부 제품명 `나서`와 내부 `GetUp` 식별자 분리
+
+**날짜**: 2026-08-26
+
+**결정**: 사용자가 읽는 제품명은 `나서`로 변경한다. 홈 header·빈 상태·활성 카드, 권한 안내와 시스템
+설정 목업, `CFBundleDisplayName`, 위치 권한 설명, VoiceOver 문구와 Shield title은 “어서 집 밖을
+나서”라는 브랜드 약속을 반영한다. Shield 상세 제목은 `%@에서 %@ 밖으로 나서세요`, fallback 제목은
+`밖으로 나설 시간이에요`를 사용한다. 제한 해제 조건과 시간·반경 정보는 기존 정확성을 유지한다.
+
+Bundle ID `com.dxyn02.GetUp` namespace, `group.com.dxyn02.GetUp`, Xcode project·target·scheme·module,
+Swift 타입, `GetUpAppGroupIdentifier`, `getup.*` 저장·schedule·region 식별자는 변경하지 않는다. 이들은
+이미 entitlement, 공유 저장소, 배포 profile과 영속 데이터에 연결된 기술 식별자이므로 외부 브랜드와
+분리한다. 사용자 요청에 따라 `Icon.icon`과 `GetUpShieldLogo.svg`의 시각 교체는 별도 작업으로 남긴다.
+
+**근거**: `GetUp`은 App Store에서 동명·유사 앱과 겹치고 “일어나기”에 더 가깝지만, 제품의 핵심
+행동은 설정한 장소의 경계를 넘어 집 밖으로 나서는 것이다. 외부 카피를 `나서`로 통일하면 이 행동을
+홈과 제한 화면에서 일관되게 전달하면서, entitlement 재발급과 기존 공유 데이터 단절 위험 없이
+리브랜딩할 수 있다.
+
+**영향 범위**: `GetUpApp`의 홈, `PermissionGuideView`·`PermissionGuideModel`, `LocationPickerView`,
+`Info.plist`, `ShieldContentProvider`, `Localizable.xcstrings`, US1·US2·US4 UI와 문구 회귀, `FR-075`,
+T111에 적용한다. 앱 아이콘과 Shield SVG의 새 브랜드 asset은 후속 별도 작업에서 결정한다.
+
+## DEC-060 — 위치 CTA hit area와 새 Shield 심볼 연결
+
+**날짜**: 2026-08-26
+
+**결정**: 위치 선택 화면의 `적용` CTA는 56pt `RoundedRectangle`과 텍스트를 모두 `Button` label
+내부에 두고 label 전체에 rectangular content shape를 적용한다. 홈 빈 상태 설명은 사용 결과가 더
+직접 드러나도록 `밖으로 나가면 제한된 앱이 다시 열려요`를 사용한다.
+
+Shield Configuration extension은 기존 `GETUP` wordmark asset을 제거하고 새 `나서` 심볼 SVG를
+`NaseoShieldLogo`라는 새 asset 이름으로 불러온다. 새 이름은 확장 bundle의 이전 asset 이름과
+충돌하지 않게 하며, vector 원본과 `.alwaysOriginal` rendering은 유지한다.
+
+**근거**: frame·background가 plain `Button` 바깥에 있으면 보이는 버튼보다 hit-test 영역이 작아져
+텍스트를 눌러야만 적용되는 현상이 발생했다. 또한 기존 extension asset catalog에는 새 심볼이 아니라
+`GETUP` wordmark SVG가 남아 있어 코드가 정상적으로 asset을 읽어도 이전 로고가 표시됐다.
+
+**영향 범위**: `GetUpApp.emptyState`, `LocationPickerView.applyButton`,
+`ShieldConfigurationExtension`, extension 전용 asset catalog, `Localizable.xcstrings`, US1 UI 회귀,
+`FR-076`과 T112에 적용한다.

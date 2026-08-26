@@ -5,7 +5,7 @@
 | 항목 | 내용 |
 |---|---|
 | 사용자 스토리 | `US3` |
-| 관련 task | `T058`, `T059`, `T060`, `T061` |
+| 관련 task | `T058`, `T059`, `T060`, `T061`, `T101` |
 | 작성자 | `Codex` |
 | 작성일 | `2026-08-24` |
 | 문서 상태 | `승인됨` |
@@ -92,7 +92,7 @@ Alert 배치와 system-owned 크기는 구현 후 물리 기기에서 다시 검
 
 | component | 기본 | pressed·selected | disabled | 오류·loading | 접근성 동작 |
 |---|---|---|---|---|---|
-| 활성 규칙 card | `RESTRICTION ACTIVE`와 조건 표시 | pager swipe 유지 | `조건 종료 후 수정 가능` | US4에서 별도 정의 | 상태부터 변경 가능 조건까지 한 흐름으로 읽음 |
+| 활성 규칙 card | `현재 활성화됨`과 조건 표시 | pager swipe 유지 | `규칙 적용 중 수정 불가` | US4에서 별도 정의 | 상태부터 변경 가능 조건까지 한 흐름으로 읽음 |
 | 편집·끄기·삭제 guard | 활성 revision 일치 시 요청 거부 | 해당 없음 | 조건 종료 전 유지 | stale 상태는 최신 active set 재확인 | 세 행동에 동일 종료 조건 안내 |
 | iOS 26 `Alert` | 제목·설명·`확인` | system pressed state | 해당 없음 | 표시 실패 시 활성 상태 유지 | 제목 → 설명 → 확인, dismiss 뒤 시도 control로 focus 복귀 |
 | 자동 해제 전환 | 기존 홈 상태 재계산 | 해당 없음 | 해당 없음 | 위치 `unavailable`만으로 해제하지 않음 | 완료 전용 focus·announcement 없음 |
@@ -101,8 +101,8 @@ Alert 배치와 system-owned 크기는 구현 후 물리 기기에서 다시 검
 
 | 문자열 ID | 한국어 문구 | 변수 | 줄바꿈 규칙 |
 |---|---|---|---|
-| `restriction_status.active` | `RESTRICTION ACTIVE` | 없음 | 색상 외 상태 표현으로 유지 |
-| `restriction_status.edit_disabled` | `조건 종료 후 수정 가능` | 없음 | 최대 두 줄 허용 |
+| `restriction_status.active` | `현재 활성화됨` | 없음 | 색상 외 상태 표현으로 유지 |
+| `restriction_status.edit_disabled` | `규칙 적용 중 수정 불가` | 없음 | 최대 두 줄 허용 |
 | `restriction_guard.title` | `제한 중에는 수정할 수 없어요` | 없음 | 자연 줄바꿈, 축약 금지 |
 | `restriction_guard.message` | `%@ %@ 밖으로 이동하거나 %@이 지나면 규칙을 수정·끄기·삭제할 수 있어요.` | 장소 이름, 반경, 종료 시각 | 핵심 조건 모두 보존 |
 | `restriction_guard.confirm` | `확인` | 없음 | 축약 금지 |

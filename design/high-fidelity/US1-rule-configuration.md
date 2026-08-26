@@ -5,7 +5,7 @@
 | 항목 | 내용 |
 |---|---|
 | 사용자 스토리 | `US1` |
-| 관련 task | `T023`, `T024`, `T060`, `T061` |
+| 관련 task | `T023`, `T024`, `T060`, `T061`, `T100`, `T101`, `T102`, `T103` |
 | 작성자 | `Codex` |
 | 작성일 | `2026-08-23` |
 | 문서 상태 | `승인됨 · 구현 기준` |
@@ -17,17 +17,37 @@
 | 논리 플로우 재검토 node | [US1 / Dark Focus 논리 플로우 · T024 재검토](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=79-1959) |
 | 구현 대상 | `T031`, `T033`~`T035`, `T037`의 SwiftUI 화면과 component |
 
+> 2026-08-25 구현 검증: 시작 시각 `80:2010`, 종료 시각 `80:2033`을 기준으로 전용 navigation,
+> iOS 기본 BackButton, 410pt wheel card, 단일 accent 선택 행과 64pt 완료 CTA를 Simulator에서
+> 대조했다. T102에서 앱 소유 push 화면의 custom chevron을 시스템 BackButton으로 대체했다.
+>
+> 2026-08-26 구현 보정: 사용자 실기기 검수에 따라 시간 화면의 전체 scroll과 native wheel 값을
+> 덮던 custom 선택값 overlay를 제거했다. 시작 화면의 완료는 종료 화면으로 연속 전환한다. wheel
+> 높이·선택 강조는 숫자 가독성을 우선하며 승인 Figma와 달라도 되는 예외로 기록한다.
+>
+> 2026-08-26 hit area 보정: 시간 화면의 64pt 완료 CTA는 채워진 `RoundedRectangle`을 `Button`
+> label 내부에 두어 텍스트 밖 좌우 끝도 동일하게 동작한다.
+>
+> 2026-08-26 외부 브랜딩 보정: 사용자에게 보이는 제품명은 `나서`를 사용한다. 홈 header는 `나서`,
+> 빈 상태는 `READY TO STEP OUT`·`밖으로 나설 첫 규칙을 만들어보세요`·
+> `밖으로 나가면 제한된 앱이 다시 열려요`로 표시하고 장소 행동은 `%@에서 %@ 밖으로 나서면`으로
+> 통일한다. 위치 선택 화면의 56pt `적용` CTA는 채워진 shape를 `Button` label 안에 두어 좌우 끝도
+> 동작한다. Bundle ID·App Group·target/module·영속 key는 기존 `GetUp/getup`을 유지한다.
+
 ## 최종 사용자 흐름
 
 1. 규칙 편집 화면의 `START` 또는 `END` 전체 행을 탭하면 편집 대상을 제목으로 명시한 전용 시각
    선택 화면으로 이동한다. 시·분·AM/PM은 독립적인 세로 wheel이며 분은 1분 단위다. 입력·요약·
-   오류 상태의 시각은 `06:00 AM` 형식으로 통일하고 AM/PM은 시간 숫자보다 작게 표시한다.
+   오류 상태의 시각은 `06:00 AM` 형식으로 통일하고 AM/PM은 시간 숫자보다 작게 표시한다. 화면
+   전체는 고정하고 wheel만 움직인다. 시작 화면의 완료는 종료 화면으로 이어지고 종료 화면의 완료는
+   규칙 편집 화면으로 돌아간다.
 2. `LOCATION` 행을 탭하면 화면 절반 이상을 차지하는 큰 지도에서 중심 핀과 실제 반경 원을 함께
    확인한다. 반경 slider 변경은 지도 원에 즉시 반영한다.
 3. 지도 하단에서 D안의 `집`·`회사`·`직접 입력` 방식을 사용한다. `직접 입력`을 탭하면 현재 좌표와
    반경을 유지한 채 장소 이름 화면으로 이동하고, 저장 후 장소 설정으로 복귀한다.
-4. 시스템 `FamilyActivityPicker`에서 제한 앱을 하나 이상 선택한다. 앱 UI는 선택 개수만 표시하고
-   opaque app token의 이름이나 식별자를 해석하지 않는다.
+4. 시스템 `FamilyActivityPicker`에서 제한 앱을 하나 이상 선택한다. 개별 앱만 선택해 정확한 수를
+   아는 경우 `n개 앱 선택됨`으로 표시한다. opaque category token이 포함되면 내부 앱 수를 추정하지
+   않고 `여러 앱 선택됨`으로 표시하며 token의 이름이나 식별자를 해석하지 않는다.
 5. 시간·요일·장소·앱이 모두 유효하면 저장 버튼이 활성화된다. 저장 실패 시 draft를 유지한 상태에서
    같은 값으로 다시 저장한다.
 6. 저장된 비활성 규칙의 편집 화면 하단에서 `규칙 삭제`를 선택하면 시스템 Alert가 규칙만 삭제되고
@@ -38,7 +58,7 @@
 
 - 정보 구조와 제품 동작은 승인된 `D 보완`을 유지했다.
 - 선택된 B 화면의 Dark Focus 구조, GetUp 전용 local token·text style, 오류 대비, 저장 실패 modal 및
-  접근성 구현 인계 규격을 추가했다. 앱 소유 화면에는 iOS 26 Liquid Glass component를 사용하지 않는다.
+  접근성 구현 인계 규격을 추가했다. 앱 소유 화면의 복귀 행동은 iOS 기본 BackButton을 사용한다.
 - 실제 지도 tile, 실제 앱 이름·token 및 시스템 keyboard·`FamilyActivityPicker` 내부 재설계는
   포함하지 않았다.
 
@@ -77,7 +97,7 @@ bottom CTA` 구조로 9개 상태를 처음부터 다시 작성했다. 후보 A�
 | `HF-FLOW-06` | [장소 이름 필요](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=63-8070) | `validation` | 저장 장소 이름 누락 | 지도·반경 유지와 이름 필요 안내 | 장소 이름 입력 |
 | `HF-FLOW-07` | [직접 입력](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=81-2034) | `keyboard` | `직접 입력` 탭 | 선택 좌표·반경 유지, 장소 이름 field | 이름 저장 |
 | `HF-FLOW-08` | [위치 권한](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=81-2071) | `권한 부족` | 현재 위치 권한 없음 | 사용 목적, 설정 이동, 나중에 | 설정 이동, 복귀 |
-| `HF-FLOW-09` | [앱 선택](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=82-1965) | `시스템 소유 경계` | `BLOCKED` 탭 | 검색, 선택 상태와 선택 개수 예시 | 선택 완료 |
+| `HF-FLOW-09` | [앱 선택](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=82-1965) | `시스템 소유 경계` | `BLOCKED` 탭 | 검색, 선택 상태와 개별 앱의 정확한 수 또는 카테고리의 `여러 앱` 요약 | 선택 완료 |
 | `HF-FLOW-10` | [최종 검토](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=63-8169) | `ready` | 네 필수 조건 유효 | 12시간제 시간·요일·장소·앱 요약, 활성 저장 CTA | 조건 재편집, 저장 |
 | `HF-FLOW-11` | [저장 실패](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=63-8217) | `오류` | repository 저장 실패 | 보존된 draft와 같은 화면의 오류 card | 재시도, 편집 복귀 |
 | `HF-FLOW-12` | [규칙 삭제](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=147-2006) | `inactive / destructive entry` | 저장된 비활성 규칙 편집 | `GetUp Focus/color/error`를 사용하는 353×52pt bordered 삭제 버튼 | 삭제 확인 열기 |
@@ -85,6 +105,9 @@ bottom CTA` 구조로 9개 상태를 처음부터 다시 작성했다. 후보 A�
 | `HOME-01` | [규칙 없음](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=86-2054) | `empty` | 저장 규칙 없음 | 제품 행동 원리, 문 아이콘, 새 규칙 CTA | 첫 규칙 생성 |
 | `HOME-02` | [모든 규칙 1/3](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=88-1959) | `today` | 저장 규칙 중 오늘 적용 | `RULE 1 OF 3`, 오늘 적용일과 조건을 묶은 단일 swipe card | 좌우 swipe, 규칙 수정, 새 규칙 |
 | `HOME-03` | [모든 규칙 2/3](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=89-1959) | `next` | 저장된 다른 유효 규칙 | `RULE 2 OF 3`, 해당 규칙의 다음 적용일과 조건을 묶은 단일 swipe card | 좌우 swipe, 규칙 수정, 새 규칙 |
+
+홈 카드의 적용 요일은 최대 연속 구간 단위로 축약한다. 월~금은 `MON-FRI`, 월~일은 `MON-SUN`,
+토~일은 `SAT-SUN`, 수~금은 `WED-FRI`로 표시하고 분리된 구간은 ` · `로 구분한다.
 
 ## 시각 명세
 
@@ -145,7 +168,7 @@ scroll하며 label·값이 겹치면 행을 두 줄로 재배치한다.
 
 | 자산 | 이름 또는 SF Symbol | 용도 | 접근성 처리 |
 |---|---|---|---|
-| 뒤로가기 | `chevron.backward` | 상위 화면 복귀 | `뒤로` label |
+| 뒤로가기 | iOS 기본 BackButton | 상위 화면 복귀 | 시스템 label·hint·hit area 유지 |
 | 완료 | `checkmark` | 유효 입력 저장·sheet 확정 | disabled·enabled trait와 hint 제공 |
 | 현재 위치 | `location` 계열 | 현재 위치 바로가기 | 현재 권한 상태와 결과를 value로 제공 |
 | 지도 핀 | `mappin` | 지도 중심 기준점 | 장식 핀은 숨기고 지도에 별도 label 제공 |
@@ -159,7 +182,7 @@ scroll하며 label·값이 겹치면 행을 두 줄로 재배치한다.
 |---|---|---|---|---|---|---|
 | 주요 CTA | yellow fill + black label | opacity·scale feedback | elevated gray, 저장 불가 사유 | 동일 화면 오류 card | 중복 tap 방지 | label, enabled state, 저장 hint |
 | 요일 chip | neutral circle | yellow + 검정 label | 해당 없음 | 최소 1개 안내 | 해당 없음 | 요일명, 선택됨 trait, 44pt hit area |
-| 시간 wheel picker | 시·분·AM/PM 세 열 | 중앙 선택 행 강조, 분 1분 snap | 저장 가능한 구간이 15분 미만이면 완료 차단 | 최초 유효 종료 시각 안내 | 해당 없음 | 시작·종료, AM/PM과 다음 날 여부를 value로 제공 |
+| 시간 wheel picker | 시·분·AM/PM 세 열 | native 중앙 선택 강조, 분 1분 snap | 15분 미만·12시간 초과 임시 조합은 경고와 완료 차단 | 최초 유효 종료 시각 안내 | 해당 없음 | 화면 전체는 고정하고 wheel만 조작, 세 wheel은 독립 상태를 유지해 다른 열을 자동 보정하지 않음, 인접 숫자를 overlay로 가리지 않으며 시작 완료 후 종료 화면 전환, 완료 CTA 64pt 전체 hit area |
 | 반경 slider | 1km 기본 | 여섯 단계에 snap | 위치 미선택 시 저장만 비활성 | 값 집합 밖 저장 금지 | 해당 없음 | `500m`~`5km` value, adjustable action |
 | 저장 장소 chip | neutral | yellow selected | 해당 없음 | 권한 부족은 지도 핀 대안 유지 | 해당 없음 | 장소 이름과 선택 상태 제공 |
 | disclosure row | title + detail + chevron | system highlight | 필수 값 누락 detail | 첫 오류로 focus 이동 | 저장 중 입력 유지 | 하나의 button으로 grouping |
@@ -173,6 +196,7 @@ scroll하며 label·값이 겹치면 행을 두 줄로 재배치한다.
 | `rule_editor.minimum_duration_hint` | 종료 시각은 시작 시각으로부터 최소 15분 이후만 선택할 수 있어요. | 없음 | 2줄 허용 |
 | `rule_editor.optional_name` | 규칙 이름 (선택 사항) | 없음 | detail은 별도 줄 가능 |
 | `rule_editor.selected_apps_count` | %lld개 앱 선택됨 | 개수 | 축약 금지 |
+| 카테고리 선택 요약 | 여러 앱 선택됨 | 없음 | opaque category 내부 앱 수 추정 금지 |
 | `location_picker.title` | 장소 설정 | 없음 | 1줄 |
 | `location_picker.permission_missing` | 현재 위치를 사용할 수 없어요. 지도 핀으로 직접 설정할 수 있어요. | 없음 | 2줄 이상 허용 |
 | `location_picker.reuse_hint` | 이 장소는 다른 규칙에서도 다시 사용할 수 있어요. | 없음 | 자연 줄바꿈 |
@@ -205,6 +229,8 @@ text node 70개를 별도로 감사했다. SF Pro 외 서체, 빈 text, placehol
 
 - `FamilyActivityPicker` 내부 목록, 앱 icon·이름 표시와 선택 UI는 시스템이 소유한다. Figma frame은
   앱과 시스템 사이의 정보 경계와 완료 결과만 설명한다.
+- `NavigationStack`으로 push되는 앱 소유 하위 화면의 복귀 행동은 custom chevron 없이 iOS 기본
+  BackButton을 사용한다.
 - 시스템 keyboard 내부 font와 key layout은 재설계하지 않는다.
 - MapKit 실제 지도 tile, 위치 blue dot과 권한 prompt는 구현·실기기 상태를 따른다.
 - 앱은 실제 좌표, 주소, 앱 token을 Figma·log·analytics에 저장하지 않는다.
@@ -271,7 +297,9 @@ text node 70개를 별도로 감사했다. SF Pro 외 서체, 빈 text, placehol
 | `2026-08-23` | `Codex` | 홈 pager에 모든 유효 규칙을 `RULE n OF 3`과 page indicator로 표시하고 오늘 적용 규칙 우선·나머지 다음 적용 시점 순 정렬, 현재 card와 무관한 독립 적용 원칙을 명시했다. | 모든 규칙 적용 요청 |
 | `2026-08-23` | `Codex` | 사용자 수정 최종본의 13개 제품 화면을 다시 감사했다. SF Pro 외 서체, 임시 문구, text overflow가 없고 시·분·AM/PM wheel, 1분 단위 분 전환, 큰 지도·반경 원, 장소 이름 진입, 통합 swipe card와 모든 규칙 pager가 유지됨을 확인했다. | 최종 승인 |
 | `2026-08-24` | `Codex` | T037의 실제 SwiftUI를 기준으로 `HF-FLOW-12` 삭제 버튼, `HF-FLOW-13` 공식 iOS 26 삭제 확인 Alert와 T060 상태·문구·접근성·구현 인계 panel을 최종 wrapper에 추가했다. | 규칙 삭제 UI 누락 보완 |
-| `2026-08-25` | `Codex` | Figma의 GETUP header, 통합 pager card, 큰 시간 위계, 지도 353×402, 상시 `집`·`회사`·`직접 입력`, 56pt 적용 CTA를 구현에 재정렬했다. 직접 입력은 같은 화면의 10자 필드이며 중복 이름과 15분 미만·12시간 초과 종료 조합은 선택·적용할 수 없게 했다. | 실기기·하이파이 편차 보정 |
+| `2026-08-25` | `Codex` | Figma의 GETUP header, 통합 pager card, 큰 시간 위계, 지도 353×402, 상시 `집`·`회사`·`직접 입력`, 56pt 적용 CTA를 구현에 재정렬했다. 직접 입력은 같은 화면의 10자 필드이며 중복 이름과 15분 미만·12시간 초과 종료 조합은 적용할 수 없게 했다. | 실기기·하이파이 편차 보정 |
+| `2026-08-26` | `Codex` | 종료 시간의 세 wheel이 유효 후보 필터와 단일 계산 binding 때문에 서로 값을 바꾸던 동작을 제거했다. 시·분·AM/PM은 독립 상태를 유지하고 임시로 유효하지 않은 조합은 경고와 비활성 완료 CTA로만 차단한다. | 종료 시간 조작 안정성 보정 |
+| `2026-08-26` | `Codex` | 시간 설정 화면의 전체 ScrollView를 고정 VStack으로 교체하고, 시작 완료 후 종료 화면으로 연속 전환했다. native wheel 숫자를 덮던 custom 선택값 overlay와 명시적 clipping을 제거해 인접 숫자 가독성을 우선하는 Figma 예외를 반영했다. | 시간 설정 화면 scroll·흐름·숫자 가림 보정 |
 
 ## 구현 승인
 

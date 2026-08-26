@@ -5,13 +5,14 @@
 | 항목 | 내용 |
 |---|---|
 | 사용자 스토리 | `US4` |
-| 관련 task | `T070`, `T071` |
+| 관련 task | `T070`, `T071`, `T095`, `T096` |
 | 작성자 | `Codex` |
 | 작성일 | `2026-08-24` |
 | 문서 상태 | `승인됨 · 구현 기준` |
 | 승인된 로우파이 | [US4 권한 및 위치 문제 안내 로우파이](../low-fidelity/US4-permission-location-errors.md) |
 | 관련 명세·contract | [spec.md](../../specs/001-location-app-restriction/spec.md), [restriction-evaluation-contract.md](../../specs/001-location-app-restriction/contracts/restriction-evaluation-contract.md), [platform-events-contract.md](../../specs/001-location-app-restriction/contracts/platform-events-contract.md) |
 | Figma wrapper | [US4 · T070 하이파이](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=174-2090) |
+| 승인된 권한 요청 frame | [US4 / 권한 요청 클릭 유도 · 하이파이 제안 · 승인 대기](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=204-2014) |
 | 구현 대상 | `T076`의 `PermissionGuideModel.swift`, `T077`의 `PermissionGuideView.swift`, `T079`의 `AppLifecycleCoordinator.swift` |
 
 ## 최종 사용자 흐름
@@ -19,15 +20,20 @@
 1. 필수 권한 중 하나 이상이 부족하면 권한 점검 화면이 앱 사용 제한, Always 위치 접근,
    Full Accuracy와 Background App Refresh 상태를 서로 다른 표시로 보여준다.
 2. 개요의 `다음`부터 Family Controls → 위치 → Background App Refresh 순서로 각 상태를 확인한다.
-3. 권한이 `notDetermined`이면 해당 상세 화면 진입과 함께 시스템 권한 요청을 표시하고, 결과가
-   정해질 때까지 `다음`을 비활성화한다. Family Controls는 `AuthorizationCenter`, 위치는 Core
-   Location의 첫 요청을 사용한다.
-4. 권한이 허용되면 같은 상세 화면에서 활성화된 `다음`으로 후속 권한을 확인한다.
-5. 권한이 거부되었거나 요구 수준보다 낮으면 위치 화면은 `설정 열기`만 제공한다. Background App
-   Refresh 제한 안내는 상태와 시스템 전체 설정 경로를 확인한 뒤 `확인`으로 닫는다.
-6. 위치가 `unavailable`이고 제한이 비활성이면 새 제한을 시작하지 않는다. 제한이 활성이면 위치
+3. 권한이 `notDetermined`이면 시스템 alert를 본뜬 중앙 목업을 먼저 표시한다. 사용자가 목업 안의
+   `계속` 또는 `앱을 사용하는 동안 허용`을 누른 뒤에만 Family Controls 또는 Core Location 시스템
+   요청을 실행한다. 위치가 `.whenInUse`이면 별도 `항상 허용으로 변경` 목업 버튼으로 Always 요청을
+   실행한다.
+4. 권한이 허용되면 온보딩에서는 다음 권한 화면으로 자동 이동하고, 일반 사용 중 복구 화면에서는
+   안내를 닫는다.
+5. 권한이 거부되었거나 요구 수준보다 낮으면 같은 권한 화면을 유지하되 다음 주요 행동을
+   `설정 열기`로 변경한다. 온보딩의 마지막 Background App Refresh 화면은 상태와 관계없이
+   `시작하기`로 완료하고, 일반 복구의 제한 안내만 `확인`으로 닫는다.
+6. `시작하기`를 누르기 전에 앱을 이탈하면 완료 상태를 저장하지 않고 다음 실행에서 온보딩 개요부터
+   다시 시작한다. 누른 뒤에는 완료 상태를 영구 저장하고 홈으로 이동한다.
+7. 위치가 `unavailable`이고 제한이 비활성이면 새 제한을 시작하지 않는다. 제한이 활성이면 위치
    실패만으로 shield를 해제하지 않으며, 시간 종료는 위치와 무관하게 제한을 해제한다.
-7. GetUp으로 돌아오거나 위치를 다시 확인하면 최신 권한·일정·region·snapshot으로 상태를 재평가하고
+8. 나서로 돌아오거나 위치를 다시 확인하면 최신 권한·일정·region·snapshot으로 상태를 재평가하고
    갱신된 상태 heading으로 focus를 이동한다.
 
 ### 승인된 로우파이와의 차이
@@ -39,8 +45,9 @@
   수정본에서 제거한 화면 우측 상단 badge는 추가하지 않는다.
 - 위치 확인 불가 화면의 `위치 다시 확인`은 보조 행동, `설정 열기`는 주요 행동으로 token과 layer
   이름을 정규화했다.
-- Family Controls와 위치 최초 요청은 system alert 형태, 위치와 Background App Refresh 설정은
-  Settings row 형태의 비대화형 목업을 제공하고 실제로 선택할 버튼·값·toggle만 accent로 강조한다.
+- Family Controls와 위치 최초·Always 요청은 system alert 형태의 중앙 목업을 제공하고 실제 요청을
+  실행하는 버튼을 목업 안에 배치한다. 위치와 Background App Refresh 복구는 Settings row 형태의
+  비대화형 목업을 유지하며 실제로 선택할 값·toggle만 accent로 강조한다.
 - 위치 복구 본문의 `‘항상 허용’으로 변경해 주세요.`와 `‘정확한 위치’를 켜 주세요.` 문구는
   GetUp Focus accent를 사용한다.
 - Figma handoff panel에 안전 계약, 접근성, 플랫폼 소유 경계, 개인정보 보호와 구현 identifier를
@@ -52,9 +59,9 @@
 
 | 상태 묶음 | Figma frame | Family Controls | 위치 | Background App Refresh |
 |---|---|---|---|---|
-| 결정되지 않음 | [notDetermined](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=194-2104) | 시스템 승인 자동 요청, `다음` 비활성 | 시스템 위치 승인 자동 요청, `다음` 비활성 | 별도 시스템 prompt가 없어 실제 조회 상태를 허용·거부 규칙으로 정규화 |
-| 허용됨 | [approved](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=194-2182) | `다음` | `다음` | `다음` |
-| 거부됨 | [denied](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=194-2247) | `설정 열기` | `설정 열기` | `확인` |
+| 결정되지 않음 | [승인된 요청 frame](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=204-2014) | alert 목업의 `계속` 탭 후 시스템 요청 | alert 목업의 `앱을 사용하는 동안 허용` 탭 후 시스템 요청 | 별도 시스템 prompt가 없어 실제 조회 상태를 허용·거부 규칙으로 정규화 |
+| 허용됨 | [approved](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=194-2182) | 온보딩은 다음 단계, 복구는 닫기 | `.whenInUse`는 Always 요청, `.always/full`은 온보딩 다음 단계·복구 닫기 | 온보딩 `시작하기` |
+| 거부됨 | [denied](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=194-2247) | 다음 주요 행동 `설정 열기` | 다음 주요 행동 `설정 열기` | 온보딩 `시작하기`, 일반 복구 `확인` |
 
 Background App Refresh의 플랫폼 상태는 `available`, `denied`, `restricted`만 제공되므로 Figma의
 `notDetermined` 시각 상태를 별도 도메인 값으로 추정하지 않는다. `available`은 허용됨, `denied`와
@@ -63,14 +70,15 @@ Background App Refresh의 플랫폼 상태는 `available`, `denied`, `restricted
 | 화면 ID | Figma frame | 상태 | 발생 조건 | 표시 내용 | 가능한 행동 |
 |---|---|---|---|---|---|
 | `US4-HF-01` | [권한 점검](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=194-2104) | `permission required` | 하나 이상의 필수 권한 부족 | 네 권한의 용도와 자동 제한 영향 | 다음 |
-| `US4-HF-02A` | [Family Controls 미결정](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=194-2116) | `notDetermined` | 최초 승인 전 | 시스템 승인 자동 요청 | 비활성 다음 |
+| `US4-HF-02A` | [Family Controls 요청](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=204-2017) | `notDetermined` | 최초 승인 전 | 중앙 alert 목업과 설명 skeleton | 목업 `계속` |
 | `US4-HF-02B` | [Family Controls 허용](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=194-2194) | `approved` | 승인 완료 | 후속 권한 확인 가능 | 다음 |
 | `US4-HF-02C` | [Family Controls 거부](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=194-2259) | `denied` | 거부·철회 | 시스템 설정 복구 | 설정 열기 |
-| `US4-HF-03A` | [위치 미결정](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=194-2125) | `notDetermined` | 최초 위치 요청 전 | 시스템 위치 승인 자동 요청 | 비활성 다음 |
+| `US4-HF-03A` | [위치 사용 중 요청](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=204-2018) | `notDetermined` | 최초 위치 요청 전 | 정확한 위치 안내, 중앙 alert·지도 preview | 목업 `앱을 사용하는 동안 허용` |
+| `US4-HF-03A2` | [위치 Always 요청](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=212-2014) | `whenInUse/full accuracy` | 사용 중 위치 승인 후 | Always 필요 안내, 중앙 alert·지도 preview | 목업 `항상 허용으로 변경` |
 | `US4-HF-03B` | [위치 허용](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=194-2200) | `always/full accuracy` | 요구 수준 충족 | 후속 권한 확인 가능 | 다음 |
 | `US4-HF-03C` | [위치 거부](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=194-2265) | `denied/insufficient` | Always 또는 Full Accuracy 부족 | 시스템 설정 경로와 위치 추정 금지 | 설정 열기 |
-| `US4-HF-04B` | [Background App Refresh 허용](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=194-2209) | `available` | 사용 가능 | 안내 완료 가능 | 다음 |
-| `US4-HF-04C` | [Background App Refresh 거부](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=194-2274) | `denied/restricted` | 시스템 제한 | 복구 지연 가능성과 저전력 모드 제약 | 확인 |
+| `US4-HF-04B` | [Background App Refresh 허용](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=194-2209) | `available` | 사용 가능 | 안내 완료 가능 | 온보딩 `시작하기` |
+| `US4-HF-04C` | [Background App Refresh 거부](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=194-2274) | `denied/restricted` | 시스템 제한 | 복구 지연 가능성과 저전력 모드 제약 | 온보딩 `시작하기`, 일반 복구 `확인` |
 | `US4-HF-05` | [위치 확인 불가 · 비활성](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=174-2138) | `location unavailable / inactive` | 제한 비활성 + 위치 `unavailable` | 새 제한 미적용과 확인 항목 | 위치 다시 확인, 설정 열기 |
 | `US4-HF-06` | [위치 확인 불가 · 활성](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=174-2150) | `location unavailable / active` | 제한 활성 + 위치 `unavailable` | shield 보존과 시간 종료 우선 | 위치 다시 확인, 설정 열기 |
 | `US4-HF-SPEC` | [접근성·구현 인계](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=174-2160) | `handoff` | 디자인·개발 검토 | 위계, 안전 계약, 접근성, 플랫폼·개인정보 경계 | 해당 없음 |
@@ -128,8 +136,9 @@ Family Controls 승인 UI와 권한 prompt는 iOS appearance를 그대로 따른
 | 정확한 위치 | `🎯` | Full Accuracy와 반경 판정 | 아이콘 숨김, 권한명·설명을 함께 읽음 |
 | Background App Refresh | `🔄` | 앱이 닫힌 동안 상태 복구 가능성 | 아이콘 숨김, 권한명·설명을 함께 읽음 |
 
-별도 raster asset은 필요하지 않다. 권한 목록의 emoji는 같은 행의 권한명·설명과 함께 사용하고,
-아이콘만으로 권한 종류나 현재 상태를 전달하지 않는다.
+권한 목록의 emoji는 같은 행의 권한명·설명과 함께 사용하고 아이콘만으로 권한 종류나 현재 상태를
+전달하지 않는다. 위치 요청 목업의 추상 지도 preview는 승인된 Figma frame을
+`LocationWhenInUsePreview`, `LocationAlwaysPreview` imageset으로 export하며 접근성에서는 숨긴다.
 
 ## component 상태
 
@@ -155,6 +164,7 @@ Family Controls 승인 UI와 권한 prompt는 iOS appearance를 그대로 따른
 | `permission_guide.action.next` | `다음` | 없음 | 축약 금지 |
 | `permission_guide.action.retry_location` | `위치 다시 확인` | 없음 | 축약 금지 |
 | `permission_guide.action.confirm` | `확인` | 없음 | 축약 금지 |
+| `permission_guide.action.complete_onboarding` | `시작하기` | 없음 | 축약 금지 |
 
 시스템 설정 경로는 OS 버전에 따라 달라질 수 있으므로 화면 본문은 지원 iOS 26의 실제 경로를 기준으로
 검증한다. 좌표·주소·앱 이름·bundle identifier와 `FamilyActivitySelection` token은 문구, 접근성 값과
@@ -179,15 +189,16 @@ AX1~AX5, Increase Contrast와 시스템 설정 복귀 focus는 구현 후 물리
 
 ## 플랫폼 동작과 제약
 
-- Family Controls 승인 UI, 시스템 권한 prompt와 Settings 화면은 iOS가 소유하며 GetUp이 재설계하지
+- Family Controls 승인 UI, 시스템 권한 prompt와 Settings 화면은 iOS가 소유하며 나서가 재설계하지
   않는다.
-- Family Controls가 `notDetermined`이면
-  `AuthorizationCenter.requestAuthorization(for: .individual)`을 자동 호출하고, `denied`이면 승인된
-  복구 상태에 따라 Settings 행동을 제공한다.
+- Family Controls가 `notDetermined`이면 alert 목업의 `계속`을 누른 뒤
+  `AuthorizationCenter.requestAuthorization(for: .individual)`을 호출하고, `denied`이면 같은 화면의
+  다음 주요 행동을 Settings 이동으로 변경한다.
 - 앱은 개인 사용자가 시스템 설정에서 권한을 철회하거나 앱을 삭제하는 플랫폼 우회를 막는다고
   안내하지 않는다.
-- 위치는 첫 요청에서 `앱을 사용하는 동안 허용`을 받은 뒤 앱 설정에서 `항상 허용`과 `정확한 위치`를
-  켜는 두 단계로 안내한다.
+- 위치는 alert 목업의 `앱을 사용하는 동안 허용`을 누른 뒤 첫 요청을 실행하고, `.whenInUse`와
+  Full Accuracy를 얻으면 별도 alert 목업의 `항상 허용으로 변경`을 눌러 Always 요청을 실행한다.
+  Always 요청 뒤에도 `.whenInUse`가 유지되면 거부 결과로 취급해 Settings 복구를 제공한다.
 - Background App Refresh는 진단·복구 지연 정보이며 특정 background 실행 시각을 보장하지 않는다.
   앱별 Settings에서 변경할 수 없으므로 시스템 전체 `설정 > 일반 > 백그라운드 앱 새로 고침` 경로를
   설명하고 앱별 Settings action을 제공하지 않는다. 이 진단만 제한된 foreground 복귀에서는 권한
@@ -205,14 +216,17 @@ AX1~AX5, Increase Contrast와 시스템 설정 복귀 focus는 구현 후 물리
 - `T079`: foreground 진입과 권한 변경 뒤 권한·일정·region·snapshot을 재평가하고 갱신 heading으로
   접근성 focus를 이동한다.
 - `Localizable.xcstrings`에는 `permission_guide.*` 문자열을 추가한다.
-- UI test identifier는 `permissionGuide.screen`, `permissionGuide.permissionList`,
+- UI test identifier는 `permissionGuide.screen`, `permissionGuide.title`, `permissionGuide.permissionList`,
   `permissionGuide.next`, `permissionGuide.openSettings`, `permissionGuide.retryLocation`,
-  `permissionGuide.confirm`을 사용한다.
+  `permissionGuide.confirm`, `permissionGuide.completeOnboarding`, `permissionGuide.requestFamilyControlsAuthorization`,
+  `permissionGuide.requestLocationAuthorization`, `permissionGuide.requestAlwaysLocationAuthorization`을 사용한다.
 - 설명용 목업은 `permissionGuide.mockup.familyControls`, `permissionGuide.mockup.locationPrompt`,
-  `permissionGuide.mockup.locationSettings`, `permissionGuide.mockup.backgroundRefresh`를 사용하고,
+  `permissionGuide.mockup.locationAlwaysPrompt`, `permissionGuide.mockup.locationSettings`,
+  `permissionGuide.mockup.backgroundRefresh`를 사용하고,
   위치 강조 문구는 `permissionGuide.location.alwaysInstruction`,
   `permissionGuide.location.accuracyInstruction`으로 검증한다.
-- 별도 image·raster asset은 필요하지 않으며 권한 목록 emoji는 같은 행의 text와 함께 구현한다.
+- 위치 요청 목업의 추상 지도는 Figma export imageset을 사용하고 권한 목록 emoji는 같은 행의 text와
+  함께 구현한다.
 
 ## 검토 체크리스트
 
@@ -230,6 +244,7 @@ AX1~AX5, Increase Contrast와 시스템 설정 복귀 focus는 구현 후 물리
 |---|---|---|---|---|
 | `2026-08-24` | 사용자 | `검토 대기` | T070 하이파이 초안 검토 요청 | `T071`에서 피드백과 구현 승인 여부 반영 |
 | `2026-08-24` | 사용자 | `승인됨` | 사용자가 직접 수정한 현재 Figma를 구현 기준으로 승인 | `T071` 완료, T072~T074 선행 테스트 진행 가능 |
+| `2026-08-25` | 사용자 | `승인됨` | `US4 / 권한 요청 클릭 유도 · 하이파이 제안 · 승인 대기` frame을 새 권한 요청 UI 구현 기준으로 승인 | `T095`에서 UI·상태 전환·테스트 반영 |
 
 ## 변경 기록
 
@@ -244,6 +259,8 @@ AX1~AX5, Increase Contrast와 시스템 설정 복귀 focus는 구현 후 물리
 | `2026-08-25` | 사용자·`Codex` | 권한 온보딩을 설치 후 최초 실행 1회로 한정하고 표시 여부를 영구 저장해 앱 종료·재실행 뒤에는 복구 대상 화면만 표시 | 프로세스 재실행 시 온보딩 재등장 결함 보정 |
 | `2026-08-25` | 사용자·`Codex` | 위치 권한 복구 화면의 `나중에`를 제거하고 Background App Refresh 제한 안내의 종료 문구를 `확인`으로 변경 | 권한 화면 행동 문구 보정 |
 | `2026-08-25` | 사용자·`Codex` | 첨부 실기기 화면을 참고해 Family Controls·위치·Background App Refresh에 설명용 alert·Settings 목업을 추가하고 눌러야 할 항목과 Always·정확한 위치 문구를 accent로 강조 | 권한 복구 행동의 시각적 이해 보강 |
+| `2026-08-25` | 사용자·`Codex` | 승인된 `204:2014` frame에 맞춰 Family Controls·위치 사용 중·Always alert 목업을 중앙 배치하고, 강조 버튼의 명시적 요청과 허용·거부 후 문맥별 전환을 구현 기준으로 확정 | 권한 요청 클릭 유도 하이파이 최종 승인 |
+| `2026-08-25` | 사용자·`Codex` | 마지막 Background App Refresh 행동을 `시작하기`로 바꾸고, 이 행동에서만 완료를 저장해 중단 재실행은 온보딩을 반복하고 완료 재실행은 홈으로 진입하도록 확정 | 온보딩 완료 시점 보정 |
 
 ## 구현 승인
 
@@ -251,8 +268,8 @@ AX1~AX5, Increase Contrast와 시스템 설정 복귀 focus는 구현 후 물리
 |---|---|
 | 승인 상태 | `승인됨` |
 | 승인자 | 사용자 |
-| 승인일 | `2026-08-24` |
+| 승인일 | `2026-08-25` |
 | 미해결 항목 | 없음 |
 
-T072~T074의 실패 테스트를 먼저 작성한 뒤 이 승인본을 기준으로 T076·T077 UI 상태와 화면을
-구현한다. 제품 동작이나 화면 구조가 바뀌면 로우파이 또는 하이파이 검토를 다시 수행한다.
+T095에서 승인된 `204:2014` frame과 T096의 마지막 `시작하기` 완료 계약을 기준으로 권한 요청 UI와 결과 전환을 구현한다. 제품 동작이나
+화면 구조가 바뀌면 로우파이 또는 하이파이 검토를 다시 수행한다.

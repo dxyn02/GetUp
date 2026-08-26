@@ -11,8 +11,7 @@ T083 — 자동 latency 100회 계측과 결과 형식은 구현·검증했으�
 앱 사용 가능 상태의 실기기 관찰을 진행 중
 
 ## 마지막 완료 작업
-T094 — 권한 상세 화면에 비대화형 system alert·Settings 목업과 선택 항목 강조를 추가하고 위치의
-Always·정확한 위치 안내 문구를 accent 처리함
+T112 — 홈 빈 상태 설명, 위치 `적용` CTA 전체 hit area와 Shield 새 `NaseoShieldLogo` 연결을 보정함
 
 ## 다음 작업
 T083 — 승인된 entitlement·profile을 사용한 실기기 활성화·해제 latency 관찰 완료
@@ -23,9 +22,204 @@ BLK-010 열림. `com.dxyn02.GetUp` namespace의 네 App ID 등록과
 실기기 설치·실행은 사용자 확인됐으며, extension별 서명 entitlement와 archive 증적이 추가로 필요함.
 
 ## 계획 갱신 필요
-없음. 규칙 삭제 UI의 코드·Figma 불일치를 T060·T061로 보정한 뒤 US3 테스트를 시작하도록 계획을 갱신했다.
+없음. 외부 `나서` 브랜드와 내부 `GetUp/getup` 기술 식별자 분리를 유지하고, T112에서 Shield SVG의
+새 브랜드 심볼 적용을 완료했다. 앱 아이콘 변경은 별도 작업 범위다.
 
 ## 테스트 상태
+2026-08-26 T112에서 홈 빈 상태 설명을 `밖으로 나가면 제한된 앱이 다시 열려요`로 변경했다. 위치
+선택 화면의 56pt `적용` CTA는 채워진 shape를 `Button` label 내부로 이동해 좌측 6% 탭에서도 규칙
+편집 화면으로 복귀하도록 보정했다. Shield extension의 기존 `GETUP` wordmark asset을 새
+`NaseoShieldLogo` SVG로 교체하고 새 asset 이름으로 로드해 이전 이름과의 충돌을 피했다. 구현 전
+홈 문구와 위치 좌측 탭 UI 회귀 2건이 실패했고 구현 후 모두 통과했다. iOS Simulator generic build와
+US1 홈·규칙 구성 UI 테스트 11개가 모두 통과했다. extension `Assets.car`의 1x 88×88, 2x 176×176,
+3x 264×264 `NaseoShieldLogo` rendition도 확인했다. string catalog JSON, `Info.plist`와 diff 검사도
+통과했다.
+
+2026-08-26 T111에서 홈 header를 `나서`, 빈 상태를 `READY TO STEP OUT`·`밖으로 나설 첫 규칙을
+만들어보세요`·`집을 나서면 방해 앱이 다시 열려요`로 변경하고, 카드의 장소 행동은 `밖으로 나서면`으로
+통일했다. Family Controls·위치·Background App Refresh 안내와 Settings 목업, 위치 권한 설명,
+`CFBundleDisplayName`과 관련 VoiceOver 문구도 `나서`로 변경했다. Shield 상세 제목은
+`%@에서 %@ 밖으로 나서세요`, fallback은 `밖으로 나설 시간이에요`로 보정하되 해제 조건 설명은
+유지했다. Bundle ID·App Group·target/module·영속 key와 `Icon.icon`·`GetUpShieldLogo.svg`는 변경하지
+않았다. 구현 전 Shield 문구 회귀 4건이 기존 카피로 실패했고 구현 후 `GetUpTests` 190개(동적 실행
+포함 233회), US1 홈·규칙 구성 UI 테스트 10개, US4 권한 안내 UI 테스트 19개가 모두 통과했다.
+앱과 확장 target을 포함한 iOS Simulator generic build, `Info.plist` lint, string catalog JSON 검사와
+diff 검사도 통과했다.
+
+2026-08-26 T110에서 사용자 제공 `Icon.icon`을 GetUp 앱 target resource에 추가하고 Debug·Release의
+`ASSETCATALOG_COMPILER_APPICON_NAME`을 `Icon`으로 변경했다. iOS Simulator generic build가 경고 없이
+통과했으며 빌드된 `Info.plist`의 `CFBundleIconName`이 `Icon`이고 `Icon60x60@2x.png`와
+`Icon76x76@2x~ipad.png`가 생성된 것을 확인했다. `Assets.car`에는 phone·pad의 default·dark·tinted
+Icon Image와 light·dark·tinted IconImageStack이 포함됐다. 실제 Home Screen의 clear·tinted appearance와
+wallpaper 조합은 T085 실기기 인수에서 확인한다.
+
+2026-08-26 T109에서 종료 시간 후보를 현재 시·분·AM/PM으로 교차 필터링한 뒤 가장 가까운 유효 시간을
+다시 선택해, 한 wheel 조작이 다른 wheel 값까지 바꾸던 문제를 수정했다. 세 native Picker를 각자
+독립 `@State`에 바인딩하고 전체 12시간·60분·AM/PM 값을 제공하며, 선택된 구성요소 조합만
+`endTime`에 반영한다. 시작→종료 화면 전환은 boundary별 identity로 새 종료 상태를 초기화한다.
+15분 미만·12시간 초과 임시 조합은 자동 보정하지 않고 경고색 안내와 비활성 `완료` CTA로 적용만
+차단한다. 구현 전 새 단위 회귀는 `TimePickerComponents.updating` 부재로 실패했고, UI 회귀는 기존
+동작에서 AM→PM 변경 시 시가 `10`에서 `12`로 바뀌며 실패했다. 구현 후 시작 10:00에서 종료 10:15로
+진입하고 분을 16으로 바꾼 뒤 AM→PM을 바꿔도 10:16이 유지되는 회귀를 통과했다. iPhone 17 Pro
+iOS 26.5 Simulator에서 전체 `GetUpTests` 190개 test case(동적 파라미터 실행 포함 233회)와 US1 UI
+테스트 10개가 실패·skip 없이 통과했다.
+
+2026-08-26 T108에서 시간 설정 완료 CTA의 frame·background가 `Button` label 바깥에 있어 보이는
+64pt 영역과 실제 hit area가 달랐던 문제를 수정했다. label 내부에 accent로 채운 `RoundedRectangle`과
+text를 겹친 `ZStack`을 두고 label·button 전체 content shape를 지정했다. 시작 화면 버튼 좌측 8%와
+종료 화면 버튼 우측 92% 좌표를 누르는 UI 회귀는 구현 전 화면 전환에 실패하고 구현 후 시작→종료→
+규칙 편집 전환을 통과했다. 첨부된 다크 Shield의 흐린 `앱 닫기` 글자는 브랜드 near-black
+`#090A0C`에서 순수 검정 `#000000`으로 강화해 `#F4D600` 배경과 약 `14.47:1` 계산 대비를 확보했다.
+iOS Simulator generic 전체 build, iPhone 17 Pro iOS 26.5 Simulator의 전체 `GetUpTests` 189개
+test case(동적 파라미터 실행 포함 232회)와 US1 UI 테스트 9개가 실패·skip 없이 통과했다. 실제
+Shield system compositing 결과는 T085 실기기 인수에서 다시 확인한다.
+
+2026-08-26 T107에서 직접 입력 장소의 저장·규칙 ID 연결은 정상이며, 카테고리로 제한된 앱의
+Shield callback이 제공하는 `ActivityCategoryToken`을 버리고 `ApplicationToken`만 규칙과 비교해
+fallback으로 내려가던 원인을 수정했다. `ShieldContentProvider`는 앱·카테고리·웹 도메인 token을
+각각 `FamilyActivitySelection`과 비교하고, application-in-category와 web-domain-in-category
+callback은 제공된 두 token을 모두 전달한다. 직접 입력 `도서관`+카테고리 회귀는 구현 전 제목·설명
+기대값에서 실패하고 구현 후 상세 문구로 통과했으며, 같은 누락 구조의 직접 입력 `스터디 카페`+웹
+도메인 회귀도 추가했다. iOS Simulator generic 전체 build와 iPhone 17 Pro iOS 26.5 Simulator의
+전체 `GetUpTests` 189개 test case(동적 파라미터 실행 포함 232회)가 실패·skip 없이 통과했다.
+실제 Family Controls category/web domain callback과 system Shield 렌더링은 T085 실기기 인수에서
+최종 확인한다.
+
+2026-08-26 T106에서 실제 제한 안내 화면의 다크 고정 색을 appearance별 palette로 바꿨다. 다크는
+승인된 `#08090B` 배경, 흰 제목과 `#A6A8AD` 설명을 유지하고, 라이트는 `#F5F5F7` 배경,
+`#090A0C` 제목과 `#51535A` 설명을 사용한다. `.systemYellow`로 인해 라이트 모드 버튼이 어두운
+올리브색으로 변하던 문제는 두 모드에 GetUp `#F4D600` 배경과 `#090A0C` label을 명시해 해결했다.
+fallback 설명은 `설정한 위치에서 벗어나거나 시간이 끝나면 자동으로 다시 사용할 수 있어요.`로
+수정했다. 회귀 테스트는 구현 전 새 기대 문구에서 실패하고 구현 후 통과했으며, iOS Simulator
+generic 전체 build와 iPhone 17 Pro iOS 26.5 Simulator의 전체 `GetUpTests` 187개 test case(동적
+파라미터 실행 포함 230회)가 실패·skip 없이 통과했다. `Localizable.xcstrings` JSON과
+`git diff --check`도 통과했다. `ManagedSettingsUI`가 소유하는 글꼴 크기·요소 간 padding과 실제
+restricted app의 다크·라이트 렌더링, Dynamic Type·VoiceOver는 T085 실기기 인수에서 확인한다.
+
+2026-08-26 T105에서 앱 시작의 `AppLifecycleCoordinator.restore()` 완료 뒤 `AppModel.load()`를
+실행하던 직렬 순서를 반대로 바꿨다. 보호된 로컬 규칙·저장 장소와 기존 적용 상태를 읽는 즉시 홈을
+표시하고, 일정·region 재등록, 규칙별 위치 fix, 권한 확인과 제한 합집합 재평가는 화면을 차단하지
+않는 후속 비동기 작업으로 계속 실행한다. 복구 결과가 도착하면 홈 활성 상태와 권한 안내를 갱신하고,
+시작 복구와 foreground 복구가 겹치면 `isRestoringRuntime` 경계에서 중복 실행을 생략한다. 구체
+`AppLifecycleCoordinator` 대신 `AppEnvironment.RuntimeRecovery` closure를 앱 shell에 주입해 5초
+지연 복구 fixture를 구성했다. 새 UI 회귀는 구현 전 홈 pager 2초 제한에서 실패했고 구현 후 같은
+조건에서 홈이 먼저 표시되고 전체 로딩 문구가 사라짐을 통과했다. iOS Simulator generic build,
+iPhone 17 Pro iOS 26.5 Simulator의 전체 `GetUpTests` 187개 test case(동적 파라미터 실행 포함
+230회)와 US1 UI 테스트 9개가 실패·skip 없이 통과했다. 반복된 LLDB version-store와 device build
+number 경고는 결과에 영향을 주지 않았다. 실제 위치 fix와 전체 runtime 복구 latency 관찰은 T083·
+T085 실기기 검증 범위를 유지한다.
+
+2026-08-26 T104에서 승인된 Figma shield `113:2025`의 design context를 확인하고 정적 GetUp 아이콘
+`113:2028`을 88×88 SVG로 직접 export했다. Shield Configuration extension 전용 asset catalog에
+vector 보존 자산으로 추가하고 `figure.stand` SF Symbol을 원본 색상 SVG로 교체했다. 회색으로 보이던
+`.systemMaterialDark` blur를 제거하고 배경을 정확한 `#08090B`로 수정했으며 제목·설명·시스템
+`앱 닫기` 계약은 유지했다. iOS Simulator generic build가 통과했고 생성된
+`GetUpShieldConfiguration.appex/Assets.car`에서 `GetUpShieldLogo`의 1x 88×88, 2x 176×176,
+3x 264×264 rendition을 확인했다. iPhone 17 Pro iOS 26.5 Simulator에서 전체 `GetUpTests` 187개
+test case(동적 파라미터 실행 포함 230회)가 실패·skip 없이 통과했다. 첫 sandbox build는
+`CoreSimulatorService` 접근 제한으로 asset compile 전에 중단됐고 sandbox 밖에서 재실행해 통과했다.
+실제 restricted app의 system-owned layout, Dynamic Type·VoiceOver와 닫기 동작은 T085 실기기
+인수에서 계속 검증한다.
+
+2026-08-26 T103에서 시작·종료 시각 설정 화면 root의 `ScrollView`를 고정 `VStack`으로 교체해
+화면 전체가 움직이지 않고 세 native wheel만 조작되게 했다. 시작 화면의 `완료`는 현재 destination을
+종료 시각 화면으로 전환하고, 종료 화면의 `완료`가 규칙 편집 화면으로 복귀한다. native wheel 위에
+58pt 불투명 선택 행과 선택값을 다시 그리던 overlay, 후속 낮은 opacity custom 강조와 각 picker의
+명시적 `.clipped()`를 모두 제거하고 iOS 기본 선택 표시와 실제 wheel 값을 사용한다. iPhone 17 Pro
+iOS 26.5 Simulator의 최종 XCTAttachment 캡처에서 선택값 위·아래의 시·분·AM/PM 숫자가 custom
+강조와 겹치지 않고 화면 제목·완료 CTA가 고정된 것을 확인했다. 같은 Simulator의 격리 DerivedData에서
+전체 `GetUpTests` 187개 test case(동적 파라미터 실행 포함 230회), US1·접근성 UI 테스트 13개와
+최종 시간 흐름·캡처 UI 회귀 1개가 실패·skip 없이 통과했다. 첫 UI 실행은 sandbox의
+`CoreSimulatorService` 연결 종료로 test case 실행 전에 중단됐고 동일 산출물을 sandbox 밖에서
+재실행해 통과했다. 반복된 LLDB version-store와 signed binary stripping 경고는 결과에 영향을 주지
+않았다.
+
+2026-08-25 T102에서 앱 소유 push 화면의 custom 뒤로가기를 조사해 시간 선택 화면의 노란 꺾쇠와
+숨긴 navigation bar를 제거하고 iOS 기본 BackButton으로 교체했다. 규칙 편집·장소 선택은 기존
+시스템 navigation을 유지하고, 권한 안내처럼 root로 표시되어 복귀 행동이 없는 화면은 대상에서
+제외했다. `FamilyActivitySelection`에 opaque category token이 포함되면 내부 앱 수를 추정하지 않고
+편집 화면은 `여러 앱 선택됨`, 활성·비활성 홈은 `여러 앱`으로 표시한다. 카테고리가 없고 정확한
+개별 선택 수를 아는 경우에는 기존 `n개 앱 선택됨`·`n개 앱` 표기를 유지한다. iPhone 17 Pro iOS
+26.5 Simulator에서 규칙 편집 화면의 시스템 BackButton을 시각 확인했고, 시간 선택 화면의 시스템
+navigation과 카테고리 요약은 UI 식별자 회귀로 확인했다. 같은 Simulator의 격리 DerivedData에서
+전체 `GetUpTests` 187개 test case(동적 파라미터 실행 포함 230회)와 US1·US3·접근성 UI 테스트
+16개가 실패·skip 없이 통과했다. UI suite의 첫 sandbox 실행은 `CoreSimulatorService` 연결 종료로
+test case 실행 전에 중단됐고, 동일 산출물을 sandbox 밖에서 다시 실행해 전부 통과했다. 반복된 LLDB
+version-store와 signed extension stripping 경고는 결과에 영향을 주지 않았다.
+
+2026-08-25 T101에서 활성·비활성 홈 카드의 중복 요일 formatter를 `HomeWeekdayFormatter`로 통합하고
+월요일부터 일요일까지의 최대 연속 구간을 `MON-FRI`, `MON-SUN`, `SAT-SUN`, `WED-FRI`처럼
+축약하도록 변경했다. 분리된 단일 요일과 구간은 ` · `로 구분한다. 사진에서 확인된
+`restriction_status.*`·`restriction_guard.*` 노출은 `Localizable.xcstrings`의 한국어 source와
+Xcode project의 영어 development region 불일치가 원인이었다. development region을 `ko`로 맞추고
+활성 상태·수정 차단·guard 필수 문구에 한국어 `defaultValue`를 추가했다. 영어 기기 언어를 강제한
+US3 UI 회귀와 iPhone 17 Pro iOS 26.5 Simulator 시각 대조에서 `현재 활성화됨`,
+`규칙 적용 중 수정 불가`, `RULE 1 OF 1 · MON-FRI`가 표시됐다. 같은 Simulator의 격리
+DerivedData에서 전체 `GetUpTests` 186개 test case(동적 파라미터 실행 포함 229회)와 US1·US3·접근성
+UI 테스트 15개가 실패·skip 없이 통과했다. 반복된 LLDB version-store 경고는 결과에 영향을 주지
+않았다.
+
+2026-08-25 T100에서 승인된 Figma 시작 시각 `80:2010`과 종료 시각 `80:2033`을 기준으로 기존 large
+sheet를 전용 navigation destination으로 교체했다. app-owned 화면의 시스템 Liquid Glass 뒤로가기를
+제거하고 노란 꺾쇠, editorial header, 410pt wheel card, 시·분·AM/PM 세 열을 가로지르는 단일 accent
+선택 행과 64pt 완료 CTA를 적용했다. native wheel interaction은 유지하며 시작·종료 화면을 iPhone 17
+Pro iOS 26.5 Simulator에서 시각 대조했다. 같은 Simulator의 격리 DerivedData에서 전체
+`GetUpTests` 185개 test case(동적 파라미터 실행 포함 228회), US1 UI 테스트 7개와 접근성 UI 테스트
+5개가 실패·skip 없이 통과했다. 접근성 UI 테스트의 첫 실행은 sandbox의 CoreSimulatorService 연결
+종료로 test case 실행 전 종료됐고, 동일 산출물을 sandbox 밖에서 다시 실행해 전부 통과했다. 반복된
+LLDB version-store 경고는 테스트 결과에 영향을 주지 않았다.
+
+2026-08-25 T099에서 `FamilyActivitySelection`의 개별 앱·카테고리·웹 도메인 token 수를 공통 제한
+대상 수로 계산하도록 편집 모델, 저장 service, 홈 모델과 선택 adapter의 기본 동작을 통일했다.
+카테고리는 `ManagedSettingsStore.shield.applicationCategories = .specific(...)`, 웹 도메인은
+`shield.webDomains`로 적용하고 여러 활성 규칙의 각 token 집합을 합친다. 활성 rule revision이 같아도
+실제 GetUp store에 카테고리 등 기대 shield가 누락되면 다시 적용하며, 해제 시 세 shield 종류를 함께
+지운다. iPhone 17 Pro iOS 26.5 Simulator의 격리 DerivedData에서 전체 `GetUpTests` 185개 test case,
+동적 파라미터 실행 포함 총 228회가 실패·skip 없이 통과했다. 기본 DerivedData의 첫 대상 실행은
+기존 증분 산출물의 `PermissionGuideModel` 심볼 불일치로 링크에 실패했지만 새 격리 DerivedData의
+전체 빌드·테스트는 통과했다.
+
+2026-08-25 T098에서 활성 규칙 홈 상태를 `현재 활성화됨`, 수정 차단 버튼을
+`규칙 적용 중 수정 불가`로 변경했다. 활성·비활성 카드 버튼의 label이 전체 배경과 동일한 hit area를
+갖도록 구성해 텍스트 바깥을 눌러도 동작하며, 규칙 추가·수정 화면 완료 CTA는 별도 wrapper 안의
+56pt plain button으로 다른 주요 CTA와 높이를 통일했다. 홈 pager는 카드 폭과 20pt 정렬을 유지하면서
+`TabView` viewport만 화면 좌우 끝까지 확장해 swipe 중 좌우 여백 clip을 제거했다. iPhone 17 Pro
+iOS 26.5 Simulator의 격리 DerivedData에서 전체 `GetUpTests` 178개와 US1·US3·접근성 UI 테스트
+14개, 동적 파라미터 실행 포함 총 235회가 실패·skip 없이 통과했다. Xcode의 LLDB version-store
+경고는 반복됐지만 결과에는 영향을 주지 않았다.
+
+2026-08-25 T097에서 새 장소 화면은 저장 장소가 없을 때 사용자 현재 위치를 한 번 조회해 지도 중심과
+핀으로 사용하고, 기존 저장 장소 편집은 저장 좌표를 보존하도록 변경했다. `집`·`회사`·저장 장소·
+`직접 입력`은 모델의 단일 선택 상태로 색상과 접근성 선택 trait를 유지한다. 장소 이름이 없을 때
+`장소 이름을 입력해 주세요.`를 한 번만 표시해 기존 장문과 중복 출력을 제거했다. 제한 앱 선택 행은
+Family Controls 승인 상태에서만 `FamilyActivityPicker`를 열고, `notDetermined`·`denied`에서는 기존
+권한 상세 화면으로 전환한다. iPhone 17 Pro iOS 26.5 Simulator의 격리 DerivedData에서 전체
+`GetUpTests` 178개와 `UserStory1RuleConfigurationUITests` 6개, 동적 파라미터 실행 포함 총 227회가
+실패·skip 없이 통과했다. Xcode의 LLDB version-store 경고는 반복됐지만 결과에는 영향을 주지 않았다.
+
+2026-08-25 T096에서 `PermissionOnboardingStateStore`의 영구 상태를 최초 표시 표식이 아닌 완료 표식으로
+교체하고, `PermissionGuideLaunchRouter`가 이 표식만으로 온보딩과 일반 복구를 구분하도록 변경했다.
+마지막 `백그라운드 새로 고침을 확인해 주세요` 화면은 승인·제한 상태 모두 `시작하기`를 표시하며,
+탭할 때 완료를 저장하고 홈으로 이동한다. 그 전에 앱을 종료하면 다음 실행에서 권한 개요부터 다시
+시작하고, 완료 뒤 재실행하면 승인 상태에서 홈으로 바로 진입한다. 권한이 이미 결정되었다는 사실만으로
+완료를 추정하지 않는다. iPhone 17 Pro iOS 26.5 Simulator에서 전체 `GetUpTests` 175개 test case
+(동적 파라미터 실행 포함 218회), `UserStory4PermissionGuidanceUITests` 19개와 최대 Dynamic Type 권한
+복구 접근성 UI test 1개가 실패·skip 없이 통과했다. Xcode의 LLDB version-store 경고는 반복됐지만
+결과에는 영향을 주지 않았다.
+
+2026-08-25 T095에서 사용자가 승인한 Figma
+`US4 / 권한 요청 클릭 유도 · 하이파이 제안 · 승인 대기`(`204:2014`)를 구현 기준으로 확정했다.
+Family Controls, 위치 `앱을 사용하는 동안 허용`, 위치 `항상 허용으로 변경` 화면을 중앙 system alert
+형태로 재구성하고 설명 본문은 skeleton line, 위치 preview는 Figma export asset으로 표현했다. 강조된
+목업 버튼을 누른 뒤에만 실제 Family Controls 또는 Core Location 요청을 실행한다. 허용 결과는
+온보딩에서 다음 권한 화면으로 자동 이동하고 일반 복구에서는 안내를 닫으며, 거부 결과는 같은 화면의
+다음 주요 행동을 `설정 열기`로 바꾼다. Always 요청 뒤 권한 상태가 `whenInUse`로 유지되는 iOS 결과도
+거부로 기억해 Settings 복구로 전환한다. iPhone 17 Pro iOS 26.5 Simulator에서 전체 `GetUpTests`
+174개 test case(동적 파라미터 실행 포함 217회), `UserStory4PermissionGuidanceUITests` 18개와 최대
+Dynamic Type 권한 복구 접근성 UI test 1개가 실패·skip 없이 통과했다. Family Controls·위치 사용 중·
+Always 요청 화면을 직접 캡처해 승인된 중앙 배치·강조 CTA·설명 skeleton·지도 preview를 확인했다.
+Xcode의 LLDB version-store 경고는 반복됐지만 결과에는 영향을 주지 않았다.
+
 2026-08-25 T094에서 `PermissionGuideView`에 재사용 가능한 system mockup card, option, setting row와
 toggle을 추가했다. Family Controls는 `Face ID로 허용`, 위치 최초 요청은 `앱을 사용하는 동안 허용`,
 위치 설정은 `항상`·`정확한 위치`, Background App Refresh는 `켬`·`GetUp` toggle을 accent로 강조한다.
@@ -49,6 +243,7 @@ Dynamic Type 접근성 회귀를 함께 갱신했다. iPhone 17 Pro iOS 26.5 Sim
 iPhone 17 Pro iOS 26.5 Simulator를 브라우저에 미러링해 같은 절차를 직접 수행했으며, 재실행 화면이
 권한 개요 없이 홈으로 진입하는 것을 확인했다. 전체 `GetUpTests`는 동적 사례를 포함해 166회,
 `UserStory4PermissionGuidanceUITests`는 재실행 회귀를 포함해 13개가 실패·skip 없이 통과했다.
+이 표시 즉시 완료 정책은 T096과 `DEC-045`에서 마지막 `시작하기` 완료 정책으로 대체되었다.
 
 2026-08-25 T091에서 `PermissionGuidePresentationMode`를 도입해 온보딩은 권한 개요와 승인 상태를
 순차 확인하고, 일반 실행·foreground 복구는 승인 상태에서 아무 화면도 표시하지 않도록 분리했다.
