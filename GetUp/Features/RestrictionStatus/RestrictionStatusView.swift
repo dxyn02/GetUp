@@ -9,7 +9,7 @@ struct RestrictionStatusView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("restriction_status.active")
+            Text(RestrictionCopy.activeStatus)
                 .font(.caption2)
                 .fontWeight(.bold)
                 .foregroundStyle(HomeColor.accent)
@@ -24,6 +24,7 @@ struct RestrictionStatusView: View {
                     .font(.caption2)
                     .fontWeight(.bold)
                     .foregroundStyle(HomeColor.textTertiary)
+                    .accessibilityIdentifier("home.ruleCard.\(item.accessibilityID).schedule")
 
                 timeText
                     .fixedSize(horizontal: false, vertical: true)
@@ -38,10 +39,10 @@ struct RestrictionStatusView: View {
                         .accessibilityHidden(true)
 
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("\(item.savedPlace.name)에서 \(radiusLabel) 나가면")
+                        Text("\(item.savedPlace.name)에서 \(radiusLabel) 밖으로 나서면")
                             .font(.title2)
                             .fontWeight(.bold)
-                        Text("선택한 앱 \(item.applicationCount)개를\n다시 사용할 수 있어요")
+                        Text(item.applicationReleaseDescription)
                             .font(.subheadline)
                             .foregroundStyle(HomeColor.textSecondary)
                     }
@@ -54,7 +55,7 @@ struct RestrictionStatusView: View {
                 )
                 conditionRow(
                     label: "BLOCKED",
-                    value: "\(item.applicationCount)개 앱",
+                    value: item.applicationSummary,
                     identifier: "home.ruleCard.\(item.accessibilityID).applications"
                 )
                 Spacer(minLength: 0)
@@ -62,15 +63,16 @@ struct RestrictionStatusView: View {
                 Button {
                     isGuardAlertPresented = true
                 } label: {
-                    Text("restriction_status.edit_disabled")
-                    .font(.footnote)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(HomeColor.textSecondary)
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                    .background(HomeColor.surfaceElevated, in: .rect(cornerRadius: 14))
+                    Text(RestrictionCopy.editDisabled)
+                        .font(.footnote)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(HomeColor.textSecondary)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .background(HomeColor.surfaceElevated, in: .rect(cornerRadius: 14))
+                        .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(Text("restriction_status.edit_disabled"))
+                .accessibilityLabel(RestrictionCopy.editDisabled)
                 .accessibilityHint("수정할 수 있는 위치와 시간을 안내합니다.")
                 .accessibilityIdentifier("restrictionStatus.editDisabled")
             }
@@ -85,10 +87,10 @@ struct RestrictionStatusView: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("home.ruleCard.\(item.accessibilityID)")
         .alert(
-            Text("restriction_guard.title"),
+            Text(RestrictionCopy.guardTitle),
             isPresented: $isGuardAlertPresented
         ) {
-            Button("restriction_guard.confirm", role: .cancel) {}
+            Button(RestrictionCopy.guardConfirm, role: .cancel) {}
         } message: {
             Text(modificationGuard.message)
         }
@@ -126,14 +128,7 @@ struct RestrictionStatusView: View {
     }
 
     private var weekdayLabel: String {
-        let weekdays = item.rule.weekdays
-        if weekdays == Set([.monday, .tuesday, .wednesday, .thursday, .friday]) {
-            return "MON–FRI"
-        }
-        return Weekday.allCases
-            .filter(weekdays.contains)
-            .map(\.shortEnglishName)
-            .joined(separator: " · ")
+        HomeWeekdayFormatter.label(for: item.rule.weekdays)
     }
 
     private var timeText: Text {
@@ -148,6 +143,65 @@ struct RestrictionStatusView: View {
     }
 
     private static func period(_ time: TimeOfDay) -> String { time.hour < 12 ? "AM" : "PM" }
+}
+
+extension HomeRuleItem {
+    var restrictionSelectionSummary: RestrictionSelectionSummary {
+        rule.activitySelection.restrictionSelectionSummary(
+            countedTargets: applicationCount
+        )
+    }
+
+    var applicationSummary: String {
+        switch restrictionSelectionSummary {
+        case .none:
+            "앱 없음"
+        case .exact(let count):
+            "\(count)개 앱"
+        case .multiple:
+            "여러 앱"
+        }
+    }
+
+    var applicationReleaseDescription: String {
+        switch restrictionSelectionSummary {
+        case .none:
+            "선택한 앱이 없어요"
+        case .exact(let count):
+            "선택한 앱 \(count)개를\n다시 사용할 수 있어요"
+        case .multiple:
+            "선택한 여러 앱을\n다시 사용할 수 있어요"
+        }
+    }
+}
+
+enum HomeWeekdayFormatter {
+    static func label(for weekdays: Set<Weekday>) -> String {
+        var runs: [[Weekday]] = []
+        var currentRun: [Weekday] = []
+
+        for weekday in Weekday.allCases {
+            if weekdays.contains(weekday) {
+                currentRun.append(weekday)
+            } else if !currentRun.isEmpty {
+                runs.append(currentRun)
+                currentRun = []
+            }
+        }
+
+        if !currentRun.isEmpty {
+            runs.append(currentRun)
+        }
+
+        return runs.map { run in
+            guard let first = run.first else { return "" }
+            guard run.count > 1, let last = run.last else {
+                return first.shortEnglishName
+            }
+            return "\(first.shortEnglishName)-\(last.shortEnglishName)"
+        }
+        .joined(separator: " · ")
+    }
 }
 
 private extension Weekday {

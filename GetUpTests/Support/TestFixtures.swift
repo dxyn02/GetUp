@@ -1,5 +1,6 @@
 import FamilyControls
 import Foundation
+import ManagedSettings
 @testable import GetUp
 
 struct FixedClock: Clock {
@@ -94,6 +95,24 @@ enum TestFixtures {
             activeRuleRevisions: isApplied
                 ? [ActiveRuleRevision(ruleID: ruleID, revision: ruleRevision ?? 1)]
                 : []
+        )
+    }
+
+    static func activityCategoryToken(seed: UInt8) throws
+        -> ActivityCategoryToken
+    {
+        let encodedData = try JSONEncoder().encode(["data": Data([seed])])
+        return try JSONDecoder().decode(
+            ActivityCategoryToken.self,
+            from: encodedData
+        )
+    }
+
+    static func webDomainToken(seed: UInt8) throws -> WebDomainToken {
+        let encodedData = try JSONEncoder().encode(["data": Data([seed])])
+        return try JSONDecoder().decode(
+            WebDomainToken.self,
+            from: encodedData
         )
     }
 }

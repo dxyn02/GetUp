@@ -1,6 +1,33 @@
 import FamilyControls
 import Foundation
 
+extension FamilyActivitySelection {
+    var restrictionTargetCount: Int {
+        applicationTokens.count + categoryTokens.count + webDomainTokens.count
+    }
+
+    var hasRestrictionTargets: Bool {
+        restrictionTargetCount > 0
+    }
+
+    func restrictionSelectionSummary(
+        countedTargets: Int? = nil
+    ) -> RestrictionSelectionSummary {
+        if !categoryTokens.isEmpty {
+            return .multiple
+        }
+
+        let count = countedTargets ?? restrictionTargetCount
+        return count == 0 ? .none : .exact(count)
+    }
+}
+
+enum RestrictionSelectionSummary: Equatable, Sendable {
+    case none
+    case exact(Int)
+    case multiple
+}
+
 enum Weekday: String, Codable, CaseIterable, Hashable, Sendable {
     case monday
     case tuesday

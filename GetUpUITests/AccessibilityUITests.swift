@@ -63,10 +63,10 @@ final class AccessibilityUITests: XCTestCase {
         let guardedEdit = app.buttons["restrictionStatus.editDisabled"]
 
         XCTAssertTrue(status.waitForExistence(timeout: 3))
-        XCTAssertEqual(status.label, "RESTRICTION ACTIVE")
+        XCTAssertEqual(status.label, "현재 활성화됨")
         XCTAssertEqual(location.label, "집 · 1km")
         XCTAssertEqual(applications.label, "1개 앱")
-        XCTAssertEqual(guardedEdit.label, "조건 종료 후 수정 가능")
+        XCTAssertEqual(guardedEdit.label, "규칙 적용 중 수정 불가")
         XCTAssertTrue(title.exists)
         XCTAssertTrue(time.exists)
 

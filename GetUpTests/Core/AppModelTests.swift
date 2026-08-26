@@ -74,6 +74,41 @@ struct AppModelTests {
         #expect(model.homeRules[0].isScheduledToday)
     }
 
+    @Test("A category-only rule remains visible on the home screen")
+    func categoryOnlyRuleIsVisible() async throws {
+        let place = makePlace()
+        var selection = FamilyActivitySelection()
+        selection.categoryTokens = [
+            try TestFixtures.activityCategoryToken(seed: 23),
+        ]
+        let rule = makeRule(
+            id: Self.todayRuleID,
+            weekdays: [.monday],
+            start: TimeOfDay(hour: 6, minute: 0),
+            placeID: place.id,
+            activitySelection: selection
+        )
+        let repository = AppModelRepository(
+            rules: RestrictionRuleCollectionSnapshot(revision: 1, rules: [rule]),
+            places: SavedPlaceCollectionSnapshot(revision: 1, places: [place])
+        )
+        let now = Self.date(year: 2026, month: 8, day: 24, hour: 12)
+        let model = AppModel(
+            ruleRepository: repository,
+            savedPlaceRepository: repository,
+            now: { now },
+            calendar: Self.calendar,
+            timeZone: Self.timeZone
+        )
+
+        await model.load()
+
+        #expect(model.homeRules.count == 1)
+        #expect(model.homeRules.first?.applicationCount == 1)
+        #expect(model.homeRules.first?.restrictionSelectionSummary == .multiple)
+        #expect(model.homeRules.first?.applicationSummary == "여러 앱")
+    }
+
     @Test("Editing a selected card preserves values and refreshes home after save")
     func editingAndSavingRefreshesHome() async throws {
         let place = makePlace()
@@ -331,7 +366,8 @@ struct AppModelTests {
         weekdays: Set<Weekday>,
         start: TimeOfDay,
         end: TimeOfDay = TimeOfDay(hour: 9, minute: 0),
-        placeID: UUID
+        placeID: UUID,
+        activitySelection: FamilyActivitySelection = FamilyActivitySelection()
     ) -> RestrictionRuleSnapshot {
         RestrictionRuleSnapshot(
             id: id,
@@ -343,7 +379,7 @@ struct AppModelTests {
             endTime: end,
             savedPlaceID: placeID,
             radius: .meters1000,
-            activitySelection: FamilyActivitySelection(),
+            activitySelection: activitySelection,
             createdAt: Self.referenceDate,
             updatedAt: Self.referenceDate
         )

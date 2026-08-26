@@ -39,6 +39,43 @@ struct LocationPickerModelTests {
         #expect(model.guidance == nil)
     }
 
+    @Test("A new picker loads the current location once for its initial map center")
+    func initialMapCenterUsesCurrentLocation() async {
+        let currentLocation = ReferenceLocation(latitude: 35.1595, longitude: 126.8526)
+        let model = makeModel(
+            initialCoordinate: nil,
+            currentLocationResult: .success(currentLocation)
+        )
+
+        let firstLoad = await model.loadInitialCurrentLocation()
+        let secondLoad = await model.loadInitialCurrentLocation()
+
+        #expect(firstLoad)
+        #expect(!secondLoad)
+        #expect(model.cameraCenter == currentLocation)
+        #expect(model.pinCandidate == currentLocation)
+    }
+
+    @Test("An existing place keeps its coordinate instead of replacing it on initial load")
+    func existingPlaceSkipsInitialCurrentLocation() async {
+        let savedPlace = makeSavedPlace()
+        let model = LocationPickerModel(
+            savedPlaces: [savedPlace],
+            initialSavedPlaceID: savedPlace.id,
+            initialCoordinate: savedPlace.coordinate,
+            defaultCoordinate: ReferenceLocation(latitude: 36.5, longitude: 127.5),
+            currentLocationProvider: FakeCurrentLocationProvider(
+                result: .success(ReferenceLocation(latitude: 35.1595, longitude: 126.8526))
+            )
+        )
+
+        let didLoad = await model.loadInitialCurrentLocation()
+
+        #expect(!didLoad)
+        #expect(model.cameraCenter == savedPlace.coordinate)
+        #expect(model.selectedPlaceChoice == .preset("회사"))
+    }
+
     @Test("Missing When In Use permission keeps direct pin selection available")
     func permissionFailurePreservesPinCandidate() async {
         let initialCoordinate = ReferenceLocation(latitude: 37.5665, longitude: 126.9780)
@@ -92,7 +129,20 @@ struct LocationPickerModelTests {
         model.confirm(placeName: model.placeName)
 
         #expect(model.placeName == "집")
+        #expect(model.selectedPlaceChoice == .preset("집"))
         #expect(model.completion == .confirmed(SavedPlaceDraft(name: "집", coordinate: coordinate)))
+    }
+
+    @Test("Custom input remains the selected place-name choice while typing")
+    func customInputMaintainsSelection() {
+        let model = makeModel()
+
+        model.selectCustomPlaceName()
+        model.updatePlaceName("도서관")
+
+        #expect(model.selectedPlaceChoice == .custom)
+        #expect(model.placeName == "도서관")
+        #expect(model.placeNameValidationGuidance == nil)
     }
 
     @Test("Custom names are capped at ten characters")
@@ -169,7 +219,7 @@ struct LocationPickerModelTests {
 
     private func makeModel(
         savedPlaces: [SavedPlaceSnapshot] = [],
-        initialCoordinate: ReferenceLocation = ReferenceLocation(
+        initialCoordinate: ReferenceLocation? = ReferenceLocation(
             latitude: 37.5665,
             longitude: 126.9780
         ),

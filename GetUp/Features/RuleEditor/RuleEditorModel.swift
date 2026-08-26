@@ -56,6 +56,36 @@ struct RestrictionModificationGuard: Equatable, Sendable {
     }
 }
 
+enum RestrictionCopy {
+    static var activeStatus: String {
+        String(
+            localized: "restriction_status.active",
+            defaultValue: "현재 활성화됨"
+        )
+    }
+
+    static var editDisabled: String {
+        String(
+            localized: "restriction_status.edit_disabled",
+            defaultValue: "규칙 적용 중 수정 불가"
+        )
+    }
+
+    static var guardTitle: String {
+        String(
+            localized: "restriction_guard.title",
+            defaultValue: "제한 중에는 수정할 수 없어요"
+        )
+    }
+
+    static var guardConfirm: String {
+        String(
+            localized: "restriction_guard.confirm",
+            defaultValue: "확인"
+        )
+    }
+}
+
 @MainActor
 @Observable
 final class RuleEditorModel {
@@ -140,7 +170,7 @@ final class RuleEditorModel {
         makeID: @escaping () -> UUID = UUID.init,
         now: @escaping () -> Date = Date.init,
         applicationTokenCounter: @escaping (FamilyActivitySelection) -> Int = {
-            $0.applicationTokens.count
+            $0.restrictionTargetCount
         }
     ) {
         self.makeID = makeID

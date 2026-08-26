@@ -24,6 +24,12 @@ enum LocationPickerCompletion: Equatable, Sendable {
     case cancelled
 }
 
+enum LocationPickerPlaceChoice: Equatable, Sendable {
+    case preset(String)
+    case saved(UUID)
+    case custom
+}
+
 @MainActor
 @Observable
 final class LocationPickerModel {
@@ -34,9 +40,11 @@ final class LocationPickerModel {
     private(set) var cameraCenter: ReferenceLocation
     private(set) var pinCandidate: ReferenceLocation?
     private(set) var selectedSavedPlaceID: UUID?
+    private(set) var selectedPlaceChoice: LocationPickerPlaceChoice?
     private(set) var placeName: String
     private(set) var guidance: LocationPickerGuidance?
     private(set) var completion: LocationPickerCompletion?
+    private var shouldLoadInitialCurrentLocation: Bool
 
     var canConfirmPinSelection: Bool {
         guard let pinCandidate else {
@@ -94,25 +102,44 @@ final class LocationPickerModel {
         self.cameraCenter = coordinate ?? defaultCoordinate
         self.pinCandidate = coordinate
         self.selectedSavedPlaceID = selectedPlace?.id
+        self.selectedPlaceChoice = selectedPlace.map(Self.choice(for:))
         self.placeName = selectedPlace?.name ?? ""
+        self.shouldLoadInitialCurrentLocation = coordinate == nil
     }
 
     func mapDidSettle(at coordinate: ReferenceLocation) {
         cameraCenter = coordinate
         pinCandidate = coordinate
         selectedSavedPlaceID = nil
+        selectedPlaceChoice = nil
         placeName = ""
         guidance = nil
     }
 
+    @discardableResult
+    func loadInitialCurrentLocation() async -> Bool {
+        guard shouldLoadInitialCurrentLocation else {
+            return false
+        }
+
+        shouldLoadInitialCurrentLocation = false
+        return await updateCurrentLocation()
+    }
+
     func useCurrentLocation() async {
+        _ = await updateCurrentLocation()
+    }
+
+    private func updateCurrentLocation() async -> Bool {
         do {
             let coordinate = try await currentLocationProvider.currentLocation()
             cameraCenter = coordinate
             pinCandidate = coordinate
             selectedSavedPlaceID = nil
+            selectedPlaceChoice = nil
             placeName = ""
             guidance = nil
+            return true
         } catch let error as CurrentLocationProviderError {
             switch error {
             case .authorizationRequired, .restricted:
@@ -121,10 +148,11 @@ final class LocationPickerModel {
                 guidance = .locationUnavailable
             }
         } catch is CancellationError {
-            return
+            return false
         } catch {
             guidance = .locationUnavailable
         }
+        return false
     }
 
     func selectSavedPlace(id: UUID) {
@@ -133,6 +161,7 @@ final class LocationPickerModel {
         }
 
         selectedSavedPlaceID = savedPlace.id
+        selectedPlaceChoice = Self.choice(for: savedPlace)
         placeName = savedPlace.name
         cameraCenter = savedPlace.coordinate
         pinCandidate = savedPlace.coordinate
@@ -149,8 +178,16 @@ final class LocationPickerModel {
         }
 
         selectedSavedPlaceID = nil
+        selectedPlaceChoice = .preset(name)
         placeName = name
         guidance = nil
+    }
+
+    func selectCustomPlaceName() {
+        selectedSavedPlaceID = nil
+        selectedPlaceChoice = .custom
+        placeName = ""
+        guidance = .placeNameRequired
     }
 
     func updatePlaceName(_ name: String) {
@@ -192,5 +229,12 @@ final class LocationPickerModel {
 
     func cancel() {
         completion = .cancelled
+    }
+
+    private static func choice(for savedPlace: SavedPlaceSnapshot) -> LocationPickerPlaceChoice {
+        if ["집", "회사"].contains(savedPlace.name) {
+            return .preset(savedPlace.name)
+        }
+        return .saved(savedPlace.id)
     }
 }

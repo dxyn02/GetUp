@@ -1,4 +1,6 @@
 @preconcurrency import FamilyControls
+import Foundation
+import ManagedSettings
 import SwiftUI
 import UIKit
 
@@ -24,23 +26,30 @@ private struct GetUpRootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var model: AppModel
     @State private var permissionGuideModel: PermissionGuideModel?
-    private let lifecycleCoordinator: AppLifecycleCoordinator?
-    private let currentLocationProvider: any CurrentLocationProviding
+    @State private var isRestoringRuntime = false
+    private let runtimeRecovery: AppEnvironment.RuntimeRecovery?
+    private let currentLocationProvider: any CurrentLocationProviding & LocationAuthorizationRequesting
     private let defaultCoordinate: ReferenceLocation
     private let applicationSelectionOverride: (@MainActor () -> FamilyActivitySelection?)?
+    private let familyControlsAuthorizationStatusOverride:
+        (@MainActor () -> FamilyControlsAuthorizationStatus)?
     private let showsRestrictionProbe: Bool
     private let permissionGuideRetryResult: String?
+    private let permissionGuideActionUpdate: PermissionGuideUpdate?
     private let permissionOnboardingStateStore: PermissionOnboardingStateStore
 
     init(environment: AppEnvironment) {
         _model = State(initialValue: environment.model)
         _permissionGuideModel = State(initialValue: environment.permissionGuideModel)
-        lifecycleCoordinator = environment.lifecycleCoordinator
+        runtimeRecovery = environment.runtimeRecovery
         currentLocationProvider = environment.currentLocationProvider
         defaultCoordinate = environment.defaultCoordinate
         applicationSelectionOverride = environment.applicationSelectionOverride
+        familyControlsAuthorizationStatusOverride =
+            environment.familyControlsAuthorizationStatusOverride
         showsRestrictionProbe = environment.showsRestrictionProbe
         permissionGuideRetryResult = environment.permissionGuideRetryResult
+        permissionGuideActionUpdate = environment.permissionGuideActionUpdate
         permissionOnboardingStateStore = environment.permissionOnboardingStateStore
     }
 
@@ -66,11 +75,14 @@ private struct GetUpRootView: View {
             guard model.loadingState == .idle else {
                 return
             }
-            _ = await restoreRuntimeState(refreshRestrictionStatus: false)
             await model.load()
+            guard !Task.isCancelled else {
+                return
+            }
+            _ = await restoreRuntimeState()
         }
         .onChange(of: scenePhase) { _, newPhase in
-            guard newPhase == .active, lifecycleCoordinator != nil else {
+            guard newPhase == .active, runtimeRecovery != nil else {
                 return
             }
             Task {
@@ -101,31 +113,51 @@ private struct GetUpRootView: View {
     private func handlePermissionGuideAction(
         _ action: PermissionGuideAction
     ) async -> PermissionGuideUpdate? {
+        if let permissionGuideActionUpdate {
+            switch action {
+            case .requestFamilyControlsAuthorization,
+                 .requestLocationAuthorization,
+                 .requestAlwaysLocationAuthorization:
+                return permissionGuideActionUpdate
+            case .next, .confirm, .completeOnboarding, .openSettings, .retryLocation:
+                break
+            }
+        }
+
         switch action {
         case .requestFamilyControlsAuthorization:
-            guard lifecycleCoordinator != nil else {
+            guard runtimeRecovery != nil else {
                 return nil
             }
             do {
                 _ = try await SystemFamilyControlsAuthorizationSession()
                     .requestIndividualAuthorization()
-                return await restoreRuntimeState()
+                return await restoreRuntimeState(reconcilePermissionGuide: false)
             } catch is CancellationError {
                 return nil
             } catch {
-                return await restoreRuntimeState()
+                return await restoreRuntimeState(reconcilePermissionGuide: false)
             }
         case .requestLocationAuthorization:
-            guard lifecycleCoordinator != nil else {
+            guard runtimeRecovery != nil else {
                 return nil
             }
-            _ = try? await currentLocationProvider.currentLocation()
-            return await restoreRuntimeState()
+            _ = await currentLocationProvider.requestWhenInUseAuthorization()
+            return await restoreRuntimeState(reconcilePermissionGuide: false)
+        case .requestAlwaysLocationAuthorization:
+            guard runtimeRecovery != nil else {
+                return nil
+            }
+            _ = await currentLocationProvider.requestAlwaysAuthorization()
+            return await restoreRuntimeState(reconcilePermissionGuide: false)
         case .openSettings:
             openSettings()
             return nil
+        case .completeOnboarding:
+            permissionOnboardingStateStore.markCompleted()
+            return nil
         case .retryLocation:
-            if lifecycleCoordinator != nil {
+            if runtimeRecovery != nil {
                 return await restoreRuntimeState()
             }
             await model.refreshRestrictionStatus()
@@ -148,35 +180,32 @@ private struct GetUpRootView: View {
     }
 
     private func restoreRuntimeState(
-        refreshRestrictionStatus: Bool = true
+        reconcilePermissionGuide shouldReconcilePermissionGuide: Bool = true
     ) async -> PermissionGuideUpdate? {
-        guard
-            let lifecycleCoordinator,
-            let result = try? await lifecycleCoordinator.restore()
-        else {
+        guard let runtimeRecovery, !isRestoringRuntime else {
+            return nil
+        }
+        isRestoringRuntime = true
+        defer { isRestoringRuntime = false }
+
+        guard let result = await runtimeRecovery() else {
             return nil
         }
 
-        if refreshRestrictionStatus {
-            await model.refreshRestrictionStatus()
-        }
-
-        guard let presentationState = result.presentationState else {
-            reconcilePermissionGuide(
-                authorization: result.authorization,
-                presentationState: permissionGuideModel?.presentationState ?? .inactive
-            )
-            return nil
-        }
+        await model.refreshRestrictionStatus()
 
         let update = PermissionGuideUpdate(
             authorization: result.authorization,
-            presentationState: presentationState
+            presentationState: result.presentationState
+                ?? permissionGuideModel?.presentationState
+                ?? .inactive
         )
-        reconcilePermissionGuide(
-            authorization: update.authorization,
-            presentationState: update.presentationState
-        )
+        if shouldReconcilePermissionGuide {
+            reconcilePermissionGuide(
+                authorization: update.authorization,
+                presentationState: update.presentationState
+            )
+        }
         return update
     }
 
@@ -218,6 +247,9 @@ private struct GetUpRootView: View {
                 currentLocationProvider: currentLocationProvider,
                 defaultCoordinate: defaultCoordinate,
                 applicationSelectionOverride: applicationSelectionOverride,
+                familyControlsAuthorizationStatusOverride:
+                    familyControlsAuthorizationStatusOverride,
+                onPresentFamilyControlsPermissionGuide: presentFamilyControlsPermissionGuide,
                 onOpenSettings: openSettings,
                 onSave: { draft, savedPlaces in
                     try await model.save(draft: draft, savedPlaces: savedPlaces)
@@ -247,6 +279,24 @@ private struct GetUpRootView: View {
         return {
             try await model.deleteEditingRule()
         }
+    }
+
+    private func presentFamilyControlsPermissionGuide(
+        _ status: FamilyControlsAuthorizationStatus
+    ) {
+        let currentAuthorization = permissionGuideModel?.authorization
+        let authorization = AuthorizationSnapshot(
+            familyControls: status,
+            locationAuthorization: currentAuthorization?.locationAuthorization ?? .always,
+            locationAccuracy: currentAuthorization?.locationAccuracy ?? .full,
+            backgroundRefresh: currentAuthorization?.backgroundRefresh ?? .available
+        )
+        permissionGuideModel = PermissionGuideModel(
+            authorization: authorization,
+            presentationState: .permissionRequired(missingPermissions: [.familyControls]),
+            initialScreenKind: .familyControls,
+            presentationMode: .recovery
+        )
     }
 
     private func openSettings() {
@@ -292,9 +342,10 @@ private struct HomeView: View {
 
     private var header: some View {
         HStack {
-            Text("GETUP")
+            Text("나서")
                 .font(.title3)
                 .fontWeight(.bold)
+                .accessibilityIdentifier("home.brandName")
             Spacer()
             Button {
                 model.beginCreatingRule()
@@ -314,16 +365,17 @@ private struct HomeView: View {
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("NO FOCUS RULES")
+                Text("READY TO STEP OUT")
                     .font(.caption2)
                     .fontWeight(.bold)
                     .foregroundStyle(HomeColor.textTertiary)
-                Text("첫 규칙을\n만들어보세요")
+                Text("밖으로 나설 첫 규칙을\n만들어보세요")
                     .font(.largeTitle)
                     .fontWeight(.bold)
-                Text("소중한 내 시간을 지켜요")
+                Text("밖으로 나가면 제한된 앱이 다시 열려요")
                     .font(.headline)
                     .foregroundStyle(HomeColor.textSecondary)
+                    .accessibilityIdentifier("home.emptyState.description")
             }
 
             VStack(spacing: 24) {
@@ -379,7 +431,7 @@ private struct HomeView: View {
                                 rulePosition: index + 1,
                                 ruleCount: model.homeRules.count
                             )
-                            .padding(.horizontal, 2)
+                            .padding(.horizontal, 22)
                             .tag(item.id)
                         } else {
                             HomeRuleCard(
@@ -389,12 +441,14 @@ private struct HomeView: View {
                             ) {
                                 model.beginEditingRule(id: item.id)
                             }
-                            .padding(.horizontal, 2)
+                            .padding(.horizontal, 22)
                             .tag(item.id)
                         }
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
+                .padding(.horizontal, -20)
+                .accessibilityIdentifier("home.rulePager.viewport")
             }
             .frame(height: rulePagerHeight)
             .accessibilityElement(children: .contain)
@@ -473,26 +527,29 @@ private struct HomeRuleCard: View {
                         .frame(width: 78, height: 78)
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("\(item.savedPlace.name)에서 \(radiusLabel) 나가면")
+                        Text("\(item.savedPlace.name)에서 \(radiusLabel) 밖으로 나서면")
                             .font(.title2)
                             .fontWeight(.bold)
-                        Text("선택한 앱 \(item.applicationCount)개를\n다시 사용할 수 있어요")
+                        Text(item.applicationReleaseDescription)
                             .font(.subheadline)
                             .foregroundStyle(HomeColor.textSecondary)
                     }
                 }
 
                 conditionRow(label: "LOCATION", value: "\(item.savedPlace.name) · \(radiusLabel)", identifier: "home.ruleCard.\(item.accessibilityID).location")
-                conditionRow(label: "BLOCKED", value: "\(item.applicationCount)개 앱", identifier: "home.ruleCard.\(item.accessibilityID).applications")
+                conditionRow(label: "BLOCKED", value: item.applicationSummary, identifier: "home.ruleCard.\(item.accessibilityID).applications")
 
                 Spacer(minLength: 0)
-                Button("규칙 수정", action: onEdit)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .frame(maxWidth: .infinity, minHeight: 42)
-                    .background(HomeColor.surfaceElevated, in: .rect(cornerRadius: 14))
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("home.ruleCard.\(item.accessibilityID).edit")
+                Button(action: onEdit) {
+                    Text("규칙 수정")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .background(HomeColor.surfaceElevated, in: .rect(cornerRadius: 14))
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("home.ruleCard.\(item.accessibilityID).edit")
             }
             .padding(16)
             .frame(maxWidth: .infinity, minHeight: 456, alignment: .topLeading)
@@ -531,10 +588,7 @@ private struct HomeRuleCard: View {
     }
 
     private var weekdayLabel: String {
-        Weekday.allCases
-            .filter(item.rule.weekdays.contains)
-            .map(Self.shortWeekday)
-            .joined(separator: "–")
+        HomeWeekdayFormatter.label(for: item.rule.weekdays)
     }
 
     private var occurrenceEyebrow: String {
@@ -554,17 +608,6 @@ private struct HomeRuleCard: View {
 
     private static func period(_ time: TimeOfDay) -> String { time.hour < 12 ? "AM" : "PM" }
 
-    private static func shortWeekday(_ weekday: Weekday) -> String {
-        switch weekday {
-        case .monday: "MON"
-        case .tuesday: "TUE"
-        case .wednesday: "WED"
-        case .thursday: "THU"
-        case .friday: "FRI"
-        case .saturday: "SAT"
-        case .sunday: "SUN"
-        }
-    }
 }
 
 private struct LoadFailureView: View {
@@ -720,14 +763,19 @@ private enum AppRuntime {
 
 @MainActor
 private struct AppEnvironment {
+    typealias RuntimeRecovery = @Sendable () async -> AppLifecycleRecoveryResult?
+
     let model: AppModel
-    let lifecycleCoordinator: AppLifecycleCoordinator?
-    let currentLocationProvider: any CurrentLocationProviding
+    let runtimeRecovery: RuntimeRecovery?
+    let currentLocationProvider: any CurrentLocationProviding & LocationAuthorizationRequesting
     let defaultCoordinate: ReferenceLocation
     let applicationSelectionOverride: (@MainActor () -> FamilyActivitySelection?)?
+    let familyControlsAuthorizationStatusOverride:
+        (@MainActor () -> FamilyControlsAuthorizationStatus)?
     let showsRestrictionProbe: Bool
     let permissionGuideModel: PermissionGuideModel?
     let permissionGuideRetryResult: String?
+    let permissionGuideActionUpdate: PermissionGuideUpdate?
     let permissionOnboardingStateStore: PermissionOnboardingStateStore
 
     static func live() throws -> AppEnvironment {
@@ -749,21 +797,35 @@ private struct AppEnvironment {
                     await restrictionAdapter.currentAppliedState()
                 }
             ),
-            lifecycleCoordinator: lifecycleCoordinator,
+            runtimeRecovery: {
+                try? await lifecycleCoordinator.restore()
+            },
             currentLocationProvider: CurrentLocationProvider(session: locationSession),
             defaultCoordinate: ReferenceLocation(latitude: 37.5665, longitude: 126.9780),
             applicationSelectionOverride: nil,
+            familyControlsAuthorizationStatusOverride: nil,
             showsRestrictionProbe: false,
             permissionGuideModel: nil,
             permissionGuideRetryResult: nil,
+            permissionGuideActionUpdate: nil,
             permissionOnboardingStateStore: PermissionOnboardingStateStore()
         )
     }
 }
 
-private struct UITestCurrentLocationProvider: CurrentLocationProviding {
+private struct UITestCurrentLocationProvider: CurrentLocationProviding,
+    LocationAuthorizationRequesting
+{
     func currentLocation() async throws -> ReferenceLocation {
         ReferenceLocation(latitude: 37.5665, longitude: 126.9780)
+    }
+
+    func requestWhenInUseAuthorization() async -> LocationAuthorizationStatus {
+        .whenInUse
+    }
+
+    func requestAlwaysAuthorization() async -> LocationAuthorizationStatus {
+        .always
     }
 }
 
@@ -784,7 +846,7 @@ private enum UITestConfiguration {
             after: "--ui-test-location-retry-result"
         )
         let permissionOnboardingStateStore = PermissionOnboardingStateStore(
-            key: "permissionOnboarding.hasBeenPresented.uiTest.\(storeID)"
+            key: "permissionOnboarding.hasCompleted.uiTest.\(storeID)"
         )
         let fileManager = FileManager.default
         let root = fileManager.urls(for: .cachesDirectory, in: .userDomainMask)[0]
@@ -811,7 +873,7 @@ private enum UITestConfiguration {
                 SavedPlaceCollectionSnapshot(revision: 1, places: fixtures.places)
             )
 
-            if scenario == "three-saved-rules" {
+            if scenario == "three-saved-rules" || scenario == "startup-slow-recovery" {
                 try await container.ruleRepository.saveRuleCollection(
                     RestrictionRuleCollectionSnapshot(
                         revision: 1,
@@ -829,14 +891,20 @@ private enum UITestConfiguration {
             }
         }
 
-        let selectionOverride: (@MainActor () -> FamilyActivitySelection?)?
-        if applicationResult == nil {
-            selectionOverride = nil
-        } else {
-            selectionOverride = { @MainActor in
-                FamilyActivitySelection(includeEntireCategory: true)
+        let selectionOverride: (@MainActor () -> FamilyActivitySelection?)? =
+            switch applicationResult {
+            case "one-category":
+                { @MainActor in categorySelection() }
+            case .some:
+                { @MainActor in FamilyActivitySelection(includeEntireCategory: true) }
+            case nil:
+                nil
             }
-        }
+        let authorizationStatusOverride:
+            (@MainActor () -> FamilyControlsAuthorizationStatus)? =
+            scenario == "empty-editor-family-controls-undetermined"
+            ? { @MainActor in .notDetermined }
+            : nil
 
         return AppEnvironment(
             model: AppModel(
@@ -846,7 +914,10 @@ private enum UITestConfiguration {
                 calendar: Fixtures.calendar,
                 timeZone: Fixtures.timeZone,
                 applicationTokenCounter: { selection in
-                    selection.includeEntireCategory ? 1 : 0
+                    let targetCount = selection.restrictionTargetCount
+                    return targetCount > 0
+                        ? targetCount
+                        : (selection.includeEntireCategory ? 1 : 0)
                 },
                 applicationCountForRule: fixtures.applicationCount,
                 ruleAccessibilityID: fixtures.accessibilityID,
@@ -876,18 +947,58 @@ private enum UITestConfiguration {
                     return AppliedRestrictionState(activeRuleRevisions: revisions)
                 }
             ),
-            lifecycleCoordinator: nil,
+            runtimeRecovery: runtimeRecovery(for: scenario),
             currentLocationProvider: UITestCurrentLocationProvider(),
             defaultCoordinate: fixtures.home.coordinate,
             applicationSelectionOverride: selectionOverride,
+            familyControlsAuthorizationStatusOverride: authorizationStatusOverride,
             showsRestrictionProbe: scenario == "restriction-activation",
             permissionGuideModel: permissionGuideModel(
                 for: scenario,
                 onboardingStateStore: permissionOnboardingStateStore
             ),
             permissionGuideRetryResult: permissionGuideRetryResult,
+            permissionGuideActionUpdate: permissionGuideActionUpdate(for: scenario),
             permissionOnboardingStateStore: permissionOnboardingStateStore
         )
+    }
+
+    private static func categorySelection() -> FamilyActivitySelection {
+        let encodedData = try! JSONEncoder().encode(["data": Data([42])])
+        let token = try! JSONDecoder().decode(
+            ActivityCategoryToken.self,
+            from: encodedData
+        )
+        var selection = FamilyActivitySelection(includeEntireCategory: true)
+        selection.categoryTokens = [token]
+        return selection
+    }
+
+    private static func runtimeRecovery(
+        for scenario: String?
+    ) -> AppEnvironment.RuntimeRecovery? {
+        guard scenario == "startup-slow-recovery" else {
+            return nil
+        }
+
+        return {
+            do {
+                try await ContinuousClock().sleep(for: .seconds(5))
+            } catch {
+                return nil
+            }
+            return AppLifecycleRecoveryResult(
+                recoveredRuleIDs: [],
+                failures: [],
+                authorization: AuthorizationSnapshot(
+                    familyControls: .approved,
+                    locationAuthorization: .always,
+                    locationAccuracy: .full,
+                    backgroundRefresh: .available
+                ),
+                presentationState: .inactive
+            )
+        }
     }
 
     private static func permissionGuideModel(
@@ -934,6 +1045,21 @@ private enum UITestConfiguration {
                 initialScreenKind: .familyControls,
                 presentationMode: .onboarding
             )
+        case "permission-family-controls-grant-onboarding",
+             "permission-family-controls-deny-onboarding":
+            return PermissionGuideModel(
+                authorization: AuthorizationSnapshot(
+                    familyControls: .notDetermined,
+                    locationAuthorization: .notDetermined,
+                    locationAccuracy: .full,
+                    backgroundRefresh: .available
+                ),
+                presentationState: .permissionRequired(
+                    missingPermissions: [.familyControls, .alwaysLocation]
+                ),
+                initialScreenKind: .familyControls,
+                presentationMode: .onboarding
+            )
         case "permission-family-controls-approved":
             return PermissionGuideModel(
                 authorization: approved,
@@ -974,6 +1100,24 @@ private enum UITestConfiguration {
                 presentationState: .inactive,
                 initialScreenKind: .location,
                 presentationMode: .onboarding
+            )
+        case "permission-location-when-in-use",
+             "permission-location-always-grant-recovery",
+             "permission-location-always-decline-onboarding":
+            return PermissionGuideModel(
+                authorization: AuthorizationSnapshot(
+                    familyControls: .approved,
+                    locationAuthorization: .whenInUse,
+                    locationAccuracy: .full,
+                    backgroundRefresh: .available
+                ),
+                presentationState: .permissionRequired(
+                    missingPermissions: [.alwaysLocation]
+                ),
+                initialScreenKind: .location,
+                presentationMode: scenario == "permission-location-always-grant-recovery"
+                    ? .recovery
+                    : .onboarding
             )
         case "permission-location-denied":
             return PermissionGuideModel(
@@ -1026,6 +1170,20 @@ private enum UITestConfiguration {
                 ),
                 onboardingStateStore: onboardingStateStore
             )
+        case "permission-onboarding-completion":
+            if onboardingStateStore.hasCompleted {
+                return PermissionGuideLaunchRouter.makeInitialModel(
+                    authorization: approved,
+                    presentationState: .inactive,
+                    onboardingStateStore: onboardingStateStore
+                )
+            }
+            return PermissionGuideModel(
+                authorization: approved,
+                presentationState: .inactive,
+                initialScreenKind: .backgroundRefresh,
+                presentationMode: .onboarding
+            )
         case "location-unavailable-inactive":
             return PermissionGuideModel(
                 authorization: approved,
@@ -1043,6 +1201,63 @@ private enum UITestConfiguration {
         default:
             return nil
         }
+    }
+
+    private static func permissionGuideActionUpdate(
+        for scenario: String?
+    ) -> PermissionGuideUpdate? {
+        let authorization: AuthorizationSnapshot
+        switch scenario {
+        case "permission-family-controls-grant-onboarding":
+            authorization = AuthorizationSnapshot(
+                familyControls: .approved,
+                locationAuthorization: .notDetermined,
+                locationAccuracy: .full,
+                backgroundRefresh: .available
+            )
+        case "permission-family-controls-deny-onboarding":
+            authorization = AuthorizationSnapshot(
+                familyControls: .denied,
+                locationAuthorization: .notDetermined,
+                locationAccuracy: .full,
+                backgroundRefresh: .available
+            )
+        case "permission-location-always-grant-recovery":
+            authorization = AuthorizationSnapshot(
+                familyControls: .approved,
+                locationAuthorization: .always,
+                locationAccuracy: .full,
+                backgroundRefresh: .available
+            )
+        case "permission-location-always-decline-onboarding":
+            authorization = AuthorizationSnapshot(
+                familyControls: .approved,
+                locationAuthorization: .whenInUse,
+                locationAccuracy: .full,
+                backgroundRefresh: .available
+            )
+        default:
+            return nil
+        }
+
+        return PermissionGuideUpdate(
+            authorization: authorization,
+            presentationState: authorization.familyControls == .approved
+                && authorization.locationAuthorization == .always
+                ? .inactive
+                : .permissionRequired(
+                    missingPermissions: Set(
+                        [
+                            authorization.familyControls == .approved
+                                ? nil
+                                : RequiredPermission.familyControls,
+                            authorization.locationAuthorization == .always
+                                ? nil
+                                : RequiredPermission.alwaysLocation,
+                        ].compactMap { $0 }
+                    )
+                )
+        )
     }
 
     private static var arguments: [String] {
@@ -1157,7 +1372,7 @@ private enum UITestConfiguration {
 
         func initialDraft(for scenario: String?) -> RuleEditorDraft? {
             switch scenario {
-            case "empty-editor":
+            case "empty-editor", "empty-editor-family-controls-undetermined":
                 RuleEditorDraft(
                     id: Self.rule1ID,
                     sourceRevision: nil,

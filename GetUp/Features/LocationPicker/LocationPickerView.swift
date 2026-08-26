@@ -49,8 +49,12 @@ struct LocationPickerView: View {
                     customNameField
                 }
 
-                if let guidance = model.guidance {
+                if let guidance = model.guidance, guidance.isLocationGuidance {
                     guidanceCard(for: guidance)
+                }
+
+                if let guidance = model.placeNameValidationGuidance {
+                    placeNameValidationMessage(guidance)
                 }
 
                 RadiusPicker(selection: $radius)
@@ -66,6 +70,9 @@ struct LocationPickerView: View {
         .toolbarColorScheme(.dark, for: .navigationBar)
         .onChange(of: radius) { _, newRadius in
             moveCamera(to: model.cameraCenter, radius: newRadius)
+        }
+        .task {
+            await loadInitialCurrentLocation()
         }
     }
 
@@ -185,14 +192,16 @@ struct LocationPickerView: View {
                     savedPlaceButton(place)
                 }
 
+                let isCustomSelected = model.selectedPlaceChoice == .custom
                 Button("직접 입력", systemImage: "chevron.forward") {
                     showsCustomNameField = true
                     customPlaceNameInput = ""
-                    model.updatePlaceName("")
+                    model.selectCustomPlaceName()
                     isCustomNameFocused = true
                 }
                 .labelStyle(.titleAndIcon)
-                .buttonStyle(LocationChoiceButtonStyle(isSelected: false))
+                .buttonStyle(LocationChoiceButtonStyle(isSelected: isCustomSelected))
+                .accessibilityAddTraits(isCustomSelected ? .isSelected : [])
                 .accessibilityHint("현재 지도 좌표에 새 장소 이름을 입력합니다.")
                 .accessibilityIdentifier("locationPicker.customPlace")
             }
@@ -202,7 +211,7 @@ struct LocationPickerView: View {
     }
 
     private func presetButton(_ name: String, identifier: String) -> some View {
-        let isSelected = model.placeName == name
+        let isSelected = model.selectedPlaceChoice == .preset(name)
         return Button(name) {
             showsCustomNameField = false
             model.selectPreset(named: name)
@@ -241,18 +250,11 @@ struct LocationPickerView: View {
             .frame(minHeight: 52)
             .background(FocusColor.surfaceElevated, in: .rect(cornerRadius: 16))
 
-            if let guidance = model.placeNameValidationGuidance {
-                Text(guidance.message)
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(FocusColor.error)
-                    .accessibilityIdentifier("locationPicker.placeName.validation")
-            }
         }
     }
 
     private func savedPlaceButton(_ place: SavedPlaceSnapshot) -> some View {
-        let isSelected = model.selectedSavedPlaceID == place.id
+        let isSelected = model.selectedPlaceChoice == .saved(place.id)
 
         return Button(place.name) {
             model.selectSavedPlace(id: place.id)
@@ -280,7 +282,7 @@ struct LocationPickerView: View {
                         .font(.footnote)
                         .fontWeight(.semibold)
                         .foregroundStyle(FocusColor.accent)
-                        .accessibilityHint("GetUp의 위치 권한을 변경할 수 있는 시스템 설정을 엽니다.")
+                        .accessibilityHint("나서의 위치 권한을 변경할 수 있는 시스템 설정을 엽니다.")
                 }
             }
         }
@@ -290,22 +292,45 @@ struct LocationPickerView: View {
         .accessibilityIdentifier("locationPicker.guidance")
     }
 
+    private func placeNameValidationMessage(_ guidance: LocationPickerGuidance) -> some View {
+        Label(guidance.message, systemImage: guidance.systemImage)
+            .font(.footnote)
+            .fontWeight(.semibold)
+            .foregroundStyle(FocusColor.error)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityIdentifier("locationPicker.placeName.validation")
+    }
+
     private var applyButton: some View {
-        Button("적용") {
+        Button {
             model.confirm(placeName: model.placeName)
             if model.completion != nil {
                 onApply()
             }
+        } label: {
+            ZStack {
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(
+                        model.canApplySelection
+                            ? FocusColor.accent
+                            : FocusColor.surfaceElevated
+                    )
+
+                Text("적용")
+                    .font(.body)
+                    .fontWeight(.bold)
+                    .foregroundStyle(
+                        model.canApplySelection
+                            ? FocusColor.background
+                            : FocusColor.textSecondary
+                    )
+            }
+            .frame(maxWidth: .infinity, minHeight: 56)
+            .contentShape(.rect)
         }
-        .font(.body)
-        .fontWeight(.bold)
-        .frame(maxWidth: .infinity, minHeight: 56)
-        .foregroundStyle(model.canApplySelection ? FocusColor.background : FocusColor.textSecondary)
-        .background(
-            model.canApplySelection ? FocusColor.accent : FocusColor.surfaceElevated,
-            in: .rect(cornerRadius: 18)
-        )
         .buttonStyle(.plain)
+        .frame(maxWidth: .infinity)
+        .contentShape(.rect)
         .disabled(!model.canApplySelection)
         .accessibilityHint(applyAccessibilityHint)
         .accessibilityIdentifier("locationPicker.confirm")
@@ -332,6 +357,20 @@ struct LocationPickerView: View {
         cameraPosition = .region(
             Self.cameraRegion(centeredAt: coordinate, radius: radius)
         )
+    }
+
+    private func loadInitialCurrentLocation() async {
+        guard !isLocating else {
+            return
+        }
+
+        isLocating = true
+        let didLoadLocation = await model.loadInitialCurrentLocation()
+        isLocating = false
+
+        if didLoadLocation {
+            moveCamera(to: model.cameraCenter, radius: radius)
+        }
     }
 
     private static func cameraRegion(
@@ -428,7 +467,7 @@ private extension LocationPickerGuidance {
         case .locationUnavailable:
             "현재 위치를 확인하지 못했어요. 지도 핀을 이동해 직접 설정해 주세요."
         case .placeNameRequired:
-            "다른 규칙에서도 사용할 수 있도록 장소 이름을 입력해 주세요."
+            "장소 이름을 입력해 주세요."
         case .placeNameTooLong:
             "장소 이름은 10자 이내로 입력해 주세요."
         case .duplicatePlaceName:
@@ -444,6 +483,17 @@ private extension LocationPickerGuidance {
             "location.magnifyingglass"
         case .placeNameRequired, .placeNameTooLong, .duplicatePlaceName:
             "exclamationmark.circle"
+        }
+    }
+}
+
+private extension LocationPickerGuidance {
+    var isLocationGuidance: Bool {
+        switch self {
+        case .whenInUseRequired, .locationUnavailable:
+            true
+        case .placeNameRequired, .placeNameTooLong, .duplicatePlaceName:
+            false
         }
     }
 }

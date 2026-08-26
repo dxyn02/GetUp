@@ -164,18 +164,18 @@ private struct LatencyAuthorizationProvider: AuthorizationProviding {
 
 @MainActor
 private final class ConfirmingManagedSettingsStoreAccess: ManagedSettingsStoreAccess {
-    private var applications: Set<ApplicationToken>?
+    private var selection = ManagedSettingsShieldSelection.empty
     private(set) var confirmedWriteCount = 0
 
-    func shieldedApplications(named storeName: String) -> Set<ApplicationToken>? {
-        applications
+    func shieldSelection(named storeName: String) -> ManagedSettingsShieldSelection {
+        selection
     }
 
-    func setShieldedApplications(
-        _ applications: Set<ApplicationToken>?,
+    func setShieldSelection(
+        _ selection: ManagedSettingsShieldSelection,
         named storeName: String
     ) {
-        self.applications = applications
+        self.selection = selection
         confirmedWriteCount += 1
     }
 }

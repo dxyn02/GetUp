@@ -27,7 +27,7 @@ struct RuleConfigurationService: Sendable {
         savedPlaceRepository: any SavedPlaceRepository,
         now: @escaping @Sendable () -> Date = Date.init,
         applicationTokenCounter: @escaping @Sendable (FamilyActivitySelection) -> Int = {
-            $0.applicationTokens.count
+            $0.restrictionTargetCount
         },
         synchronizeRuntimeAfterSave: @escaping @Sendable (
             RestrictionRuleSnapshot

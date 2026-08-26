@@ -27,6 +27,25 @@ struct ScheduleEvaluatorTests {
         )
     }
 
+    @Test("Changing one time wheel component preserves the other components")
+    func timeWheelComponentsChangeIndependently() {
+        let tenAM = TimePickerComponents(time: TimeOfDay(hour: 10, minute: 0))
+
+        #expect(
+            tenAM.updating(minute: 15).time
+                == TimeOfDay(hour: 10, minute: 15)
+        )
+        #expect(
+            tenAM.updating(period: .pm).time
+                == TimeOfDay(hour: 22, minute: 0)
+        )
+        #expect(
+            TimePickerComponents(time: TimeOfDay(hour: 10, minute: 15))
+                .updating(hour: 11).time
+                == TimeOfDay(hour: 11, minute: 15)
+        )
+    }
+
     @Test("DatePicker rejects 14 minutes and accepts 15 minutes across midnight")
     func datePickerMinimumDurationBoundary() {
         #expect(
