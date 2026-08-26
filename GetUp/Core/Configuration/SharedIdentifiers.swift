@@ -15,6 +15,19 @@ enum SharedIdentifiers {
     static let legacyRestrictionIsAppliedDefaultsKey = "getup.restriction.is-applied"
     static let legacyRestrictionRuleRevisionDefaultsKey = "getup.restriction.rule-revision"
 
+    static func ruleID(fromDeviceActivityName activityName: String) -> UUID? {
+        let prefix = "\(deviceActivityNamePrefix)."
+        guard activityName.hasPrefix(prefix) else {
+            return nil
+        }
+
+        let remainder = activityName.dropFirst(prefix.count)
+        guard let identifier = remainder.split(separator: ".").first else {
+            return nil
+        }
+        return UUID(uuidString: String(identifier))
+    }
+
     static func appGroupIdentifier(in bundle: Bundle = .main) -> String? {
         guard
             let identifier = bundle.object(

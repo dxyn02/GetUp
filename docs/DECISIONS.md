@@ -1099,3 +1099,46 @@ Shield Configuration extension은 기존 `GETUP` wordmark asset을 제거하고 
 **영향 범위**: `GetUpApp.emptyState`, `LocationPickerView.applyButton`,
 `ShieldConfigurationExtension`, extension 전용 asset catalog, `Localizable.xcstrings`, US1 UI 회귀,
 `FR-076`과 T112에 적용한다.
+
+## DEC-061 — 시간 종료 callback의 규칙별 동기 해제
+
+**날짜**: 2026-08-26
+
+**결정**: 활성 규칙마다 `getup.restriction.<rule UUID>` 이름의 독립 `ManagedSettingsStore`를 사용한다.
+`DeviceActivityMonitor.intervalDidEnd`가 전달되면 activity name에서 rule ID를 복원하고, callback 안에서
+해당 store를 동기적으로 비운 뒤 App Group의 적용 상태에서 그 규칙만 제거한다. 다른 활성 규칙의
+store는 그대로 유지한다. 기존 버전의 단일 `getup.restriction` 합집합 store는 남은 모든 규칙의 독립
+store가 확인될 때만 동기 제거하며, 안전하게 분리할 수 없으면 기존 coordinator 재평가로 넘긴다.
+
+**근거**: Apple의 Device Activity 계약상 `intervalDidEnd`는 schedule 종료 정각이 아니라 종료 구간
+밖에서 기기가 처음 사용될 때 호출될 수 있다. 따라서 기기가 유휴 상태인 동안 정각 해제를 보장할
+수는 없지만, callback을 받은 뒤 `Task`만 예약하면 extension이 비동기 작업 완료 전에 종료되어 첫
+제한 앱 접근에서도 이전 shield가 남을 수 있다. 시스템 store 변경은 callback 안에서 즉시 수행할 수
+있으며, 규칙별 store를 사용하면 한 규칙 종료 시 겹친 다른 규칙의 제한을 보존할 수 있다.
+
+**영향 범위**: `SharedIdentifiers`, `ManagedSettingsRestrictionAdapter`,
+`DeviceActivityIntervalEndHandler`, `DeviceActivityMonitorExtension`, adapter·latency 테스트,
+`platform-events-contract.md`, `FR-077`과 T113에 적용한다. 실제 callback 전달 시점과 system shield
+반영은 T083·T085 실기기 관찰에서 별도로 기록한다.
+
+## DEC-062 — 단일 제한 store 복원과 마지막 규칙 동기 해제
+
+**날짜**: 2026-08-26
+
+**상태**: DEC-061의 규칙별 store 결정을 대체함
+
+**결정**: 실제 제한 적용은 기존에 실기기에서 검증된 단일 `getup.restriction` store에 모든 활성
+규칙의 제한 대상 합집합을 쓰는 방식으로 복원한다. `intervalDidEnd` callback의 rule ID가 현재 적용
+상태의 마지막 활성 규칙이면 단일 store와 적용 상태를 callback 안에서 동기 해제한다. 다른 활성
+규칙이 남아 있거나 callback을 해석할 수 없으면 단일 store를 부분 변경하지 않고 coordinator가 전체
+규칙을 재평가해 합집합을 다시 쓴다.
+
+**근거**: DEC-061의 규칙별 named store 구현은 protocol test double과 Simulator build에서는
+통과했지만 실제 기기에서 Screen Time 제한이 전혀 적용되지 않는 회귀를 만들었다. 단일 store는 이전
+실기기 검수에서 앱·카테고리·웹 도메인 shield 적용이 확인된 경로다. 마지막 규칙 종료는 합집합 전체를
+안전하게 비울 수 있으므로 동기 처리할 수 있고, 겹친 규칙 종료는 남은 규칙의 전체 selection 없이는
+부분 해제가 안전하지 않으므로 기존 재평가가 필요하다.
+
+**영향 범위**: `ManagedSettingsRestrictionAdapter`, `DeviceActivityIntervalEndHandler`, adapter 테스트,
+`platform-events-contract.md`, `FR-077`과 T114에 적용한다. DEC-061의 규칙별 store 및 migration 설명은
+더 이상 현재 구현 계약이 아니다.

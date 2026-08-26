@@ -11,7 +11,8 @@ T083 — 자동 latency 100회 계측과 결과 형식은 구현·검증했으�
 앱 사용 가능 상태의 실기기 관찰을 진행 중
 
 ## 마지막 완료 작업
-T112 — 홈 빈 상태 설명, 위치 `적용` CTA 전체 hit area와 Shield 새 `NaseoShieldLogo` 연결을 보정함
+T114 — T113의 규칙별 store 도입으로 제한이 적용되지 않던 실기기 회귀를 수정하고 단일 합집합
+store와 마지막 활성 규칙 동기 해제로 복원함
 
 ## 다음 작업
 T083 — 승인된 entitlement·profile을 사용한 실기기 활성화·해제 latency 관찰 완료
@@ -22,10 +23,30 @@ BLK-010 열림. `com.dxyn02.GetUp` namespace의 네 App ID 등록과
 실기기 설치·실행은 사용자 확인됐으며, extension별 서명 entitlement와 archive 증적이 추가로 필요함.
 
 ## 계획 갱신 필요
-없음. 외부 `나서` 브랜드와 내부 `GetUp/getup` 기술 식별자 분리를 유지하고, T112에서 Shield SVG의
-새 브랜드 심볼 적용을 완료했다. 앱 아이콘 변경은 별도 작업 범위다.
+없음. Apple의 `intervalDidEnd` 전달 시점은 물리적 종료 정각이 아니라 종료 구간 밖에서 기기를 처음
+사용할 때일 수 있다. callback 전달 이후 마지막 활성 규칙 해제는 T114에서 동기화했으며, 기기가
+사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-08-26 T114에서 T113의 규칙별 named store 전환 뒤 실기기에서 제한이 전혀 적용되지 않는 회귀를
+확인했다. 실제 제한 적용 경로를 기존 단일 `getup.restriction` 합집합 store로 복원했다. 종료 callback은
+현재 적용 상태에서 마지막 활성 규칙이 끝난 경우에만 단일 store와 상태를 동기적으로 비우며, 다른
+규칙이 남거나 stale callback이면 store를 건드리지 않고 기존 coordinator가 전체 합집합을 다시
+계산한다. 전체 `GetUpTests` 193개(동적 실행 포함 236회)가 실패·skip 없이 통과했고 앱·확장 generic
+build도 통과했다.
+사용자가 수정 빌드의 실기기에서 Screen Time 제한이 다시 정상 적용되고, 설정 시간이 지난 뒤 시간
+종료 자동 해제도 정상 동작함을 확인했다. 이는 기능 경로의 실기기 확인이며 T083의 100회 지연 계측
+완료를 의미하지는 않는다.
+
+2026-08-26 T113에서 기존 단일 `getup.restriction` 합집합 store를 활성 규칙별
+`getup.restriction.<rule UUID>` store로 분리했다. `intervalDidEnd`는 activity name에서 rule ID를
+해석해 해당 store를 callback 안에서 동기적으로 비우고 App Group 적용 상태를 갱신한다. 다른 활성
+규칙의 store는 유지하며, 기존 합집합 store는 남은 규칙별 store가 모두 확인된 경우에만 제거하고
+그렇지 않으면 공통 coordinator 재평가로 넘긴다. adapter와 종료 handler의 단위·통합 회귀를 포함한
+전체 `GetUpTests` 194개(동적 실행 포함 237회)가 실패·skip 없이 통과했다. 앱·확장 generic build도
+통과했다. 실제 기기에서 종료 구간 밖 첫 사용 시 callback 전달과 대상 앱 shield 해제는 T083·T085
+인수 범위로 남긴다.
+
 2026-08-26 T112에서 홈 빈 상태 설명을 `밖으로 나가면 제한된 앱이 다시 열려요`로 변경했다. 위치
 선택 화면의 56pt `적용` CTA는 채워진 shape를 `Button` label 내부로 이동해 좌측 6% 탭에서도 규칙
 편집 화면으로 복귀하도록 보정했다. Shield extension의 기존 `GETUP` wordmark asset을 새

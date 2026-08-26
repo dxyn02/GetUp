@@ -48,8 +48,7 @@ struct ManagedSettingsShieldSelection: Equatable {
     }
 }
 
-@MainActor
-protocol ManagedSettingsStoreAccess: Sendable {
+protocol ManagedSettingsStoreAccess {
     func shieldSelection(
         named storeName: String
     ) -> ManagedSettingsShieldSelection
@@ -64,7 +63,6 @@ protocol RestrictionApplicationStateStoring: Sendable {
     func saveState(_ newState: AppliedRestrictionState) async
 }
 
-@MainActor
 final class SystemManagedSettingsStoreAccess: ManagedSettingsStoreAccess {
     private var stores: [String: ManagedSettingsStore] = [:]
 
@@ -105,13 +103,6 @@ final class SystemManagedSettingsStoreAccess: ManagedSettingsStoreAccess {
 actor UserDefaultsRestrictionApplicationStateStore:
     RestrictionApplicationStateStoring
 {
-    private enum Key {
-        static let activeRuleRevisions = SharedIdentifiers.activeRuleRevisionsDefaultsKey
-        static let legacyIsApplied = SharedIdentifiers.legacyRestrictionIsAppliedDefaultsKey
-        static let legacyRuleRevision = SharedIdentifiers
-            .legacyRestrictionRuleRevisionDefaultsKey
-    }
-
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults) {
@@ -119,8 +110,20 @@ actor UserDefaultsRestrictionApplicationStateStore:
     }
 
     func currentState() -> AppliedRestrictionState {
+        RestrictionApplicationStateDefaultsCodec.load(from: defaults)
+    }
+
+    func saveState(_ newState: AppliedRestrictionState) {
+        RestrictionApplicationStateDefaultsCodec.save(newState, to: defaults)
+    }
+}
+
+enum RestrictionApplicationStateDefaultsCodec {
+    static func load(from defaults: UserDefaults) -> AppliedRestrictionState {
         guard
-            let data = defaults.data(forKey: Key.activeRuleRevisions),
+            let data = defaults.data(
+                forKey: SharedIdentifiers.activeRuleRevisionsDefaultsKey
+            ),
             let revisions = try? JSONDecoder().decode(
                 Set<ActiveRuleRevision>.self,
                 from: data
@@ -128,20 +131,104 @@ actor UserDefaultsRestrictionApplicationStateStore:
         else {
             return AppliedRestrictionState(
                 activeRuleRevisions: [],
-                requiresReset: defaults.bool(forKey: Key.legacyIsApplied)
+                requiresReset: defaults.bool(
+                    forKey: SharedIdentifiers.legacyRestrictionIsAppliedDefaultsKey
+                )
             )
         }
         return AppliedRestrictionState(activeRuleRevisions: revisions)
     }
 
-    func saveState(_ newState: AppliedRestrictionState) {
-        if let data = try? JSONEncoder().encode(newState.activeRuleRevisions) {
-            defaults.set(data, forKey: Key.activeRuleRevisions)
+    static func save(
+        _ state: AppliedRestrictionState,
+        to defaults: UserDefaults
+    ) {
+        if let data = try? JSONEncoder().encode(state.activeRuleRevisions) {
+            defaults.set(
+                data,
+                forKey: SharedIdentifiers.activeRuleRevisionsDefaultsKey
+            )
         } else {
-            defaults.removeObject(forKey: Key.activeRuleRevisions)
+            defaults.removeObject(
+                forKey: SharedIdentifiers.activeRuleRevisionsDefaultsKey
+            )
         }
-        defaults.removeObject(forKey: Key.legacyIsApplied)
-        defaults.removeObject(forKey: Key.legacyRuleRevision)
+        defaults.removeObject(
+            forKey: SharedIdentifiers.legacyRestrictionIsAppliedDefaultsKey
+        )
+        defaults.removeObject(
+            forKey: SharedIdentifiers.legacyRestrictionRuleRevisionDefaultsKey
+        )
+    }
+}
+
+struct DeviceActivityIntervalEndHandler {
+    private let storeAccess: any ManagedSettingsStoreAccess
+    private let defaults: UserDefaults
+
+    init(
+        storeAccess: any ManagedSettingsStoreAccess,
+        defaults: UserDefaults
+    ) {
+        self.storeAccess = storeAccess
+        self.defaults = defaults
+    }
+
+    static func live(bundle: Bundle = .main) throws -> Self {
+        guard
+            let identifier = SharedIdentifiers.appGroupIdentifier(in: bundle)
+        else {
+            throw ManagedSettingsRestrictionAdapterError.missingAppGroupIdentifier
+        }
+        guard let defaults = UserDefaults(suiteName: identifier) else {
+            throw ManagedSettingsRestrictionAdapterError.sharedDefaultsUnavailable
+        }
+        return Self(
+            storeAccess: SystemManagedSettingsStoreAccess(),
+            defaults: defaults
+        )
+    }
+
+    @discardableResult
+    func handle(activityName: String) -> Bool {
+        guard
+            let endedRuleID = SharedIdentifiers.ruleID(
+                fromDeviceActivityName: activityName
+            )
+        else {
+            return false
+        }
+
+        let currentState = RestrictionApplicationStateDefaultsCodec.load(
+            from: defaults
+        )
+        guard currentState.activeRuleRevisions.contains(where: {
+            $0.ruleID == endedRuleID
+        }) else {
+            return false
+        }
+        let remaining = currentState.activeRuleRevisions.filter {
+            $0.ruleID != endedRuleID
+        }
+
+        // The shared store contains the union for every active rule. It is
+        // safe to clear synchronously only when this callback ended the final
+        // active rule; overlapping rules require the coordinator to rebuild
+        // the union from their full selections.
+        guard remaining.isEmpty else {
+            return false
+        }
+
+        let storeName = SharedIdentifiers.managedSettingsStoreName
+        storeAccess.setShieldSelection(.empty, named: storeName)
+        guard storeAccess.shieldSelection(named: storeName) == .empty else {
+            return false
+        }
+        RestrictionApplicationStateDefaultsCodec.save(
+            AppliedRestrictionState(activeRuleRevisions: []),
+            to: defaults
+        )
+        return true
     }
 }
 

@@ -75,6 +75,35 @@ Apple Developer 계정의 Family Controls 배포 승인, App Group 할당과 갱
 요약한다. store read-back과 대상 앱 반영 시각이 다르면 SLA 지연은 더 늦은 대상 앱 반영 시각을
 사용한다.
 
+## T113 — 시간 종료 callback 동기 해제
+
+**상태**: T114에서 규칙별 store 방식 대체 — 실기기 제한 미적용 회귀
+
+### 자동 검증
+
+`DeviceActivityIntervalEndHandler` 회귀는 종료된 규칙의 store만 동기 해제하고 다른 활성 규칙의
+store와 적용 상태를 유지하는지 검증한다. 기존 단일 합집합 store가 함께 남은 경우에는 남은 규칙의
+독립 store가 모두 존재할 때만 legacy store를 제거하고, 안전하게 분리할 수 없는 경우 아무 상태도
+부분 변경하지 않은 채 coordinator 호환 경로로 넘기는 사례를 포함한다.
+
+2026-08-26 iPhone 17 Pro iOS 26.5 Simulator에서 전체 `GetUpTests` 194개 test case, 동적 실행 포함
+237회가 실패·skip 없이 통과했다. 앱·Device Activity Monitor·Shield 확장을 포함한 generic Simulator
+build도 통과했다. 이 자동 검증은 실제 iOS callback 전달 시각이나 대상 앱의 system shield 해제를
+입증하지 않으며, 해당 관찰은 T083·T085 실기기 인수에 남긴다.
+
+## T114 — 단일 제한 store 복원
+
+T113의 규칙별 named store 적용 후 실기기에서 Screen Time 제한이 전혀 적용되지 않는 회귀가 보고됐다.
+실제 제한 적용을 기존 단일 `getup.restriction` 합집합 store로 복원하고, 종료 callback은 마지막 활성
+규칙만 동기 해제하도록 축소했다. 다른 활성 규칙이 남거나 현재 적용 상태에 없는 stale callback인
+테스트에서는 store와 적용 상태가 변경되지 않고 coordinator 호환 경로로 넘어가는 것을 검증한다.
+
+2026-08-26 iPhone 17 Pro iOS 26.5 Simulator에서 전체 `GetUpTests` 193개 test case, 동적 실행 포함
+236회가 실패·skip 없이 통과했다. 앱과 세 Screen Time 확장을 포함한 generic Simulator build도
+통과했다. 같은 날 사용자가 수정 빌드의 실기기에서 Screen Time 제한이 정상 적용되고 설정 시간 종료
+뒤 실제 shield가 자동 해제됨을 확인했다. 이 확인은 기능 경로 1회 이상의 수동 인수 결과이며,
+T083의 활성화·해제 각 100회 latency 판정을 대체하지 않는다.
+
 ## 전체 suite
 
 T084에서 `GetUp.xctestplan` 전체 Swift Testing·XCTest 실행 결과, 실패, skip과 미검증 동작을 이

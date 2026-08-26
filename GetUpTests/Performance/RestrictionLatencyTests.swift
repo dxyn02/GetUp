@@ -162,7 +162,6 @@ private struct LatencyAuthorizationProvider: AuthorizationProviding {
     }
 }
 
-@MainActor
 private final class ConfirmingManagedSettingsStoreAccess: ManagedSettingsStoreAccess {
     private var selection = ManagedSettingsShieldSelection.empty
     private(set) var confirmedWriteCount = 0

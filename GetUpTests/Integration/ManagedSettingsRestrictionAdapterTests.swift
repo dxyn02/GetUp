@@ -146,6 +146,132 @@ struct ManagedSettingsRestrictionAdapterTests {
         )
     }
 
+    @Test("The interval end handler synchronously clears the final active rule")
+    func intervalEndSynchronouslyClearsFinalRule() throws {
+        let application = try applicationToken(seed: 21)
+        let rule = TestFixtures.makeRule(
+            revision: 3,
+            activitySelection: selection(applicationTokens: [application])
+        )
+        let storeName = SharedIdentifiers.managedSettingsStoreName
+        let store = RecordingManagedSettingsStoreAccess(stores: [
+            storeName: ManagedSettingsShieldSelection(rules: [rule]),
+        ])
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        RestrictionApplicationStateDefaultsCodec.save(
+            AppliedRestrictionState(activeRuleRevisions: [
+                ActiveRuleRevision(ruleID: rule.id, revision: rule.revision),
+            ]),
+            to: defaults
+        )
+        let handler = DeviceActivityIntervalEndHandler(
+            storeAccess: store,
+            defaults: defaults
+        )
+
+        let didHandle = handler.handle(
+            activityName: "\(SharedIdentifiers.deviceActivityNamePrefix)."
+                + "\(rule.id.uuidString.lowercased()).monday"
+        )
+
+        #expect(didHandle)
+        #expect(store.shieldSelection(named: storeName) == .empty)
+        #expect(
+            RestrictionApplicationStateDefaultsCodec.load(from: defaults)
+                == AppliedRestrictionState(activeRuleRevisions: [])
+        )
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    @Test("The interval end handler defers when another rule remains active")
+    func intervalEndDefersOverlappingRuleRecalculation() throws {
+        let first = TestFixtures.makeRule(
+            activitySelection: selection(
+                applicationTokens: [try applicationToken(seed: 22)]
+            )
+        )
+        let second = TestFixtures.makeRule(
+            id: UUID(uuidString: "00000000-0000-4000-8000-000000000202")!,
+            revision: 2,
+            activitySelection: selection(
+                applicationTokens: [try applicationToken(seed: 23)]
+            )
+        )
+        let storeName = SharedIdentifiers.managedSettingsStoreName
+        let union = ManagedSettingsShieldSelection(rules: [first, second])
+        let store = RecordingManagedSettingsStoreAccess(stores: [
+            storeName: union,
+        ])
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        let initialState = AppliedRestrictionState(activeRuleRevisions: [
+            ActiveRuleRevision(ruleID: first.id, revision: first.revision),
+            ActiveRuleRevision(ruleID: second.id, revision: second.revision),
+        ])
+        RestrictionApplicationStateDefaultsCodec.save(initialState, to: defaults)
+        let handler = DeviceActivityIntervalEndHandler(
+            storeAccess: store,
+            defaults: defaults
+        )
+
+        let didHandle = handler.handle(
+            activityName: "\(SharedIdentifiers.deviceActivityNamePrefix)."
+                + "\(first.id.uuidString.lowercased()).monday"
+        )
+
+        #expect(!didHandle)
+        #expect(store.shieldSelection(named: storeName) == union)
+        #expect(
+            RestrictionApplicationStateDefaultsCodec.load(from: defaults)
+                == initialState
+        )
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    @Test("The interval end handler ignores a stale callback")
+    func intervalEndIgnoresStaleCallback() throws {
+        let active = TestFixtures.makeRule(
+            activitySelection: selection(
+                applicationTokens: [try applicationToken(seed: 24)]
+            )
+        )
+        let staleRuleID = UUID(
+            uuidString: "00000000-0000-4000-8000-000000000299"
+        )!
+        let storeName = SharedIdentifiers.managedSettingsStoreName
+        let shield = ManagedSettingsShieldSelection(rules: [active])
+        let store = RecordingManagedSettingsStoreAccess(stores: [
+            storeName: shield,
+        ])
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        let initialState = AppliedRestrictionState(activeRuleRevisions: [
+            ActiveRuleRevision(ruleID: active.id, revision: active.revision),
+        ])
+        RestrictionApplicationStateDefaultsCodec.save(initialState, to: defaults)
+        let handler = DeviceActivityIntervalEndHandler(
+            storeAccess: store,
+            defaults: defaults
+        )
+
+        let didHandle = handler.handle(
+            activityName: "\(SharedIdentifiers.deviceActivityNamePrefix)."
+                + "\(staleRuleID.uuidString.lowercased()).monday"
+        )
+
+        #expect(!didHandle)
+        #expect(store.shieldSelection(named: storeName) == shield)
+        #expect(
+            RestrictionApplicationStateDefaultsCodec.load(from: defaults)
+                == initialState
+        )
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
     @Test("Selected categories and web domains are applied as shield targets")
     func appliesCategoriesAndWebDomains() async throws {
         let category = try TestFixtures.activityCategoryToken(seed: 12)
@@ -349,7 +475,6 @@ struct ManagedSettingsRestrictionAdapterTests {
 
 }
 
-@MainActor
 private final class RecordingManagedSettingsStoreAccess:
     ManagedSettingsStoreAccess
 {

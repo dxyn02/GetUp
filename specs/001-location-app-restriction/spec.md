@@ -88,6 +88,10 @@
 - Q: 후속 실기기 검수에서 홈 빈 상태, 위치 적용 CTA와 Shield 로고를 어떻게 보정하나요? → A: 빈
   상태 설명은 `밖으로 나가면 제한된 앱이 다시 열려요`로 표시하고, 위치의 `적용` CTA는 보이는 버튼
   전체가 동작해야 한다. Shield는 기존 `GETUP` wordmark 대신 승인된 새 `나서` 심볼 SVG를 사용한다.
+- Q: 종료 시각이 지났는데 앱에 접근한 뒤에야 제한이 해제되는 현상은 어떻게 처리하나요? → A:
+  `DeviceActivityMonitor.intervalDidEnd`는 종료 구간 밖에서 기기가 처음 사용될 때 전달될 수 있다는
+  플랫폼 경계를 따르되, callback이 도착하면 별도 비동기 작업 완료를 기다리지 않고 종료된 규칙의
+  Managed Settings store를 즉시 동기 해제한다. 다른 활성 규칙의 제한은 유지한다.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -474,6 +478,11 @@
   `적용` CTA는 채워진 둥근 사각형을 `Button` label 내부에 구성해 전체 56pt 시각 영역을
   hit-testable하게 제공해야 한다. Shield Configuration extension은 `GETUP` wordmark가 없는 새
   `NaseoShieldLogo` vector asset을 원본 rendering mode로 표시해야 한다.
+- **FR-077**: 모든 활성 규칙의 제한 대상 합집합은 실기기 적용이 검증된 단일 GetUp
+  `getup.restriction` Managed Settings store에 반영해야 한다. `intervalDidEnd` callback이 도착하면
+  종료된 activity가 마지막 활성 규칙인 경우에만 이 store와 적용 상태를 동기적으로 해제해야 한다.
+  다른 활성 규칙이 남아 있으면 store를 부분 변경하지 않고 전체 규칙 재평가 경로에서 제한 대상
+  합집합을 다시 계산해야 한다.
 
 ### Key Entities *(include if feature involves data)*
 
