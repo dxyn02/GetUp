@@ -20,7 +20,7 @@ struct ShieldContentProviderTests {
 
         let content = provider.content(for: token)
 
-        #expect(content.title == "집 500m 밖으로 이동하세요")
+        #expect(content.title == "집에서 500m 밖으로 나서세요")
         #expect(
             content.subtitle
                 == "현재 ‘집’의 500m 범위 안에 있어요. 집의 중심에서 500m 밖으로 이동하거나 09:00 AM이 되면 자동으로 다시 사용할 수 있어요."
@@ -51,6 +51,50 @@ struct ShieldContentProviderTests {
         #expect(content.subtitle == "각 규칙의 위치 또는 시간이 모두 끝나면 다시 사용할 수 있어요.")
     }
 
+    @Test("A category shield for a custom saved place shows detailed content")
+    func categoryShieldForCustomPlaceShowsDetailedContent() throws {
+        let categoryToken = try TestFixtures.activityCategoryToken(seed: 3)
+        let rule = TestFixtures.makeRule(
+            activitySelection: selection(categoryTokens: [categoryToken])
+        )
+        let provider = ShieldContentProvider(
+            snapshotReader: FixedShieldSnapshotReader(
+                snapshot: snapshot(rules: [rule], placeName: "도서관")
+            )
+        )
+
+        let content = provider.content(
+            for: nil,
+            categoryToken: categoryToken
+        )
+
+        #expect(content.title == "도서관에서 500m 밖으로 나서세요")
+        #expect(
+            content.subtitle
+                == "현재 ‘도서관’의 500m 범위 안에 있어요. 도서관의 중심에서 500m 밖으로 이동하거나 09:00 AM이 되면 자동으로 다시 사용할 수 있어요."
+        )
+    }
+
+    @Test("A web domain shield for a custom saved place shows detailed content")
+    func webDomainShieldForCustomPlaceShowsDetailedContent() throws {
+        let webDomainToken = try TestFixtures.webDomainToken(seed: 4)
+        let rule = TestFixtures.makeRule(
+            activitySelection: selection(webDomainTokens: [webDomainToken])
+        )
+        let provider = ShieldContentProvider(
+            snapshotReader: FixedShieldSnapshotReader(
+                snapshot: snapshot(rules: [rule], placeName: "스터디 카페")
+            )
+        )
+
+        let content = provider.content(
+            for: nil,
+            webDomainToken: webDomainToken
+        )
+
+        #expect(content.title == "스터디 카페에서 500m 밖으로 나서세요")
+    }
+
     @Test("A missing token or unreadable snapshot uses privacy-safe fallback copy")
     func unavailableSnapshotUsesFallback() throws {
         let provider = ShieldContentProvider(
@@ -59,12 +103,16 @@ struct ShieldContentProviderTests {
 
         let content = provider.content(for: nil)
 
-        #expect(content.title == "앱 사용 제한이 활성화되었어요")
-        #expect(content.subtitle == "설정한 위치 또는 시간이 끝나면 자동으로 다시 사용할 수 있어요.")
+        #expect(content.title == "밖으로 나설 시간이에요")
+        #expect(
+            content.subtitle
+                == "설정한 위치에서 벗어나거나 시간이 끝나면 자동으로 다시 사용할 수 있어요."
+        )
     }
 
     private func snapshot(
-        rules: [RestrictionRuleSnapshot]
+        rules: [RestrictionRuleSnapshot],
+        placeName: String = "집"
     ) -> ShieldContentSnapshot {
         ShieldContentSnapshot(
             rules: RestrictionRuleCollectionSnapshot(revision: 1, rules: rules),
@@ -72,8 +120,8 @@ struct ShieldContentProviderTests {
                 revision: 1,
                 places: [
                     SavedPlaceSnapshot(
-                        id: TestFixtures.makeRule().savedPlaceID,
-                        name: "집",
+                        id: rules.first?.savedPlaceID ?? TestFixtures.makeRule().savedPlaceID,
+                        name: placeName,
                         coordinate: ReferenceLocation(latitude: 37, longitude: 127),
                         createdAt: TestFixtures.now,
                         updatedAt: TestFixtures.now
@@ -89,10 +137,14 @@ struct ShieldContentProviderTests {
     }
 
     private func selection(
-        tokens: Set<ApplicationToken>
+        tokens: Set<ApplicationToken> = [],
+        categoryTokens: Set<ActivityCategoryToken> = [],
+        webDomainTokens: Set<WebDomainToken> = []
     ) -> FamilyActivitySelection {
         var selection = FamilyActivitySelection()
         selection.applicationTokens = tokens
+        selection.categoryTokens = categoryTokens
+        selection.webDomainTokens = webDomainTokens
         return selection
     }
 

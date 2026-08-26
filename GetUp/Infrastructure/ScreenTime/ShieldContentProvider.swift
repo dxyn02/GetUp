@@ -122,9 +122,13 @@ struct ShieldContentProvider {
         self.bundle = bundle
     }
 
-    func content(for applicationToken: ApplicationToken?) -> ShieldContent {
+    func content(
+        for applicationToken: ApplicationToken?,
+        categoryToken: ActivityCategoryToken? = nil,
+        webDomainToken: WebDomainToken? = nil
+    ) -> ShieldContent {
         guard
-            let applicationToken,
+            applicationToken != nil || categoryToken != nil || webDomainToken != nil,
             let snapshot = try? snapshotReader.readSnapshot()
         else {
             return fallbackContent
@@ -133,7 +137,12 @@ struct ShieldContentProvider {
         let matchingRules = snapshot.rules.rules.filter { rule in
             snapshot.activeRuleRevisions.contains(
                 ActiveRuleRevision(ruleID: rule.id, revision: rule.revision)
-            ) && rule.activitySelection.applicationTokens.contains(applicationToken)
+            ) && matches(
+                rule.activitySelection,
+                applicationToken: applicationToken,
+                categoryToken: categoryToken,
+                webDomainToken: webDomainToken
+            )
         }
 
         switch matchingRules.count {
@@ -154,6 +163,27 @@ struct ShieldContentProvider {
         }
     }
 
+    private func matches(
+        _ selection: FamilyActivitySelection,
+        applicationToken: ApplicationToken?,
+        categoryToken: ActivityCategoryToken?,
+        webDomainToken: WebDomainToken?
+    ) -> Bool {
+        if let applicationToken,
+           selection.applicationTokens.contains(applicationToken) {
+            return true
+        }
+        if let categoryToken,
+           selection.categoryTokens.contains(categoryToken) {
+            return true
+        }
+        if let webDomainToken,
+           selection.webDomainTokens.contains(webDomainToken) {
+            return true
+        }
+        return false
+    }
+
     private func detailedContent(
         rule: RestrictionRuleSnapshot,
         place: SavedPlaceSnapshot
@@ -162,7 +192,7 @@ struct ShieldContentProvider {
         let endTime = timeLabel(rule.endTime)
         let titleFormat = localized(
             "shield.title.outside_radius",
-            value: "%@ %@ 밖으로 이동하세요"
+            value: "%@에서 %@ 밖으로 나서세요"
         )
         let subtitleFormat = localized(
             "shield.subtitle.release_condition",
@@ -202,11 +232,11 @@ struct ShieldContentProvider {
         ShieldContent(
             title: localized(
                 "shield.title.fallback",
-                value: "앱 사용 제한이 활성화되었어요"
+                value: "밖으로 나설 시간이에요"
             ),
             subtitle: localized(
                 "shield.subtitle.fallback",
-                value: "설정한 위치 또는 시간이 끝나면 자동으로 다시 사용할 수 있어요."
+                value: "설정한 위치에서 벗어나거나 시간이 끝나면 자동으로 다시 사용할 수 있어요."
             ),
             primaryButtonLabel: primaryButtonLabel
         )
