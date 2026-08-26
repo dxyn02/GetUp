@@ -192,7 +192,7 @@ struct DeviceActivityIntervalEndHandler {
     @discardableResult
     func handle(activityName: String) -> Bool {
         guard
-            let ruleID = SharedIdentifiers.ruleID(
+            let endedRuleID = SharedIdentifiers.ruleID(
                 fromDeviceActivityName: activityName
             )
         else {
@@ -202,42 +202,30 @@ struct DeviceActivityIntervalEndHandler {
         let currentState = RestrictionApplicationStateDefaultsCodec.load(
             from: defaults
         )
+        guard currentState.activeRuleRevisions.contains(where: {
+            $0.ruleID == endedRuleID
+        }) else {
+            return false
+        }
         let remaining = currentState.activeRuleRevisions.filter {
-            $0.ruleID != ruleID
+            $0.ruleID != endedRuleID
         }
 
-        // Versions before rule-specific stores wrote the union to one legacy
-        // store. Clear that store only after every remaining rule already has
-        // an independent shield; otherwise the async coordinator must migrate
-        // the union with the full rule data before it can safely split it.
-        let legacyStoreName = SharedIdentifiers.managedSettingsStoreName
-        if storeAccess.shieldSelection(named: legacyStoreName) != .empty {
-            let canSafelyClearLegacyStore = remaining.allSatisfy { revision in
-                storeAccess.shieldSelection(
-                    named: SharedIdentifiers.managedSettingsStoreName(
-                        for: revision.ruleID
-                    )
-                ) != .empty
-            }
-            guard canSafelyClearLegacyStore else {
-                return false
-            }
-            storeAccess.setShieldSelection(.empty, named: legacyStoreName)
-            guard
-                storeAccess.shieldSelection(named: legacyStoreName) == .empty
-            else {
-                return false
-            }
+        // The shared store contains the union for every active rule. It is
+        // safe to clear synchronously only when this callback ended the final
+        // active rule; overlapping rules require the coordinator to rebuild
+        // the union from their full selections.
+        guard remaining.isEmpty else {
+            return false
         }
 
-        let storeName = SharedIdentifiers.managedSettingsStoreName(for: ruleID)
+        let storeName = SharedIdentifiers.managedSettingsStoreName
         storeAccess.setShieldSelection(.empty, named: storeName)
         guard storeAccess.shieldSelection(named: storeName) == .empty else {
             return false
         }
-
         RestrictionApplicationStateDefaultsCodec.save(
-            AppliedRestrictionState(activeRuleRevisions: remaining),
+            AppliedRestrictionState(activeRuleRevisions: []),
             to: defaults
         )
         return true
@@ -294,81 +282,40 @@ final class ManagedSettingsRestrictionAdapter: RestrictionApplying {
             return
         }
 
+        let desiredSelection = ManagedSettingsShieldSelection(rules: rules)
         let currentState = await stateStore.currentState()
-        var performedWrite = false
-
-        for rule in rules {
-            let storeName = SharedIdentifiers.managedSettingsStoreName(for: rule.id)
-            let desiredSelection = ManagedSettingsShieldSelection(rules: [rule])
-            if storeAccess.shieldSelection(named: storeName) != desiredSelection {
-                storeAccess.setShieldSelection(desiredSelection, named: storeName)
-                guard storeAccess.shieldSelection(named: storeName) == desiredSelection else {
-                    throw ManagedSettingsRestrictionAdapterError.storeVerificationFailed
-                }
-                performedWrite = true
-            }
+        let storeName = SharedIdentifiers.managedSettingsStoreName
+        guard
+            currentState.activeRuleRevisions != activeRuleRevisions
+                || storeAccess.shieldSelection(named: storeName) != desiredSelection
+        else {
+            return
         }
 
-        let desiredRuleIDs = Set(rules.map(\.id))
-        let staleRuleIDs = Set(
-            currentState.activeRuleRevisions.map(\.ruleID)
-        ).subtracting(desiredRuleIDs)
-        for ruleID in staleRuleIDs {
-            let storeName = SharedIdentifiers.managedSettingsStoreName(for: ruleID)
-            storeAccess.setShieldSelection(.empty, named: storeName)
-            guard storeAccess.shieldSelection(named: storeName) == .empty else {
-                throw ManagedSettingsRestrictionAdapterError.storeVerificationFailed
-            }
-            performedWrite = true
+        storeAccess.setShieldSelection(desiredSelection, named: storeName)
+        guard storeAccess.shieldSelection(named: storeName) == desiredSelection else {
+            throw ManagedSettingsRestrictionAdapterError.storeVerificationFailed
         }
-
-        let legacyStoreName = SharedIdentifiers.managedSettingsStoreName
-        if currentState.requiresReset
-            || storeAccess.shieldSelection(named: legacyStoreName) != .empty
-        {
-            storeAccess.setShieldSelection(.empty, named: legacyStoreName)
-            guard storeAccess.shieldSelection(named: legacyStoreName) == .empty else {
-                throw ManagedSettingsRestrictionAdapterError.storeVerificationFailed
-            }
-            performedWrite = true
-        }
-
-        if performedWrite
-            || currentState.activeRuleRevisions != activeRuleRevisions
-            || currentState.requiresReset
-        {
-            await stateStore.saveState(
-                AppliedRestrictionState(
-                    activeRuleRevisions: activeRuleRevisions
-                )
+        await stateStore.saveState(
+            AppliedRestrictionState(
+                activeRuleRevisions: activeRuleRevisions
             )
-        }
+        )
     }
 
     func removeRestriction() async throws {
         let currentState = await stateStore.currentState()
-        var storeNames = Set(
-            currentState.activeRuleRevisions.map {
-                SharedIdentifiers.managedSettingsStoreName(for: $0.ruleID)
-            }
-        )
-        storeNames.insert(SharedIdentifiers.managedSettingsStoreName)
-        var performedWrite = false
-
-        for storeName in storeNames {
-            if currentState.requiresReset
+        let storeName = SharedIdentifiers.managedSettingsStoreName
+        guard
+            currentState.isApplied
                 || storeAccess.shieldSelection(named: storeName) != .empty
-            {
-                storeAccess.setShieldSelection(.empty, named: storeName)
-                guard storeAccess.shieldSelection(named: storeName) == .empty else {
-                    throw ManagedSettingsRestrictionAdapterError.storeVerificationFailed
-                }
-                performedWrite = true
-            }
+        else {
+            return
         }
 
-        guard currentState.isApplied || currentState.requiresReset || performedWrite else {
-            return
+        storeAccess.setShieldSelection(.empty, named: storeName)
+        guard storeAccess.shieldSelection(named: storeName) == .empty else {
+            throw ManagedSettingsRestrictionAdapterError.storeVerificationFailed
         }
         await stateStore.saveState(
             AppliedRestrictionState(

@@ -15,10 +15,6 @@ enum SharedIdentifiers {
     static let legacyRestrictionIsAppliedDefaultsKey = "getup.restriction.is-applied"
     static let legacyRestrictionRuleRevisionDefaultsKey = "getup.restriction.rule-revision"
 
-    static func managedSettingsStoreName(for ruleID: UUID) -> String {
-        "\(managedSettingsStoreName).\(ruleID.uuidString.lowercased())"
-    }
-
     static func ruleID(fromDeviceActivityName activityName: String) -> UUID? {
         let prefix = "\(deviceActivityNamePrefix)."
         guard activityName.hasPrefix(prefix) else {
