@@ -35,9 +35,13 @@
 - 각 schedule은 15분 이상 12시간 이하이며 자정 초과 종료를 지원한다.
 - 저장 성공 시 기존 등록을 새 rule revision의 일정으로 교체한다.
 - interval start/end callback은 공유 규칙을 읽고 평가 계약을 호출한다.
-- `intervalDidEnd`는 callback 진입 시각을 신뢰 가능한 time event 확인 시각으로 기록하고 저장된 모든
-  규칙을 현재 시각 기준으로 다시 평가한다. 종료된 규칙의 위치가 `unavailable`이어도 시간 종료를
-  우선하며, 다른 활성 규칙이 있으면 해당 규칙의 앱 token 합집합은 유지한다.
+- `intervalDidEnd`는 종료 시각 정각이 아니라 schedule 구간 밖에서 기기가 처음 사용될 때 전달될 수
+  있다. callback이 도착하면 activity name의 rule ID에 대응하는 독립 Managed Settings store를 callback
+  안에서 동기적으로 비우고 적용 상태에서 해당 규칙을 제거한다. 종료된 규칙의 위치가 `unavailable`이어도
+  시간 종료를 우선하며, 다른 활성 규칙의 독립 store는 유지한다.
+- callback에서 activity name을 해석할 수 없거나 기존 단일 합집합 store를 안전하게 분리할 수 없으면,
+  callback 진입 시각을 신뢰 가능한 time event 확인 시각으로 기록한 뒤 저장된 모든 규칙을 현재 시각
+  기준으로 다시 평가하는 호환 경로를 사용한다.
 - 앱 타이머나 알림을 권위 있는 자동 제한 트리거로 사용하지 않는다.
 - callback 전달 시점이 정확한 벽시계 시각과 다를 수 있음을 상태·테스트에서 고려한다.
 

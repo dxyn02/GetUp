@@ -75,6 +75,20 @@ Apple Developer 계정의 Family Controls 배포 승인, App Group 할당과 갱
 요약한다. store read-back과 대상 앱 반영 시각이 다르면 SLA 지연은 더 늦은 대상 앱 반영 시각을
 사용한다.
 
+## T113 — 시간 종료 callback 동기 해제
+
+### 자동 검증
+
+`DeviceActivityIntervalEndHandler` 회귀는 종료된 규칙의 store만 동기 해제하고 다른 활성 규칙의
+store와 적용 상태를 유지하는지 검증한다. 기존 단일 합집합 store가 함께 남은 경우에는 남은 규칙의
+독립 store가 모두 존재할 때만 legacy store를 제거하고, 안전하게 분리할 수 없는 경우 아무 상태도
+부분 변경하지 않은 채 coordinator 호환 경로로 넘기는 사례를 포함한다.
+
+2026-08-26 iPhone 17 Pro iOS 26.5 Simulator에서 전체 `GetUpTests` 194개 test case, 동적 실행 포함
+237회가 실패·skip 없이 통과했다. 앱·Device Activity Monitor·Shield 확장을 포함한 generic Simulator
+build도 통과했다. 이 자동 검증은 실제 iOS callback 전달 시각이나 대상 앱의 system shield 해제를
+입증하지 않으며, 해당 관찰은 T083·T085 실기기 인수에 남긴다.
+
 ## 전체 suite
 
 T084에서 `GetUp.xctestplan` 전체 Swift Testing·XCTest 실행 결과, 실패, skip과 미검증 동작을 이
