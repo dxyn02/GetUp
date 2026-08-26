@@ -52,7 +52,7 @@
 
 ## Location Adapter
 
-- 규칙당 원형 위치 조건 하나를 500m, 1000m, 2000m, 3000m, 4000m 또는 5000m로 등록한다.
+- 규칙당 원형 위치 조건 하나를 100m, 250m, 500m 또는 1000m로 등록한다.
 - 모니터링 가용성과 기기의 최대 허용 반경을 등록 전에 확인한다.
 - region event는 새 위치 판정을 요청하는 트리거이며, 경계 event만으로 내부·외부를 확정하지 않는다.
 - 위치 fix의 거리와 horizontal accuracy로 `inside | outside | unavailable`을 계산한다.

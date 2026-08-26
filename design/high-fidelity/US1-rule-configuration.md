@@ -183,7 +183,7 @@ scroll하며 label·값이 겹치면 행을 두 줄로 재배치한다.
 | 주요 CTA | yellow fill + black label | opacity·scale feedback | elevated gray, 저장 불가 사유 | 동일 화면 오류 card | 중복 tap 방지 | label, enabled state, 저장 hint |
 | 요일 chip | neutral circle | yellow + 검정 label | 해당 없음 | 최소 1개 안내 | 해당 없음 | 요일명, 선택됨 trait, 44pt hit area |
 | 시간 wheel picker | 시·분·AM/PM 세 열 | native 중앙 선택 강조, 분 1분 snap | 15분 미만·12시간 초과 임시 조합은 경고와 완료 차단 | 최초 유효 종료 시각 안내 | 해당 없음 | 화면 전체는 고정하고 wheel만 조작, 세 wheel은 독립 상태를 유지해 다른 열을 자동 보정하지 않음, 인접 숫자를 overlay로 가리지 않으며 시작 완료 후 종료 화면 전환, 완료 CTA 64pt 전체 hit area |
-| 반경 slider | 1km 기본 | 여섯 단계에 snap | 위치 미선택 시 저장만 비활성 | 값 집합 밖 저장 금지 | 해당 없음 | `500m`~`5km` value, adjustable action |
+| 반경 slider | 1km 기본 | 네 단계에 snap | 위치 미선택 시 저장만 비활성 | 값 집합 밖 저장 금지 | 해당 없음 | `100m`~`1km` value, adjustable action |
 | 저장 장소 chip | neutral | yellow selected | 해당 없음 | 권한 부족은 지도 핀 대안 유지 | 해당 없음 | 장소 이름과 선택 상태 제공 |
 | disclosure row | title + detail + chevron | system highlight | 필수 값 누락 detail | 첫 오류로 focus 이동 | 저장 중 입력 유지 | 하나의 button으로 grouping |
 | 저장 실패 alert | 설명 + 두 action | primary `다시 저장` | 해당 없음 | draft 유지 명시 | 재시도 중 action 잠금 | modal focus, title부터 읽기 |
@@ -300,6 +300,7 @@ text node 70개를 별도로 감사했다. SF Pro 외 서체, 빈 text, placehol
 | `2026-08-25` | `Codex` | Figma의 GETUP header, 통합 pager card, 큰 시간 위계, 지도 353×402, 상시 `집`·`회사`·`직접 입력`, 56pt 적용 CTA를 구현에 재정렬했다. 직접 입력은 같은 화면의 10자 필드이며 중복 이름과 15분 미만·12시간 초과 종료 조합은 적용할 수 없게 했다. | 실기기·하이파이 편차 보정 |
 | `2026-08-26` | `Codex` | 종료 시간의 세 wheel이 유효 후보 필터와 단일 계산 binding 때문에 서로 값을 바꾸던 동작을 제거했다. 시·분·AM/PM은 독립 상태를 유지하고 임시로 유효하지 않은 조합은 경고와 비활성 완료 CTA로만 차단한다. | 종료 시간 조작 안정성 보정 |
 | `2026-08-26` | `Codex` | 시간 설정 화면의 전체 ScrollView를 고정 VStack으로 교체하고, 시작 완료 후 종료 화면으로 연속 전환했다. native wheel 숫자를 덮던 custom 선택값 overlay와 명시적 clipping을 제거해 인접 숫자 가독성을 우선하는 Figma 예외를 반영했다. | 시간 설정 화면 scroll·흐름·숫자 가림 보정 |
+| `2026-08-26` | 사용자·`Codex` | 반경 slider의 레이아웃과 1km 기본값은 유지하고 selectable value를 100m·250m·500m·1km 네 단계로 교체했다. | 반경 선택지 변경 요청 |
 
 ## 구현 승인
 

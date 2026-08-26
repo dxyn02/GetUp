@@ -11,8 +11,8 @@ T083·T085 — 자동 latency 100회 계측과 결과 형식은 구현·검증�
 시간 시작 동기 적용 수정 빌드의 실제 `ManagedSettingsStore` 반영을 실기기로 재확인할 예정
 
 ## 마지막 완료 작업
-T118 — `intervalDidStart` 반환 전에 현재 공유 snapshot·권한으로 모든 규칙을 동기 평가해 단일 Screen
-Time store를 적용·검증하고, 시작 callback 안의 일정 제거·재등록을 금지해 제한 시작 유실을 수정함
+T117·T118 — 반경 설정을 100m·250m·500m·1km 네 단계로 교체하고, `intervalDidStart` 반환 전 단일
+Screen Time store를 동기 적용·검증하며 시작 callback 안의 일정 제거·재등록을 금지함
 
 ## 다음 작업
 T083·T085 — 수정 빌드를 실기기에 설치하고 설정 시간 시작 callback 뒤 제한 자동 적용, 앱을 강제
@@ -30,6 +30,13 @@ BLK-010 열림. `com.dxyn02.GetUp` namespace의 네 App ID 등록과
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-08-26 T117에서 `RadiusOption`과 slider의 selectable value를 100m·250m·500m·1km로 교체하고,
+validator가 이 네 값만 허용하며 위치 판정 parameterized test가 모든 새 반경을 실행하도록 갱신했다.
+격리 DerivedData에서 전체 `GetUpTests` 193개 test case(동적 인자 포함 227회)가 실패·skip 없이
+통과했고, UI 회귀에서 slider를 100m→250m→500m→1km로 조절한 뒤 저장 요약이 1km를 유지함을
+확인했다. 반복된 LLDB version-store warning은 테스트 판정에 영향을 주지 않았다. 기존 2km·3km·
+4km·5km 저장값은 사용자 결정에 따라 migration하거나 복원하지 않는다.
+
 2026-08-26 T118에서 설정 시간이 지나도 Screen Time 제한이 시작되지 않는 실기기 회귀를 분석했다.
 기존 시작 callback은 unstructured `Task`만 예약하고 반환했으며 그 Task가 먼저 전체 일정을 제거·
 재등록하고 위치를 갱신한 뒤 제한을 적용해 extension 종료와 callback 재진입에 취약했다. callback

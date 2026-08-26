@@ -1458,7 +1458,7 @@ private enum UITestConfiguration {
                     start: TimeOfDay(hour: 21, minute: 0),
                     end: TimeOfDay(hour: 22, minute: 0),
                     place: home,
-                    radius: .meters2000
+                    radius: .meters250
                 ),
             ]
         }

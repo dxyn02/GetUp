@@ -11,6 +11,19 @@
   상태를 입증하지 않는다.
 - 실기기 관찰은 실제 대상 앱에서 shield 표시 또는 해제를 확인한 시각까지 포함한다.
 
+## T117 — 네 단계 반경 선택
+
+**상태**: 자동 테스트 통과
+
+**실행 환경**: 2026-08-26, iPhone 17 Pro Simulator, iOS 26.5, arm64,
+`CODE_SIGNING_ALLOWED=NO`, 격리 DerivedData `/tmp/getup-radius-four-options`
+
+- `RadiusOption.allCases`와 validator가 100m·250m·500m·1km만 허용한다.
+- 네 반경 각각의 내부·정확한 경계·외부·오차 중첩 위치 판정이 통과한다.
+- slider UI를 100m→250m→500m→1km로 조절하고 1km 저장 요약으로 복귀하는 회귀가 통과한다.
+- 전체 `GetUpTests` 193개 test case, 동적 인자 포함 227회가 실패·skip 없이 통과했다.
+- 기존 2km·3km·4km·5km 저장값은 사용자 결정에 따라 migration·복원 범위에서 제외했다.
+
 ## T083 — 제한 활성화·해제 지연
 
 ### 합격 기준
@@ -167,7 +180,7 @@ Simulator가 입증하지 못하므로 T083·T085 실기기 표에 후속 기록
 
 - 실제 Family Controls system picker의 사용자 선택과 배포 entitlement 적용
 - 실제 대상 앱·카테고리·웹 도메인의 system shield 표시 및 해제
-- Core Location region 진입·이탈 callback과 여섯 반경의 실외 정확도
+- Core Location region 진입·이탈 callback과 네 반경의 실외 정확도
 - app background·terminated 상태와 재부팅 첫 잠금 해제 뒤 자동 복구
 - 실제 시스템 설정에서 권한 철회 후 복구
 - 실기기의 Dynamic Type·VoiceOver·Reduce Motion 및 Shield system-owned layout

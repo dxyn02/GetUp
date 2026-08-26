@@ -28,7 +28,7 @@ struct RadiusPicker: View {
                 .tint(RuleEditorColor.accent)
                 .accessibilityLabel("반경")
                 .accessibilityValue(Self.displayName(for: selection))
-                .accessibilityHint("위아래로 쓸어 여섯 단계 중 하나를 선택합니다.")
+                .accessibilityHint("위아래로 쓸어 네 단계 중 하나를 선택합니다.")
                 .accessibilityIdentifier("locationPicker.radius")
         }
     }
@@ -52,12 +52,10 @@ struct RadiusPicker: View {
 
     static func displayName(for radius: RadiusOption) -> String {
         switch radius {
+        case .meters100: "100m"
+        case .meters250: "250m"
         case .meters500: "500m"
         case .meters1000: "1km"
-        case .meters2000: "2km"
-        case .meters3000: "3km"
-        case .meters4000: "4km"
-        case .meters5000: "5km"
         }
     }
 }

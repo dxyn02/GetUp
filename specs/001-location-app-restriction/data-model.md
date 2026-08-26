@@ -24,7 +24,7 @@
 | `startTime` | `TimeOfDay` | 현지 시각 기준이다. |
 | `endTime` | `TimeOfDay` | 시작과 같을 수 없다. |
 | `savedPlaceID` | Stable identifier | 존재하는 `SavedPlaceSnapshot`을 참조해야 한다. |
-| `radius` | `RadiusOption` | `500m`, `1km`, `2km`, `3km`, `4km`, `5km` 중 하나다. |
+| `radius` | `RadiusOption` | `100m`, `250m`, `500m`, `1km` 중 하나다. |
 | `activitySelection` | Opaque codable selection | 앱 토큰이 1개 이상이어야 한다. |
 | `createdAt` | Timestamp | 최초 생성 시각이다. |
 | `updatedAt` | Timestamp | 마지막 저장 시각이며 `createdAt`보다 빠를 수 없다. |
@@ -76,8 +76,9 @@
 
 ### RadiusOption
 
-허용 값이 `meters500`, `meters1000`, `meters2000`, `meters3000`, `meters4000`, `meters5000`인
-닫힌 집합이다. slider는 이 여섯 단계에 snap하며 임의 반경 입력은 지원하지 않는다.
+허용 값이 `meters100`, `meters250`, `meters500`, `meters1000`인 닫힌 집합이다. slider는 이 네
+단계에 snap하며 임의 반경 입력은 지원하지 않는다. 기존 `2km`, `3km`, `4km`, `5km` 저장값은
+마이그레이션하거나 복원하지 않는다.
 
 ### LocationConditionSnapshot
 

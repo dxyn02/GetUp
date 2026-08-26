@@ -430,18 +430,14 @@ private extension ReferenceLocation {
 private extension RadiusOption {
     var displayName: String {
         switch self {
+        case .meters100:
+            "100m"
+        case .meters250:
+            "250m"
         case .meters500:
             "500m"
         case .meters1000:
             "1km"
-        case .meters2000:
-            "2km"
-        case .meters3000:
-            "3km"
-        case .meters4000:
-            "4km"
-        case .meters5000:
-            "5km"
         }
     }
 }
