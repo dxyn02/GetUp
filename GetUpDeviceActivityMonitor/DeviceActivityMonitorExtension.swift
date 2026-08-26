@@ -20,9 +20,15 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     }
 
     override func intervalDidEnd(for activity: DeviceActivityName) {
-        let confirmedAt = Date()
         super.intervalDidEnd(for: activity)
 
+        if let handler = try? DeviceActivityIntervalEndHandler.live(),
+           handler.handle(activityName: activity.rawValue)
+        {
+            return
+        }
+
+        let confirmedAt = Date()
         Task { @MainActor in
             do {
                 let container = try DependencyContainer.live()

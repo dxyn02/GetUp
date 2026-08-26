@@ -48,8 +48,7 @@ struct ManagedSettingsShieldSelection: Equatable {
     }
 }
 
-@MainActor
-protocol ManagedSettingsStoreAccess: Sendable {
+protocol ManagedSettingsStoreAccess {
     func shieldSelection(
         named storeName: String
     ) -> ManagedSettingsShieldSelection
@@ -64,7 +63,6 @@ protocol RestrictionApplicationStateStoring: Sendable {
     func saveState(_ newState: AppliedRestrictionState) async
 }
 
-@MainActor
 final class SystemManagedSettingsStoreAccess: ManagedSettingsStoreAccess {
     private var stores: [String: ManagedSettingsStore] = [:]
 
@@ -105,13 +103,6 @@ final class SystemManagedSettingsStoreAccess: ManagedSettingsStoreAccess {
 actor UserDefaultsRestrictionApplicationStateStore:
     RestrictionApplicationStateStoring
 {
-    private enum Key {
-        static let activeRuleRevisions = SharedIdentifiers.activeRuleRevisionsDefaultsKey
-        static let legacyIsApplied = SharedIdentifiers.legacyRestrictionIsAppliedDefaultsKey
-        static let legacyRuleRevision = SharedIdentifiers
-            .legacyRestrictionRuleRevisionDefaultsKey
-    }
-
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults) {
@@ -119,8 +110,20 @@ actor UserDefaultsRestrictionApplicationStateStore:
     }
 
     func currentState() -> AppliedRestrictionState {
+        RestrictionApplicationStateDefaultsCodec.load(from: defaults)
+    }
+
+    func saveState(_ newState: AppliedRestrictionState) {
+        RestrictionApplicationStateDefaultsCodec.save(newState, to: defaults)
+    }
+}
+
+enum RestrictionApplicationStateDefaultsCodec {
+    static func load(from defaults: UserDefaults) -> AppliedRestrictionState {
         guard
-            let data = defaults.data(forKey: Key.activeRuleRevisions),
+            let data = defaults.data(
+                forKey: SharedIdentifiers.activeRuleRevisionsDefaultsKey
+            ),
             let revisions = try? JSONDecoder().decode(
                 Set<ActiveRuleRevision>.self,
                 from: data
@@ -128,20 +131,116 @@ actor UserDefaultsRestrictionApplicationStateStore:
         else {
             return AppliedRestrictionState(
                 activeRuleRevisions: [],
-                requiresReset: defaults.bool(forKey: Key.legacyIsApplied)
+                requiresReset: defaults.bool(
+                    forKey: SharedIdentifiers.legacyRestrictionIsAppliedDefaultsKey
+                )
             )
         }
         return AppliedRestrictionState(activeRuleRevisions: revisions)
     }
 
-    func saveState(_ newState: AppliedRestrictionState) {
-        if let data = try? JSONEncoder().encode(newState.activeRuleRevisions) {
-            defaults.set(data, forKey: Key.activeRuleRevisions)
+    static func save(
+        _ state: AppliedRestrictionState,
+        to defaults: UserDefaults
+    ) {
+        if let data = try? JSONEncoder().encode(state.activeRuleRevisions) {
+            defaults.set(
+                data,
+                forKey: SharedIdentifiers.activeRuleRevisionsDefaultsKey
+            )
         } else {
-            defaults.removeObject(forKey: Key.activeRuleRevisions)
+            defaults.removeObject(
+                forKey: SharedIdentifiers.activeRuleRevisionsDefaultsKey
+            )
         }
-        defaults.removeObject(forKey: Key.legacyIsApplied)
-        defaults.removeObject(forKey: Key.legacyRuleRevision)
+        defaults.removeObject(
+            forKey: SharedIdentifiers.legacyRestrictionIsAppliedDefaultsKey
+        )
+        defaults.removeObject(
+            forKey: SharedIdentifiers.legacyRestrictionRuleRevisionDefaultsKey
+        )
+    }
+}
+
+struct DeviceActivityIntervalEndHandler {
+    private let storeAccess: any ManagedSettingsStoreAccess
+    private let defaults: UserDefaults
+
+    init(
+        storeAccess: any ManagedSettingsStoreAccess,
+        defaults: UserDefaults
+    ) {
+        self.storeAccess = storeAccess
+        self.defaults = defaults
+    }
+
+    static func live(bundle: Bundle = .main) throws -> Self {
+        guard
+            let identifier = SharedIdentifiers.appGroupIdentifier(in: bundle)
+        else {
+            throw ManagedSettingsRestrictionAdapterError.missingAppGroupIdentifier
+        }
+        guard let defaults = UserDefaults(suiteName: identifier) else {
+            throw ManagedSettingsRestrictionAdapterError.sharedDefaultsUnavailable
+        }
+        return Self(
+            storeAccess: SystemManagedSettingsStoreAccess(),
+            defaults: defaults
+        )
+    }
+
+    @discardableResult
+    func handle(activityName: String) -> Bool {
+        guard
+            let ruleID = SharedIdentifiers.ruleID(
+                fromDeviceActivityName: activityName
+            )
+        else {
+            return false
+        }
+
+        let currentState = RestrictionApplicationStateDefaultsCodec.load(
+            from: defaults
+        )
+        let remaining = currentState.activeRuleRevisions.filter {
+            $0.ruleID != ruleID
+        }
+
+        // Versions before rule-specific stores wrote the union to one legacy
+        // store. Clear that store only after every remaining rule already has
+        // an independent shield; otherwise the async coordinator must migrate
+        // the union with the full rule data before it can safely split it.
+        let legacyStoreName = SharedIdentifiers.managedSettingsStoreName
+        if storeAccess.shieldSelection(named: legacyStoreName) != .empty {
+            let canSafelyClearLegacyStore = remaining.allSatisfy { revision in
+                storeAccess.shieldSelection(
+                    named: SharedIdentifiers.managedSettingsStoreName(
+                        for: revision.ruleID
+                    )
+                ) != .empty
+            }
+            guard canSafelyClearLegacyStore else {
+                return false
+            }
+            storeAccess.setShieldSelection(.empty, named: legacyStoreName)
+            guard
+                storeAccess.shieldSelection(named: legacyStoreName) == .empty
+            else {
+                return false
+            }
+        }
+
+        let storeName = SharedIdentifiers.managedSettingsStoreName(for: ruleID)
+        storeAccess.setShieldSelection(.empty, named: storeName)
+        guard storeAccess.shieldSelection(named: storeName) == .empty else {
+            return false
+        }
+
+        RestrictionApplicationStateDefaultsCodec.save(
+            AppliedRestrictionState(activeRuleRevisions: remaining),
+            to: defaults
+        )
+        return true
     }
 }
 
@@ -195,40 +294,81 @@ final class ManagedSettingsRestrictionAdapter: RestrictionApplying {
             return
         }
 
-        let desiredSelection = ManagedSettingsShieldSelection(rules: rules)
         let currentState = await stateStore.currentState()
-        let storeName = SharedIdentifiers.managedSettingsStoreName
-        guard
-            currentState.activeRuleRevisions != activeRuleRevisions
-                || storeAccess.shieldSelection(named: storeName) != desiredSelection
-        else {
-            return
+        var performedWrite = false
+
+        for rule in rules {
+            let storeName = SharedIdentifiers.managedSettingsStoreName(for: rule.id)
+            let desiredSelection = ManagedSettingsShieldSelection(rules: [rule])
+            if storeAccess.shieldSelection(named: storeName) != desiredSelection {
+                storeAccess.setShieldSelection(desiredSelection, named: storeName)
+                guard storeAccess.shieldSelection(named: storeName) == desiredSelection else {
+                    throw ManagedSettingsRestrictionAdapterError.storeVerificationFailed
+                }
+                performedWrite = true
+            }
         }
 
-        storeAccess.setShieldSelection(desiredSelection, named: storeName)
-        guard storeAccess.shieldSelection(named: storeName) == desiredSelection else {
-            throw ManagedSettingsRestrictionAdapterError.storeVerificationFailed
+        let desiredRuleIDs = Set(rules.map(\.id))
+        let staleRuleIDs = Set(
+            currentState.activeRuleRevisions.map(\.ruleID)
+        ).subtracting(desiredRuleIDs)
+        for ruleID in staleRuleIDs {
+            let storeName = SharedIdentifiers.managedSettingsStoreName(for: ruleID)
+            storeAccess.setShieldSelection(.empty, named: storeName)
+            guard storeAccess.shieldSelection(named: storeName) == .empty else {
+                throw ManagedSettingsRestrictionAdapterError.storeVerificationFailed
+            }
+            performedWrite = true
         }
-        await stateStore.saveState(
-            AppliedRestrictionState(
-                activeRuleRevisions: activeRuleRevisions
+
+        let legacyStoreName = SharedIdentifiers.managedSettingsStoreName
+        if currentState.requiresReset
+            || storeAccess.shieldSelection(named: legacyStoreName) != .empty
+        {
+            storeAccess.setShieldSelection(.empty, named: legacyStoreName)
+            guard storeAccess.shieldSelection(named: legacyStoreName) == .empty else {
+                throw ManagedSettingsRestrictionAdapterError.storeVerificationFailed
+            }
+            performedWrite = true
+        }
+
+        if performedWrite
+            || currentState.activeRuleRevisions != activeRuleRevisions
+            || currentState.requiresReset
+        {
+            await stateStore.saveState(
+                AppliedRestrictionState(
+                    activeRuleRevisions: activeRuleRevisions
+                )
             )
-        )
+        }
     }
 
     func removeRestriction() async throws {
         let currentState = await stateStore.currentState()
-        let storeName = SharedIdentifiers.managedSettingsStoreName
-        guard
-            currentState.isApplied
+        var storeNames = Set(
+            currentState.activeRuleRevisions.map {
+                SharedIdentifiers.managedSettingsStoreName(for: $0.ruleID)
+            }
+        )
+        storeNames.insert(SharedIdentifiers.managedSettingsStoreName)
+        var performedWrite = false
+
+        for storeName in storeNames {
+            if currentState.requiresReset
                 || storeAccess.shieldSelection(named: storeName) != .empty
-        else {
-            return
+            {
+                storeAccess.setShieldSelection(.empty, named: storeName)
+                guard storeAccess.shieldSelection(named: storeName) == .empty else {
+                    throw ManagedSettingsRestrictionAdapterError.storeVerificationFailed
+                }
+                performedWrite = true
+            }
         }
 
-        storeAccess.setShieldSelection(.empty, named: storeName)
-        guard storeAccess.shieldSelection(named: storeName) == .empty else {
-            throw ManagedSettingsRestrictionAdapterError.storeVerificationFailed
+        guard currentState.isApplied || currentState.requiresReset || performedWrite else {
+            return
         }
         await stateStore.saveState(
             AppliedRestrictionState(

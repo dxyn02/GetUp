@@ -28,7 +28,7 @@ struct ManagedSettingsRestrictionAdapterTests {
         try await adapter.applyRestriction(for: [rule])
 
         let shielded = store.shieldSelection(
-            named: SharedIdentifiers.managedSettingsStoreName
+            named: SharedIdentifiers.managedSettingsStoreName(for: rule.id)
         ).applications
         #expect(shielded == selected)
         #expect(shielded?.contains(unselected) == false)
@@ -52,7 +52,7 @@ struct ManagedSettingsRestrictionAdapterTests {
         )
         let store = RecordingManagedSettingsStoreAccess(
             stores: [
-                SharedIdentifiers.managedSettingsStoreName:
+                SharedIdentifiers.managedSettingsStoreName(for: rule.id):
                     ManagedSettingsShieldSelection(
                         applications: selected,
                         applicationCategories: nil,
@@ -78,7 +78,7 @@ struct ManagedSettingsRestrictionAdapterTests {
         #expect(await stateStore.writeCount == 0)
         #expect(
             store.shieldSelection(
-                named: SharedIdentifiers.managedSettingsStoreName
+                named: SharedIdentifiers.managedSettingsStoreName(for: rule.id)
             ).applications == selected
         )
     }
@@ -115,7 +115,7 @@ struct ManagedSettingsRestrictionAdapterTests {
         )
         #expect(
             store.writtenStoreNames
-                == [SharedIdentifiers.managedSettingsStoreName]
+                == [SharedIdentifiers.managedSettingsStoreName(for: rule.id)]
         )
     }
 
@@ -141,9 +141,209 @@ struct ManagedSettingsRestrictionAdapterTests {
 
         #expect(
             store.shieldSelection(
-                named: SharedIdentifiers.managedSettingsStoreName
-            ).applications == [shared, firstOnly, secondOnly]
+                named: SharedIdentifiers.managedSettingsStoreName(for: first.id)
+            ).applications == [shared, firstOnly]
         )
+        #expect(
+            store.shieldSelection(
+                named: SharedIdentifiers.managedSettingsStoreName(for: second.id)
+            ).applications == [shared, secondOnly]
+        )
+    }
+
+    @Test("Removing one active rule preserves another rule's independent shield")
+    func removingOneRulePreservesOtherRuleStore() async throws {
+        let first = TestFixtures.makeRule(revision: 1)
+        let second = TestFixtures.makeRule(
+            id: UUID(uuidString: "00000000-0000-4000-8000-000000000202")!,
+            revision: 2
+        )
+        let store = RecordingManagedSettingsStoreAccess()
+        let stateStore = RecordingRestrictionApplicationStateStore()
+        let adapter = ManagedSettingsRestrictionAdapter(
+            storeAccess: store,
+            stateStore: stateStore
+        )
+
+        try await adapter.applyRestriction(for: [first, second])
+        try await adapter.applyRestriction(for: [second])
+
+        #expect(
+            store.shieldSelection(
+                named: SharedIdentifiers.managedSettingsStoreName(for: first.id)
+            ) == .empty
+        )
+        #expect(
+            store.shieldSelection(
+                named: SharedIdentifiers.managedSettingsStoreName(for: second.id)
+            ) == ManagedSettingsShieldSelection(rules: [second])
+        )
+    }
+
+    @Test("The interval end handler synchronously clears only the ended rule")
+    func intervalEndSynchronouslyClearsEndedRule() throws {
+        let first = TestFixtures.makeRule(revision: 1)
+        let second = TestFixtures.makeRule(
+            id: UUID(uuidString: "00000000-0000-4000-8000-000000000203")!,
+            revision: 2
+        )
+        let firstStoreName = SharedIdentifiers.managedSettingsStoreName(for: first.id)
+        let secondStoreName = SharedIdentifiers.managedSettingsStoreName(for: second.id)
+        let store = RecordingManagedSettingsStoreAccess(stores: [
+            firstStoreName: ManagedSettingsShieldSelection(rules: [first]),
+            secondStoreName: ManagedSettingsShieldSelection(rules: [second]),
+        ])
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(#function)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        RestrictionApplicationStateDefaultsCodec.save(
+            AppliedRestrictionState(activeRuleRevisions: [
+                ActiveRuleRevision(ruleID: first.id, revision: first.revision),
+                ActiveRuleRevision(ruleID: second.id, revision: second.revision),
+            ]),
+            to: defaults
+        )
+        let handler = DeviceActivityIntervalEndHandler(
+            storeAccess: store,
+            defaults: defaults
+        )
+        let activityName = "\(SharedIdentifiers.deviceActivityNamePrefix)."
+            + "\(first.id.uuidString.lowercased()).monday"
+
+        let didHandle = handler.handle(activityName: activityName)
+
+        #expect(didHandle)
+        #expect(store.shieldSelection(named: firstStoreName) == .empty)
+        #expect(
+            store.shieldSelection(named: secondStoreName)
+                == ManagedSettingsShieldSelection(rules: [second])
+        )
+        #expect(
+            RestrictionApplicationStateDefaultsCodec.load(from: defaults)
+                == AppliedRestrictionState(activeRuleRevisions: [
+                    ActiveRuleRevision(ruleID: second.id, revision: second.revision),
+                ])
+        )
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    @Test("The interval end handler clears a legacy union after safe migration")
+    func intervalEndClearsLegacyStoreAfterSafeMigration() throws {
+        let ended = TestFixtures.makeRule(
+            revision: 1,
+            activitySelection: selection(
+                applicationTokens: [try applicationToken(seed: 21)]
+            )
+        )
+        let remaining = TestFixtures.makeRule(
+            id: UUID(uuidString: "00000000-0000-4000-8000-000000000204")!,
+            revision: 2,
+            activitySelection: selection(
+                applicationTokens: [try applicationToken(seed: 22)]
+            )
+        )
+        let endedStoreName = SharedIdentifiers.managedSettingsStoreName(
+            for: ended.id
+        )
+        let remainingStoreName = SharedIdentifiers.managedSettingsStoreName(
+            for: remaining.id
+        )
+        let legacyStoreName = SharedIdentifiers.managedSettingsStoreName
+        let store = RecordingManagedSettingsStoreAccess(stores: [
+            endedStoreName: ManagedSettingsShieldSelection(rules: [ended]),
+            remainingStoreName: ManagedSettingsShieldSelection(rules: [remaining]),
+            legacyStoreName: ManagedSettingsShieldSelection(
+                rules: [ended, remaining]
+            ),
+        ])
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(#function)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        RestrictionApplicationStateDefaultsCodec.save(
+            AppliedRestrictionState(activeRuleRevisions: [
+                ActiveRuleRevision(ruleID: ended.id, revision: ended.revision),
+                ActiveRuleRevision(
+                    ruleID: remaining.id,
+                    revision: remaining.revision
+                ),
+            ]),
+            to: defaults
+        )
+        let handler = DeviceActivityIntervalEndHandler(
+            storeAccess: store,
+            defaults: defaults
+        )
+
+        let didHandle = handler.handle(
+            activityName: "\(SharedIdentifiers.deviceActivityNamePrefix)."
+                + "\(ended.id.uuidString.lowercased()).monday"
+        )
+
+        #expect(didHandle)
+        #expect(store.shieldSelection(named: endedStoreName) == .empty)
+        #expect(store.shieldSelection(named: legacyStoreName) == .empty)
+        #expect(
+            store.shieldSelection(named: remainingStoreName)
+                == ManagedSettingsShieldSelection(rules: [remaining])
+        )
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    @Test("The interval end handler defers an unsafe legacy union migration")
+    func intervalEndDefersUnsafeLegacyStoreMigration() throws {
+        let ended = TestFixtures.makeRule(
+            revision: 1,
+            activitySelection: selection(
+                applicationTokens: [try applicationToken(seed: 23)]
+            )
+        )
+        let remaining = TestFixtures.makeRule(
+            id: UUID(uuidString: "00000000-0000-4000-8000-000000000205")!,
+            revision: 2,
+            activitySelection: selection(
+                applicationTokens: [try applicationToken(seed: 24)]
+            )
+        )
+        let endedStoreName = SharedIdentifiers.managedSettingsStoreName(
+            for: ended.id
+        )
+        let legacyStoreName = SharedIdentifiers.managedSettingsStoreName
+        let legacySelection = ManagedSettingsShieldSelection(
+            rules: [ended, remaining]
+        )
+        let store = RecordingManagedSettingsStoreAccess(stores: [
+            endedStoreName: ManagedSettingsShieldSelection(rules: [ended]),
+            legacyStoreName: legacySelection,
+        ])
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(#function)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        let initialState = AppliedRestrictionState(activeRuleRevisions: [
+            ActiveRuleRevision(ruleID: ended.id, revision: ended.revision),
+            ActiveRuleRevision(ruleID: remaining.id, revision: remaining.revision),
+        ])
+        RestrictionApplicationStateDefaultsCodec.save(initialState, to: defaults)
+        let handler = DeviceActivityIntervalEndHandler(
+            storeAccess: store,
+            defaults: defaults
+        )
+
+        let didHandle = handler.handle(
+            activityName: "\(SharedIdentifiers.deviceActivityNamePrefix)."
+                + "\(ended.id.uuidString.lowercased()).monday"
+        )
+
+        #expect(!didHandle)
+        #expect(
+            store.shieldSelection(named: endedStoreName)
+                == ManagedSettingsShieldSelection(rules: [ended])
+        )
+        #expect(store.shieldSelection(named: legacyStoreName) == legacySelection)
+        #expect(
+            RestrictionApplicationStateDefaultsCodec.load(from: defaults)
+                == initialState
+        )
+        defaults.removePersistentDomain(forName: suiteName)
     }
 
     @Test("Selected categories and web domains are applied as shield targets")
@@ -166,7 +366,7 @@ struct ManagedSettingsRestrictionAdapterTests {
         try await adapter.applyRestriction(for: [rule])
 
         let shield = store.shieldSelection(
-            named: SharedIdentifiers.managedSettingsStoreName
+            named: SharedIdentifiers.managedSettingsStoreName(for: rule.id)
         )
         #expect(shield.applications == nil)
         #expect(shield.applicationCategories == .specific([category]))
@@ -198,7 +398,7 @@ struct ManagedSettingsRestrictionAdapterTests {
         #expect(store.writeCount == 1)
         #expect(
             store.shieldSelection(
-                named: SharedIdentifiers.managedSettingsStoreName
+                named: SharedIdentifiers.managedSettingsStoreName(for: rule.id)
             ).applicationCategories == .specific([category])
         )
     }
@@ -235,7 +435,7 @@ struct ManagedSettingsRestrictionAdapterTests {
         let rule = TestFixtures.makeRule(revision: 2)
         let store = RecordingManagedSettingsStoreAccess(
             stores: [
-                SharedIdentifiers.managedSettingsStoreName:
+                SharedIdentifiers.managedSettingsStoreName(for: rule.id):
                     ManagedSettingsShieldSelection(
                         applications: [application],
                         applicationCategories: .specific([category]),
@@ -259,7 +459,7 @@ struct ManagedSettingsRestrictionAdapterTests {
 
         #expect(
             store.shieldSelection(
-                named: SharedIdentifiers.managedSettingsStoreName
+                named: SharedIdentifiers.managedSettingsStoreName(for: rule.id)
             ) == .empty
         )
         #expect(await stateStore.currentState() == AppliedRestrictionState(
@@ -297,7 +497,7 @@ struct ManagedSettingsRestrictionAdapterTests {
         )
         let store = RecordingManagedSettingsStoreAccess(
             stores: [
-                SharedIdentifiers.managedSettingsStoreName:
+                SharedIdentifiers.managedSettingsStoreName(for: rule.id):
                     ManagedSettingsShieldSelection(
                         applications: selected,
                         applicationCategories: nil,
@@ -349,7 +549,6 @@ struct ManagedSettingsRestrictionAdapterTests {
 
 }
 
-@MainActor
 private final class RecordingManagedSettingsStoreAccess:
     ManagedSettingsStoreAccess
 {
