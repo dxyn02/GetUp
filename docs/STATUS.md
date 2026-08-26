@@ -11,11 +11,12 @@ T083 — 자동 latency 100회 계측과 결과 형식은 구현·검증했으�
 앱 사용 가능 상태의 실기기 관찰을 진행 중
 
 ## 마지막 완료 작업
-T114 — T113의 규칙별 store 도입으로 제한이 적용되지 않던 실기기 회귀를 수정하고 단일 합집합
-store와 마지막 활성 규칙 동기 해제로 복원함
+T084 — `GetUp.xctestplan`의 전체 단위·통합·UI suite 234개를 실행해 실패·skip 없이 통과하고
+Simulator 미검증 동작을 분리 기록함
 
 ## 다음 작업
-T083 — 승인된 entitlement·profile을 사용한 실기기 활성화·해제 latency 관찰 완료
+T085 — quickstart 실기기 인수 시나리오 수행 및 결과 기록. 저장소에서 바로 진행 가능한 후속은
+T086 구현·하이파이 편차 대조
 
 ## 차단 상태
 BLK-010 열림. `com.dxyn02.GetUp` namespace의 네 App ID 등록과
@@ -28,6 +29,14 @@ BLK-010 열림. `com.dxyn02.GetUp` namespace의 네 App ID 등록과
 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-08-26 T084에서 `GetUp.xctestplan`의 `GetUpTests`와 `GetUpUITests`를 iPhone 17 Pro iOS 26.5
+Simulator에서 순차 실행했다. 단위·통합 193개와 UI 41개, 총 234개 test case가 모두 통과했고 실패·
+skip·expected failure는 0개였다. Swift Testing 동적 인자를 포함한 device configuration 실행 수는
+277회이며 전체 소요 시간은 약 284.6초였다. 가장 긴 UI test는 입력 검증·앱 선택 시나리오 13.82초로
+통과했다. 17개 warning은 Apple 서명 XCTest 주입 binary를 strip하지 않는 Simulator build 경고이며
+테스트 판정에 영향을 주지 않았다. 실제 Family Controls picker·system shield, 위치 region event,
+background/terminated·재부팅·권한 철회와 실기기 Dynamic Type·VoiceOver는 T083·T085 범위로 남긴다.
+
 2026-08-26 T114에서 T113의 규칙별 named store 전환 뒤 실기기에서 제한이 전혀 적용되지 않는 회귀를
 확인했다. 실제 제한 적용 경로를 기존 단일 `getup.restriction` 합집합 store로 복원했다. 종료 callback은
 현재 적용 상태에서 마지막 활성 규칙이 끝난 경우에만 단일 store와 상태를 동기적으로 비우며, 다른
