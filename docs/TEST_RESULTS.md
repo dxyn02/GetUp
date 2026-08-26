@@ -106,5 +106,40 @@ T083의 활성화·해제 각 100회 latency 판정을 대체하지 않는다.
 
 ## 전체 suite
 
-T084에서 `GetUp.xctestplan` 전체 Swift Testing·XCTest 실행 결과, 실패, skip과 미검증 동작을 이
-섹션에 추가한다.
+### T084 — `GetUp.xctestplan` 전체 실행
+
+**상태**: 통과
+
+**실행 환경**: 2026-08-26, iPhone 17 Pro Simulator, iOS 26.5, arm64, Xcode 26.6.2,
+`CODE_SIGNING_ALLOWED=NO`, `GetUp.xctestplan` 기본 실행 configuration
+
+| 테스트 bundle | test case | 결과 |
+|---|---:|---|
+| `GetUpTests` | 193 | 통과 |
+| `GetUpUITests` | 41 | 통과 |
+| 합계 | 234 | 통과 |
+
+- 실패: 0
+- skip: 0
+- expected failure: 0
+- Swift Testing 동적 인자를 포함한 device configuration 실행: 277회 통과
+- 전체 소요 시간: 약 284.6초
+- 최장 test: `testRequiredInputValidationAndApplicationSelection()` 13.82초, 통과
+- 결과 bundle:
+  `/Users/andy/Library/Developer/XcodeBuildMCP/workspaces/GetUp-6908c4ee558c/result-bundles/test_sim_2026-08-26T08-04-48-093Z_pid78162_1323f01c.xcresult`
+
+17개 build warning은 Simulator의 Apple 서명 XCTest·Testing 지원 binary를 strip하지 않는다는
+메시지로, 실패나 skip과 연결되지 않았다.
+
+### Simulator에서 미검증된 동작
+
+- 실제 Family Controls system picker의 사용자 선택과 배포 entitlement 적용
+- 실제 대상 앱·카테고리·웹 도메인의 system shield 표시 및 해제
+- Core Location region 진입·이탈 callback과 여섯 반경의 실외 정확도
+- app background·terminated 상태와 재부팅 첫 잠금 해제 뒤 자동 복구
+- 실제 시스템 설정에서 권한 철회 후 복구
+- 실기기의 Dynamic Type·VoiceOver·Reduce Motion 및 Shield system-owned layout
+- T083의 실제 `ManagedSettingsStore` 활성화·해제 각 100회 latency 관찰
+
+위 항목은 자동 suite 통과로 완료 처리하지 않으며 T083·T085와 BLK-010의 실기기·서명 인수 범위를
+유지한다.

@@ -214,7 +214,7 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 - [x] T081 [P] 좌표와 앱 token이 log·analytics에 기록되지 않는지 `GetUpTests/Integration/PrivacyLoggingTests.swift`와 `GetUp/Infrastructure/Diagnostics/DiagnosticsLogger.swift`에서 검증·보강한다
 - [x] T082 [P] Family Controls 배포 entitlement와 App Group 설정·승인 절차를 `docs/ENTITLEMENTS.md`에 한국어로 문서화하고 app 및 각 extension bundle ID의 신청·승인 상태와 확인 증적을 기록한다
 - [ ] T083 신뢰 가능한 event timestamp부터 실제 `ManagedSettingsStore` 반영 확인까지 활성화·해제 경로를 각각 100회 이상 계측해 활성화 p95 30초 이내와 모든 해제 사례 30초 이내를 판정하고, 자동 계측과 실기기 관찰을 구분한 결과 형식을 `GetUpTests/Performance/RestrictionLatencyTests.swift`, `docs/TEST_RESULTS.md`에 구현한다
-- [ ] T084 `GetUp.xctestplan`의 전체 Swift Testing·XCTest suite를 실행하고 실패·skip·미검증 동작을 `docs/STATUS.md`와 `docs/TEST_RESULTS.md`에 한국어로 기록한다
+- [x] T084 `GetUp.xctestplan`의 전체 Swift Testing·XCTest suite를 실행하고 실패·skip·미검증 동작을 `docs/STATUS.md`와 `docs/TEST_RESULTS.md`에 한국어로 기록한다
 - [ ] T085 `specs/001-location-app-restriction/quickstart.md`의 여섯 반경, 저장 장소 재사용, background/terminated, 재부팅 첫 잠금 해제, 권한 철회, 자정 초과 시나리오를 실기기에서 수행하고 결과를 `docs/TEST_RESULTS.md`에 기록한다
 - [ ] T086 구현과 설계 차이를 `design/high-fidelity/US1-rule-configuration.md`, `US2-active-restriction.md`, `US3-auto-release.md`, `US4-permission-location-errors.md`에서 대조하고 승인되지 않은 편차를 수정한다
 - [ ] T087 [P] 신규 사용자가 안내 없이 유효 규칙을 저장하는 과제의 참여자 기준·시작·종료·성공 정의와 3분 이내 완료율 측정 절차를 `docs/USABILITY_TEST_PLAN.md`에 작성하고 SC-001 결과를 `docs/USABILITY_TEST_RESULTS.md`에 기록한다
