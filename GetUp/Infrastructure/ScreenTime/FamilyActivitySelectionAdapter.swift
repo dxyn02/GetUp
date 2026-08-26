@@ -49,11 +49,11 @@ final class FamilyActivitySelectionAdapter {
     private(set) var selection: FamilyActivitySelection
 
     var applicationTokenCount: Int {
-        selection.applicationTokens.count
+        selection.restrictionTargetCount
     }
 
     var hasSelectedApplications: Bool {
-        !selection.applicationTokens.isEmpty
+        selection.hasRestrictionTargets
     }
 
     init(

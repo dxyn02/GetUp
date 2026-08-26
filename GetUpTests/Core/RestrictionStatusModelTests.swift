@@ -28,6 +28,29 @@ struct RestrictionStatusModelTests {
         #expect(!model.isActive(makeRule(revision: 1)))
     }
 
+    @Test("Home weekday labels collapse every consecutive run")
+    func homeWeekdayLabelsCollapseConsecutiveRuns() {
+        #expect(
+            HomeWeekdayFormatter.label(
+                for: [.monday, .tuesday, .wednesday, .thursday, .friday]
+            ) == "MON-FRI"
+        )
+        #expect(HomeWeekdayFormatter.label(for: Set(Weekday.allCases)) == "MON-SUN")
+        #expect(HomeWeekdayFormatter.label(for: [.saturday, .sunday]) == "SAT-SUN")
+        #expect(
+            HomeWeekdayFormatter.label(for: [.wednesday, .thursday, .friday]) == "WED-FRI"
+        )
+        #expect(
+            HomeWeekdayFormatter.label(for: [.monday, .wednesday, .friday])
+                == "MON · WED · FRI"
+        )
+        #expect(
+            HomeWeekdayFormatter.label(
+                for: [.monday, .tuesday, .thursday, .saturday, .sunday]
+            ) == "MON-TUE · THU · SAT-SUN"
+        )
+    }
+
     private func makeRule(revision: Int) -> RestrictionRuleSnapshot {
         RestrictionRuleSnapshot(
             id: Self.ruleID,

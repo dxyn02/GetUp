@@ -102,7 +102,7 @@ struct DiagnosticsLogger: DiagnosticsLogging {
     private let writer: any DiagnosticEventWriting
 
     init(
-        subsystem: String = Bundle.main.bundleIdentifier ?? "com.getup.GetUp"
+        subsystem: String = Bundle.main.bundleIdentifier ?? "com.dxyn02.GetUp"
     ) {
         writer = OSLogDiagnosticEventWriter(subsystem: subsystem)
     }

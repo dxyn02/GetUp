@@ -5,7 +5,7 @@
 | 항목 | 내용 |
 |---|---|
 | 사용자 스토리 | `US2` |
-| 관련 task | `T040`, `T041` |
+| 관련 task | `T040`, `T041`, `T101`, `T104` |
 | 작성자 | `Codex` |
 | 작성일 | `2026-08-24` |
 | 문서 상태 | `승인됨` |
@@ -19,7 +19,7 @@
 시각을 즉시 이해할 수 있는 시스템 shield를 정의한다. MVP는 모든 지원 버전에서 secondary action과
 임시 우회를 제공하지 않고 primary `앱 닫기`만 제공한다.
 
-포함 범위는 기본 글자 크기의 활성 홈과 shield, Dynamic Type `AX5` shield 비교 상태, GetUp Focus
+포함 범위는 기본 글자 크기의 활성 홈과 shield, Dynamic Type `AX5` shield 비교 상태, 나서 Focus
 색상·타이포·간격 token, VoiceOver 순서, 명암과 구현 인계다. 실제 좌표·주소·앱 식별 정보, shield
 내부 지도, `오늘만 허용`, 인앱결제 및 최종 시스템 rendering 검증은 포함하지 않는다.
 
@@ -43,16 +43,19 @@
 
 | 용도 | token | 값 | 대비 |
 |---|---|---|---|
-| 최상위 배경 | `GetUp Focus/color/background` | `#08090B` | 흰 text와 `19.92:1` |
+| 다크 최상위 배경 | `GetUp Focus/color/background` | `#08090B` | 흰 text와 `19.92:1` |
+| 라이트 최상위 배경 | `shield/background/light` | `#F5F5F7` | `#090A0C` text와 AAA |
 | shield surface | `GetUp Focus/color/surface` | `#15171B` | 보조 text와 `7.54:1` |
-| 주요 text | `GetUp Focus/color/textPrimary` | `#FFFFFF` | 배경에서 AAA |
-| 보조 text | `GetUp Focus/color/textSecondary` | `#A6A8AD` | surface에서 AAA |
+| 다크 주요 text | `GetUp Focus/color/textPrimary` | `#FFFFFF` | 배경에서 AAA |
+| 다크 보조 text | `GetUp Focus/color/textSecondary` | `#A6A8AD` | 배경에서 AAA |
+| 라이트 주요 text | `shield/textPrimary/light` | `#090A0C` | 배경에서 AAA |
+| 라이트 보조 text | `shield/textSecondary/light` | `#51535A` | 배경에서 AAA |
 | 활성 accent | `GetUp Focus/color/accent` | `#F4D600` | 배경에서 `13.72:1` |
-| accent 위 text | `GetUp Focus/color/onAccent` | `#090A0C` | accent에서 `13.64:1` |
+| Shield primary label | `shield/primaryLabel` | `#000000` | accent에서 `14.47:1` |
 
-shield primary action의 실제 blue와 Liquid Glass 재질은 iOS 26 `Button - Liquid Glass - Text`
-component instance를 사용한다. 구현에서는 시스템이 제공하는 button rendering과 Increase Contrast
-설정을 존중하고 색을 고정해 덮어쓰지 않는다.
+shield primary action의 geometry와 system rendering은 `ManagedSettingsUI`가 소유한다. 구현은
+`.systemYellow`의 appearance별 색 변화로 라이트 모드에서 버튼이 어두운 올리브색이 되지 않도록
+두 모드에 GetUp `#F4D600` 배경과 순수 검정 `#000000` label을 전달한다.
 
 ### 타이포와 Dynamic Type
 
@@ -80,15 +83,15 @@ component instance를 사용한다. 구현에서는 시스템이 제공하는 bu
 
 | 문자열 ID | 한국어 기본값 | 변수 | 줄바꿈 규칙 |
 |---|---|---|---|
-| `shield.title.outside_radius` | `%@ %@ 밖으로 이동하세요` | 장소 이름, 반경 | 자연 줄바꿈, 축약 금지 |
+| `shield.title.outside_radius` | `%@에서 %@ 밖으로 나서세요` | 장소 이름, 반경 | 자연 줄바꿈, 축약 금지 |
 | `shield.subtitle.release_condition` | `현재 ‘%@’의 %@ 범위 안에 있어요. %@의 중심에서 %@ 밖으로 이동하거나 %@이 되면 자동으로 다시 사용할 수 있어요.` | 장소 이름, 반경, 종료 시각 | 고정 높이 금지 |
 | `shield.primary.close` | `앱 닫기` | 없음 | 축약 금지 |
 | `shield.title.multiple_rules` | `%d개 제한 규칙이 활성화 중이에요` | 활성 규칙 수 | 자연 줄바꿈 |
 | `shield.subtitle.multiple_rules` | `각 규칙의 위치 또는 시간이 모두 끝나면 다시 사용할 수 있어요.` | 없음 | 최대한 짧게 유지 |
-| `shield.title.fallback` | `앱 사용 제한이 활성화되었어요` | 없음 | 자연 줄바꿈 |
-| `shield.subtitle.fallback` | `설정한 위치 또는 시간이 끝나면 자동으로 다시 사용할 수 있어요.` | 없음 | 자연 줄바꿈 |
-| `restriction_status.active` | `RESTRICTION ACTIVE` | 없음 | 색상 외 상태 문구로 유지 |
-| `restriction_status.edit_disabled` | `조건 종료 후 수정 가능` | 없음 | 최대 두 줄 허용 |
+| `shield.title.fallback` | `밖으로 나설 시간이에요` | 없음 | 자연 줄바꿈 |
+| `shield.subtitle.fallback` | `설정한 위치에서 벗어나거나 시간이 끝나면 자동으로 다시 사용할 수 있어요.` | 없음 | 자연 줄바꿈 |
+| `restriction_status.active` | `현재 활성화됨` | 없음 | 색상 외 상태 문구로 유지 |
+| `restriction_status.edit_disabled` | `규칙 적용 중 수정 불가` | 없음 | 최대 두 줄 허용 |
 
 장소 이름과 반경은 사용자가 저장한 표시 값만 사용한다. 좌표, 주소, 앱 이름, bundle identifier와
 `FamilyActivitySelection` token을 문구나 접근성 값에 포함하지 않는다.
@@ -98,7 +101,7 @@ component instance를 사용한다. 구현에서는 시스템이 제공하는 bu
 - VoiceOver 순서는 정적 아이콘 제외 → 제목 → 설명 → `앱 닫기`다.
 - primary action의 label은 `제한된 앱 닫기`, hint는 `현재 앱을 종료합니다`로 정의한다.
 - 홈 활성 상태는 상태 → 규칙 제목 → 시간 → 장소·반경 → 제한 앱 개수 → 수정 불가 안내 순서다.
-- 활성 상태는 `RESTRICTION ACTIVE`와 설명을 함께 사용해 노란색만으로 전달하지 않는다.
+- 활성 상태는 `현재 활성화됨`과 설명을 함께 사용해 노란색만으로 전달하지 않는다.
 - Dynamic Type에서 제목·설명은 축약하지 않고 자연 줄바꿈하며 실제 system shield layout은 실기기에서
   `AX1`~`AX5`로 검증한다.
 - Increase Contrast와 Differentiate Without Color에서 같은 문구와 행동을 유지한다.
@@ -108,7 +111,8 @@ component instance를 사용한다. 구현에서는 시스템이 제공하는 bu
 ## 플랫폼 제약
 
 - shield의 전체 layout은 `ManagedSettingsUI`가 소유하며 앱은 임의의 SwiftUI·MapKit view를 삽입하지
-  않는다.
+  않는다. 글꼴 크기, icon·제목·설명·버튼 간 padding도 앱이 직접 지정할 수 없으므로 시스템 layout을
+  유지하고 title·subtitle의 의미와 adaptive foreground/background 대비로 위계를 전달한다.
 - 실제 앱 이름과 아이콘은 GetUp이 token에서 해석하지 않는다. shield의 GetUp 아이콘은 정적 자산이다.
 - primary action은 `.close`만 반환하고 사용 권한, 임시 우회 또는 GetUp 앱 진입을 제공하지 않는다.
 - 시간 종료 또는 신뢰 가능한 위치 이탈 뒤 restriction coordinator가 shield를 제거한다.
@@ -121,7 +125,16 @@ component instance를 사용한다. 구현에서는 시스템이 제공하는 bu
   나머지 action은 우회 없이 닫힌 동작으로 유지한다.
 - `T055`: `GetUp/Features/RestrictionStatus/RestrictionStatusView.swift`에 승인된 홈 활성 상태와
   종료 조건, 조건 종료 전 편집 불가 상태를 연결한다.
-- 필요한 자산은 정적 GetUp shield 아이콘 하나이며 별도 지도·raster 배경은 없다.
+- `T104`: Figma의 정적 Shield 아이콘을 SVG로 export해 extension 전용 asset catalog에 보존하고
+  원본 색상으로 표시한다. T112부터는 기존 `GETUP` wordmark 대신 승인된 새 심볼을
+  `NaseoShieldLogo.imageset`으로 연결한다. 범용 SF Symbol로 대체하지 않는다.
+- `T106`: 실제 다크·라이트 화면의 adaptive 색상, 고정 GetUp button accent와 fallback 설명 문구를
+  구현하고 회귀 테스트·extension build로 검증한다.
+- `T107`: 앱·카테고리·웹 도메인 callback token을 모두 활성 규칙과 비교해 직접 입력 저장 장소도
+  프리셋과 같은 상세 title·subtitle로 표시한다.
+- 필요한 자산은 정적 GetUp shield SVG 아이콘 하나이며 별도 지도·raster 배경은 없다.
+- 최상위 배경은 material blur 없이 다크 `#08090B`, 라이트 `#F5F5F7` adaptive color를 지정한다.
+  실제 content 배치와 system button geometry는 `ManagedSettingsUI`가 소유한다.
 - 실제 App Group snapshot에서 장소 이름·반경·종료 시각만 읽고 민감 식별 정보를 로그에 남기지 않는다.
 - T041 사용자 승인 전에는 T052·T053·T055 UI 구현을 시작하지 않는다.
 
@@ -135,6 +148,13 @@ iOS 26 Liquid Glass button component 연결도 유지됐다.
 
 이 task는 디자인·문서 작업이므로 code test는 실행하지 않았다. 실제 system shield rendering,
 Accessibility Inspector와 실기기 VoiceOver·Dynamic Type 검증은 구현 후 수행한다.
+
+2026-08-26 T104 구현에서 `113:2025` design context를 다시 확인하고 `113:2028`을 SVG로 직접
+export했다. T112에서는 새 `나서` 심볼로 asset을 교체하고 이름을 `NaseoShieldLogo`로 변경했다.
+Shield Configuration 전용 asset catalog의 vector 보존 설정과 extension `Assets.car`의 1x·2x·3x
+rendition을 확인했으며, 범용 `figure.stand`와 material blur를 제거했다.
+실제 system shield의 최종 layout·Dynamic Type·VoiceOver는 entitlement가 적용된 실기기 인수에서
+계속 확인한다.
 
 ## 검토 체크리스트
 
@@ -152,6 +172,7 @@ Accessibility Inspector와 실기기 VoiceOver·Dynamic Type 검증은 구현 �
 |---|---|---|---|---|
 | `2026-08-24` | 사용자 | `검토 대기` | T040 하이파이 초안 검토 요청 | `T041`에서 피드백과 구현 승인 여부 반영 |
 | `2026-08-24` | 사용자 | `최종 승인` | 기본·AX5 shield, 단일 `앱 닫기`, 접근성·명암·구현 인계를 현재 하이파이대로 승인 | Figma 승인 주석과 구현 승인 상태 반영, T042부터 선행 테스트 진행 가능 |
+| `2026-08-25` | 사용자 | `수정 승인` | 제한 활성 홈 UI를 현재 Figma 하이파이와 동일하게 보정 요청 | `T090`에서 `RESTRICTION ACTIVE`, 통합 456pt card, 종료 후 수정 CTA를 SwiftUI에 반영 |
 
 ## 구현 승인
 

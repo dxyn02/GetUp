@@ -12,13 +12,17 @@ final class UserStory3AutoReleaseUITests: XCTestCase {
             locationState: "inside"
         )
 
-        XCTAssertTrue(
-            app.staticTexts["restrictionStatus.active"]
-                .waitForExistence(timeout: 2)
+        let activeStatus = app.staticTexts["restrictionStatus.active"]
+        XCTAssertTrue(activeStatus.waitForExistence(timeout: 2))
+        XCTAssertEqual(activeStatus.label, "현재 활성화됨")
+        XCTAssertEqual(
+            app.staticTexts["home.ruleCard.rule-1.schedule"].label,
+            "RULE 1 OF 1 · MON-FRI"
         )
 
         let guardedEdit = app.buttons["restrictionStatus.editDisabled"]
         XCTAssertTrue(guardedEdit.waitForExistence(timeout: 2))
+        XCTAssertEqual(guardedEdit.label, "규칙 적용 중 수정 불가")
         guardedEdit.tap()
 
         let alert = app.alerts["제한 중에는 수정할 수 없어요"]
@@ -98,6 +102,8 @@ final class UserStory3AutoReleaseUITests: XCTestCase {
             "--ui-test-scenario", "restriction-activation",
             "--ui-test-now", now,
             "--ui-test-location-state", locationState,
+            "-AppleLanguages", "(en)",
+            "-AppleLocale", "en_US",
         ]
         app.launch()
         return app

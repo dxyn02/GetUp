@@ -10,13 +10,14 @@ app 및 세 Screen Time extension의 신청·승인·provisioning 상태를 같�
 - 대상 환경: iOS 26 이상, TestFlight 및 App Store 배포
 - Family Controls entitlement: `com.apple.developer.family-controls`
 - App Group entitlement: `com.apple.security.application-groups`
-- App Group identifier: `group.com.getup.GetUp`
+- App Group identifier: `group.com.dxyn02.GetUp`
 
 ## 상태 정의
 
 | 상태 | 의미 |
 |---|---|
 | `확인됨` | 저장소, Apple Developer 계정 또는 서명 산출물의 확인 가능한 증적이 있다. |
+| `사용자 확인` | 사용자가 계정 구성을 완료했다고 확인했지만 지속 가능한 증적 reference는 아직 없다. |
 | `확인 필요` | 필요한 구성이지만 현재 저장소와 로컬 서명 환경만으로 계정 상태를 확인할 수 없다. |
 | `해당 없음` | 대상 target 또는 배포 방식에 필요하지 않다. |
 
@@ -27,25 +28,26 @@ app 및 세 Screen Time extension의 신청·승인·provisioning 상태를 같�
 
 | 실행 target | Bundle ID | entitlement 파일 | 로컬 Family Controls | 로컬 App Group | Apple App ID·그룹 할당 | Family Controls 배포 요청·승인 | 배포 profile |
 |---|---|---|---|---|---|---|---|
-| `GetUp` | `com.getup.GetUp` | `GetUp/GetUp.entitlements` | `확인됨` | `확인됨` | `확인 필요` | `확인 필요` | `확인 필요` |
-| `GetUpDeviceActivityMonitor` | `com.getup.GetUp.DeviceActivityMonitor` | `GetUpDeviceActivityMonitor/GetUpDeviceActivityMonitor.entitlements` | `확인됨` | `확인됨` | `확인 필요` | `확인 필요` | `확인 필요` |
-| `GetUpShieldConfiguration` | `com.getup.GetUp.ShieldConfiguration` | `GetUpShieldConfiguration/GetUpShieldConfiguration.entitlements` | `확인됨` | `확인됨` | `확인 필요` | `확인 필요` | `확인 필요` |
-| `GetUpShieldAction` | `com.getup.GetUp.ShieldAction` | `GetUpShieldAction/GetUpShieldAction.entitlements` | `확인됨` | `확인됨` | `확인 필요` | `확인 필요` | `확인 필요` |
+| `GetUp` | `com.dxyn02.GetUp` | `GetUp/GetUp.entitlements` | `확인됨` | `확인됨` | `사용자 확인` | `사용자 확인` | `확인 필요` |
+| `GetUpDeviceActivityMonitor` | `com.dxyn02.GetUp.DeviceActivityMonitor` | `GetUpDeviceActivityMonitor/GetUpDeviceActivityMonitor.entitlements` | `확인됨` | `확인됨` | `사용자 확인` | `확인 필요` | `확인 필요` |
+| `GetUpShieldConfiguration` | `com.dxyn02.GetUp.ShieldConfiguration` | `GetUpShieldConfiguration/GetUpShieldConfiguration.entitlements` | `확인됨` | `확인됨` | `사용자 확인` | `확인 필요` | `확인 필요` |
+| `GetUpShieldAction` | `com.dxyn02.GetUp.ShieldAction` | `GetUpShieldAction/GetUpShieldAction.entitlements` | `확인됨` | `확인됨` | `사용자 확인` | `확인 필요` | `확인 필요` |
 
 ### 저장소에서 확인한 증적
 
 - 네 target의 resolved `PRODUCT_BUNDLE_IDENTIFIER`가 위 표와 일치한다.
 - 네 entitlement 파일 모두 `com.apple.developer.family-controls = true`를 선언한다.
-- 네 entitlement 파일 모두 `$(GETUP_APP_GROUP_IDENTIFIER)`를 App Group으로 선언한다.
+- 네 entitlement 파일 모두 `group.com.dxyn02.GetUp`을 App Group으로 선언한다.
 - `Configuration/Base.xcconfig`의 resolved 값은
-  `GETUP_APP_GROUP_IDENTIFIER = group.com.getup.GetUp`이다.
+  `GETUP_APP_GROUP_IDENTIFIER = group.com.dxyn02.GetUp`이다.
 - 네 target 모두 자신의 entitlement 파일을 `CODE_SIGN_ENTITLEMENTS`로 지정한다.
-- 저장소와 현재 build setting에는 `DEVELOPMENT_TEAM`, 배포 provisioning profile 지정 또는
-  Apple Developer의 Capability Requests 상태 증적이 없다.
+- 커밋 대상 공통 build setting에는 `DEVELOPMENT_TEAM`이나 배포 provisioning profile을 고정하지
+  않는다. Apple Developer의 extension별 Capability Requests 상태 증적도 아직 없다.
 - 저장소에 `.mobileprovision`, `.provisionprofile`, `.cer` 파일을 보관하지 않는다.
 
-마지막 두 항목은 보안상 정상적인 저장소 정책일 수 있으므로 미승인을 뜻하지 않는다. 다만 계정
-화면이나 서명된 archive 증적이 없으므로 현재 상태는 `확인 필요`다.
+마지막 두 항목은 보안상 정상적인 저장소 정책일 수 있으므로 미승인을 뜻하지 않는다. 메인 앱의
+Distribution capability 화면과 사용자의 계정 구성 완료 확인은 기록했지만, extension별 상태와
+서명된 archive 증적이 없으므로 나머지 상태는 `확인 필요`다.
 
 ## Family Controls 배포 entitlement 절차
 
@@ -73,10 +75,10 @@ entitlement 사용 권한을 요청하도록 요구한다. Screen Time API app e
 ## App Group 등록 및 App ID 할당 절차
 
 1. Account Holder 또는 Admin으로 `Certificates, Identifiers & Profiles`에 로그인한다.
-2. `Identifiers`에서 App Group `group.com.getup.GetUp`이 등록되어 있는지 확인하고, 없다면
+2. `Identifiers`에서 App Group `group.com.dxyn02.GetUp`이 등록되어 있는지 확인하고, 없다면
    `App Groups` 유형으로 등록한다.
 3. 네 명시적 App ID 각각의 `Capabilities`에서 `App Groups`를 활성화한다.
-4. `Configure`에서 `group.com.getup.GetUp`을 선택하고 `Assign`한다.
+4. `Configure`에서 `group.com.dxyn02.GetUp`을 선택하고 `Assign`한다.
 5. Xcode의 네 target에서 같은 App Group이 선택되는지 확인한다.
 
 공식 근거:
@@ -117,13 +119,13 @@ reference만 기록한다.
 
 | 확인 항목 | 현재 상태 | 확인일 | 확인자 | 증적 reference |
 |---|---|---|---|---|
-| 메인 앱 Family Controls 요청 `Assigned` | `확인 필요` | - | - | - |
+| 메인 앱 Family Controls 요청 `Assigned` | `사용자 확인` | 2026-08-25 | 사용자 | Codex 작업 대화의 Distribution capability 화면 |
 | Device Activity Monitor 요청 `Assigned` | `확인 필요` | - | - | - |
 | Shield Configuration 요청 `Assigned` | `확인 필요` | - | - | - |
 | Shield Action 요청 `Assigned` | `확인 필요` | - | - | - |
 | 네 요청의 필요한 `Provisioning Support` | `확인 필요` | - | - | - |
-| App Group 등록 | `확인 필요` | - | - | - |
-| App Group의 네 App ID 할당 | `확인 필요` | - | - | - |
+| App Group 등록 | `사용자 확인` | 2026-08-25 | 사용자 | Codex 작업 대화 확인 |
+| App Group의 네 App ID 할당 | `사용자 확인` | 2026-08-25 | 사용자 | Codex 작업 대화 확인 |
 | 네 Development profile 갱신 | `확인 필요` | - | - | - |
 | 네 App Store Connect profile 갱신 | `확인 필요` | - | - | - |
 | 서명된 archive entitlement 검사 | `확인 필요` | - | - | - |
@@ -158,7 +160,7 @@ codesign -d --entitlements :- <signed-bundle-path>
 - [ ] 네 명시적 App ID가 같은 Apple Developer Team에 등록되어 있다.
 - [ ] 네 App ID의 Family Controls 배포 요청이 모두 `Assigned`다.
 - [ ] 각 요청의 `Provisioning Support`가 필요한 배포 방식을 포함한다.
-- [ ] `group.com.getup.GetUp`이 등록되고 네 App ID에 할당되어 있다.
+- [x] `group.com.dxyn02.GetUp`이 등록되고 네 App ID에 할당되어 있다(사용자 확인, 증적 reference 보강 필요).
 - [ ] 네 target의 Development 및 App Store Connect profile이 최신 capability로 생성됐다.
 - [ ] 서명된 archive의 app과 세 extension에 Family Controls와 같은 App Group entitlement가 있다.
 - [ ] entitlement 적용 실기기에서 Family Controls 승인, 앱 선택, 일정 callback, shield와 App Group

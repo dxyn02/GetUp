@@ -67,7 +67,7 @@ final class AppModel {
         timeZone: TimeZone = .autoupdatingCurrent,
         makeID: @escaping () -> UUID = UUID.init,
         applicationTokenCounter: @escaping @Sendable (FamilyActivitySelection) -> Int = {
-            $0.applicationTokens.count
+            $0.restrictionTargetCount
         },
         applicationCountForRule: ((RestrictionRuleSnapshot) -> Int)? = nil,
         ruleAccessibilityID: @escaping (RestrictionRuleSnapshot) -> String = {
@@ -91,7 +91,7 @@ final class AppModel {
         self.makeID = makeID
         self.applicationTokenCounter = applicationTokenCounter
         self.applicationCountForRule = applicationCountForRule ?? {
-            $0.activitySelection.applicationTokens.count
+            $0.activitySelection.restrictionTargetCount
         }
         self.ruleAccessibilityID = ruleAccessibilityID
         self.initialEditorDraft = initialEditorDraft

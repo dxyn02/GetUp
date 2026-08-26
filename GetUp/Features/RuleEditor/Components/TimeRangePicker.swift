@@ -11,6 +11,9 @@ enum TimeRangeBoundary: Hashable, Identifiable, Sendable {
 struct TimeRangePicker: View {
     @Binding private var startTime: TimeOfDay
     @Binding private var endTime: TimeOfDay
+    @State private var selectedHour: Int
+    @State private var selectedMinute: Int
+    @State private var selectedPeriod: TimePickerPeriod
 
     private let boundary: TimeRangeBoundary
 
@@ -22,61 +25,70 @@ struct TimeRangePicker: View {
         self.boundary = boundary
         self._startTime = startTime
         self._endTime = endTime
+        let initialTime = boundary == .start ? startTime.wrappedValue : endTime.wrappedValue
+        let initialComponents = TimePickerComponents(time: initialTime)
+        self._selectedHour = State(initialValue: initialComponents.hour)
+        self._selectedMinute = State(initialValue: initialComponents.minute)
+        self._selectedPeriod = State(initialValue: initialComponents.period)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            wheelLabels
-
-            ZStack {
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(RuleEditorColor.accent)
-                    .frame(height: 58)
-                    .accessibilityHidden(true)
+            VStack(spacing: 8) {
+                wheelLabels
+                    .frame(height: 22)
 
                 HStack(spacing: 0) {
                     wheelPicker(
                         title: "시",
-                        selection: hourSelection,
-                        values: Array(1...12),
+                        selection: $selectedHour,
+                        values: selectableHours,
                         label: String.init,
-                        isSelectable: { canSelect(hour: $0) },
                         identifier: "hour"
                     )
 
                     wheelPicker(
                         title: "분",
-                        selection: minuteSelection,
-                        values: Array(0...59),
+                        selection: $selectedMinute,
+                        values: selectableMinutes,
                         label: { String(format: "%02d", $0) },
-                        isSelectable: { canSelect(minute: $0) },
                         identifier: "minute"
                     )
 
                     wheelPicker(
                         title: "오전 또는 오후",
-                        selection: periodSelection,
-                        values: TimePickerPeriod.allCases,
+                        selection: $selectedPeriod,
+                        values: selectablePeriods,
                         label: \.displayName,
-                        isSelectable: { canSelect(period: $0) },
                         identifier: "period"
                     )
                 }
                 .colorScheme(.dark)
+                .frame(height: 260)
             }
-            .frame(maxWidth: .infinity, minHeight: 300)
             .padding(.horizontal, 16)
+            .padding(.vertical, 16)
+            .frame(maxWidth: .infinity)
+            .frame(height: 322)
             .background(RuleEditorColor.surface, in: .rect(cornerRadius: 28))
+            .accessibilityIdentifier("ruleEditor.\(boundary.identifier).pickerCard")
 
             if boundary == .end {
                 Text(minimumDurationMessage)
                     .font(.caption)
                     .fontWeight(.semibold)
-                    .foregroundStyle(RuleEditorColor.error)
+                    .foregroundStyle(
+                        isEndTimeSelectable
+                            ? RuleEditorColor.textSecondary
+                            : RuleEditorColor.error
+                    )
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("ruleEditor.endTime.minimumDuration")
             }
         }
+        .onChange(of: selectedHour) { _, _ in updateSelection() }
+        .onChange(of: selectedMinute) { _, _ in updateSelection() }
+        .onChange(of: selectedPeriod) { _, _ in updateSelection() }
     }
 
     private var wheelLabels: some View {
@@ -85,7 +97,7 @@ struct TimeRangePicker: View {
                 .frame(maxWidth: .infinity)
             Text("분")
                 .frame(maxWidth: .infinity)
-            Text("AM/PM")
+            Color.clear
                 .frame(maxWidth: .infinity)
         }
         .font(.caption2)
@@ -100,104 +112,64 @@ struct TimeRangePicker: View {
         selection: Binding<Value>,
         values: [Value],
         label: @escaping (Value) -> String,
-        isSelectable: @escaping (Value) -> Bool,
         identifier: String
     ) -> some View {
         Picker(title, selection: selection) {
             ForEach(values, id: \.self) { value in
                 Text(label(value))
                     .font(.title2)
-                    .fontWeight(.semibold)
+                    .fontWeight(.regular)
+                    .foregroundStyle(RuleEditorColor.textPrimary)
                     .tag(value)
-                    .disabled(!isSelectable(value))
             }
         }
         .pickerStyle(.wheel)
+        .labelsHidden()
         .frame(maxWidth: .infinity)
-        .clipped()
+        .frame(height: 260)
         .accessibilityLabel(title)
         .accessibilityIdentifier("ruleEditor.\(boundary.identifier).\(identifier)")
     }
 
-    private var hourSelection: Binding<Int> {
-        Binding(
-            get: { components.hour },
-            set: { updateSelection(hour: $0) }
-        )
-    }
-
-    private var minuteSelection: Binding<Int> {
-        Binding(
-            get: { components.minute },
-            set: { updateSelection(minute: $0) }
-        )
-    }
-
-    private var periodSelection: Binding<TimePickerPeriod> {
-        Binding(
-            get: { components.period },
-            set: { updateSelection(period: $0) }
-        )
-    }
-
-    private var selectedTime: TimeOfDay {
-        boundary == .start ? startTime : endTime
-    }
-
-    private var components: TimePickerComponents {
-        TimePickerComponents(time: selectedTime)
-    }
-
     private var minimumDurationMessage: String {
-        "\(TimePickerComponents(time: startTime).displayName)부터 최소 15분 이후만 선택할 수 있어요"
+        "\(TimePickerComponents(time: startTime).displayName)부터 최소 15분 이후, 12시간 이내만 선택할 수 있어요"
     }
 
-    private func canSelect(
-        hour: Int? = nil,
-        minute: Int? = nil,
-        period: TimePickerPeriod? = nil
-    ) -> Bool {
-        guard boundary == .end else {
-            return true
-        }
+    private var isEndTimeSelectable: Bool {
+        ScheduleEvaluator.isEndTimeSelectable(startTime: startTime, endTime: endTime)
+    }
 
-        return ScheduleEvaluator.isEndTimeSelectable(
-            startTime: startTime,
-            endTime: candidateTime(hour: hour, minute: minute, period: period)
+    private var selectableHours: [Int] {
+        Array(1...12)
+    }
+
+    private var selectableMinutes: [Int] {
+        Array(0...59)
+    }
+
+    private var selectablePeriods: [TimePickerPeriod] {
+        TimePickerPeriod.allCases
+    }
+
+    private func updateSelection() {
+        let components = TimePickerComponents(
+            time: boundary == .start ? startTime : endTime
         )
-    }
-
-    private func updateSelection(
-        hour: Int? = nil,
-        minute: Int? = nil,
-        period: TimePickerPeriod? = nil
-    ) {
-        let candidateTime = candidateTime(hour: hour, minute: minute, period: period)
-        guard boundary == .start || ScheduleEvaluator.isEndTimeSelectable(
-            startTime: startTime,
-            endTime: candidateTime
-        ) else {
-            return
-        }
+        let candidateTime = components.updating(
+            hour: selectedHour,
+            minute: selectedMinute,
+            period: selectedPeriod
+        ).time
 
         switch boundary {
         case .start:
             startTime = candidateTime
+            if !ScheduleEvaluator.isEndTimeSelectable(startTime: candidateTime, endTime: endTime) {
+                endTime = ScheduleEvaluator.minimumEndTime(startTime: candidateTime)
+            }
         case .end:
             endTime = candidateTime
         }
-    }
-
-    private func candidateTime(
-        hour: Int?,
-        minute: Int?,
-        period: TimePickerPeriod?
-    ) -> TimeOfDay {
-        var candidate = components
-        candidate.hour = hour ?? candidate.hour
-        candidate.minute = minute ?? candidate.minute
-        candidate.period = period ?? candidate.period
-        return candidate.time
     }
 }
 
@@ -232,6 +204,18 @@ struct TimePickerComponents: Equatable, Sendable {
     var displayName: String {
         String(format: "%02d:%02d %@", hour, minute, period.displayName)
     }
+
+    func updating(
+        hour: Int? = nil,
+        minute: Int? = nil,
+        period: TimePickerPeriod? = nil
+    ) -> Self {
+        var updated = self
+        updated.hour = hour ?? updated.hour
+        updated.minute = minute ?? updated.minute
+        updated.period = period ?? updated.period
+        return updated
+    }
 }
 
 enum RuleEditorColor {
@@ -245,7 +229,7 @@ enum RuleEditorColor {
     static let error = Color(red: 255 / 255, green: 105 / 255, blue: 97 / 255)
 }
 
-private extension TimeRangeBoundary {
+extension TimeRangeBoundary {
     var identifier: String {
         switch self {
         case .start:

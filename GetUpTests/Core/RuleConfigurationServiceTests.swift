@@ -24,6 +24,32 @@ struct RuleConfigurationServiceTests {
         #expect(await repository.writeOrder == [.places, .rules])
     }
 
+    @Test("A category-only selection can be persisted by the default validator")
+    func savesCategoryOnlySelection() async throws {
+        let repository = InMemoryRuleConfigurationRepository()
+        let place = makePlace()
+        var selection = FamilyActivitySelection()
+        selection.categoryTokens = [
+            try TestFixtures.activityCategoryToken(seed: 22),
+        ]
+        let service = RuleConfigurationService(
+            ruleRepository: repository,
+            savedPlaceRepository: repository,
+            now: { Date(timeIntervalSince1970: 2_000) }
+        )
+
+        let saved = try await service.save(
+            draft: makeDraft(
+                savedPlaceID: place.id,
+                activitySelection: selection
+            ),
+            savedPlaces: [place]
+        )
+
+        #expect(saved.rule.activitySelection == selection)
+        #expect(await repository.storedRules?.rules == [saved.rule])
+    }
+
     @Test("Editing increments only that rule revision and preserves other rules")
     func editingIncrementsRevisionAndPreservesOtherRules() async throws {
         let place = makePlace()
@@ -106,6 +132,51 @@ struct RuleConfigurationServiceTests {
             try await service.save(
                 draft: makeDraft(savedPlaceID: UUID()),
                 savedPlaces: []
+            )
+        }
+
+        #expect(await repository.writeOrder.isEmpty)
+    }
+
+    @Test("Duplicate saved-place names are rejected before persistence")
+    func rejectsDuplicateSavedPlaceNames() async throws {
+        let first = makePlace()
+        let duplicate = SavedPlaceSnapshot(
+            id: UUID(),
+            name: " 집 ",
+            coordinate: ReferenceLocation(latitude: 35, longitude: 129),
+            createdAt: Date(timeIntervalSince1970: 1_000),
+            updatedAt: Date(timeIntervalSince1970: 1_000)
+        )
+        let repository = InMemoryRuleConfigurationRepository()
+        let service = makeService(repository: repository)
+
+        await #expect(throws: RuleConfigurationServiceError.invalidSavedPlaces) {
+            try await service.save(
+                draft: makeDraft(savedPlaceID: first.id),
+                savedPlaces: [first, duplicate]
+            )
+        }
+
+        #expect(await repository.writeOrder.isEmpty)
+    }
+
+    @Test("Saved-place names longer than ten characters are rejected before persistence")
+    func rejectsLongSavedPlaceName() async throws {
+        let place = SavedPlaceSnapshot(
+            id: UUID(),
+            name: "12345678901",
+            coordinate: ReferenceLocation(latitude: 37, longitude: 127),
+            createdAt: Date(timeIntervalSince1970: 1_000),
+            updatedAt: Date(timeIntervalSince1970: 1_000)
+        )
+        let repository = InMemoryRuleConfigurationRepository()
+        let service = makeService(repository: repository)
+
+        await #expect(throws: RuleConfigurationServiceError.invalidSavedPlaces) {
+            try await service.save(
+                draft: makeDraft(savedPlaceID: place.id),
+                savedPlaces: [place]
             )
         }
 
@@ -233,7 +304,8 @@ struct RuleConfigurationServiceTests {
         sourceRevision: Int? = nil,
         name: String? = "출근 준비",
         savedPlaceID: UUID,
-        createdAt: Date = Date(timeIntervalSince1970: 1_000)
+        createdAt: Date = Date(timeIntervalSince1970: 1_000),
+        activitySelection: FamilyActivitySelection = FamilyActivitySelection()
     ) -> RuleEditorDraft {
         RuleEditorDraft(
             id: id,
@@ -245,7 +317,7 @@ struct RuleConfigurationServiceTests {
             endTime: TimeOfDay(hour: 9, minute: 0),
             savedPlaceID: savedPlaceID,
             radius: .meters1000,
-            activitySelection: FamilyActivitySelection(),
+            activitySelection: activitySelection,
             createdAt: createdAt
         )
     }

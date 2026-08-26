@@ -16,6 +16,7 @@ enum RestrictionRuleValidationError: Equatable, Hashable, Sendable {
     case invalidTimeOfDay
     case startAndEndMustDiffer
     case timeRangeTooShort
+    case timeRangeTooLong
     case savedPlaceRequired
     case savedPlaceNotFound
     case invalidReferenceLocation
@@ -65,11 +66,14 @@ enum RestrictionRuleValidator {
             return
         }
 
-        if !ScheduleEvaluator.isEndTimeSelectable(
-            startTime: input.startTime,
-            endTime: input.endTime
-        ) {
+        let duration = ScheduleEvaluator.durationInMinutes(
+            from: input.startTime,
+            to: input.endTime
+        )
+        if duration < ScheduleEvaluator.minimumDurationMinutes {
             errors.insert(.timeRangeTooShort)
+        } else if duration > ScheduleEvaluator.maximumDurationMinutes {
+            errors.insert(.timeRangeTooLong)
         }
     }
 

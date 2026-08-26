@@ -5,15 +5,56 @@ import Foundation
 enum ManagedSettingsRestrictionAdapterError: Error, Equatable, Sendable {
     case missingAppGroupIdentifier
     case sharedDefaultsUnavailable
+    case storeVerificationFailed
+}
+
+struct ManagedSettingsShieldSelection: Equatable {
+    let applications: Set<ApplicationToken>?
+    let applicationCategories: ShieldSettings.ActivityCategoryPolicy<Application>?
+    let webDomains: Set<WebDomainToken>?
+
+    static let empty = ManagedSettingsShieldSelection(
+        applications: nil,
+        applicationCategories: nil,
+        webDomains: nil
+    )
+
+    init(
+        applications: Set<ApplicationToken>?,
+        applicationCategories: ShieldSettings.ActivityCategoryPolicy<Application>?,
+        webDomains: Set<WebDomainToken>?
+    ) {
+        self.applications = applications
+        self.applicationCategories = applicationCategories
+        self.webDomains = webDomains
+    }
+
+    init(rules: [RestrictionRuleSnapshot]) {
+        let applications = rules.reduce(into: Set<ApplicationToken>()) {
+            $0.formUnion($1.activitySelection.applicationTokens)
+        }
+        let categories = rules.reduce(into: Set<ActivityCategoryToken>()) {
+            $0.formUnion($1.activitySelection.categoryTokens)
+        }
+        let webDomains = rules.reduce(into: Set<WebDomainToken>()) {
+            $0.formUnion($1.activitySelection.webDomainTokens)
+        }
+
+        self.applications = applications.isEmpty ? nil : applications
+        applicationCategories = categories.isEmpty
+            ? nil
+            : .specific(categories)
+        self.webDomains = webDomains.isEmpty ? nil : webDomains
+    }
 }
 
 @MainActor
 protocol ManagedSettingsStoreAccess: Sendable {
-    func shieldedApplications(
+    func shieldSelection(
         named storeName: String
-    ) -> Set<ApplicationToken>?
-    func setShieldedApplications(
-        _ applications: Set<ApplicationToken>?,
+    ) -> ManagedSettingsShieldSelection
+    func setShieldSelection(
+        _ selection: ManagedSettingsShieldSelection,
         named storeName: String
     )
 }
@@ -27,17 +68,25 @@ protocol RestrictionApplicationStateStoring: Sendable {
 final class SystemManagedSettingsStoreAccess: ManagedSettingsStoreAccess {
     private var stores: [String: ManagedSettingsStore] = [:]
 
-    func shieldedApplications(
+    func shieldSelection(
         named storeName: String
-    ) -> Set<ApplicationToken>? {
-        store(named: storeName).shield.applications
+    ) -> ManagedSettingsShieldSelection {
+        let shield = store(named: storeName).shield
+        return ManagedSettingsShieldSelection(
+            applications: shield.applications,
+            applicationCategories: shield.applicationCategories,
+            webDomains: shield.webDomains
+        )
     }
 
-    func setShieldedApplications(
-        _ applications: Set<ApplicationToken>?,
+    func setShieldSelection(
+        _ selection: ManagedSettingsShieldSelection,
         named storeName: String
     ) {
-        store(named: storeName).shield.applications = applications
+        let store = store(named: storeName)
+        store.shield.applications = selection.applications
+        store.shield.applicationCategories = selection.applicationCategories
+        store.shield.webDomains = selection.webDomains
     }
 
     private func store(named storeName: String) -> ManagedSettingsStore {
@@ -146,18 +195,20 @@ final class ManagedSettingsRestrictionAdapter: RestrictionApplying {
             return
         }
 
+        let desiredSelection = ManagedSettingsShieldSelection(rules: rules)
         let currentState = await stateStore.currentState()
-        guard currentState.activeRuleRevisions != activeRuleRevisions else {
+        let storeName = SharedIdentifiers.managedSettingsStoreName
+        guard
+            currentState.activeRuleRevisions != activeRuleRevisions
+                || storeAccess.shieldSelection(named: storeName) != desiredSelection
+        else {
             return
         }
 
-        let applications = rules.reduce(into: Set<ApplicationToken>()) {
-            $0.formUnion($1.activitySelection.applicationTokens)
+        storeAccess.setShieldSelection(desiredSelection, named: storeName)
+        guard storeAccess.shieldSelection(named: storeName) == desiredSelection else {
+            throw ManagedSettingsRestrictionAdapterError.storeVerificationFailed
         }
-        storeAccess.setShieldedApplications(
-            applications,
-            named: SharedIdentifiers.managedSettingsStoreName
-        )
         await stateStore.saveState(
             AppliedRestrictionState(
                 activeRuleRevisions: activeRuleRevisions
@@ -167,14 +218,18 @@ final class ManagedSettingsRestrictionAdapter: RestrictionApplying {
 
     func removeRestriction() async throws {
         let currentState = await stateStore.currentState()
-        guard currentState.isApplied else {
+        let storeName = SharedIdentifiers.managedSettingsStoreName
+        guard
+            currentState.isApplied
+                || storeAccess.shieldSelection(named: storeName) != .empty
+        else {
             return
         }
 
-        storeAccess.setShieldedApplications(
-            nil,
-            named: SharedIdentifiers.managedSettingsStoreName
-        )
+        storeAccess.setShieldSelection(.empty, named: storeName)
+        guard storeAccess.shieldSelection(named: storeName) == .empty else {
+            throw ManagedSettingsRestrictionAdapterError.storeVerificationFailed
+        }
         await stateStore.saveState(
             AppliedRestrictionState(
                 activeRuleRevisions: []

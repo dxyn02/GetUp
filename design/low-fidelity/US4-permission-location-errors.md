@@ -41,10 +41,15 @@
 
 ## 사용자 흐름
 
+> 2026-08-25 하이파이 보정: 권한 상세 흐름은 `notDetermined`·허용·거부 상태를 구분한다.
+> `notDetermined`에서는 시스템 요청을 자동 표시하고 결과 전까지 `다음`을 비활성화하며, 허용 후에는
+> `다음`, 거부 후에는 설정 복구 행동을 제공한다. Background App Refresh는 별도 미결정 상태가 없어
+> 시스템의 `available`·`denied`·`restricted` 값을 허용·거부 화면으로 정규화한다.
+
 1. 사용자가 규칙 설정 또는 상태 확인 중 필수 권한 부족을 발견한다.
 2. `US4-LF-01`은 누락된 권한 종류와 자동 제한에 미치는 영향을 한 목록에서 보여준다.
-3. Family Controls가 없으면 `US4-LF-02`에서 개인용 앱 사용 제한을 다시 승인하고 제한 앱을 다시
-   선택한 뒤 저장 규칙을 재평가한다.
+3. Family Controls가 없으면 `US4-LF-02`에서 `AuthorizationCenter`의 개인용 앱 사용 제한 승인
+   요청을 표시한다. 승인 뒤 제한 앱은 규칙 편집 화면의 시스템 picker에서 선택한다.
 4. Always 또는 Full Accuracy가 없으면 `US4-LF-03`에서 시스템 설정 경로와 상태 보존 원칙을 확인하고
    설정으로 이동한다.
 5. Background App Refresh가 제한되면 `US4-LF-04`에서 복구 지연 가능성과 설정 경로를 확인한다.
@@ -58,7 +63,7 @@
 | 화면 ID | 화면 이름 | 목적 | 진입 조건 | 주요 행동 |
 |---|---|---|---|---|
 | `US4-LF-01` | 권한 점검 | 누락 권한과 복구 순서 이해 | 하나 이상의 필수 권한 부족 | 가장 먼저 복구할 항목 선택 |
-| `US4-LF-02` | Family Controls 복구 | 재승인과 앱 재선택 요구 이해 | Family Controls 미승인·철회 | 다시 승인하고 앱 선택 |
+| `US4-LF-02` | Family Controls 복구 | 시스템 승인과 앱 선택 경계 이해 | Family Controls 미승인·철회 | 권한 허용하기 |
 | `US4-LF-03` | 위치 권한 복구 | Always·Full Accuracy 설정 복구 | Always 또는 Full Accuracy 부족 | 설정 열기, 나중에 |
 | `US4-LF-04` | Background App Refresh | background 복구 제한 원인 이해 | Background App Refresh 제한 | 설정 열기, 나중에 |
 | `US4-LF-05` | 위치 확인 불가 · 비활성 | 잘못된 신규 제한을 막고 현재 상태 설명 | 제한 비활성 + 위치 `unavailable` | 위치 다시 확인, 설정 열기 |
@@ -69,7 +74,7 @@
 | 화면 ID | 상태 | 표시 내용 | 가능한 행동 | 다음 결과 |
 |---|---|---|---|---|
 | `US4-LF-01` | `permission required` | 권한 네 종류와 자동 제한 영향 | 첫 복구 항목 선택 | 해당 상세 화면 |
-| `US4-LF-02` | `family controls denied` | 재승인 → 앱 재선택 → 규칙 재평가 | 승인과 앱 선택 | foreground 재평가 |
+| `US4-LF-02` | `family controls denied` | 시스템 승인 → 규칙에서 앱 선택 → 규칙 재평가 | 권한 허용하기 | 시스템 승인 UI 뒤 foreground 재평가 |
 | `US4-LF-03` | `always/full accuracy denied` | 시스템 설정 경로, Reduced Accuracy 안전 원칙 | 설정 열기, 나중에 | foreground 재평가 또는 상태 유지 |
 | `US4-LF-04` | `background refresh restricted` | 복구 지연 가능성, 저전력 모드의 시스템 제한 | 설정 열기, 나중에 | foreground 재평가 또는 상태 유지 |
 | `US4-LF-05` | `location unavailable / inactive` | 새 제한 미적용, 원인 점검 항목 | 재시도, 설정 열기 | 신뢰 가능한 fix에서 재평가 |
@@ -91,7 +96,9 @@
 
 - Family Controls, Always location, Full Accuracy 중 하나라도 부족하면 새로운 제한을 적용하지 않는다.
 - Family Controls 재승인 뒤 이전 opaque token이 유효하다고 가정하지 않고 제한 앱 재선택을 요구한다.
-- `설정 열기`는 시스템 설정으로 이동하며, 복귀 시 최신 권한 상태를 다시 읽는다.
+- Family Controls의 `권한 허용하기`는 앱별 Settings가 아니라
+  `AuthorizationCenter.requestAuthorization(for: .individual)`을 호출하며, 완료 뒤 최신 승인 상태를
+  다시 읽는다. 위치와 Background App Refresh의 `설정 열기`만 시스템 설정으로 이동한다.
 - Background App Refresh 제한은 복구 지연 가능성을 설명하되 특정 실행 시각을 보장하지 않는다.
 - 권한 점검 목록은 원형 bullet 대신 앱 제한 `🛡️`, 위치 접근 `📍`, 정확한 위치 `🎯`,
   Background App Refresh `🔄` 표시를 사용한다.
@@ -156,6 +163,7 @@ baseline과 `353×56pt` 크기를 사용한다. 빈 text, placeholder와 비정�
 | `2026-08-24` | `Codex` | 권한 점검, Family Controls 재승인·앱 재선택, Always·Full Accuracy, Background App Refresh, 위치 확인 불가의 비활성·활성 상태를 하나의 검토 wrapper로 제작 | 최초 작성 |
 | `2026-08-24` | `Codex` | 원형 bullet을 권한별 `🛡️`, `📍`, `🎯`, `🔄` 표시로 교체하고 primary·secondary 버튼 위치와 크기를 화면 전체에서 통일 | 사용자 변경 요청 |
 | `2026-08-24` | 사용자 | 화면 문구와 action 순서·배치를 직접 조정하고 현재 Figma 상태를 최종 승인본으로 확정 | 최종 승인 |
+| `2026-08-25` | `Codex` | 실기기에서 앱별 Settings에 Family Controls 승인 항목이 없음을 확인해 해당 action을 시스템 개인용 승인 요청으로 바로잡음 | 실기기 결함 보고 |
 
 ## 로우파이 승인
 

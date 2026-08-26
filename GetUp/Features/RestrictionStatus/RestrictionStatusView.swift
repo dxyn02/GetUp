@@ -8,93 +8,89 @@ struct RestrictionStatusView: View {
     @State private var isGuardAlertPresented = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("restriction_status.active")
-                    .font(.caption)
-                    .fontWeight(.bold)
-                    .foregroundStyle(HomeColor.accent)
-                    .accessibilityIdentifier("restrictionStatus.active")
-
-                Text(item.rule.name ?? item.savedPlace.name)
-                    .font(.title)
-                    .fontWeight(.bold)
-            }
-
-            Text("RULE \(rulePosition) OF \(ruleCount) · \(weekdayLabel)")
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundStyle(HomeColor.textSecondary)
-
-            Text("\(Self.time(item.rule.startTime)) → \(Self.time(item.rule.endTime))")
-                .font(.title2)
+        VStack(alignment: .leading, spacing: 10) {
+            Text(RestrictionCopy.activeStatus)
+                .font(.caption2)
                 .fontWeight(.bold)
-                .fixedSize(horizontal: false, vertical: true)
+                .foregroundStyle(HomeColor.accent)
+                .accessibilityIdentifier("restrictionStatus.active")
 
-            HStack(alignment: .top, spacing: 14) {
-                Image(systemName: "door.left.hand.open")
-                    .font(.system(size: 29, weight: .light))
-                    .foregroundStyle(HomeColor.accent)
-                    .frame(width: 42, height: 42)
-                    .accessibilityHidden(true)
+            Text(item.rule.name ?? item.savedPlace.name)
+                .font(.largeTitle)
+                .fontWeight(.bold)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("\(item.savedPlace.name)에서 \(radiusLabel) 나가면")
-                        .font(.headline)
-                    Text("선택한 앱 \(item.applicationCount)개를 다시 사용할 수 있어요")
-                        .font(.subheadline)
-                        .foregroundStyle(HomeColor.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 16) {
+                Text("RULE \(rulePosition) OF \(ruleCount) · \(weekdayLabel)")
+                    .font(.caption2)
+                    .fontWeight(.bold)
+                    .foregroundStyle(HomeColor.textTertiary)
+                    .accessibilityIdentifier("home.ruleCard.\(item.accessibilityID).schedule")
+
+                timeText
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Divider().overlay(HomeColor.disabled)
+
+                HStack(alignment: .top, spacing: 18) {
+                    Image(systemName: "door.left.hand.open")
+                        .font(.system(size: 52, weight: .light))
+                        .foregroundStyle(HomeColor.accent)
+                        .frame(width: 78, height: 78)
+                        .accessibilityHidden(true)
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("\(item.savedPlace.name)에서 \(radiusLabel) 밖으로 나서면")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                        Text(item.applicationReleaseDescription)
+                            .font(.subheadline)
+                            .foregroundStyle(HomeColor.textSecondary)
+                    }
                 }
-            }
 
-            VStack(spacing: 0) {
                 conditionRow(
                     label: "LOCATION",
                     value: "\(item.savedPlace.name) · \(radiusLabel)",
                     identifier: "home.ruleCard.\(item.accessibilityID).location"
                 )
-                Divider().overlay(HomeColor.surfaceElevated)
                 conditionRow(
                     label: "BLOCKED",
-                    value: "\(item.applicationCount)개 앱",
+                    value: item.applicationSummary,
                     identifier: "home.ruleCard.\(item.accessibilityID).applications"
                 )
-            }
-            .background(HomeColor.surfaceElevated.opacity(0.52), in: .rect(cornerRadius: 18))
+                Spacer(minLength: 0)
 
-            Button {
-                isGuardAlertPresented = true
-            } label: {
-                Label("restriction_status.edit_disabled", systemImage: "lock.fill")
-                    .font(.footnote)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(HomeColor.textSecondary)
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                    .background(
-                        HomeColor.surfaceElevated.opacity(0.42),
-                        in: .rect(cornerRadius: 14)
-                    )
+                Button {
+                    isGuardAlertPresented = true
+                } label: {
+                    Text(RestrictionCopy.editDisabled)
+                        .font(.footnote)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(HomeColor.textSecondary)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .background(HomeColor.surfaceElevated, in: .rect(cornerRadius: 14))
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(RestrictionCopy.editDisabled)
+                .accessibilityHint("수정할 수 있는 위치와 시간을 안내합니다.")
+                .accessibilityIdentifier("restrictionStatus.editDisabled")
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text("restriction_status.edit_disabled"))
-            .accessibilityHint("수정할 수 있는 위치와 시간을 안내합니다.")
-            .accessibilityIdentifier("restrictionStatus.editDisabled")
-        }
-        .padding(22)
-        .frame(maxWidth: .infinity, minHeight: 410, alignment: .topLeading)
-        .background(HomeColor.surface, in: .rect(cornerRadius: 28))
-        .overlay {
-            RoundedRectangle(cornerRadius: 28)
-                .stroke(HomeColor.accent, lineWidth: 2)
+            .padding(16)
+            .frame(maxWidth: .infinity, minHeight: 456, alignment: .topLeading)
+            .background(HomeColor.surface, in: .rect(cornerRadius: 28))
+            .overlay {
+                RoundedRectangle(cornerRadius: 28)
+                    .stroke(HomeColor.accent, lineWidth: 1)
+            }
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("home.ruleCard.\(item.accessibilityID)")
         .alert(
-            Text("restriction_guard.title"),
+            Text(RestrictionCopy.guardTitle),
             isPresented: $isGuardAlertPresented
         ) {
-            Button("restriction_guard.confirm", role: .cancel) {}
+            Button(RestrictionCopy.guardConfirm, role: .cancel) {}
         } message: {
             Text(modificationGuard.message)
         }
@@ -106,19 +102,17 @@ struct RestrictionStatusView: View {
         identifier: String
     ) -> some View {
         HStack(spacing: 12) {
-            Text(label)
-                .font(.caption2)
-                .fontWeight(.bold)
-                .foregroundStyle(HomeColor.textSecondary)
-                .frame(width: 72, alignment: .leading)
-            Text(value)
-                .font(.body)
-                .fontWeight(.semibold)
-                .accessibilityIdentifier(identifier)
+            Image(systemName: label == "LOCATION" ? "scope" : "square.grid.3x3.fill")
+                .foregroundStyle(HomeColor.accent)
+                .frame(width: 18)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(label).font(.caption2).fontWeight(.bold).foregroundStyle(HomeColor.textTertiary)
+                Text(value).font(.subheadline).fontWeight(.bold).accessibilityIdentifier(identifier)
+            }
             Spacer()
         }
-        .frame(minHeight: 50)
-        .padding(.horizontal, 14)
+        .frame(minHeight: 54)
     }
 
     private var radiusLabel: String {
@@ -134,20 +128,79 @@ struct RestrictionStatusView: View {
     }
 
     private var weekdayLabel: String {
-        let weekdays = item.rule.weekdays
-        if weekdays == Set([.monday, .tuesday, .wednesday, .thursday, .friday]) {
-            return "MON–FRI"
-        }
-        return Weekday.allCases
-            .filter(weekdays.contains)
-            .map(\.shortEnglishName)
-            .joined(separator: " · ")
+        HomeWeekdayFormatter.label(for: item.rule.weekdays)
     }
 
-    private static func time(_ time: TimeOfDay) -> String {
-        let period = time.hour < 12 ? "AM" : "PM"
+    private var timeText: Text {
+        Text(
+            "\(Text(Self.clock(item.rule.startTime)).font(.system(size: 38, weight: .bold))) \(Text(Self.period(item.rule.startTime)).font(.caption).foregroundColor(HomeColor.textSecondary)) \(Text("→").font(.title2).foregroundColor(HomeColor.accent)) \(Text(Self.clock(item.rule.endTime)).font(.system(size: 38, weight: .bold))) \(Text(Self.period(item.rule.endTime)).font(.caption).foregroundColor(HomeColor.textSecondary))"
+        )
+    }
+
+    private static func clock(_ time: TimeOfDay) -> String {
         let hour = time.hour % 12 == 0 ? 12 : time.hour % 12
-        return String(format: "%02d:%02d %@", hour, time.minute, period)
+        return String(format: "%02d:%02d", hour, time.minute)
+    }
+
+    private static func period(_ time: TimeOfDay) -> String { time.hour < 12 ? "AM" : "PM" }
+}
+
+extension HomeRuleItem {
+    var restrictionSelectionSummary: RestrictionSelectionSummary {
+        rule.activitySelection.restrictionSelectionSummary(
+            countedTargets: applicationCount
+        )
+    }
+
+    var applicationSummary: String {
+        switch restrictionSelectionSummary {
+        case .none:
+            "앱 없음"
+        case .exact(let count):
+            "\(count)개 앱"
+        case .multiple:
+            "여러 앱"
+        }
+    }
+
+    var applicationReleaseDescription: String {
+        switch restrictionSelectionSummary {
+        case .none:
+            "선택한 앱이 없어요"
+        case .exact(let count):
+            "선택한 앱 \(count)개를\n다시 사용할 수 있어요"
+        case .multiple:
+            "선택한 여러 앱을\n다시 사용할 수 있어요"
+        }
+    }
+}
+
+enum HomeWeekdayFormatter {
+    static func label(for weekdays: Set<Weekday>) -> String {
+        var runs: [[Weekday]] = []
+        var currentRun: [Weekday] = []
+
+        for weekday in Weekday.allCases {
+            if weekdays.contains(weekday) {
+                currentRun.append(weekday)
+            } else if !currentRun.isEmpty {
+                runs.append(currentRun)
+                currentRun = []
+            }
+        }
+
+        if !currentRun.isEmpty {
+            runs.append(currentRun)
+        }
+
+        return runs.map { run in
+            guard let first = run.first else { return "" }
+            guard run.count > 1, let last = run.last else {
+                return first.shortEnglishName
+            }
+            return "\(first.shortEnglishName)-\(last.shortEnglishName)"
+        }
+        .joined(separator: " · ")
     }
 }
 

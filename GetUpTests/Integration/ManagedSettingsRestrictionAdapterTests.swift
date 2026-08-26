@@ -27,9 +27,9 @@ struct ManagedSettingsRestrictionAdapterTests {
 
         try await adapter.applyRestriction(for: [rule])
 
-        let shielded = store.shieldedApplications(
+        let shielded = store.shieldSelection(
             named: SharedIdentifiers.managedSettingsStoreName
-        )
+        ).applications
         #expect(shielded == selected)
         #expect(shielded?.contains(unselected) == false)
         #expect(store.writeCount == 1)
@@ -51,7 +51,14 @@ struct ManagedSettingsRestrictionAdapterTests {
             activitySelection: selection(applicationTokens: selected)
         )
         let store = RecordingManagedSettingsStoreAccess(
-            stores: [SharedIdentifiers.managedSettingsStoreName: selected]
+            stores: [
+                SharedIdentifiers.managedSettingsStoreName:
+                    ManagedSettingsShieldSelection(
+                        applications: selected,
+                        applicationCategories: nil,
+                        webDomains: nil
+                    ),
+            ]
         )
         let stateStore = RecordingRestrictionApplicationStateStore(
             initialState: AppliedRestrictionState(
@@ -70,9 +77,9 @@ struct ManagedSettingsRestrictionAdapterTests {
         #expect(store.writeCount == 0)
         #expect(await stateStore.writeCount == 0)
         #expect(
-            store.shieldedApplications(
+            store.shieldSelection(
                 named: SharedIdentifiers.managedSettingsStoreName
-            ) == selected
+            ).applications == selected
         )
     }
 
@@ -82,7 +89,13 @@ struct ManagedSettingsRestrictionAdapterTests {
         let otherSelection = try Set([applicationToken(seed: 6)])
         let otherStoreName = "another-provider.restriction"
         let store = RecordingManagedSettingsStoreAccess(
-            stores: [otherStoreName: otherSelection]
+            stores: [
+                otherStoreName: ManagedSettingsShieldSelection(
+                    applications: otherSelection,
+                    applicationCategories: nil,
+                    webDomains: nil
+                ),
+            ]
         )
         let stateStore = RecordingRestrictionApplicationStateStore()
         let adapter = ManagedSettingsRestrictionAdapter(
@@ -97,7 +110,7 @@ struct ManagedSettingsRestrictionAdapterTests {
         try await adapter.applyRestriction(for: [rule])
 
         #expect(
-            store.shieldedApplications(named: otherStoreName)
+            store.shieldSelection(named: otherStoreName).applications
                 == otherSelection
         )
         #expect(
@@ -127,9 +140,66 @@ struct ManagedSettingsRestrictionAdapterTests {
         try await adapter.applyRestriction(for: [first, second])
 
         #expect(
-            store.shieldedApplications(
+            store.shieldSelection(
                 named: SharedIdentifiers.managedSettingsStoreName
-            ) == [shared, firstOnly, secondOnly]
+            ).applications == [shared, firstOnly, secondOnly]
+        )
+    }
+
+    @Test("Selected categories and web domains are applied as shield targets")
+    func appliesCategoriesAndWebDomains() async throws {
+        let category = try TestFixtures.activityCategoryToken(seed: 12)
+        let webDomain = try TestFixtures.webDomainToken(seed: 13)
+        let rule = TestFixtures.makeRule(
+            revision: 3,
+            activitySelection: selection(
+                categoryTokens: [category],
+                webDomainTokens: [webDomain]
+            )
+        )
+        let store = RecordingManagedSettingsStoreAccess()
+        let adapter = ManagedSettingsRestrictionAdapter(
+            storeAccess: store,
+            stateStore: RecordingRestrictionApplicationStateStore()
+        )
+
+        try await adapter.applyRestriction(for: [rule])
+
+        let shield = store.shieldSelection(
+            named: SharedIdentifiers.managedSettingsStoreName
+        )
+        #expect(shield.applications == nil)
+        #expect(shield.applicationCategories == .specific([category]))
+        #expect(shield.webDomains == [webDomain])
+    }
+
+    @Test("An unchanged revision repairs a missing category shield")
+    func unchangedRevisionRepairsCategoryShield() async throws {
+        let category = try TestFixtures.activityCategoryToken(seed: 14)
+        let rule = TestFixtures.makeRule(
+            revision: 6,
+            activitySelection: selection(categoryTokens: [category])
+        )
+        let store = RecordingManagedSettingsStoreAccess()
+        let stateStore = RecordingRestrictionApplicationStateStore(
+            initialState: AppliedRestrictionState(
+                activeRuleRevisions: [
+                    ActiveRuleRevision(ruleID: rule.id, revision: 6),
+                ]
+            )
+        )
+        let adapter = ManagedSettingsRestrictionAdapter(
+            storeAccess: store,
+            stateStore: stateStore
+        )
+
+        try await adapter.applyRestriction(for: [rule])
+
+        #expect(store.writeCount == 1)
+        #expect(
+            store.shieldSelection(
+                named: SharedIdentifiers.managedSettingsStoreName
+            ).applicationCategories == .specific([category])
         )
     }
 
@@ -157,11 +227,115 @@ struct ManagedSettingsRestrictionAdapterTests {
         ))
     }
 
+    @Test("Removing a restriction clears apps, categories, and web domains")
+    func removingClearsEveryShieldTarget() async throws {
+        let application = try applicationToken(seed: 15)
+        let category = try TestFixtures.activityCategoryToken(seed: 16)
+        let webDomain = try TestFixtures.webDomainToken(seed: 17)
+        let rule = TestFixtures.makeRule(revision: 2)
+        let store = RecordingManagedSettingsStoreAccess(
+            stores: [
+                SharedIdentifiers.managedSettingsStoreName:
+                    ManagedSettingsShieldSelection(
+                        applications: [application],
+                        applicationCategories: .specific([category]),
+                        webDomains: [webDomain]
+                    ),
+            ]
+        )
+        let stateStore = RecordingRestrictionApplicationStateStore(
+            initialState: AppliedRestrictionState(
+                activeRuleRevisions: [
+                    ActiveRuleRevision(ruleID: rule.id, revision: 2),
+                ]
+            )
+        )
+        let adapter = ManagedSettingsRestrictionAdapter(
+            storeAccess: store,
+            stateStore: stateStore
+        )
+
+        try await adapter.removeRestriction()
+
+        #expect(
+            store.shieldSelection(
+                named: SharedIdentifiers.managedSettingsStoreName
+            ) == .empty
+        )
+        #expect(await stateStore.currentState() == AppliedRestrictionState(
+            activeRuleRevisions: []
+        ))
+    }
+
+    @Test("Applying reports failure when the named store does not reflect the write")
+    func applyingRequiresStoreReadbackConfirmation() async throws {
+        let selected = try Set([applicationToken(seed: 10)])
+        let rule = TestFixtures.makeRule(
+            activitySelection: selection(applicationTokens: selected)
+        )
+        let store = RecordingManagedSettingsStoreAccess(ignoresWrites: true)
+        let stateStore = RecordingRestrictionApplicationStateStore()
+        let adapter = ManagedSettingsRestrictionAdapter(
+            storeAccess: store,
+            stateStore: stateStore
+        )
+
+        await #expect(
+            throws: ManagedSettingsRestrictionAdapterError.storeVerificationFailed
+        ) {
+            try await adapter.applyRestriction(for: [rule])
+        }
+
+        #expect(await stateStore.writeCount == 0)
+    }
+
+    @Test("Removing reports failure when the named store remains shielded")
+    func removingRequiresStoreReadbackConfirmation() async throws {
+        let selected = try Set([applicationToken(seed: 11)])
+        let rule = TestFixtures.makeRule(
+            activitySelection: selection(applicationTokens: selected)
+        )
+        let store = RecordingManagedSettingsStoreAccess(
+            stores: [
+                SharedIdentifiers.managedSettingsStoreName:
+                    ManagedSettingsShieldSelection(
+                        applications: selected,
+                        applicationCategories: nil,
+                        webDomains: nil
+                    ),
+            ],
+            ignoresWrites: true
+        )
+        let stateStore = RecordingRestrictionApplicationStateStore(
+            initialState: AppliedRestrictionState(
+                activeRuleRevisions: [
+                    ActiveRuleRevision(ruleID: rule.id, revision: rule.revision),
+                ]
+            )
+        )
+        let adapter = ManagedSettingsRestrictionAdapter(
+            storeAccess: store,
+            stateStore: stateStore
+        )
+
+        await #expect(
+            throws: ManagedSettingsRestrictionAdapterError.storeVerificationFailed
+        ) {
+            try await adapter.removeRestriction()
+        }
+
+        #expect(await stateStore.writeCount == 0)
+    }
+
     private func selection(
-        applicationTokens: Set<ApplicationToken>
+        applicationTokens: Set<ApplicationToken> = [],
+        categoryTokens: Set<ActivityCategoryToken> = [],
+        webDomainTokens: Set<WebDomainToken> = []
     ) -> FamilyActivitySelection {
         var selection = FamilyActivitySelection()
         selection.applicationTokens = applicationTokens
+        selection.categoryTokens = categoryTokens
+        selection.webDomainTokens = webDomainTokens
         return selection
     }
 
@@ -172,34 +346,42 @@ struct ManagedSettingsRestrictionAdapterTests {
             from: encodedData
         )
     }
+
 }
 
 @MainActor
 private final class RecordingManagedSettingsStoreAccess:
     ManagedSettingsStoreAccess
 {
-    private var stores: [String: Set<ApplicationToken>]
+    private var stores: [String: ManagedSettingsShieldSelection]
+    private let ignoresWrites: Bool
 
     private(set) var writeCount = 0
     private(set) var writtenStoreNames: [String] = []
 
-    init(stores: [String: Set<ApplicationToken>] = [:]) {
+    init(
+        stores: [String: ManagedSettingsShieldSelection] = [:],
+        ignoresWrites: Bool = false
+    ) {
         self.stores = stores
+        self.ignoresWrites = ignoresWrites
     }
 
-    func shieldedApplications(named storeName: String)
-        -> Set<ApplicationToken>?
+    func shieldSelection(named storeName: String)
+        -> ManagedSettingsShieldSelection
     {
-        stores[storeName]
+        stores[storeName] ?? .empty
     }
 
-    func setShieldedApplications(
-        _ applications: Set<ApplicationToken>?,
+    func setShieldSelection(
+        _ selection: ManagedSettingsShieldSelection,
         named storeName: String
     ) {
         writeCount += 1
         writtenStoreNames.append(storeName)
-        stores[storeName] = applications
+        if !ignoresWrites {
+            stores[storeName] = selection
+        }
     }
 }
 

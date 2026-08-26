@@ -39,6 +39,38 @@ struct RuleEditorModelTests {
         #expect(model.preparedDraft.savedPlaceID == savedPlace.id)
     }
 
+    @Test("A category-only picker result satisfies the app selection requirement")
+    func categoryOnlySelectionIsValid() throws {
+        let savedPlace = makeSavedPlace()
+        var selection = FamilyActivitySelection()
+        selection.categoryTokens = [
+            try TestFixtures.activityCategoryToken(seed: 21),
+        ]
+        let draft = RuleEditorDraft(
+            id: Self.ruleID,
+            sourceRevision: nil,
+            isEnabled: true,
+            name: "카테고리 규칙",
+            weekdays: [.monday],
+            startTime: TimeOfDay(hour: 6, minute: 0),
+            endTime: TimeOfDay(hour: 9, minute: 0),
+            savedPlaceID: savedPlace.id,
+            radius: .meters1000,
+            activitySelection: selection,
+            createdAt: TestFixtures.now
+        )
+        let model = RuleEditorModel(
+            draft: draft,
+            savedPlaces: [savedPlace],
+            makeID: { Self.ruleID },
+            now: { TestFixtures.now }
+        )
+
+        #expect(model.applicationTokenCount == 1)
+        #expect(!model.validationErrors.contains(.applicationTokenRequired))
+        #expect(model.canSave)
+    }
+
     @Test("Editing preserves the selected rule identity, revision, and values")
     func editingPreservesExistingDraft() {
         let savedPlace = makeSavedPlace()
@@ -141,6 +173,24 @@ struct RuleEditorModelTests {
                     updatedAt: TestFixtures.now
                 )
         )
+    }
+
+    @Test("A duplicate place name never appends another saved place")
+    func duplicatePlaceNameDoesNotAppend() {
+        let savedPlace = makeSavedPlace()
+        let model = makeModel(savedPlaces: [savedPlace])
+
+        model.applyLocationCompletion(
+            .confirmed(
+                SavedPlaceDraft(
+                    name: " 회사 ",
+                    coordinate: ReferenceLocation(latitude: 35, longitude: 129)
+                )
+            )
+        )
+
+        #expect(model.savedPlaces == [savedPlace])
+        #expect(model.selectedSavedPlaceID == savedPlace.id)
     }
 
     @Test("Cancelling location selection preserves the current draft")

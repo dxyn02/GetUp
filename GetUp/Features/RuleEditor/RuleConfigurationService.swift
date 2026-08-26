@@ -3,6 +3,7 @@ import Foundation
 
 enum RuleConfigurationServiceError: Error, Equatable, Sendable {
     case invalidDraft(Set<RestrictionRuleValidationError>)
+    case invalidSavedPlaces
     case staleRevision(expected: Int?, actual: Int?)
 }
 
@@ -26,7 +27,7 @@ struct RuleConfigurationService: Sendable {
         savedPlaceRepository: any SavedPlaceRepository,
         now: @escaping @Sendable () -> Date = Date.init,
         applicationTokenCounter: @escaping @Sendable (FamilyActivitySelection) -> Int = {
-            $0.applicationTokens.count
+            $0.restrictionTargetCount
         },
         synchronizeRuntimeAfterSave: @escaping @Sendable (
             RestrictionRuleSnapshot
@@ -53,6 +54,9 @@ struct RuleConfigurationService: Sendable {
         try validateRevision(of: existingRule, against: draft)
 
         let mergedPlaces = mergePlaces(currentPlaces.places, with: savedPlaces)
+        guard SavedPlaceNamePolicy.hasUniqueValidNames(mergedPlaces) else {
+            throw RuleConfigurationServiceError.invalidSavedPlaces
+        }
         let errors = validationErrors(for: draft, savedPlaces: mergedPlaces)
         guard errors.isEmpty else {
             throw RuleConfigurationServiceError.invalidDraft(errors)

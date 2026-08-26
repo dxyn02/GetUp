@@ -1,6 +1,33 @@
 import FamilyControls
 import Foundation
 
+extension FamilyActivitySelection {
+    var restrictionTargetCount: Int {
+        applicationTokens.count + categoryTokens.count + webDomainTokens.count
+    }
+
+    var hasRestrictionTargets: Bool {
+        restrictionTargetCount > 0
+    }
+
+    func restrictionSelectionSummary(
+        countedTargets: Int? = nil
+    ) -> RestrictionSelectionSummary {
+        if !categoryTokens.isEmpty {
+            return .multiple
+        }
+
+        let count = countedTargets ?? restrictionTargetCount
+        return count == 0 ? .none : .exact(count)
+    }
+}
+
+enum RestrictionSelectionSummary: Equatable, Sendable {
+    case none
+    case exact(Int)
+    case multiple
+}
+
 enum Weekday: String, Codable, CaseIterable, Hashable, Sendable {
     case monday
     case tuesday
@@ -84,6 +111,28 @@ struct SavedPlaceSnapshot: Codable, Equatable, Sendable {
         case longitude
         case createdAt
         case updatedAt
+    }
+}
+
+enum SavedPlaceNamePolicy {
+    static let maximumLength = 10
+
+    static func normalized(_ name: String) -> String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    static func uniquenessKey(_ name: String) -> String {
+        normalized(name).lowercased()
+    }
+
+    static func isValid(_ name: String) -> Bool {
+        let value = normalized(name)
+        return !value.isEmpty && value.count <= maximumLength
+    }
+
+    static func hasUniqueValidNames(_ places: [SavedPlaceSnapshot]) -> Bool {
+        let keys = places.map { uniquenessKey($0.name) }
+        return places.allSatisfy { isValid($0.name) } && Set(keys).count == keys.count
     }
 }
 

@@ -12,14 +12,27 @@
 ### Behavior
 
 - 권한 요청은 사용자가 기능을 설정하는 맥락에서 단계적으로 수행한다.
+- 전체 권한 개요와 정상 승인 상태의 순차 확인은 온보딩 완료 전 앱 실행에서 수행한다.
+- 마지막 Background App Refresh 화면의 `시작하기`를 누른 뒤에만 온보딩 완료 여부를 영구 저장한다.
+  그 전에 앱 프로세스를 종료하거나 기기를 재시작하면 다음 실행에서 온보딩 개요부터 다시 시작한다.
+- 일반 실행·foreground 복귀에서는 모든 필수 권한이 정상이면 권한 UI를 표시하지 않고, 거부되거나
+  요구 수준에 못 미친 Family Controls 또는 위치 권한의 상세 복구 화면만 직접 표시한다.
 - 권한 미승인 또는 철회 시 새 제한을 적용하지 않는다.
-- 권한 종류와 시스템 설정에서 복구하는 방법을 화면 상태로 제공한다.
+- 위치가 미결정이면 먼저 `앱을 사용하는 동안 허용`을 요청하고 이후 앱 설정에서 `항상 허용`과
+  `정확한 위치`를 켜는 순서를 화면 상태로 제공한다.
+- Background App Refresh는 필수 권한 gate가 아니며 이 상태만으로 foreground 권한 안내를 열지 않는다.
+- Background App Refresh는 앱별 설정에서 변경할 수 없으므로 시스템 전체
+  `설정 > 일반 > 백그라운드 앱 새로 고침` 경로만 안내하고 앱별 Settings action을 제공하지 않는다.
+- 위치 권한 복구 화면은 `설정 열기`만 제공한다. 온보딩의 Background App Refresh 안내는 상태와
+  관계없이 `시작하기`로 완료하고, 일반 복구의 제한 안내만 `확인`으로 닫는다.
+- 앱 소유 안내 화면의 Settings 목업은 설명용 비대화형 요소다. 권한 요청 alert 목업의 지정된 주요
+  버튼만 시스템 prompt를 실행하며 실제 권한 변경은 시스템 prompt 또는 Settings에서 수행한다.
 - Family Controls 재승인 뒤에는 앱 선택을 다시 확인한다.
 
 ## Schedule Adapter
 
 - 선택 요일마다 안정적인 activity name을 생성한다.
-- 각 schedule은 15분 이상이며 자정 초과 종료를 지원한다.
+- 각 schedule은 15분 이상 12시간 이하이며 자정 초과 종료를 지원한다.
 - 저장 성공 시 기존 등록을 새 rule revision의 일정으로 교체한다.
 - interval start/end callback은 공유 규칙을 읽고 평가 계약을 호출한다.
 - `intervalDidEnd`는 callback 진입 시각을 신뢰 가능한 time event 확인 시각으로 기록하고 저장된 모든
@@ -40,10 +53,14 @@
 ## Restriction Adapter
 
 - 고정된 이름의 Managed Settings store 하나를 사용한다.
-- `apply`는 현재 활성 `(ruleID, revision)` 집합이 선택한 앱 token 합집합에 shield를 설정한다.
+- `apply`는 현재 활성 `(ruleID, revision)` 집합이 선택한 개별 앱 token, 앱 category token과
+  web domain token의 합집합에 shield를 설정한다. category token은
+  `shield.applicationCategories = .specific(...)`로 적용한다.
 - `remove`는 GetUp store의 shield만 지운다.
 - 다른 Screen Time 제공자의 store는 수정하지 않는다.
-- 동일한 활성 rule revision 집합은 시스템 write를 반복하지 않는다.
+- 동일한 활성 rule revision 집합이고 GetUp store의 앱·카테고리·웹 도메인 shield가 기대값과
+  일치하면 시스템 write를 반복하지 않는다. revision이 같아도 store가 누락되거나 불일치하면
+  기대 합집합을 다시 적용한다.
 
 ## Delivery and Recovery Boundary
 

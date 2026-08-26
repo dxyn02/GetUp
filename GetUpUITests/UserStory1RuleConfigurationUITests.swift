@@ -16,6 +16,7 @@ final class UserStory1RuleConfigurationUITests: XCTestCase {
 
         let saveButton = app.buttons["ruleEditor.save"]
         XCTAssertTrue(saveButton.waitForExistence(timeout: 2))
+        XCTAssertEqual(saveButton.frame.height, 56, accuracy: 1)
         XCTAssertFalse(saveButton.isEnabled)
         XCTAssertTrue(app.staticTexts["ruleEditor.weekday.validation"].exists)
         XCTAssertTrue(app.staticTexts["ruleEditor.location.validation"].exists)
@@ -30,8 +31,32 @@ final class UserStory1RuleConfigurationUITests: XCTestCase {
         XCTAssertTrue(monday.isSelected)
 
         app.buttons["ruleEditor.locationRow"].tap()
-        app.buttons["locationPicker.savedPlace.home"].tap()
-        app.buttons["locationPicker.confirm"].tap()
+        XCTAssertTrue(app.buttons["locationPicker.savedPlace.home"].exists)
+        XCTAssertTrue(app.buttons["locationPicker.savedPlace.work"].exists)
+        let placeNameValidation = app.staticTexts["locationPicker.placeName.validation"]
+        XCTAssertEqual(placeNameValidation.label, "장소 이름을 입력해 주세요.")
+        XCTAssertEqual(app.staticTexts.matching(identifier: "locationPicker.placeName.validation").count, 1)
+
+        let customPlace = app.buttons["locationPicker.customPlace"]
+        customPlace.tap()
+        XCTAssertTrue(customPlace.isSelected)
+        XCTAssertEqual(app.staticTexts.matching(identifier: "locationPicker.placeName.validation").count, 1)
+        let placeName = app.textFields["locationPicker.placeName"]
+        XCTAssertTrue(placeName.waitForExistence(timeout: 2))
+        placeName.typeText("12345678901")
+        let cappedValue = expectation(
+            for: NSPredicate(format: "value == %@", "1234567890"),
+            evaluatedWith: placeName
+        )
+        wait(for: [cappedValue], timeout: 2)
+        let home = app.buttons["locationPicker.savedPlace.home"]
+        home.tap()
+        XCTAssertTrue(home.isSelected)
+        XCTAssertFalse(customPlace.isSelected)
+        XCTAssertFalse(placeNameValidation.exists)
+        let applyButton = app.buttons["locationPicker.confirm"]
+        XCTAssertGreaterThan(applyButton.frame.width, 300)
+        applyButton.coordinate(withNormalizedOffset: CGVector(dx: 0.06, dy: 0.5)).tap()
         XCTAssertEqual(app.staticTexts["ruleEditor.locationSummary"].label, "집 · 1km")
 
         app.buttons["ruleEditor.applicationRow"].tap()
@@ -40,6 +65,42 @@ final class UserStory1RuleConfigurationUITests: XCTestCase {
         XCTAssertEqual(applicationSummary.label, "1개 앱 선택됨")
 
         XCTAssertTrue(saveButton.isEnabled)
+    }
+
+    @MainActor
+    func testApplicationSelectionWithoutScreenTimePermissionPresentsPermissionGuide() {
+        let app = launchApp(
+            scenario: "empty-editor-family-controls-undetermined",
+            storeID: #function,
+            resetStore: true
+        )
+
+        let applicationRow = app.buttons["ruleEditor.applicationRow"]
+        XCTAssertTrue(applicationRow.waitForExistence(timeout: 2))
+        applicationRow.tap()
+
+        let permissionTitle = app.staticTexts["permissionGuide.title"]
+        XCTAssertTrue(permissionTitle.waitForExistence(timeout: 2))
+        XCTAssertEqual(permissionTitle.label, "앱 사용 제한 권한이 필요해요")
+        XCTAssertTrue(
+            app.buttons["permissionGuide.requestFamilyControlsAuthorization"].exists
+        )
+    }
+
+    @MainActor
+    func testCategorySelectionUsesNonNumericApplicationSummary() {
+        let app = launchApp(
+            scenario: "empty-editor",
+            storeID: #function,
+            resetStore: true,
+            familyPickerResult: "one-category"
+        )
+
+        app.buttons["ruleEditor.applicationRow"].tap()
+
+        let applicationSummary = app.staticTexts["ruleEditor.applicationSummary"]
+        XCTAssertTrue(applicationSummary.waitForExistence(timeout: 2))
+        XCTAssertEqual(applicationSummary.label, "여러 앱 선택됨")
     }
 
     @MainActor
@@ -67,6 +128,113 @@ final class UserStory1RuleConfigurationUITests: XCTestCase {
     }
 
     @MainActor
+    func testHomeAppearsWithoutWaitingForRuntimeRecovery() {
+        let app = launchApp(
+            scenario: "startup-slow-recovery",
+            storeID: #function,
+            resetStore: true
+        )
+
+        XCTAssertTrue(app.otherElements["home.rulePager"].waitForExistence(timeout: 2))
+        XCTAssertEqual(app.label, "나서")
+        XCTAssertEqual(app.staticTexts["home.brandName"].label, "나서")
+        XCTAssertFalse(app.staticTexts["규칙을 불러오는 중"].exists)
+    }
+
+    @MainActor
+    func testEmptyHomeExplainsThatRestrictedAppsReopenOutside() {
+        let app = launchApp(
+            storeID: #function,
+            resetStore: true
+        )
+
+        let message = app.staticTexts["home.emptyState.description"]
+        XCTAssertTrue(message.waitForExistence(timeout: 2))
+        XCTAssertEqual(message.label, "밖으로 나가면 제한된 앱이 다시 열려요")
+    }
+
+    @MainActor
+    func testTimePickerUsesFixedSequentialFlow() {
+        let app = launchApp(
+            scenario: "valid-rule-draft",
+            storeID: #function,
+            resetStore: true
+        )
+        let window = app.windows.firstMatch
+
+        app.buttons["ruleEditor.startTime"].tap()
+
+        let startTitle = app.staticTexts["ruleEditor.startTime.pickerTitle"]
+        XCTAssertTrue(startTitle.waitForExistence(timeout: 2))
+        XCTAssertEqual(startTitle.label, "시작 시각")
+        let navigationBar = app.navigationBars.firstMatch
+        XCTAssertTrue(navigationBar.exists)
+        XCTAssertTrue(navigationBar.buttons.firstMatch.exists)
+        XCTAssertFalse(app.buttons["ruleEditor.timePicker.back"].exists)
+        XCTAssertEqual(
+            app.staticTexts["ruleEditor.timePicker.instructions"].label,
+            "시·분·AM/PM을 위아래로 밀어 선택해요"
+        )
+        XCTAssertTrue(
+            app.descendants(matching: .any)["ruleEditor.startTime.pickerCard"].exists
+        )
+
+        let startPickerScreenshot = XCTAttachment(screenshot: app.screenshot())
+        startPickerScreenshot.name = "T103-start-time-fixed-wheel"
+        startPickerScreenshot.lifetime = .keepAlways
+        add(startPickerScreenshot)
+
+        let done = app.buttons["ruleEditor.timePicker.done"]
+        XCTAssertTrue(done.exists)
+        XCTAssertEqual(done.frame.height, 64, accuracy: 1)
+        XCTAssertEqual(done.frame.width, window.frame.width - 40, accuracy: 1)
+        done.coordinate(withNormalizedOffset: CGVector(dx: 0.08, dy: 0.5)).tap()
+
+        let endTitle = app.staticTexts["ruleEditor.endTime.pickerTitle"]
+        XCTAssertTrue(endTitle.waitForExistence(timeout: 2))
+        XCTAssertEqual(endTitle.label, "종료 시각")
+        XCTAssertTrue(app.staticTexts["ruleEditor.endTime.minimumDuration"].exists)
+
+        app.buttons["ruleEditor.timePicker.done"]
+            .coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5))
+            .tap()
+        XCTAssertTrue(app.buttons["ruleEditor.endTime"].waitForExistence(timeout: 2))
+    }
+
+    @MainActor
+    func testEndTimeWheelComponentsChangeIndependently() {
+        let app = launchApp(
+            scenario: "valid-rule-draft",
+            storeID: #function,
+            resetStore: true
+        )
+
+        app.buttons["ruleEditor.startTime"].tap()
+        let startHour = app.pickerWheels.element(boundBy: 0)
+        XCTAssertTrue(startHour.waitForExistence(timeout: 2))
+        startHour.adjust(toPickerWheelValue: "10")
+        app.buttons["ruleEditor.timePicker.done"].tap()
+
+        let endHour = app.pickerWheels.element(boundBy: 0)
+        let endMinute = app.pickerWheels.element(boundBy: 1)
+        let endPeriod = app.pickerWheels.element(boundBy: 2)
+        XCTAssertTrue(endHour.waitForExistence(timeout: 2))
+        XCTAssertEqual(endHour.value as? String, "10")
+        XCTAssertEqual(endMinute.value as? String, "15")
+        XCTAssertEqual(endPeriod.value as? String, "AM")
+
+        endMinute.adjust(toPickerWheelValue: "16")
+        XCTAssertEqual(endHour.value as? String, "10")
+        XCTAssertEqual(endMinute.value as? String, "16")
+        XCTAssertEqual(endPeriod.value as? String, "AM")
+
+        endPeriod.adjust(toPickerWheelValue: "PM")
+        XCTAssertEqual(endHour.value as? String, "10")
+        XCTAssertEqual(endMinute.value as? String, "16")
+        XCTAssertEqual(endPeriod.value as? String, "PM")
+    }
+
+    @MainActor
     func testHomePagerShowsEverySavedRuleAndSupportsBidirectionalSwipe() {
         let app = launchApp(
             scenario: "three-saved-rules",
@@ -74,22 +242,27 @@ final class UserStory1RuleConfigurationUITests: XCTestCase {
             resetStore: true
         )
         let pager = app.otherElements["home.rulePager"]
+        let pagerViewport = app.descendants(matching: .any)["home.rulePager.viewport"]
+        let window = app.windows.firstMatch
 
         XCTAssertTrue(pager.waitForExistence(timeout: 2))
+        XCTAssertTrue(pagerViewport.exists)
+        XCTAssertEqual(pagerViewport.frame.minX, window.frame.minX, accuracy: 1)
+        XCTAssertEqual(pagerViewport.frame.maxX, window.frame.maxX, accuracy: 1)
         XCTAssertTrue(app.otherElements["home.ruleCard.rule-1"].exists)
-        XCTAssertEqual(app.staticTexts["home.rulePageIndicator"].label, "1 / 3")
+        XCTAssertEqual(app.otherElements["home.rulePageIndicator"].label, "1 / 3")
 
         pager.swipeLeft()
         XCTAssertTrue(app.otherElements["home.ruleCard.rule-2"].waitForExistence(timeout: 2))
-        XCTAssertEqual(app.staticTexts["home.rulePageIndicator"].label, "2 / 3")
+        XCTAssertEqual(app.otherElements["home.rulePageIndicator"].label, "2 / 3")
 
         pager.swipeLeft()
         XCTAssertTrue(app.otherElements["home.ruleCard.rule-3"].waitForExistence(timeout: 2))
-        XCTAssertEqual(app.staticTexts["home.rulePageIndicator"].label, "3 / 3")
+        XCTAssertEqual(app.otherElements["home.rulePageIndicator"].label, "3 / 3")
 
         pager.swipeRight()
         XCTAssertTrue(app.otherElements["home.ruleCard.rule-2"].waitForExistence(timeout: 2))
-        XCTAssertEqual(app.staticTexts["home.rulePageIndicator"].label, "2 / 3")
+        XCTAssertEqual(app.otherElements["home.rulePageIndicator"].label, "2 / 3")
     }
 
     @MainActor
@@ -103,7 +276,9 @@ final class UserStory1RuleConfigurationUITests: XCTestCase {
         XCTAssertTrue(pager.waitForExistence(timeout: 2))
 
         pager.swipeLeft()
-        app.buttons["home.ruleCard.rule-2.edit"].tap()
+        let edit = app.buttons["home.ruleCard.rule-2.edit"]
+        XCTAssertGreaterThan(edit.frame.width, 250)
+        edit.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
 
         XCTAssertEqual(app.textFields["ruleEditor.name"].value as? String, "퇴근 준비")
         XCTAssertEqual(app.buttons["ruleEditor.startTime"].value as? String, "06:00 PM")
@@ -132,12 +307,12 @@ final class UserStory1RuleConfigurationUITests: XCTestCase {
         confirmation.buttons["삭제"].tap()
 
         XCTAssertTrue(app.otherElements["home.rulePager"].waitForExistence(timeout: 2))
-        XCTAssertEqual(app.staticTexts["home.rulePageIndicator"].label, "1 / 2")
+        XCTAssertEqual(app.otherElements["home.rulePageIndicator"].label, "1 / 2")
 
         app.terminate()
         app = launchApp(storeID: storeID)
         XCTAssertTrue(app.otherElements["home.rulePager"].waitForExistence(timeout: 2))
-        XCTAssertEqual(app.staticTexts["home.rulePageIndicator"].label, "1 / 2")
+        XCTAssertEqual(app.otherElements["home.rulePageIndicator"].label, "1 / 2")
     }
 
     @MainActor
@@ -177,13 +352,13 @@ final class UserStory1RuleConfigurationUITests: XCTestCase {
         XCTAssertTrue(card.waitForExistence(timeout: 2), file: file, line: line)
         XCTAssertEqual(
             app.staticTexts["home.ruleCard.rule-1.time"].label,
-            "06:00 AM–09:00 AM",
+            "06:00 AM → 09:00 AM",
             file: file,
             line: line
         )
         XCTAssertEqual(
             app.staticTexts["home.ruleCard.rule-1.schedule"].label,
-            "월 · 수 · 금",
+            "RULE 1 OF 1 · MON · WED · FRI",
             file: file,
             line: line
         )
@@ -200,7 +375,7 @@ final class UserStory1RuleConfigurationUITests: XCTestCase {
             line: line
         )
         XCTAssertEqual(
-            app.staticTexts["home.rulePageIndicator"].label,
+            app.otherElements["home.rulePageIndicator"].label,
             "1 / 1",
             file: file,
             line: line

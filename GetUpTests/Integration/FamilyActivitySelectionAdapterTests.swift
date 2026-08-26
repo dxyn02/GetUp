@@ -65,6 +65,32 @@ struct FamilyActivitySelectionAdapterTests {
         #expect(!adapter.hasSelectedApplications)
     }
 
+    @Test("A selected category is counted as a restriction target")
+    func selectedCategoryIsCounted() throws {
+        var pickerResult = FamilyActivitySelection()
+        pickerResult.categoryTokens = [
+            try TestFixtures.activityCategoryToken(seed: 1),
+        ]
+        let adapter = FamilyActivitySelectionAdapter()
+
+        adapter.replaceSelection(with: pickerResult)
+
+        #expect(adapter.applicationTokenCount == 1)
+        #expect(adapter.hasSelectedApplications)
+        #expect(
+            adapter.selection.restrictionSelectionSummary(
+                countedTargets: adapter.applicationTokenCount
+            ) == .multiple
+        )
+    }
+
+    @Test("An individual application selection keeps its exact count")
+    func individualSelectionKeepsExactCount() {
+        let selection = FamilyActivitySelection(includeEntireCategory: true)
+
+        #expect(selection.restrictionSelectionSummary(countedTargets: 3) == .exact(3))
+    }
+
     @Test("Clearing replaces the picker result with an empty selection")
     func selectionCanBeCleared() {
         let pickerResult = FamilyActivitySelection(includeEntireCategory: true)
@@ -75,6 +101,7 @@ struct FamilyActivitySelectionAdapterTests {
         #expect(adapter.selection == FamilyActivitySelection())
         #expect(adapter.applicationTokenCount == 0)
     }
+
 }
 
 @MainActor

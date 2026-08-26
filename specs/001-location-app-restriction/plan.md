@@ -41,7 +41,8 @@ Shield Action 확장
 30초 이내로 하며, 자동 계측에서 활성화 경로의 p95와 해제 경로 전체 통과율을 기록한다.
 물리적 경계 통과부터 이벤트 전달까지는 별도로 관찰하고 기록한다.
 
-**Constraints**: 완전 로컬 동작, 여러 독립 규칙, 직접 시간 입력, 500m/1km/2km/3km/4km/5km 반경, Always 및 Full Accuracy
+**Constraints**: 완전 로컬 동작, 여러 독립 규칙, 15분 이상 12시간 이하 직접 시간 입력,
+중복 없는 10자 이내 저장 장소 이름, 500m/1km/2km/3km/4km/5km 반경, Always 및 Full Accuracy
 위치 권한, 개인용 Family Controls 승인, App Group, Family Controls 배포 entitlement 필요;
 Core Location region monitoring과 event 시점의 단발성 위치 확인을 사용하며 지속적인 background
 location update나 일반 background processing을 사용하지 않는다. 재부팅 후 첫 잠금 해제 전에는
@@ -91,6 +92,7 @@ specs/001-location-app-restriction/
 
 ```text
 GetUp.xcodeproj/
+Icon.icon                  # primary app icon의 Icon Composer 원본
 GetUp/
 ├── App/
 ├── Features/
@@ -135,7 +137,8 @@ docs/
 확장이 함께 사용하는 모델·판정·저장 계약은 `GetUp/Core`의 타깃 공유 소스로 유지한다. 별도
 서버나 외부 아키텍처 패키지는 도입하지 않는다. Shield Action은 제한 화면 버튼의 닫기 동작을
 명시적으로 처리하기 위해 포함한다. 모든 SwiftUI 화면은 `design/low-fidelity/`의 로우파이와
-`design/high-fidelity/`의 하이파이가 검토된 후 구현한다.
+`design/high-fidelity/`의 하이파이가 검토된 후 구현한다. 앱 아이콘은 `Icon.icon`을 primary icon
+원본으로 직접 컴파일해 appearance별 PNG export를 수동 동기화하지 않는다.
 
 ## Complexity Tracking
 

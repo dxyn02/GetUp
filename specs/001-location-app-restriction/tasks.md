@@ -220,6 +220,29 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 - [ ] T087 [P] 신규 사용자가 안내 없이 유효 규칙을 저장하는 과제의 참여자 기준·시작·종료·성공 정의와 3분 이내 완료율 측정 절차를 `docs/USABILITY_TEST_PLAN.md`에 작성하고 SC-001 결과를 `docs/USABILITY_TEST_RESULTS.md`에 기록한다
 - [ ] T088 [P] 제한 활성 여부와 권한·위치 문제 해결 방법을 첫 시도에 설명하는 상태별 과제와 85% 이해 기준을 `docs/USABILITY_TEST_PLAN.md`에 작성하고 SC-007 결과를 `docs/USABILITY_TEST_RESULTS.md`에 기록한다
 - [ ] T089 spec·plan·contract·결정 문서 추적성과 알려진 제약, entitlement 승인, 성능·사용성·실기기 검증 결과를 검토해 `docs/DECISIONS.md`, `docs/BLOCKERS.md`, `docs/STATUS.md`를 한국어로 최종 갱신한다
+- [x] T090 [US1] [US2] [US4] 사용자 검수에서 확인된 15분~12시간 wheel 경계, 저장 장소 프리셋·10자·중복 정책, Background App Refresh·Always 안내, foreground 권한 화면 재등장 방지와 홈·활성·장소 하이파이 편차를 코드·테스트·설계 문서에 반영한다
+- [x] T091 [US4] 권한 안내를 온보딩 전체 확인과 일반 복구로 분리해 승인 상태는 온보딩에서만 표시하고, 이후에는 거부되거나 요구 수준에 미달한 권한 화면만 직접 표시하도록 모델·앱 복구 wiring·회귀 테스트·설계 인계를 갱신한다
+- [x] T092 [US4] 권한 온보딩 표시 여부를 영구 저장해 앱 프로세스 종료·재실행 뒤 전체 권한 흐름이 재등장하지 않도록 하고, 최초 실행과 재실행을 연속 검증하는 UI 회귀 테스트를 추가한다 (`T096`에서 완료 시점 기준으로 대체)
+- [x] T093 [US4] 위치 권한 복구 화면의 `나중에`를 제거하고 Background App Refresh 제한 안내의 종료 행동을 `확인`으로 변경해 모델·접근성·UI 회귀와 설계 인계를 갱신한다
+- [x] T094 [US4] Family Controls·위치·Background App Refresh 상세 화면에 비대화형 시스템 alert·Settings 목업과 선택 항목 강조를 추가하고 위치의 Always·정확한 위치 안내 문구를 accent 처리해 UI·접근성 회귀와 설계 인계를 갱신한다
+- [x] T095 [US4] 사용자가 승인한 Figma `US4 / 권한 요청 클릭 유도 · 하이파이 제안 · 승인 대기`를 기준으로 Family Controls·위치 사용 중·Always 요청 alert 목업을 중앙에 구현하고, 목업 주요 버튼의 명시적 권한 요청과 온보딩 성공 시 다음 단계·복구 성공 시 닫기·거부 시 Settings 전환을 모델·Core Location adapter·UI·회귀 테스트·설계 인계에 반영한다
+- [x] T096 [US4] 온보딩 완료 표식을 최초 표시가 아니라 마지막 Background App Refresh 화면의 `시작하기`로 이동하고, 중단 후 재실행은 온보딩을 다시 시작하며 완료 후 재실행은 홈으로 진입하도록 저장소·라우터·UI·단위·UI 회귀와 설계 인계를 갱신한다
+- [x] T097 [US1] 새 장소 지도의 현재 위치 초기화, 장소 이름 선택 상태·단일 필수 경고와 축약 문구, Family Controls 미승인 앱 선택의 권한 안내 연결을 모델·SwiftUI·단위·UI 회귀에 반영한다
+- [x] T098 [US1] [US3] 활성 홈 문구, 규칙 수정 버튼 전체 hit area, 56pt 완료 CTA와 화면 폭 pager viewport를 SwiftUI·localization·US1·US3·접근성 UI 회귀에 반영한다
+- [x] T099 [US1] [US2] Family Activity Picker의 카테고리·웹 도메인 선택을 유효한 제한 대상으로 계산하고 앱·카테고리·웹 도메인 합집합을 Managed Settings에 적용하며 편집·저장·홈·adapter 회귀 테스트를 추가한다
+- [x] T100 [US1] 승인된 Figma `80:2010`·`80:2033`에 맞춰 시작·종료 시각 선택을 전용 navigation 화면, editorial header, 410pt wheel card, 단일 accent 선택 행과 64pt 완료 CTA로 정렬하고 UI·Simulator 시각 회귀를 추가한다
+- [x] T101 [US1] [US3] 홈 카드의 연속 적용 요일을 `MON-FRI`·`MON-SUN`·`SAT-SUN`·`WED-FRI` 형식으로 축약하고, 한국어 source language·기본 문구 fallback을 정렬해 활성 상태와 guard localization key 노출을 막으며 단위·UI·Simulator 회귀를 추가한다
+- [x] T102 [US1] [US3] 앱 소유 push 화면의 뒤로가기를 iOS 기본 BackButton으로 통일하고, opaque category selection은 `여러 앱 선택됨`·`여러 앱`으로 표시하되 정확한 개별 앱 선택 수만 숫자로 유지하며 단위·UI·Simulator 회귀를 추가한다
+- [x] T103 [US1] 시작·종료 시각 화면의 전체 scroll을 제거하고 시작 완료 후 종료 화면으로 연속 전환하며, native wheel 값을 가리던 custom 선택 overlay와 명시적 clipping을 제거해 인접 숫자 가독성을 복구하고 UI 회귀를 갱신한다
+- [x] T104 [US2] 승인된 Figma shield `113:2025`에 맞춰 `113:2028` GetUp 로고를 SVG로 export해 `GetUpShieldConfiguration/Resources/Assets.xcassets`에 포함하고, `GetUpShieldConfiguration/ShieldConfigurationExtension.swift`의 범용 사람 아이콘과 material blur를 제거해 정확한 배경색·원본 로고를 적용한 뒤 `GetUp.xcodeproj/project.pbxproj`의 extension resource와 산출물을 검증한다
+- [x] T105 [US1] [US2] 앱 시작 시 `GetUp/App/GetUpApp.swift`에서 로컬 규칙을 먼저 표시하고 runtime 일정·위치·권한 복구를 화면 비차단 후속 작업으로 분리하며, 중복 foreground 복구를 병합하고 `GetUpUITests/UserStory1RuleConfigurationUITests.swift`에 지연 복구 시작 회귀를 추가한다
+- [x] T106 [US2] 실제 제한 안내의 다크·라이트 모드에서 제목·설명·버튼 대비를 보장하는 adaptive palette를 적용하고, fallback 설명을 `설정한 위치에서 벗어나거나 시간이 끝나면 자동으로 다시 사용할 수 있어요.`로 수정하며 문구 회귀와 extension build를 검증한다
+- [x] T107 [US1] [US2] 직접 입력 저장 장소를 사용하는 카테고리·웹 도메인 제한 Shield에서도 callback의 category·web domain token으로 활성 규칙을 찾아 `detailedContent`를 표시하고, 앱 token 경로와 함께 회귀 테스트·extension build를 검증한다
+- [x] T108 [US1] [US2] 시간 설정 화면 완료 CTA의 실제 hit area를 64pt 전체 시각 영역과 일치시키고 좌우 끝 탭 UI 회귀를 추가하며, 다크 모드 Shield primary label을 순수 검정으로 강화해 extension build·전체 회귀를 검증한다
+- [x] T109 [US1] 종료 시각의 시·분·AM/PM wheel을 독립 상태로 분리해 한 값 변경 시 다른 값이 자동 보정되는 문제를 제거하고, 유효하지 않은 임시 조합은 경고·비활성 완료 CTA로 차단하며 10:00~10:15 및 AM/PM UI 회귀를 검증한다
+- [x] T110 [P] 사용자 제공 `Icon.icon`을 GetUp 앱 target의 primary app icon으로 연결해 default·dark·clear·tinted appearance를 Xcode가 생성하도록 하고, `GetUp.xcodeproj/project.pbxproj`와 빌드 산출물의 icon name·iPhone/iPad rendition을 검증한다
+- [x] T111 [US1] [US2] [US4] 외부 제품명을 `나서`로 변경해 홈·권한 안내·시스템 표시명·위치 권한 설명·Shield와 접근성 문구를 “밖으로 나서기” 톤으로 정렬하고, Bundle ID·App Group·target/module·영속 key와 앱 아이콘·Shield SVG는 보존한 채 단위·UI·extension 회귀를 검증한다
+- [x] T112 [US1] [US2] 홈 빈 상태 설명을 `밖으로 나가면 제한된 앱이 다시 열려요`로 보정하고 위치 `적용` CTA 전체 hit area와 새 `NaseoShieldLogo` SVG의 Shield extension 연결을 UI 회귀·extension build·asset rendition 검사로 검증한다
 
 **Checkpoint**: 자동 테스트, 필수 실기기 검증, entitlement 승인 및 SC-001·SC-007 사용성 평가가
 모두 기록된 경우에만 feature 완료로 표시한다.

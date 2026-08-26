@@ -15,6 +15,10 @@ struct RuleEditorView: View {
     private let defaultCoordinate: ReferenceLocation
     private let familyActivityAdapter: FamilyActivitySelectionAdapter
     private let applicationSelectionOverride: (@MainActor () -> FamilyActivitySelection?)?
+    private let familyControlsAuthorizationStatusOverride:
+        (@MainActor () -> FamilyControlsAuthorizationStatus)?
+    private let onPresentFamilyControlsPermissionGuide:
+        @MainActor (FamilyControlsAuthorizationStatus) -> Void
     private let onOpenSettings: () -> Void
     private let onSave: SaveAction
     private let onDelete: DeleteAction?
@@ -22,8 +26,6 @@ struct RuleEditorView: View {
     @State private var presentedTimeBoundary: TimeRangeBoundary?
     @State private var locationPickerModel: LocationPickerModel?
     @State private var isLocationPickerPresented = false
-    @State private var isPlaceNamePromptPresented = false
-    @State private var placeNameInput = ""
     @State private var isApplicationPickerPresented = false
     @State private var applicationPickerGuidance: String?
     @State private var saveState: RuleEditorSaveState = .idle
@@ -37,6 +39,10 @@ struct RuleEditorView: View {
         defaultCoordinate: ReferenceLocation,
         familyActivityAdapter: FamilyActivitySelectionAdapter? = nil,
         applicationSelectionOverride: (@MainActor () -> FamilyActivitySelection?)? = nil,
+        familyControlsAuthorizationStatusOverride:
+            (@MainActor () -> FamilyControlsAuthorizationStatus)? = nil,
+        onPresentFamilyControlsPermissionGuide:
+            @escaping @MainActor (FamilyControlsAuthorizationStatus) -> Void = { _ in },
         onOpenSettings: @escaping () -> Void,
         onSave: @escaping SaveAction,
         onDelete: DeleteAction? = nil
@@ -47,6 +53,10 @@ struct RuleEditorView: View {
         self.familyActivityAdapter = familyActivityAdapter
             ?? FamilyActivitySelectionAdapter(selection: model.activitySelection)
         self.applicationSelectionOverride = applicationSelectionOverride
+        self.familyControlsAuthorizationStatusOverride =
+            familyControlsAuthorizationStatusOverride
+        self.onPresentFamilyControlsPermissionGuide =
+            onPresentFamilyControlsPermissionGuide
         self.onOpenSettings = onOpenSettings
         self.onSave = onSave
         self.onDelete = onDelete
@@ -87,21 +97,11 @@ struct RuleEditorView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(RuleEditorColor.background, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
-        .sheet(item: $presentedTimeBoundary) { boundary in
-            timePickerSheet(boundary: boundary)
+        .navigationDestination(item: $presentedTimeBoundary) { boundary in
+            timePickerDestination(boundary: boundary)
         }
         .navigationDestination(isPresented: $isLocationPickerPresented) {
             locationPickerDestination
-        }
-        .alert("장소 이름", isPresented: $isPlaceNamePromptPresented) {
-            TextField("예: 집", text: $placeNameInput)
-                .accessibilityIdentifier("locationPicker.placeName")
-            Button("취소", role: .cancel) {}
-            Button("저장") {
-                confirmPlaceName()
-            }
-        } message: {
-            Text("다른 규칙에서도 다시 사용할 수 있도록 이름을 입력해 주세요.")
         }
         .alert("규칙을 삭제할까요?", isPresented: $isDeleteConfirmationPresented) {
             Button("취소", role: .cancel) {}
@@ -112,10 +112,10 @@ struct RuleEditorView: View {
             Text("규칙만 삭제되며 저장한 장소는 다른 규칙에서 계속 사용할 수 있어요.")
         }
         .alert(
-            Text("restriction_guard.title"),
+            Text(RestrictionCopy.guardTitle),
             isPresented: $isRestrictionGuardPresented
         ) {
-            Button("restriction_guard.confirm", role: .cancel) {}
+            Button(RestrictionCopy.guardConfirm, role: .cancel) {}
         } message: {
             Text(model.modificationGuard?.message ?? "조건이 종료되면 규칙을 변경할 수 있어요.")
         }
@@ -162,7 +162,7 @@ struct RuleEditorView: View {
 
             if hasTimeValidationError {
                 validationMessage(
-                    "종료 시각은 시작 시각으로부터 최소 15분 이후여야 해요.",
+                    "종료 시각은 시작 시각으로부터 15분 이상, 12시간 이내여야 해요.",
                     identifier: "ruleEditor.time.validation"
                 )
             }
@@ -424,64 +424,134 @@ struct RuleEditorView: View {
     }
 
     private var saveButton: some View {
-        Button {
-            save()
-        } label: {
-            Group {
-                if case .saving = saveState {
-                    ProgressView()
-                        .tint(RuleEditorColor.background)
-                } else {
-                    Text("완료")
+        VStack(spacing: 0) {
+            Button {
+                save()
+            } label: {
+                Group {
+                    if case .saving = saveState {
+                        ProgressView()
+                            .tint(RuleEditorColor.background)
+                    } else {
+                        Text("완료")
+                    }
                 }
+                .font(.body)
+                .fontWeight(.bold)
+                .frame(maxWidth: .infinity, minHeight: 56)
+                .foregroundStyle(
+                    model.canSave ? RuleEditorColor.background : RuleEditorColor.textTertiary
+                )
+                .background(
+                    model.canSave ? RuleEditorColor.accent : RuleEditorColor.surfaceElevated,
+                    in: .rect(cornerRadius: 18)
+                )
+                .contentShape(.rect)
             }
-            .font(.body)
-            .fontWeight(.bold)
-            .frame(maxWidth: .infinity, minHeight: 58)
+            .buttonStyle(.plain)
+            .disabled(!model.canSave || saveState == .saving)
+            .accessibilityLabel(saveState == .failed ? "다시 저장" : "완료")
+            .accessibilityHint(saveAccessibilityHint)
+            .accessibilityIdentifier(
+                saveState == .failed ? "ruleSaveError.retry" : "ruleEditor.save"
+            )
         }
-        .buttonStyle(.borderedProminent)
-        .buttonBorderShape(.roundedRectangle(radius: 18))
-        .tint(model.canSave ? RuleEditorColor.accent : RuleEditorColor.surfaceElevated)
-        .foregroundStyle(model.canSave ? RuleEditorColor.background : RuleEditorColor.textTertiary)
-        .disabled(!model.canSave || saveState == .saving)
         .padding(.horizontal, 20)
         .padding(.top, 8)
         .padding(.bottom, 12)
         .background(RuleEditorColor.background)
-        .accessibilityLabel(saveState == .failed ? "다시 저장" : "완료")
-        .accessibilityHint(saveAccessibilityHint)
-        .accessibilityIdentifier(
-            saveState == .failed ? "ruleSaveError.retry" : "ruleEditor.save"
-        )
     }
 
-    private func timePickerSheet(boundary: TimeRangeBoundary) -> some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    Text(boundary == .start ? "시작 시간" : "종료 시간")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
+    private func timePickerDestination(boundary: TimeRangeBoundary) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("SCHEDULE")
+                .font(.caption)
+                .fontWeight(.bold)
+                .foregroundStyle(RuleEditorColor.accent)
 
-                    TimeRangePicker(
-                        boundary: boundary,
-                        startTime: $model.startTime,
-                        endTime: $model.endTime
-                    )
-                }
-                .padding()
-            }
-            .background(RuleEditorColor.background.ignoresSafeArea())
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("완료") {
-                        presentedTimeBoundary = nil
-                    }
-                    .fontWeight(.semibold)
-                }
-            }
+            Text(boundary == .start ? "시작 시각" : "종료 시각")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .padding(.top, 6)
+                .accessibilityIdentifier("ruleEditor.\(boundary.identifier).pickerTitle")
+
+            Text("시·분·AM/PM을 위아래로 밀어 선택해요")
+                .font(.subheadline)
+                .foregroundStyle(RuleEditorColor.textSecondary)
+                .padding(.top, 4)
+                .accessibilityIdentifier("ruleEditor.timePicker.instructions")
+
+            TimeRangePicker(
+                boundary: boundary,
+                startTime: $model.startTime,
+                endTime: $model.endTime
+            )
+            .id(boundary)
+            .padding(.top, 24)
+
+            Spacer(minLength: 12)
         }
-        .presentationDetents([.large])
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.horizontal, 20)
+        .padding(.top, 18)
+        .background(RuleEditorColor.background.ignoresSafeArea())
+        .foregroundStyle(RuleEditorColor.textPrimary)
+        .safeAreaInset(edge: .bottom) {
+            Button {
+                completeTimeSelection(boundary)
+            } label: {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 18)
+                        .fill(
+                            canCompleteTimeSelection(boundary)
+                                ? RuleEditorColor.accent
+                                : RuleEditorColor.surfaceElevated
+                        )
+
+                    Text("완료")
+                        .font(.body)
+                        .fontWeight(.bold)
+                        .foregroundStyle(
+                            canCompleteTimeSelection(boundary)
+                                ? RuleEditorColor.background
+                                : RuleEditorColor.textTertiary
+                        )
+                }
+                .frame(maxWidth: .infinity, minHeight: 64, maxHeight: 64)
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .disabled(!canCompleteTimeSelection(boundary))
+            .frame(maxWidth: .infinity)
+            .contentShape(.rect)
+            .accessibilityHint(
+                canCompleteTimeSelection(boundary)
+                    ? "선택한 시각을 적용합니다."
+                    : "종료 시각을 시작 시각부터 15분 이상, 12시간 이내로 설정해 주세요."
+            )
+            .accessibilityIdentifier("ruleEditor.timePicker.done")
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+            .padding(.bottom, 40)
+            .background(RuleEditorColor.background)
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(RuleEditorColor.background, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+        .tint(RuleEditorColor.accent)
+    }
+
+    private func completeTimeSelection(_ boundary: TimeRangeBoundary) {
+        switch boundary {
+        case .start:
+            presentedTimeBoundary = .end
+        case .end:
+            presentedTimeBoundary = nil
+        }
+    }
+
+    private func canCompleteTimeSelection(_ boundary: TimeRangeBoundary) -> Bool {
+        boundary == .start || !hasTimeValidationError
     }
 
     @ViewBuilder
@@ -490,7 +560,6 @@ struct RuleEditorView: View {
             LocationPickerView(
                 model: locationPickerModel,
                 radius: $model.radius,
-                onRequestPlaceName: requestPlaceName,
                 onApply: applyLocationSelection,
                 onOpenSettings: onOpenSettings
             )
@@ -519,8 +588,16 @@ struct RuleEditorView: View {
     }
 
     private var applicationSummary: String {
-        let count = model.applicationTokenCount
-        return count == 0 ? "앱 선택" : "\(count)개 앱 선택됨"
+        switch model.activitySelection.restrictionSelectionSummary(
+            countedTargets: model.applicationTokenCount
+        ) {
+        case .none:
+            return "앱 선택"
+        case .exact(let count):
+            return "\(count)개 앱 선택됨"
+        case .multiple:
+            return "여러 앱 선택됨"
+        }
     }
 
     private var hasTimeValidationError: Bool {
@@ -528,6 +605,7 @@ struct RuleEditorView: View {
         return errors.contains(.invalidTimeOfDay)
             || errors.contains(.startAndEndMustDiffer)
             || errors.contains(.timeRangeTooShort)
+            || errors.contains(.timeRangeTooLong)
     }
 
     private var hasLocationValidationError: Bool {
@@ -558,18 +636,6 @@ struct RuleEditorView: View {
         isLocationPickerPresented = true
     }
 
-    private func requestPlaceName() {
-        placeNameInput = locationPickerModel?.placeName ?? ""
-        isPlaceNamePromptPresented = true
-    }
-
-    private func confirmPlaceName() {
-        locationPickerModel?.confirm(placeName: placeNameInput)
-        if locationPickerModel?.completion != nil {
-            applyLocationSelection()
-        }
-    }
-
     private func applyLocationSelection() {
         guard let completion = locationPickerModel?.completion else {
             return
@@ -588,24 +654,15 @@ struct RuleEditorView: View {
             return
         }
 
-        Task { @MainActor in
-            do {
-                let status = try await familyActivityAdapter
-                    .requestIndividualAuthorizationIfNeeded()
-                switch status {
-                case .approved:
-                    applicationPickerGuidance = nil
-                    isApplicationPickerPresented = true
-                case .denied:
-                    applicationPickerGuidance = "스크린 타임 권한을 허용한 뒤 다시 시도해 주세요."
-                case .notDetermined:
-                    applicationPickerGuidance = "앱을 선택하려면 스크린 타임 권한이 필요해요."
-                }
-            } catch is CancellationError {
-                return
-            } catch {
-                applicationPickerGuidance = "스크린 타임 권한을 확인하지 못했어요. 다시 시도해 주세요."
-            }
+        let status = familyControlsAuthorizationStatusOverride?()
+            ?? familyActivityAdapter.authorizationStatus()
+        switch status {
+        case .approved:
+            applicationPickerGuidance = nil
+            isApplicationPickerPresented = true
+        case .denied, .notDetermined:
+            applicationPickerGuidance = nil
+            onPresentFamilyControlsPermissionGuide(status)
         }
     }
 

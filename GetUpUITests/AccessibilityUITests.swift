@@ -33,7 +33,7 @@ final class AccessibilityUITests: XCTestCase {
     @MainActor
     func testPermissionRecoveryKeepsContentAndActionsAtLargestDynamicTypeSize() {
         let app = launchApp(
-            scenario: "permission-location",
+            scenario: "permission-location-denied",
             accessibilityArguments: Self.maximumDynamicTypeArguments
         )
 
@@ -43,14 +43,11 @@ final class AccessibilityUITests: XCTestCase {
         )
         XCTAssertTrue(app.otherElements["permissionGuide.screen"].exists)
         XCTAssertTrue(app.staticTexts["LOCATION ACCESS"].exists)
+        XCTAssertTrue(app.otherElements["permissionGuide.mockup.locationSettings"].exists)
 
-        let later = app.buttons["permissionGuide.later"]
         let settings = app.buttons["permissionGuide.openSettings"]
-        XCTAssertTrue(later.exists)
         XCTAssertTrue(settings.exists)
-        XCTAssertTrue(later.isHittable)
         XCTAssertTrue(settings.isHittable)
-        assertMinimumTouchTarget(later)
         assertMinimumTouchTarget(settings)
     }
 
@@ -66,10 +63,10 @@ final class AccessibilityUITests: XCTestCase {
         let guardedEdit = app.buttons["restrictionStatus.editDisabled"]
 
         XCTAssertTrue(status.waitForExistence(timeout: 3))
-        XCTAssertEqual(status.label, "RESTRICTION ACTIVE")
+        XCTAssertEqual(status.label, "현재 활성화됨")
         XCTAssertEqual(location.label, "집 · 1km")
         XCTAssertEqual(applications.label, "1개 앱")
-        XCTAssertEqual(guardedEdit.label, "조건 종료 후 수정 가능")
+        XCTAssertEqual(guardedEdit.label, "규칙 적용 중 수정 불가")
         XCTAssertTrue(title.exists)
         XCTAssertTrue(time.exists)
 

@@ -16,6 +16,7 @@
 		AA0000000000000000000014 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000014 /* PrivacyInfo.xcprivacy */; };
 		AA0000000000000000000021 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000021 /* Assets.xcassets */; };
 		AA0000000000000000000022 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000022 /* Localizable.xcstrings */; };
+		A11000000000000000000001 /* Icon.icon in Resources */ = {isa = PBXBuildFile; fileRef = B11000000000000000000001 /* Icon.icon */; };
 		AA0000000000000000000031 /* SharedIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000001 /* SharedIdentifiers.swift */; };
 		AA0000000000000000000032 /* SharedIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000001 /* SharedIdentifiers.swift */; };
 		AA0000000000000000000033 /* SharedIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000001 /* SharedIdentifiers.swift */; };
@@ -36,6 +37,16 @@
 		AA0000000000000000000072 /* RestrictionEvaluationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000005 /* RestrictionEvaluationModels.swift */; };
 		AA0000000000000000000073 /* RestrictionEvaluationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000005 /* RestrictionEvaluationModels.swift */; };
 		AA0000000000000000000074 /* RestrictionEvaluationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000005 /* RestrictionEvaluationModels.swift */; };
+		AA0000000000000000000081 /* TestFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000001 /* TestFixtures.swift */; };
+		AA0000000000000000000082 /* RestrictionStateMachineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000002 /* RestrictionStateMachineTests.swift */; };
+		AA0000000000000000000083 /* SharedSnapshotRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */; };
+		AA0000000000000000000084 /* DiagnosticsLoggerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000004 /* DiagnosticsLoggerTests.swift */; };
+		AA0000000000000000000085 /* ScheduleEvaluatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000005 /* ScheduleEvaluatorTests.swift */; };
+		AA0000000000000000000086 /* RestrictionRuleValidatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000006 /* RestrictionRuleValidatorTests.swift */; };
+		AA0000000000000000000087 /* LocationPickerModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000007 /* LocationPickerModelTests.swift */; };
+		AA0000000000000000000088 /* CurrentLocationProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000008 /* CurrentLocationProviderTests.swift */; };
+		AA0000000000000000000089 /* UserStory1RuleConfigurationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000001 /* UserStory1RuleConfigurationUITests.swift */; };
+		AA0000000000000000000090 /* FamilyActivitySelectionAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000009 /* FamilyActivitySelectionAdapterTests.swift */; };
 		AA0000000000000000000091 /* RestrictionStateMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000006 /* RestrictionStateMachine.swift */; };
 		AA0000000000000000000092 /* RestrictionStateMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000006 /* RestrictionStateMachine.swift */; };
 		AA0000000000000000000093 /* RestrictionStateMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000006 /* RestrictionStateMachine.swift */; };
@@ -68,23 +79,13 @@
 		AA0000000000000000000156 /* WeekdayPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000033 /* WeekdayPicker.swift */; };
 		AA0000000000000000000157 /* RadiusPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000034 /* RadiusPicker.swift */; };
 		AA0000000000000000000160 /* RuleEditorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000035 /* RuleEditorModel.swift */; };
+		AA0000000000000000000161 /* RuleEditorModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000015 /* RuleEditorModelTests.swift */; };
 		AA0000000000000000000162 /* RuleEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000036 /* RuleEditorView.swift */; };
 		AA0000000000000000000163 /* RuleConfigurationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000037 /* RuleConfigurationService.swift */; };
 		AA0000000000000000000164 /* RuleConfigurationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000016 /* RuleConfigurationServiceTests.swift */; };
 		AA0000000000000000000165 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000038 /* AppModel.swift */; };
 		AA0000000000000000000166 /* GetUpApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000039 /* GetUpApp.swift */; };
 		AA0000000000000000000167 /* AppModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000017 /* AppModelTests.swift */; };
-		AA0000000000000000000161 /* RuleEditorModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000015 /* RuleEditorModelTests.swift */; };
-		AA0000000000000000000081 /* TestFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000001 /* TestFixtures.swift */; };
-		AA0000000000000000000082 /* RestrictionStateMachineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000002 /* RestrictionStateMachineTests.swift */; };
-		AA0000000000000000000083 /* SharedSnapshotRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */; };
-		AA0000000000000000000084 /* DiagnosticsLoggerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000004 /* DiagnosticsLoggerTests.swift */; };
-		AA0000000000000000000085 /* ScheduleEvaluatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000005 /* ScheduleEvaluatorTests.swift */; };
-		AA0000000000000000000086 /* RestrictionRuleValidatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000006 /* RestrictionRuleValidatorTests.swift */; };
-		AA0000000000000000000087 /* LocationPickerModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000007 /* LocationPickerModelTests.swift */; };
-		AA0000000000000000000088 /* CurrentLocationProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000008 /* CurrentLocationProviderTests.swift */; };
-		AA0000000000000000000089 /* UserStory1RuleConfigurationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000001 /* UserStory1RuleConfigurationUITests.swift */; };
-		AA0000000000000000000090 /* FamilyActivitySelectionAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000009 /* FamilyActivitySelectionAdapterTests.swift */; };
 		AA0000000000000000000170 /* DeviceActivityScheduleAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000018 /* DeviceActivityScheduleAdapterTests.swift */; };
 		AA0000000000000000000171 /* LocationMonitoringAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000019 /* LocationMonitoringAdapterTests.swift */; };
 		AA0000000000000000000172 /* ManagedSettingsRestrictionAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000020 /* ManagedSettingsRestrictionAdapterTests.swift */; };
@@ -98,10 +99,10 @@
 		AA0000000000000000000180 /* RestrictionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000045 /* RestrictionCoordinator.swift */; };
 		AA0000000000000000000181 /* RestrictionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000045 /* RestrictionCoordinator.swift */; };
 		AA0000000000000000000182 /* RestrictionCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000021 /* RestrictionCoordinatorTests.swift */; };
-		AA0000000000000000000186 /* AppLifecycleCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000022 /* AppLifecycleCoordinatorTests.swift */; };
 		AA0000000000000000000183 /* AuthorizationAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000046 /* AuthorizationAdapter.swift */; };
 		AA0000000000000000000184 /* AuthorizationAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000046 /* AuthorizationAdapter.swift */; };
 		AA0000000000000000000185 /* AppLifecycleCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000047 /* AppLifecycleCoordinator.swift */; };
+		AA0000000000000000000186 /* AppLifecycleCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000022 /* AppLifecycleCoordinatorTests.swift */; };
 		AA0000000000000000000187 /* AppLifecycleCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000047 /* AppLifecycleCoordinator.swift */; };
 		AA0000000000000000000188 /* DeviceActivityMonitorExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = B70000000000000000000001 /* DeviceActivityMonitorExtension.swift */; };
 		AA0000000000000000000189 /* LocationEvidenceEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000042 /* LocationEvidenceEvaluator.swift */; };
@@ -115,19 +116,21 @@
 		AA0000000000000000000197 /* ShieldActionResponsePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000050 /* ShieldActionResponsePolicy.swift */; };
 		AA0000000000000000000198 /* ShieldActionResponsePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000050 /* ShieldActionResponsePolicy.swift */; };
 		AA0000000000000000000199 /* ShieldActionExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90000000000000000000001 /* ShieldActionExtension.swift */; };
+		A10400000000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B10400000000000000000001 /* Assets.xcassets */; };
 		AA0000000000000000000200 /* RestrictionStatusModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000025 /* RestrictionStatusModelTests.swift */; };
+		AA0000000000000000000201 /* RestrictionStatusModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000051 /* RestrictionStatusModel.swift */; };
+		AA0000000000000000000202 /* RestrictionStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000053 /* RestrictionStatusView.swift */; };
 		AA0000000000000000000203 /* RestrictionReleaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000026 /* RestrictionReleaseTests.swift */; };
+		AA0000000000000000000204 /* UserStory3AutoReleaseUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000003 /* UserStory3AutoReleaseUITests.swift */; };
 		AA0000000000000000000205 /* AuthorizationAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000027 /* AuthorizationAdapterTests.swift */; };
 		AA0000000000000000000206 /* LocationUnavailableTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000028 /* LocationUnavailableTests.swift */; };
 		AA0000000000000000000207 /* UserStory4PermissionGuidanceUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000004 /* UserStory4PermissionGuidanceUITests.swift */; };
-		AA0000000000000000000211 /* AccessibilityUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000005 /* AccessibilityUITests.swift */; };
-		AA0000000000000000000212 /* PrivacyLoggingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000030 /* PrivacyLoggingTests.swift */; };
 		AA0000000000000000000208 /* PermissionGuideModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000054 /* PermissionGuideModel.swift */; };
 		AA0000000000000000000209 /* PermissionGuideModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000029 /* PermissionGuideModelTests.swift */; };
 		AA0000000000000000000210 /* PermissionGuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000056 /* PermissionGuideView.swift */; };
-		AA0000000000000000000204 /* UserStory3AutoReleaseUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000003 /* UserStory3AutoReleaseUITests.swift */; };
-		AA0000000000000000000201 /* RestrictionStatusModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000051 /* RestrictionStatusModel.swift */; };
-		AA0000000000000000000202 /* RestrictionStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000053 /* RestrictionStatusView.swift */; };
+		AA0000000000000000000211 /* AccessibilityUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000005 /* AccessibilityUITests.swift */; };
+		AA0000000000000000000212 /* PrivacyLoggingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000030 /* PrivacyLoggingTests.swift */; };
+		AA0000000000000000000213 /* RestrictionLatencyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000031 /* RestrictionLatencyTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -180,6 +183,7 @@
 /* Begin PBXFileReference section */
 		A134A1A530374EBC007C79FB /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		A234A1A530374EBC007C79FB /* GetUp.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = GetUp.xctestplan; sourceTree = "<group>"; };
+		B11000000000000000000001 /* Icon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = Icon.icon; sourceTree = "<group>"; };
 		B10000000000000000000001 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
 		B10000000000000000000002 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		B10000000000000000000003 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
@@ -197,6 +201,7 @@
 		B30000000000000000000014 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		B30000000000000000000021 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B30000000000000000000022 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		B10400000000000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Resources/Assets.xcassets; sourceTree = "<group>"; };
 		B40000000000000000000001 /* SharedIdentifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedIdentifiers.swift; sourceTree = "<group>"; };
 		B40000000000000000000002 /* RestrictionRuleModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionRuleModels.swift; sourceTree = "<group>"; };
 		B40000000000000000000003 /* RuntimeStateModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuntimeStateModels.swift; sourceTree = "<group>"; };
@@ -242,6 +247,9 @@
 		B50000000000000000000007 /* LocationPickerModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPickerModelTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000008 /* CurrentLocationProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrentLocationProviderTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000009 /* FamilyActivitySelectionAdapterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyActivitySelectionAdapterTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000015 /* RuleEditorModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleEditorModelTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000016 /* RuleConfigurationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleConfigurationServiceTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000017 /* AppModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModelTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000018 /* DeviceActivityScheduleAdapterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceActivityScheduleAdapterTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000019 /* LocationMonitoringAdapterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationMonitoringAdapterTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000020 /* ManagedSettingsRestrictionAdapterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagedSettingsRestrictionAdapterTests.swift; sourceTree = "<group>"; };
@@ -249,15 +257,13 @@
 		B50000000000000000000022 /* AppLifecycleCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLifecycleCoordinatorTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000023 /* ShieldContentProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldContentProviderTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000024 /* ShieldActionResponsePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldActionResponsePolicyTests.swift; sourceTree = "<group>"; };
-		B50000000000000000000015 /* RuleEditorModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleEditorModelTests.swift; sourceTree = "<group>"; };
-		B50000000000000000000016 /* RuleConfigurationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleConfigurationServiceTests.swift; sourceTree = "<group>"; };
-		B50000000000000000000017 /* AppModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModelTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000025 /* RestrictionStatusModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStatusModelTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000026 /* RestrictionReleaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionReleaseTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000027 /* AuthorizationAdapterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationAdapterTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000028 /* LocationUnavailableTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationUnavailableTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000029 /* PermissionGuideModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionGuideModelTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000030 /* PrivacyLoggingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyLoggingTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000031 /* RestrictionLatencyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionLatencyTests.swift; sourceTree = "<group>"; };
 		B60000000000000000000001 /* UserStory1RuleConfigurationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory1RuleConfigurationUITests.swift; sourceTree = "<group>"; };
 		B60000000000000000000002 /* UserStory2RestrictionActivationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory2RestrictionActivationUITests.swift; sourceTree = "<group>"; };
 		B60000000000000000000003 /* UserStory3AutoReleaseUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory3AutoReleaseUITests.swift; sourceTree = "<group>"; };
@@ -320,35 +326,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		BB0000000000000000000001 = {
-			isa = PBXGroup;
-			children = (
-				A134A1A530374EBC007C79FB /* .gitignore */,
-				A234A1A530374EBC007C79FB /* GetUp.xctestplan */,
-				B10000000000000000000010 /* Configuration */,
-				BB0000000000000000000010 /* GetUp */,
-				BB0000000000000000000011 /* GetUpDeviceActivityMonitor */,
-				BB0000000000000000000012 /* GetUpShieldConfiguration */,
-				BB0000000000000000000013 /* GetUpShieldAction */,
-				BB0000000000000000000014 /* GetUpTests */,
-				BB0000000000000000000015 /* GetUpUITests */,
-				BB0000000000000000000002 /* Products */,
-			);
-			sourceTree = "<group>";
-		};
-		BB0000000000000000000002 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				BA0000000000000000000001 /* GetUp.app */,
-				BA0000000000000000000002 /* GetUpDeviceActivityMonitor.appex */,
-				BA0000000000000000000003 /* GetUpShieldConfiguration.appex */,
-				BA0000000000000000000004 /* GetUpShieldAction.appex */,
-				BA0000000000000000000005 /* GetUpTests.xctest */,
-				BA0000000000000000000006 /* GetUpUITests.xctest */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 		B10000000000000000000010 /* Configuration */ = {
 			isa = PBXGroup;
 			children = (
@@ -357,136 +334,6 @@
 				B10000000000000000000003 /* Release.xcconfig */,
 			);
 			path = Configuration;
-			sourceTree = "<group>";
-		};
-		BB0000000000000000000010 /* GetUp */ = {
-			isa = PBXGroup;
-			children = (
-				B20000000000000000000001 /* GetUp.entitlements */,
-				B40000000000000000000018 /* App */,
-				B40000000000000000000010 /* Core */,
-				B40000000000000000000024 /* Features */,
-				B40000000000000000000016 /* Infrastructure */,
-				B30000000000000000000010 /* Resources */,
-			);
-			path = GetUp;
-			sourceTree = "<group>";
-		};
-		BB0000000000000000000011 /* GetUpDeviceActivityMonitor */ = {
-			isa = PBXGroup;
-			children = (
-				B70000000000000000000001 /* DeviceActivityMonitorExtension.swift */,
-				B20000000000000000000002 /* GetUpDeviceActivityMonitor.entitlements */,
-				B30000000000000000000002 /* Info.plist */,
-				B30000000000000000000012 /* PrivacyInfo.xcprivacy */,
-			);
-			path = GetUpDeviceActivityMonitor;
-			sourceTree = "<group>";
-		};
-		BB0000000000000000000012 /* GetUpShieldConfiguration */ = {
-			isa = PBXGroup;
-			children = (
-				B80000000000000000000001 /* ShieldConfigurationExtension.swift */,
-				B20000000000000000000003 /* GetUpShieldConfiguration.entitlements */,
-				B30000000000000000000003 /* Info.plist */,
-				B30000000000000000000013 /* PrivacyInfo.xcprivacy */,
-			);
-			path = GetUpShieldConfiguration;
-			sourceTree = "<group>";
-		};
-		BB0000000000000000000013 /* GetUpShieldAction */ = {
-			isa = PBXGroup;
-			children = (
-				B90000000000000000000001 /* ShieldActionExtension.swift */,
-				B20000000000000000000004 /* GetUpShieldAction.entitlements */,
-				B30000000000000000000004 /* Info.plist */,
-				B30000000000000000000014 /* PrivacyInfo.xcprivacy */,
-			);
-			path = GetUpShieldAction;
-			sourceTree = "<group>";
-		};
-		BB0000000000000000000014 /* GetUpTests */ = {
-			isa = PBXGroup;
-			children = (
-				B50000000000000000000010 /* Support */,
-				B50000000000000000000011 /* Core */,
-				B50000000000000000000012 /* Persistence */,
-				B50000000000000000000013 /* Infrastructure */,
-				B50000000000000000000014 /* Integration */,
-			);
-			path = GetUpTests;
-			sourceTree = "<group>";
-		};
-		B50000000000000000000010 /* Support */ = {
-			isa = PBXGroup;
-			children = (
-				B50000000000000000000001 /* TestFixtures.swift */,
-			);
-			path = Support;
-			sourceTree = "<group>";
-		};
-		B50000000000000000000011 /* Core */ = {
-			isa = PBXGroup;
-			children = (
-				B50000000000000000000002 /* RestrictionStateMachineTests.swift */,
-				B50000000000000000000005 /* ScheduleEvaluatorTests.swift */,
-				B50000000000000000000006 /* RestrictionRuleValidatorTests.swift */,
-				B50000000000000000000007 /* LocationPickerModelTests.swift */,
-				B50000000000000000000015 /* RuleEditorModelTests.swift */,
-				B50000000000000000000016 /* RuleConfigurationServiceTests.swift */,
-				B50000000000000000000017 /* AppModelTests.swift */,
-				B50000000000000000000025 /* RestrictionStatusModelTests.swift */,
-				B50000000000000000000026 /* RestrictionReleaseTests.swift */,
-				B50000000000000000000028 /* LocationUnavailableTests.swift */,
-				B50000000000000000000029 /* PermissionGuideModelTests.swift */,
-			);
-			path = Core;
-			sourceTree = "<group>";
-		};
-		B50000000000000000000012 /* Persistence */ = {
-			isa = PBXGroup;
-			children = (
-				B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */,
-			);
-			path = Persistence;
-			sourceTree = "<group>";
-		};
-		B50000000000000000000013 /* Infrastructure */ = {
-			isa = PBXGroup;
-			children = (
-				B50000000000000000000004 /* DiagnosticsLoggerTests.swift */,
-			);
-			path = Infrastructure;
-			sourceTree = "<group>";
-		};
-		B50000000000000000000014 /* Integration */ = {
-			isa = PBXGroup;
-			children = (
-				B50000000000000000000008 /* CurrentLocationProviderTests.swift */,
-				B50000000000000000000009 /* FamilyActivitySelectionAdapterTests.swift */,
-				B50000000000000000000018 /* DeviceActivityScheduleAdapterTests.swift */,
-				B50000000000000000000019 /* LocationMonitoringAdapterTests.swift */,
-				B50000000000000000000020 /* ManagedSettingsRestrictionAdapterTests.swift */,
-				B50000000000000000000021 /* RestrictionCoordinatorTests.swift */,
-				B50000000000000000000022 /* AppLifecycleCoordinatorTests.swift */,
-				B50000000000000000000023 /* ShieldContentProviderTests.swift */,
-				B50000000000000000000024 /* ShieldActionResponsePolicyTests.swift */,
-				B50000000000000000000027 /* AuthorizationAdapterTests.swift */,
-				B50000000000000000000030 /* PrivacyLoggingTests.swift */,
-			);
-			path = Integration;
-			sourceTree = "<group>";
-		};
-		BB0000000000000000000015 /* GetUpUITests */ = {
-			isa = PBXGroup;
-			children = (
-				B60000000000000000000001 /* UserStory1RuleConfigurationUITests.swift */,
-				B60000000000000000000002 /* UserStory2RestrictionActivationUITests.swift */,
-				B60000000000000000000003 /* UserStory3AutoReleaseUITests.swift */,
-				B60000000000000000000004 /* UserStory4PermissionGuidanceUITests.swift */,
-				B60000000000000000000005 /* AccessibilityUITests.swift */,
-			);
-			path = GetUpUITests;
 			sourceTree = "<group>";
 		};
 		B30000000000000000000010 /* Resources */ = {
@@ -595,14 +442,6 @@
 			path = Diagnostics;
 			sourceTree = "<group>";
 		};
-		B40000000000000000000048 /* Permissions */ = {
-			isa = PBXGroup;
-			children = (
-				B40000000000000000000046 /* AuthorizationAdapter.swift */,
-			);
-			path = Permissions;
-			sourceTree = "<group>";
-		};
 		B40000000000000000000024 /* Features */ = {
 			isa = PBXGroup;
 			children = (
@@ -612,24 +451,6 @@
 				B40000000000000000000055 /* PermissionGuide */,
 			);
 			path = Features;
-			sourceTree = "<group>";
-		};
-		B40000000000000000000052 /* RestrictionStatus */ = {
-			isa = PBXGroup;
-			children = (
-				B40000000000000000000051 /* RestrictionStatusModel.swift */,
-				B40000000000000000000053 /* RestrictionStatusView.swift */,
-			);
-			path = RestrictionStatus;
-			sourceTree = "<group>";
-		};
-		B40000000000000000000055 /* PermissionGuide */ = {
-			isa = PBXGroup;
-			children = (
-				B40000000000000000000054 /* PermissionGuideModel.swift */,
-				B40000000000000000000056 /* PermissionGuideView.swift */,
-			);
-			path = PermissionGuide;
 			sourceTree = "<group>";
 		};
 		B40000000000000000000025 /* LocationPicker */ = {
@@ -663,14 +484,6 @@
 			path = ScreenTime;
 			sourceTree = "<group>";
 		};
-		B40000000000000000000041 /* Scheduling */ = {
-			isa = PBXGroup;
-			children = (
-				B40000000000000000000040 /* DeviceActivityScheduleAdapter.swift */,
-			);
-			path = Scheduling;
-			sourceTree = "<group>";
-		};
 		B40000000000000000000030 /* RuleEditor */ = {
 			isa = PBXGroup;
 			children = (
@@ -690,6 +503,210 @@
 				B40000000000000000000034 /* RadiusPicker.swift */,
 			);
 			path = Components;
+			sourceTree = "<group>";
+		};
+		B40000000000000000000041 /* Scheduling */ = {
+			isa = PBXGroup;
+			children = (
+				B40000000000000000000040 /* DeviceActivityScheduleAdapter.swift */,
+			);
+			path = Scheduling;
+			sourceTree = "<group>";
+		};
+		B40000000000000000000048 /* Permissions */ = {
+			isa = PBXGroup;
+			children = (
+				B40000000000000000000046 /* AuthorizationAdapter.swift */,
+			);
+			path = Permissions;
+			sourceTree = "<group>";
+		};
+		B40000000000000000000052 /* RestrictionStatus */ = {
+			isa = PBXGroup;
+			children = (
+				B40000000000000000000051 /* RestrictionStatusModel.swift */,
+				B40000000000000000000053 /* RestrictionStatusView.swift */,
+			);
+			path = RestrictionStatus;
+			sourceTree = "<group>";
+		};
+		B40000000000000000000055 /* PermissionGuide */ = {
+			isa = PBXGroup;
+			children = (
+				B40000000000000000000054 /* PermissionGuideModel.swift */,
+				B40000000000000000000056 /* PermissionGuideView.swift */,
+			);
+			path = PermissionGuide;
+			sourceTree = "<group>";
+		};
+		B50000000000000000000010 /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				B50000000000000000000001 /* TestFixtures.swift */,
+			);
+			path = Support;
+			sourceTree = "<group>";
+		};
+		B50000000000000000000011 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				B50000000000000000000002 /* RestrictionStateMachineTests.swift */,
+				B50000000000000000000005 /* ScheduleEvaluatorTests.swift */,
+				B50000000000000000000006 /* RestrictionRuleValidatorTests.swift */,
+				B50000000000000000000007 /* LocationPickerModelTests.swift */,
+				B50000000000000000000015 /* RuleEditorModelTests.swift */,
+				B50000000000000000000016 /* RuleConfigurationServiceTests.swift */,
+				B50000000000000000000017 /* AppModelTests.swift */,
+				B50000000000000000000025 /* RestrictionStatusModelTests.swift */,
+				B50000000000000000000026 /* RestrictionReleaseTests.swift */,
+				B50000000000000000000028 /* LocationUnavailableTests.swift */,
+				B50000000000000000000029 /* PermissionGuideModelTests.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		B50000000000000000000012 /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+				B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */,
+			);
+			path = Persistence;
+			sourceTree = "<group>";
+		};
+		B50000000000000000000013 /* Infrastructure */ = {
+			isa = PBXGroup;
+			children = (
+				B50000000000000000000004 /* DiagnosticsLoggerTests.swift */,
+			);
+			path = Infrastructure;
+			sourceTree = "<group>";
+		};
+		B50000000000000000000014 /* Integration */ = {
+			isa = PBXGroup;
+			children = (
+				B50000000000000000000008 /* CurrentLocationProviderTests.swift */,
+				B50000000000000000000009 /* FamilyActivitySelectionAdapterTests.swift */,
+				B50000000000000000000018 /* DeviceActivityScheduleAdapterTests.swift */,
+				B50000000000000000000019 /* LocationMonitoringAdapterTests.swift */,
+				B50000000000000000000020 /* ManagedSettingsRestrictionAdapterTests.swift */,
+				B50000000000000000000021 /* RestrictionCoordinatorTests.swift */,
+				B50000000000000000000022 /* AppLifecycleCoordinatorTests.swift */,
+				B50000000000000000000023 /* ShieldContentProviderTests.swift */,
+				B50000000000000000000024 /* ShieldActionResponsePolicyTests.swift */,
+				B50000000000000000000027 /* AuthorizationAdapterTests.swift */,
+				B50000000000000000000030 /* PrivacyLoggingTests.swift */,
+			);
+			path = Integration;
+			sourceTree = "<group>";
+		};
+		B50000000000000000000032 /* Performance */ = {
+			isa = PBXGroup;
+			children = (
+				B50000000000000000000031 /* RestrictionLatencyTests.swift */,
+			);
+			path = Performance;
+			sourceTree = "<group>";
+		};
+		BB0000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				A134A1A530374EBC007C79FB /* .gitignore */,
+				A234A1A530374EBC007C79FB /* GetUp.xctestplan */,
+				B11000000000000000000001 /* Icon.icon */,
+				B10000000000000000000010 /* Configuration */,
+				BB0000000000000000000010 /* GetUp */,
+				BB0000000000000000000011 /* GetUpDeviceActivityMonitor */,
+				BB0000000000000000000012 /* GetUpShieldConfiguration */,
+				BB0000000000000000000013 /* GetUpShieldAction */,
+				BB0000000000000000000014 /* GetUpTests */,
+				BB0000000000000000000015 /* GetUpUITests */,
+				BB0000000000000000000002 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		BB0000000000000000000002 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				BA0000000000000000000001 /* GetUp.app */,
+				BA0000000000000000000002 /* GetUpDeviceActivityMonitor.appex */,
+				BA0000000000000000000003 /* GetUpShieldConfiguration.appex */,
+				BA0000000000000000000004 /* GetUpShieldAction.appex */,
+				BA0000000000000000000005 /* GetUpTests.xctest */,
+				BA0000000000000000000006 /* GetUpUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		BB0000000000000000000010 /* GetUp */ = {
+			isa = PBXGroup;
+			children = (
+				B20000000000000000000001 /* GetUp.entitlements */,
+				B40000000000000000000018 /* App */,
+				B40000000000000000000010 /* Core */,
+				B40000000000000000000024 /* Features */,
+				B40000000000000000000016 /* Infrastructure */,
+				B30000000000000000000010 /* Resources */,
+			);
+			path = GetUp;
+			sourceTree = "<group>";
+		};
+		BB0000000000000000000011 /* GetUpDeviceActivityMonitor */ = {
+			isa = PBXGroup;
+			children = (
+				B70000000000000000000001 /* DeviceActivityMonitorExtension.swift */,
+				B20000000000000000000002 /* GetUpDeviceActivityMonitor.entitlements */,
+				B30000000000000000000002 /* Info.plist */,
+				B30000000000000000000012 /* PrivacyInfo.xcprivacy */,
+			);
+			path = GetUpDeviceActivityMonitor;
+			sourceTree = "<group>";
+		};
+		BB0000000000000000000012 /* GetUpShieldConfiguration */ = {
+			isa = PBXGroup;
+			children = (
+				B80000000000000000000001 /* ShieldConfigurationExtension.swift */,
+				B10400000000000000000001 /* Assets.xcassets */,
+				B20000000000000000000003 /* GetUpShieldConfiguration.entitlements */,
+				B30000000000000000000003 /* Info.plist */,
+				B30000000000000000000013 /* PrivacyInfo.xcprivacy */,
+			);
+			path = GetUpShieldConfiguration;
+			sourceTree = "<group>";
+		};
+		BB0000000000000000000013 /* GetUpShieldAction */ = {
+			isa = PBXGroup;
+			children = (
+				B90000000000000000000001 /* ShieldActionExtension.swift */,
+				B20000000000000000000004 /* GetUpShieldAction.entitlements */,
+				B30000000000000000000004 /* Info.plist */,
+				B30000000000000000000014 /* PrivacyInfo.xcprivacy */,
+			);
+			path = GetUpShieldAction;
+			sourceTree = "<group>";
+		};
+		BB0000000000000000000014 /* GetUpTests */ = {
+			isa = PBXGroup;
+			children = (
+				B50000000000000000000010 /* Support */,
+				B50000000000000000000011 /* Core */,
+				B50000000000000000000012 /* Persistence */,
+				B50000000000000000000013 /* Infrastructure */,
+				B50000000000000000000014 /* Integration */,
+				B50000000000000000000032 /* Performance */,
+			);
+			path = GetUpTests;
+			sourceTree = "<group>";
+		};
+		BB0000000000000000000015 /* GetUpUITests */ = {
+			isa = PBXGroup;
+			children = (
+				B60000000000000000000001 /* UserStory1RuleConfigurationUITests.swift */,
+				B60000000000000000000002 /* UserStory2RestrictionActivationUITests.swift */,
+				B60000000000000000000003 /* UserStory3AutoReleaseUITests.swift */,
+				B60000000000000000000004 /* UserStory4PermissionGuidanceUITests.swift */,
+				B60000000000000000000005 /* AccessibilityUITests.swift */,
+			);
+			path = GetUpUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -836,10 +853,10 @@
 			};
 			buildConfigurationList = F00000000000000000000000 /* Build configuration list for PBXProject "GetUp" */;
 			compatibilityVersion = "Xcode 16.0";
-			developmentRegion = en;
+			developmentRegion = ko;
 			hasScannedForEncodings = 0;
 			knownRegions = (
-				en,
+				ko,
 				Base,
 			);
 			mainGroup = BB0000000000000000000001;
@@ -865,6 +882,7 @@
 				AA0000000000000000000011 /* PrivacyInfo.xcprivacy in Resources */,
 				AA0000000000000000000021 /* Assets.xcassets in Resources */,
 				AA0000000000000000000022 /* Localizable.xcstrings in Resources */,
+				A11000000000000000000001 /* Icon.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -882,6 +900,7 @@
 			files = (
 				AA0000000000000000000013 /* PrivacyInfo.xcprivacy in Resources */,
 				AA0000000000000000000195 /* Localizable.xcstrings in Resources */,
+				A10400000000000000000001 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1048,6 +1067,7 @@
 				AA0000000000000000000205 /* AuthorizationAdapterTests.swift in Sources */,
 				AA0000000000000000000209 /* PermissionGuideModelTests.swift in Sources */,
 				AA0000000000000000000212 /* PrivacyLoggingTests.swift in Sources */,
+				AA0000000000000000000213 /* RestrictionLatencyTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1115,13 +1135,15 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = B10000000000000000000002 /* Debug.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = Icon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = GetUp/GetUp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 53H2JY443C;
 				GENERATE_INFOPLIST_FILE = NO;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = "";
 				INFOPLIST_FILE = GetUp/Resources/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dxyn02.GetUp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				TARGETED_DEVICE_FAMILY = 1;
@@ -1132,13 +1154,15 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = B10000000000000000000003 /* Release.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = Icon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = GetUp/GetUp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 53H2JY443C;
 				GENERATE_INFOPLIST_FILE = NO;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = "";
 				INFOPLIST_FILE = GetUp/Resources/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dxyn02.GetUp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				TARGETED_DEVICE_FAMILY = 1;
@@ -1152,9 +1176,11 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = GetUpDeviceActivityMonitor/GetUpDeviceActivityMonitor.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 53H2JY443C;
 				GENERATE_INFOPLIST_FILE = NO;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = .DeviceActivityMonitor;
 				INFOPLIST_FILE = GetUpDeviceActivityMonitor/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dxyn02.GetUp.DeviceActivityMonitor;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -1169,9 +1195,11 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = GetUpDeviceActivityMonitor/GetUpDeviceActivityMonitor.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 53H2JY443C;
 				GENERATE_INFOPLIST_FILE = NO;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = .DeviceActivityMonitor;
 				INFOPLIST_FILE = GetUpDeviceActivityMonitor/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dxyn02.GetUp.DeviceActivityMonitor;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -1186,9 +1214,11 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = GetUpShieldConfiguration/GetUpShieldConfiguration.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 53H2JY443C;
 				GENERATE_INFOPLIST_FILE = NO;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = .ShieldConfiguration;
 				INFOPLIST_FILE = GetUpShieldConfiguration/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dxyn02.GetUp.ShieldConfiguration;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -1203,9 +1233,11 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = GetUpShieldConfiguration/GetUpShieldConfiguration.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 53H2JY443C;
 				GENERATE_INFOPLIST_FILE = NO;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = .ShieldConfiguration;
 				INFOPLIST_FILE = GetUpShieldConfiguration/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dxyn02.GetUp.ShieldConfiguration;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -1220,9 +1252,11 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = GetUpShieldAction/GetUpShieldAction.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 53H2JY443C;
 				GENERATE_INFOPLIST_FILE = NO;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = .ShieldAction;
 				INFOPLIST_FILE = GetUpShieldAction/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dxyn02.GetUp.ShieldAction;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -1237,9 +1271,11 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = GetUpShieldAction/GetUpShieldAction.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 53H2JY443C;
 				GENERATE_INFOPLIST_FILE = NO;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = .ShieldAction;
 				INFOPLIST_FILE = GetUpShieldAction/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dxyn02.GetUp.ShieldAction;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";

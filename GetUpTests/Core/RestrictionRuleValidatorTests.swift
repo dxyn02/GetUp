@@ -129,6 +129,19 @@ struct RestrictionRuleValidatorTests {
         #expect(!fifteenMinuteErrors.contains(.timeRangeTooShort))
     }
 
+    @Test("A rule accepts at most twelve hours")
+    func maximumDurationBoundary() {
+        let twelveHours = RestrictionRuleValidator.errors(
+            in: validInput(startTime: TimeOfDay(hour: 18, minute: 0), endTime: TimeOfDay(hour: 6, minute: 0))
+        )
+        let overTwelveHours = RestrictionRuleValidator.errors(
+            in: validInput(startTime: TimeOfDay(hour: 18, minute: 0), endTime: TimeOfDay(hour: 6, minute: 1))
+        )
+
+        #expect(!twelveHours.contains(.timeRangeTooLong))
+        #expect(overTwelveHours.contains(.timeRangeTooLong))
+    }
+
     private func validInput(
         weekdays: Set<Weekday> = [.monday],
         startTime: TimeOfDay = TimeOfDay(hour: 6, minute: 0),

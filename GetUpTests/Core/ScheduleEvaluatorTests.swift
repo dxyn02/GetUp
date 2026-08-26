@@ -27,6 +27,25 @@ struct ScheduleEvaluatorTests {
         )
     }
 
+    @Test("Changing one time wheel component preserves the other components")
+    func timeWheelComponentsChangeIndependently() {
+        let tenAM = TimePickerComponents(time: TimeOfDay(hour: 10, minute: 0))
+
+        #expect(
+            tenAM.updating(minute: 15).time
+                == TimeOfDay(hour: 10, minute: 15)
+        )
+        #expect(
+            tenAM.updating(period: .pm).time
+                == TimeOfDay(hour: 22, minute: 0)
+        )
+        #expect(
+            TimePickerComponents(time: TimeOfDay(hour: 10, minute: 15))
+                .updating(hour: 11).time
+                == TimeOfDay(hour: 11, minute: 15)
+        )
+    }
+
     @Test("DatePicker rejects 14 minutes and accepts 15 minutes across midnight")
     func datePickerMinimumDurationBoundary() {
         #expect(
@@ -41,6 +60,16 @@ struct ScheduleEvaluatorTests {
                 endTime: TimeOfDay(hour: 0, minute: 10)
             )
         )
+    }
+
+    @Test("The selectable window accepts 12 hours and rejects longer intervals")
+    func maximumDurationBoundary() {
+        let start = TimeOfDay(hour: 18, minute: 0)
+        #expect(ScheduleEvaluator.isEndTimeSelectable(startTime: start, endTime: TimeOfDay(hour: 6, minute: 0)))
+        #expect(!ScheduleEvaluator.isEndTimeSelectable(startTime: start, endTime: TimeOfDay(hour: 6, minute: 1)))
+        #expect(ScheduleEvaluator.selectableEndTimes(startTime: start).count == 706)
+        #expect(ScheduleEvaluator.selectableEndTimes(startTime: start).first == TimeOfDay(hour: 18, minute: 15))
+        #expect(ScheduleEvaluator.selectableEndTimes(startTime: start).last == TimeOfDay(hour: 6, minute: 0))
     }
 
     @Test("A same-day interval includes its start and excludes its end")
