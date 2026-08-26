@@ -15,7 +15,6 @@ struct PermissionGuideView: View {
     private let onAction: ActionHandler
 
     @State private var isPerformingAction = false
-    @State private var performedAutomaticActions: Set<PermissionGuideAction> = []
     @AccessibilityFocusState private var isHeadingFocused: Bool
 
     init(
@@ -31,13 +30,13 @@ struct PermissionGuideView: View {
             if let screen = model.currentScreen {
                 VStack(spacing: 0) {
                     ScrollView {
-                        VStack(alignment: .leading, spacing: 20) {
+                        VStack(alignment: .leading, spacing: 18) {
                             header(screen)
                             detail(for: screen)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 20)
-                        .padding(.top, 24)
+                        .padding(.top, 0)
                         .padding(.bottom, 24)
                     }
                 }
@@ -51,15 +50,6 @@ struct PermissionGuideView: View {
                 .onChange(of: screen.kind) { _, _ in
                     isHeadingFocused = true
                 }
-                .task(id: screen.automaticAction) {
-                    guard
-                        let action = screen.automaticAction,
-                        performedAutomaticActions.insert(action).inserted
-                    else {
-                        return
-                    }
-                    await performAsynchronousAction(action)
-                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -70,8 +60,8 @@ struct PermissionGuideView: View {
     }
 
     private func header(_ screen: PermissionGuideScreenState) -> some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text(eyebrow(for: screen.kind))
+        VStack(alignment: .leading, spacing: 14) {
+            Text(screen.eyebrow)
                 .font(.caption)
                 .fontWeight(.bold)
                 .foregroundStyle(eyebrowColor(for: screen.kind))
@@ -81,6 +71,7 @@ struct PermissionGuideView: View {
                 .fontWeight(.bold)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier("permissionGuide.title")
                 .accessibilityFocused($isHeadingFocused)
 
             Text(subtitle(for: screen))
@@ -96,9 +87,9 @@ struct PermissionGuideView: View {
         case .overview:
             capabilityList(screen.capabilityItems)
         case .familyControls:
-            familyControlsPermissionMockup
+            familyControlsPermissionMockup(screen)
         case .location:
-            locationSettings
+            locationSettings(screen)
         case .backgroundRefresh:
             backgroundRefreshSettings
         case .locationUnavailable(let isRestrictionApplied):
@@ -106,22 +97,43 @@ struct PermissionGuideView: View {
         }
     }
 
-    private var familyControlsPermissionMockup: some View {
-        systemMockupCard(
-            icon: "hourglass",
-            title: "화면 사용 시간 접근",
-            accessibilityIdentifier: "permissionGuide.mockup.familyControls",
-            accessibilityLabel: "화면 사용 시간 권한 팝업 예시. Face ID로 허용을 선택해 주세요."
+    private func familyControlsPermissionMockup(
+        _ screen: PermissionGuideScreenState
+    ) -> some View {
+        centeredPermissionPreview(
+            minHeight: 484,
+            hint: "↑ ‘계속’을 눌러 진행"
         ) {
-            Text("‘GetUp’이 화면 사용 시간에 접근하도록 허용할까요?")
-                .font(.headline)
+            VStack(spacing: 0) {
+                VStack(spacing: 14) {
+                    Text("“나서”가 화면 사용 시간에\n접근하도록 허용할까요?")
+                        .font(.headline)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                        .accessibilityIdentifier("permissionGuide.mockup.familyControlsTitle")
 
-            Text("선택한 앱을 제한하려면 화면 사용 시간 접근이 필요해요.")
-                .font(.footnote)
-                .foregroundStyle(HomeColor.textSecondary)
+                    skeletonLines(widths: [269, 246, 258, 170])
+                }
+                .padding(.horizontal, 22)
+                .padding(.top, 22)
+                .padding(.bottom, 20)
 
-            mockupOption("Face ID로 허용", isHighlighted: true)
-            mockupOption("허용 안 함", isHighlighted: false)
+                HStack(spacing: 1) {
+                    permissionPreviewAction(
+                        "계속",
+                        isHighlighted: true,
+                        action: screen.primaryAction == .requestFamilyControlsAuthorization
+                            ? .requestFamilyControlsAuthorization
+                            : nil
+                    )
+                    permissionPreviewAction("허용 안 함", isHighlighted: false)
+                }
+                .background(Color.white.opacity(0.16))
+            }
+            .permissionAlertSurface()
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("화면 사용 시간 권한 팝업 예시. 계속을 누르면 실제 권한 요청이 열립니다.")
+            .accessibilityIdentifier("permissionGuide.mockup.familyControls")
         }
     }
 
@@ -149,69 +161,225 @@ struct PermissionGuideView: View {
         .accessibilityIdentifier("permissionGuide.permissionList")
     }
 
-    private var locationSettings: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            if model.authorization.locationAuthorization == .notDetermined {
-                locationPermissionAlertMockup
-            } else {
+    @ViewBuilder
+    private func locationSettings(
+        _ screen: PermissionGuideScreenState
+    ) -> some View {
+        switch screen.primaryAction {
+        case .requestLocationAuthorization:
+            locationPermissionAlertMockup
+        case .requestAlwaysLocationAuthorization:
+            locationAlwaysPermissionAlertMockup
+        default:
+            VStack(alignment: .leading, spacing: 18) {
                 locationSettingsMockup
-            }
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text("위치 접근 · 항상 허용")
-                    .fontWeight(.semibold)
-                Text("설정  ›  개인정보 보호 및 보안  ›  위치 서비스  ›  GetUp")
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("위치 접근 · 항상 허용")
+                        .fontWeight(.semibold)
+                    Text("설정  ›  개인정보 보호 및 보안  ›  위치 서비스  ›  나서")
+                        .foregroundStyle(HomeColor.textSecondary)
+                }
+
+                Text("위 경로에서 \(Text("‘항상 허용’으로 변경해 주세요.").foregroundColor(HomeColor.accent).fontWeight(.semibold))")
+                .foregroundStyle(HomeColor.textSecondary)
+                .accessibilityIdentifier("permissionGuide.location.alwaysInstruction")
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("정확한 위치 · 켬")
+                        .fontWeight(.semibold)
+                    Text("‘정확한 위치’를 켜 주세요.")
+                        .foregroundStyle(HomeColor.accent)
+                        .fontWeight(.semibold)
+                        .accessibilityIdentifier("permissionGuide.location.accuracyInstruction")
+                }
+
+                Text("‘대략적인 위치’에서는 위치만으로 새 제한을 적용하거나 기존 제한을 해제하지 않아요.")
+                    .font(.footnote)
                     .foregroundStyle(HomeColor.textSecondary)
             }
-
-            Text("최초 권한 팝업에서는 ‘앱을 사용하는 동안 허용’을 선택해 주세요.")
-                .foregroundStyle(HomeColor.textSecondary)
-
-            Text("위 경로에서 \(Text("‘항상 허용’으로 변경해 주세요.").foregroundColor(HomeColor.accent).fontWeight(.semibold))")
-            .foregroundStyle(HomeColor.textSecondary)
-            .accessibilityIdentifier("permissionGuide.location.alwaysInstruction")
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text("정확한 위치 · 켬")
-                    .fontWeight(.semibold)
-                Text("‘정확한 위치’를 켜 주세요.")
-                    .foregroundStyle(HomeColor.accent)
-                    .fontWeight(.semibold)
-                    .accessibilityIdentifier("permissionGuide.location.accuracyInstruction")
-            }
-
-            Text("‘대략적인 위치’에서는 위치만으로 새 제한을 적용하거나 기존 제한을 해제하지 않아요.")
-                .font(.footnote)
-                .foregroundStyle(HomeColor.textSecondary)
+            .font(.subheadline)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 20)
+            .background(HomeColor.surface, in: .rect(cornerRadius: 20))
+            .accessibilityElement(children: .contain)
         }
-        .font(.subheadline)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 18)
-        .padding(.vertical, 20)
-        .background(HomeColor.surface, in: .rect(cornerRadius: 20))
-        .accessibilityElement(children: .contain)
     }
 
     private var locationPermissionAlertMockup: some View {
-        systemMockupCard(
-            icon: "location.fill",
-            title: "위치 접근 허용",
-            accessibilityIdentifier: "permissionGuide.mockup.locationPrompt",
-            accessibilityLabel: "위치 권한 팝업 예시. 앱을 사용하는 동안 허용을 선택해 주세요."
+        centeredPermissionPreview(
+            minHeight: 521,
+            hint: "↑ 지도 왼쪽 상단에서 ‘정확한 위치’를 켜주세요."
         ) {
-            Text("‘GetUp’이 사용자의 위치를 사용하도록 허용할까요?")
-                .font(.headline)
+            VStack(spacing: 0) {
+                locationPermissionPreviewHeader(
+                    title: "“나서”가 사용자의\n위치를 사용하도록 허용할까요?"
+                )
 
-            mockupOption("한 번 허용", isHighlighted: false)
-            mockupOption("앱을 사용하는 동안 허용", isHighlighted: true)
-            mockupOption("허용 안 함", isHighlighted: false)
+                Image("LocationWhenInUsePreview")
+                    .resizable()
+                    .interpolation(.high)
+                    .frame(width: 273, height: 167)
+                    .clipShape(.rect(cornerRadius: 17))
+
+                VStack(spacing: 1) {
+                    permissionPreviewAction("한 번 허용", isHighlighted: false)
+                    permissionPreviewAction(
+                        "앱을 사용하는 동안 허용",
+                        isHighlighted: true,
+                        action: .requestLocationAuthorization
+                    )
+                    permissionPreviewAction("허용 안 함", isHighlighted: false)
+                }
+                .background(Color.white.opacity(0.16))
+            }
+            .permissionAlertSurface()
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("위치 권한 팝업 예시. 정확한 위치를 켠 뒤 앱을 사용하는 동안 허용을 누르면 실제 권한 요청이 열립니다.")
+            .accessibilityIdentifier("permissionGuide.mockup.locationPrompt")
         }
+    }
+
+    private var locationAlwaysPermissionAlertMockup: some View {
+        centeredPermissionPreview(
+            minHeight: 494,
+            hint: "↑ ‘항상 허용으로 변경’을 눌러 주세요."
+        ) {
+            VStack(spacing: 0) {
+                locationPermissionPreviewHeader(
+                    title: "“나서”가 사용자의\n위치를 항상 사용하도록\n허용할까요?"
+                )
+
+                Image("LocationAlwaysPreview")
+                    .resizable()
+                    .interpolation(.high)
+                    .frame(width: 273, height: 167)
+                    .clipShape(.rect(cornerRadius: 17))
+
+                VStack(spacing: 1) {
+                    permissionPreviewAction("앱 사용 중 허용 유지", isHighlighted: false)
+                    permissionPreviewAction(
+                        "항상 허용으로 변경",
+                        isHighlighted: true,
+                        action: .requestAlwaysLocationAuthorization
+                    )
+                }
+                .background(Color.white.opacity(0.16))
+            }
+            .permissionAlertSurface()
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("항상 위치 권한 팝업 예시. 항상 허용으로 변경을 누르면 실제 권한 요청이 열립니다.")
+            .accessibilityIdentifier("permissionGuide.mockup.locationAlwaysPrompt")
+        }
+    }
+
+    private func locationPermissionPreviewHeader(
+        title: String
+    ) -> some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                Image(systemName: "location.fill")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+                    .background(PermissionPreviewColor.systemBlue, in: .rect(cornerRadius: 12))
+
+                Text(title)
+                    .font(.headline)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            skeletonLines(widths: [269, 246, 182])
+        }
+        .padding(.horizontal, 22)
+        .padding(.top, 20)
+        .padding(.bottom, 18)
+    }
+
+    private func centeredPermissionPreview<Content: View>(
+        minHeight: CGFloat,
+        hint: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(spacing: 12) {
+            content()
+                .frame(width: 313)
+
+            Text(hint)
+                .font(.caption2)
+                .fontWeight(.semibold)
+                .foregroundStyle(HomeColor.accent)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(HomeColor.accent.opacity(0.12), in: .capsule)
+                .fixedSize(horizontal: true, vertical: false)
+        }
+        .frame(maxWidth: .infinity, minHeight: minHeight, alignment: .center)
+    }
+
+    private func skeletonLines(
+        widths: [CGFloat]
+    ) -> some View {
+        VStack(spacing: 7) {
+            ForEach(Array(widths.enumerated()), id: \.offset) { _, width in
+                Capsule()
+                    .fill(HomeColor.textSecondary)
+                    .frame(width: width, height: 5)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private func permissionPreviewAction(
+        _ title: String,
+        isHighlighted: Bool,
+        action: PermissionGuideAction? = nil
+    ) -> some View {
+        if let action {
+            Button {
+                perform(action)
+            } label: {
+                permissionPreviewActionLabel(title, isHighlighted: isHighlighted)
+            }
+            .buttonStyle(.plain)
+            .disabled(isPerformingAction)
+            .accessibilityLabel(title)
+            .accessibilityIdentifier(identifier(for: action))
+            .accessibilityHint(hint(for: action))
+        } else {
+            permissionPreviewActionLabel(title, isHighlighted: isHighlighted)
+                .accessibilityHidden(true)
+        }
+    }
+
+    private func permissionPreviewActionLabel(
+        _ title: String,
+        isHighlighted: Bool
+    ) -> some View {
+        Group {
+            if isPerformingAction && isHighlighted {
+                ProgressView()
+                    .tint(.white)
+            } else {
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(isHighlighted ? .bold : .semibold)
+            }
+        }
+        .foregroundStyle(isHighlighted ? .white : PermissionPreviewColor.systemBlueText)
+        .frame(maxWidth: .infinity, minHeight: 54)
+        .background(isHighlighted ? PermissionPreviewColor.systemBlue : HomeColor.surfaceElevated)
+        .contentShape(.rect)
     }
 
     private var locationSettingsMockup: some View {
         systemMockupCard(
             icon: "gearshape.fill",
-            title: "설정 · GetUp · 위치",
+            title: "설정 · 나서 · 위치",
             accessibilityIdentifier: "permissionGuide.mockup.locationSettings",
             accessibilityLabel: "위치 설정 예시. 위치 접근은 항상, 정확한 위치는 켬으로 설정해 주세요."
         ) {
@@ -230,19 +398,19 @@ struct PermissionGuideView: View {
                 icon: "arrow.clockwise",
                 title: "설정 · 일반",
                 accessibilityIdentifier: "permissionGuide.mockup.backgroundRefresh",
-                accessibilityLabel: "백그라운드 앱 새로 고침 설정 예시. 기능과 GetUp을 켜 주세요."
+                accessibilityLabel: "백그라운드 앱 새로 고침 설정 예시. 기능과 나서를 켜 주세요."
             ) {
                 mockupSettingRow(
                     title: "백그라운드 앱 새로 고침",
                     value: "켬",
                     isHighlighted: true
                 )
-                mockupToggleRow(title: "GetUp", isOn: true)
+                mockupToggleRow(title: "나서", isOn: true)
             }
 
             Text("설정  ›  일반  ›  백그라운드 앱 새로 고침")
                 .fontWeight(.semibold)
-            Text("GetUp 사용 가능 상태를 확인해 주세요. 저전력 모드에서는 시스템이 동작을 제한할 수 있어요.")
+            Text("나서 사용 가능 상태를 확인해 주세요. 저전력 모드에서는 시스템이 동작을 제한할 수 있어요.")
                 .foregroundStyle(HomeColor.textSecondary)
             Text("앱별 설정에서는 변경할 수 없어요. 위의 시스템 경로에서 직접 켜 주세요.")
                 .foregroundStyle(HomeColor.textSecondary)
@@ -284,26 +452,9 @@ struct PermissionGuideView: View {
             RoundedRectangle(cornerRadius: 22)
                 .stroke(HomeColor.textTertiary.opacity(0.3), lineWidth: 1)
         }
-        .accessibilityElement(children: .ignore)
+        .accessibilityElement(children: .contain)
         .accessibilityLabel(accessibilityLabel)
         .accessibilityIdentifier(accessibilityIdentifier)
-    }
-
-    private func mockupOption(
-        _ title: String,
-        isHighlighted: Bool
-    ) -> some View {
-        Text(title)
-            .font(.subheadline)
-            .fontWeight(isHighlighted ? .bold : .medium)
-            .foregroundStyle(
-                isHighlighted ? HomeColor.background : HomeColor.textSecondary
-            )
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .background(
-                isHighlighted ? HomeColor.accent : HomeColor.disabled.opacity(0.45),
-                in: .rect(cornerRadius: 13)
-            )
     }
 
     private func mockupSettingRow(
@@ -381,24 +532,28 @@ struct PermissionGuideView: View {
     }
 
     private func actions(_ screen: PermissionGuideScreenState) -> some View {
-        VStack(spacing: 20) {
-            if let secondaryAction = screen.secondaryAction {
-                actionButton(
-                    secondaryAction,
-                    prominence: .secondary,
-                    isEnabled: true
-                )
+        Group {
+            if !screen.primaryAction.isEmbeddedPermissionRequest {
+                VStack(spacing: 20) {
+                    if let secondaryAction = screen.secondaryAction {
+                        actionButton(
+                            secondaryAction,
+                            prominence: .secondary,
+                            isEnabled: true
+                        )
+                    }
+                    actionButton(
+                        screen.primaryAction,
+                        prominence: .primary,
+                        isEnabled: screen.isPrimaryActionEnabled
+                    )
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 16)
+                .background(HomeColor.background)
             }
-            actionButton(
-                screen.primaryAction,
-                prominence: .primary,
-                isEnabled: screen.isPrimaryActionEnabled
-            )
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 12)
-        .padding(.bottom, 16)
-        .background(HomeColor.background)
     }
 
     private enum ActionProminence {
@@ -454,8 +609,13 @@ struct PermissionGuideView: View {
             model.advancePermissionSetup()
         case .confirm:
             model.dismiss()
+        case .completeOnboarding:
+            Task { @MainActor in
+                await performAsynchronousAction(action)
+            }
         case .requestFamilyControlsAuthorization,
              .requestLocationAuthorization,
+             .requestAlwaysLocationAuthorization,
              .openSettings,
              .retryLocation:
             Task { @MainActor in
@@ -470,20 +630,14 @@ struct PermissionGuideView: View {
         if let update {
             model.update(
                 authorization: update.authorization,
-                presentationState: update.presentationState
+                presentationState: update.presentationState,
+                requestedAction: action
             )
         }
-        isPerformingAction = false
-    }
-
-    private func eyebrow(for kind: PermissionGuideScreenKind) -> String {
-        switch kind {
-        case .overview: "PERMISSION CHECK"
-        case .familyControls: "SCREEN TIME ACCESS"
-        case .location: "LOCATION ACCESS"
-        case .backgroundRefresh: "BACKGROUND REFRESH"
-        case .locationUnavailable: "LOCATION UNAVAILABLE"
+        if action == .completeOnboarding {
+            model.dismiss()
         }
+        isPerformingAction = false
     }
 
     private func eyebrowColor(for kind: PermissionGuideScreenKind) -> Color {
@@ -498,9 +652,9 @@ struct PermissionGuideView: View {
         case .overview:
             "필수 권한을 허용해야 규칙을 적용할 수 있어요."
         case .familyControls:
-            "권한이 없으면 규칙을 적용하지 않아요."
+            screen.message
         case .location:
-            "설정된 위치에서 특정 거리를 벗어나면 제한이 풀려요."
+            screen.message
         case .backgroundRefresh:
             "꺼져 있으면 앱이 닫힌 동안 권한·위치 상태 복구가 늦어질 수 있어요."
         case .locationUnavailable(let isRestrictionApplied):
@@ -534,8 +688,10 @@ struct PermissionGuideView: View {
         switch action {
         case .next: "다음"
         case .confirm: "확인"
+        case .completeOnboarding: "시작하기"
         case .requestFamilyControlsAuthorization: "권한 허용하기"
         case .requestLocationAuthorization: "위치 권한 허용하기"
+        case .requestAlwaysLocationAuthorization: "항상 허용으로 변경"
         case .openSettings: "설정 열기"
         case .retryLocation: "위치 다시 확인"
         }
@@ -545,10 +701,13 @@ struct PermissionGuideView: View {
         switch action {
         case .next: "permissionGuide.next"
         case .confirm: "permissionGuide.confirm"
+        case .completeOnboarding: "permissionGuide.completeOnboarding"
         case .requestFamilyControlsAuthorization:
             "permissionGuide.requestFamilyControlsAuthorization"
         case .requestLocationAuthorization:
             "permissionGuide.requestLocationAuthorization"
+        case .requestAlwaysLocationAuthorization:
+            "permissionGuide.requestAlwaysLocationAuthorization"
         case .openSettings: "permissionGuide.openSettings"
         case .retryLocation: "permissionGuide.retryLocation"
         }
@@ -562,11 +721,14 @@ struct PermissionGuideView: View {
         switch action {
         case .next: "다음 권한 안내로 이동합니다."
         case .confirm: "안내를 확인하고 닫습니다."
+        case .completeOnboarding: "온보딩을 완료하고 나서 사용을 시작합니다."
         case .requestFamilyControlsAuthorization:
             "앱 사용 제한을 위한 iOS 권한 요청을 표시합니다."
         case .requestLocationAuthorization:
             "위치 접근을 위한 iOS 권한 요청을 표시합니다."
-        case .openSettings: "GetUp의 권한을 변경할 수 있는 시스템 설정을 엽니다."
+        case .requestAlwaysLocationAuthorization:
+            "항상 위치 접근을 위한 iOS 권한 요청을 표시합니다."
+        case .openSettings: "나서의 권한을 변경할 수 있는 시스템 설정을 엽니다."
         case .retryLocation: "현재 위치를 다시 확인하고 제한 상태를 재평가합니다."
         }
     }
@@ -595,5 +757,41 @@ struct PermissionGuideView: View {
             return HomeColor.accent
         }
         return HomeColor.surfaceElevated
+    }
+}
+
+private extension PermissionGuideAction {
+    var isEmbeddedPermissionRequest: Bool {
+        switch self {
+        case .requestFamilyControlsAuthorization,
+             .requestLocationAuthorization,
+             .requestAlwaysLocationAuthorization:
+            true
+        case .next, .confirm, .completeOnboarding, .openSettings, .retryLocation:
+            false
+        }
+    }
+}
+
+private enum PermissionPreviewColor {
+    static let systemBlue = Color(red: 10 / 255, green: 122 / 255, blue: 1)
+    static let systemBlueText = Color(red: 51 / 255, green: 148 / 255, blue: 1)
+}
+
+private extension View {
+    func permissionAlertSurface() -> some View {
+        self
+            .background(HomeColor.surfaceElevated)
+            .clipShape(.rect(cornerRadius: 28))
+            .overlay {
+                RoundedRectangle(cornerRadius: 28)
+                    .stroke(Color.white.opacity(0.16), lineWidth: 1)
+            }
+            .shadow(
+                color: Color.black.opacity(0.52),
+                radius: 21,
+                x: 0,
+                y: 18
+            )
     }
 }

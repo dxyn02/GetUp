@@ -10,10 +10,19 @@ enum CurrentLocationProviderError: Error, Equatable, Sendable {
 protocol CurrentLocationSession: Sendable {
     func authorizationStatus() async -> LocationAuthorizationStatus
     func requestWhenInUseAuthorization() async -> LocationAuthorizationStatus
+    func requestAlwaysAuthorization() async -> LocationAuthorizationStatus
     func requestLocation() async throws -> ReferenceLocation
 }
 
-struct CurrentLocationProvider: CurrentLocationProviding, Sendable {
+protocol LocationAuthorizationRequesting: Sendable {
+    func requestWhenInUseAuthorization() async -> LocationAuthorizationStatus
+    func requestAlwaysAuthorization() async -> LocationAuthorizationStatus
+}
+
+struct CurrentLocationProvider: CurrentLocationProviding,
+    LocationAuthorizationRequesting,
+    Sendable
+{
     private let session: any CurrentLocationSession
 
     init(session: any CurrentLocationSession) {
@@ -43,6 +52,14 @@ struct CurrentLocationProvider: CurrentLocationProviding, Sendable {
         } catch {
             throw CurrentLocationProviderError.locationUnavailable
         }
+    }
+
+    func requestWhenInUseAuthorization() async -> LocationAuthorizationStatus {
+        await session.requestWhenInUseAuthorization()
+    }
+
+    func requestAlwaysAuthorization() async -> LocationAuthorizationStatus {
+        await session.requestAlwaysAuthorization()
     }
 }
 
@@ -89,6 +106,22 @@ final class CoreLocationCurrentLocationSession: NSObject,
         return await withCheckedContinuation { continuation in
             authorizationContinuation = continuation
             manager.requestWhenInUseAuthorization()
+        }
+    }
+
+    func requestAlwaysAuthorization() async -> LocationAuthorizationStatus {
+        let currentStatus = authorizationStatus()
+        guard currentStatus == .whenInUse else {
+            return currentStatus
+        }
+
+        guard authorizationContinuation == nil else {
+            return currentStatus
+        }
+
+        return await withCheckedContinuation { continuation in
+            authorizationContinuation = continuation
+            manager.requestAlwaysAuthorization()
         }
     }
 

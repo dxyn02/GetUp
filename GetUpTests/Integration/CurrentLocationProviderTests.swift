@@ -74,6 +74,20 @@ struct CurrentLocationProviderTests {
         #expect(await session.locationRequestCount == 0)
     }
 
+    @Test("Always authorization upgrade is forwarded to the shared Core Location session")
+    func alwaysAuthorizationUpgradeIsForwarded() async {
+        let session = FakeCurrentLocationSession(
+            authorizationStatus: .whenInUse,
+            authorizationResult: .always
+        )
+        let provider = CurrentLocationProvider(session: session)
+
+        let status = await provider.requestAlwaysAuthorization()
+
+        #expect(status == .always)
+        #expect(await session.authorizationRequestCount == 1)
+    }
+
     @Test("A one-shot Core Location failure is normalized")
     func locationFailureIsNormalized() async {
         let session = FakeCurrentLocationSession(
@@ -118,6 +132,11 @@ private actor FakeCurrentLocationSession: CurrentLocationSession {
     }
 
     func requestWhenInUseAuthorization() async -> LocationAuthorizationStatus {
+        authorizationRequestCount += 1
+        return authorizationResult
+    }
+
+    func requestAlwaysAuthorization() async -> LocationAuthorizationStatus {
         authorizationRequestCount += 1
         return authorizationResult
     }

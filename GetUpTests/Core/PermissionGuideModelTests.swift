@@ -28,6 +28,10 @@ struct PermissionGuideModelTests {
             .backgroundRefresh,
         ])
         #expect(model.capabilityItems.map(\.icon) == ["🛡️", "📍", "🎯", "🔄"])
+        #expect(
+            model.capabilityItems[1].cause
+                == "나서 앱이 열려 있지 않을 때도 설정한 장소를 확인하는 데 필요해요."
+        )
         #expect(model.missingRequiredPermissions == [
             .familyControls,
             .alwaysLocation,
@@ -36,26 +40,51 @@ struct PermissionGuideModelTests {
         #expect(model.currentScreen?.primaryAction == .next)
     }
 
-    @Test("Undetermined Family Controls requests authorization with Next disabled")
+    @Test("Undetermined Family Controls waits for an explicit authorization tap")
     func undeterminedFamilyControlsRequestsAuthorization() {
         let model = makeModel(familyControls: .notDetermined)
 
         model.select(.familyControls)
         #expect(model.currentScreen?.kind == .familyControls)
-        #expect(model.currentScreen?.primaryAction == .next)
-        #expect(model.currentScreen?.isPrimaryActionEnabled == false)
-        #expect(
-            model.currentScreen?.automaticAction
-                == .requestFamilyControlsAuthorization
+        #expect(model.currentScreen?.primaryAction == .requestFamilyControlsAuthorization)
+        #expect(model.currentScreen?.isPrimaryActionEnabled == true)
+        #expect(model.currentScreen?.automaticAction == nil)
+
+        model.update(
+            authorization: TestFixtures.makeAuthorization(),
+            presentationState: .inactive
+        )
+        #expect(model.currentScreen?.kind == .location)
+    }
+
+    @Test("Denied Family Controls remains visible and changes the primary action to Settings")
+    func deniedFamilyControlsAfterRequestOpensSettings() {
+        let model = makeModel(familyControls: .notDetermined)
+        model.select(.familyControls)
+
+        model.update(
+            authorization: TestFixtures.makeAuthorization(familyControls: .denied),
+            presentationState: .permissionRequired(missingPermissions: [.familyControls])
+        )
+
+        #expect(model.currentScreen?.kind == .familyControls)
+        #expect(model.currentScreen?.primaryAction == .openSettings)
+    }
+
+    @Test("Repairing Family Controls during normal use closes the recovery screen")
+    func approvedFamilyControlsRecoveryClosesGuide() {
+        let model = PermissionGuideModel(
+            authorization: TestFixtures.makeAuthorization(familyControls: .denied),
+            presentationState: .permissionRequired(missingPermissions: [.familyControls]),
+            presentationMode: .recovery
         )
 
         model.update(
             authorization: TestFixtures.makeAuthorization(),
             presentationState: .inactive
         )
-        #expect(model.currentScreen?.kind == .familyControls)
-        #expect(model.currentScreen?.primaryAction == .next)
-        #expect(model.currentScreen?.isPrimaryActionEnabled == true)
+
+        #expect(!model.isPresented)
     }
 
     @Test("Denied Family Controls opens Settings")
@@ -83,7 +112,7 @@ struct PermissionGuideModelTests {
 
         model.advancePermissionSetup()
         #expect(model.currentScreen?.kind == .backgroundRefresh)
-        #expect(model.currentScreen?.primaryAction == .next)
+        #expect(model.currentScreen?.primaryAction == .completeOnboarding)
 
         model.advancePermissionSetup()
         #expect(!model.isPresented)
@@ -100,14 +129,14 @@ struct PermissionGuideModelTests {
         #expect(!model.isPresented)
     }
 
-    @Test("Permission onboarding is presented only once across app launches")
-    func permissionOnboardingPersistsFirstPresentation() {
+    @Test("An interrupted permission onboarding returns on the next launch")
+    func incompletePermissionOnboardingReturnsAfterRelaunch() {
         let suiteName = "PermissionGuideModelTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let store = PermissionOnboardingStateStore(
             defaults: defaults,
-            key: "hasPresented"
+            key: "hasCompleted"
         )
 
         let firstLaunch = PermissionGuideLaunchRouter.makeInitialModel(
@@ -133,19 +162,19 @@ struct PermissionGuideModelTests {
 
         #expect(firstLaunch.presentationMode == .onboarding)
         #expect(firstLaunch.currentScreen?.kind == .overview)
-        #expect(store.hasBeenPresented)
-        #expect(secondLaunch.presentationMode == .recovery)
-        #expect(!secondLaunch.isPresented)
+        #expect(!store.hasCompleted)
+        #expect(secondLaunch.presentationMode == .onboarding)
+        #expect(secondLaunch.currentScreen?.kind == .overview)
     }
 
-    @Test("A legacy install with determined permissions migrates directly to recovery")
-    func determinedPermissionsWithoutMarkerSkipOnboarding() {
+    @Test("Determined permissions do not complete onboarding without the final action")
+    func determinedPermissionsWithoutCompletionStillShowOnboarding() {
         let suiteName = "PermissionGuideModelTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let store = PermissionOnboardingStateStore(
             defaults: defaults,
-            key: "hasPresented"
+            key: "hasCompleted"
         )
 
         let model = PermissionGuideLaunchRouter.makeInitialModel(
@@ -154,7 +183,29 @@ struct PermissionGuideModelTests {
             onboardingStateStore: store
         )
 
-        #expect(store.hasBeenPresented)
+        #expect(!store.hasCompleted)
+        #expect(model.presentationMode == .onboarding)
+        #expect(model.currentScreen?.kind == .overview)
+    }
+
+    @Test("The completed marker routes later launches directly to recovery")
+    func completedPermissionOnboardingDoesNotReturn() {
+        let suiteName = "PermissionGuideModelTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let store = PermissionOnboardingStateStore(
+            defaults: defaults,
+            key: "hasCompleted"
+        )
+        store.markCompleted()
+
+        let model = PermissionGuideLaunchRouter.makeInitialModel(
+            authorization: TestFixtures.makeAuthorization(),
+            presentationState: .inactive,
+            onboardingStateStore: store
+        )
+
+        #expect(store.hasCompleted)
         #expect(model.presentationMode == .recovery)
         #expect(!model.isPresented)
     }
@@ -186,7 +237,7 @@ struct PermissionGuideModelTests {
         #expect(model.currentScreen?.kind == .location)
     }
 
-    @Test("Recovery advances from a repaired permission to the next denied permission")
+    @Test("Repairing the visible recovery permission closes that screen")
     func recoveryTracksOnlyCurrentDeniedPermission() {
         let model = PermissionGuideModel(
             authorization: TestFixtures.makeAuthorization(
@@ -206,7 +257,7 @@ struct PermissionGuideModelTests {
             presentationState: .permissionRequired(missingPermissions: [.alwaysLocation])
         )
 
-        #expect(model.currentScreen?.kind == .location)
+        #expect(!model.isPresented)
     }
 
     @Test("Undetermined permission screens are reserved for onboarding")
@@ -220,11 +271,11 @@ struct PermissionGuideModelTests {
         #expect(!model.isPresented)
     }
 
-    @Test("Location recovery combines Always and Full Accuracy")
-    func locationRecoveryCombinesSettings() {
+    @Test("When In Use location offers the approved explicit Always authorization request")
+    func whenInUseLocationOffersAlwaysRequest() {
         let model = makeModel(
             locationAuthorization: .whenInUse,
-            locationAccuracy: .reduced
+            locationAccuracy: .full
         )
 
         model.select(.location)
@@ -235,29 +286,105 @@ struct PermissionGuideModelTests {
             .alwaysLocation,
             .fullAccuracy,
         ])
-        #expect(screen?.primaryAction == .openSettings)
+        #expect(screen?.primaryAction == .requestAlwaysLocationAuthorization)
         #expect(screen?.secondaryAction == nil)
         #expect(screen?.automaticAction == nil)
+        #expect(screen?.title == "항상 위치 접근 권한이 필요해요")
         #expect(screen?.message.contains("항상 허용") == true)
-        #expect(screen?.message.contains("앱을 사용하는 동안 허용") == true)
-        #expect(screen?.message.contains("정확한 위치") == true)
     }
 
-    @Test("Undetermined location requests the first system prompt with Next disabled")
+    @Test("Undetermined location waits for an explicit When In Use authorization tap")
     func undeterminedLocationRequestsAuthorization() {
         let model = makeModel(locationAuthorization: .notDetermined)
 
         model.select(.location)
 
-        #expect(model.currentScreen?.primaryAction == .next)
-        #expect(model.currentScreen?.isPrimaryActionEnabled == false)
-        #expect(
-            model.currentScreen?.automaticAction
-                == .requestLocationAuthorization
-        )
+        #expect(model.currentScreen?.primaryAction == .requestLocationAuthorization)
+        #expect(model.currentScreen?.isPrimaryActionEnabled == true)
+        #expect(model.currentScreen?.automaticAction == nil)
     }
 
-    @Test("Background refresh is a diagnostic limitation, not a required permission")
+    @Test("When In Use approval advances onboarding to the Always request on the same location step")
+    func whenInUseApprovalAdvancesToAlwaysRequest() {
+        let model = makeModel(locationAuthorization: .notDetermined)
+        model.select(.location)
+
+        model.update(
+            authorization: TestFixtures.makeAuthorization(
+                locationAuthorization: .whenInUse
+            ),
+            presentationState: .permissionRequired(missingPermissions: [.alwaysLocation])
+        )
+
+        #expect(model.currentScreen?.kind == .location)
+        #expect(model.currentScreen?.primaryAction == .requestAlwaysLocationAuthorization)
+    }
+
+    @Test("Always and precise location approval advances onboarding to Background Refresh")
+    func alwaysLocationApprovalAdvancesOnboarding() {
+        let model = makeModel(locationAuthorization: .whenInUse)
+        model.select(.location)
+
+        model.update(
+            authorization: TestFixtures.makeAuthorization(),
+            presentationState: .inactive
+        )
+
+        #expect(model.currentScreen?.kind == .backgroundRefresh)
+    }
+
+    @Test("Repairing location during normal use closes the recovery screen")
+    func approvedLocationRecoveryClosesGuide() {
+        let model = PermissionGuideModel(
+            authorization: TestFixtures.makeAuthorization(
+                locationAuthorization: .whenInUse
+            ),
+            presentationState: .permissionRequired(missingPermissions: [.alwaysLocation]),
+            presentationMode: .recovery
+        )
+
+        model.update(
+            authorization: TestFixtures.makeAuthorization(),
+            presentationState: .inactive
+        )
+
+        #expect(!model.isPresented)
+    }
+
+    @Test("Denied location remains visible and changes the primary action to Settings")
+    func deniedLocationAfterRequestOpensSettings() {
+        let model = makeModel(locationAuthorization: .notDetermined)
+        model.select(.location)
+
+        model.update(
+            authorization: TestFixtures.makeAuthorization(
+                locationAuthorization: .denied
+            ),
+            presentationState: .permissionRequired(missingPermissions: [.alwaysLocation])
+        )
+
+        #expect(model.currentScreen?.kind == .location)
+        #expect(model.currentScreen?.primaryAction == .openSettings)
+    }
+
+    @Test("Declining the Always upgrade changes the next primary action to Settings")
+    func declinedAlwaysLocationUpgradeOpensSettings() {
+        let model = makeModel(locationAuthorization: .whenInUse)
+        model.select(.location)
+
+        model.update(
+            authorization: TestFixtures.makeAuthorization(
+                locationAuthorization: .whenInUse
+            ),
+            presentationState: .permissionRequired(missingPermissions: [.alwaysLocation]),
+            requestedAction: .requestAlwaysLocationAuthorization
+        )
+
+        #expect(model.currentScreen?.kind == .location)
+        #expect(model.currentScreen?.primaryAction == .openSettings)
+    }
+
+    @Test("Background refresh remains diagnostic and finishes onboarding with Start")
     func backgroundRefreshIsDiagnostic() {
         let model = makeModel(backgroundRefresh: .restricted)
 
@@ -267,7 +394,7 @@ struct PermissionGuideModelTests {
         #expect(model.currentScreen?.kind == .backgroundRefresh)
         #expect(model.currentScreen?.message.contains("복구가 늦어질") == true)
         #expect(model.currentScreen?.message.contains("저전력 모드") == true)
-        #expect(model.currentScreen?.primaryAction == .confirm)
+        #expect(model.currentScreen?.primaryAction == .completeOnboarding)
         #expect(model.currentScreen?.secondaryAction == nil)
     }
 
