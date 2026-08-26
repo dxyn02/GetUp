@@ -1120,3 +1120,25 @@ store가 확인될 때만 동기 제거하며, 안전하게 분리할 수 없으
 `DeviceActivityIntervalEndHandler`, `DeviceActivityMonitorExtension`, adapter·latency 테스트,
 `platform-events-contract.md`, `FR-077`과 T113에 적용한다. 실제 callback 전달 시점과 system shield
 반영은 T083·T085 실기기 관찰에서 별도로 기록한다.
+
+## DEC-062 — 단일 제한 store 복원과 마지막 규칙 동기 해제
+
+**날짜**: 2026-08-26
+
+**상태**: DEC-061의 규칙별 store 결정을 대체함
+
+**결정**: 실제 제한 적용은 기존에 실기기에서 검증된 단일 `getup.restriction` store에 모든 활성
+규칙의 제한 대상 합집합을 쓰는 방식으로 복원한다. `intervalDidEnd` callback의 rule ID가 현재 적용
+상태의 마지막 활성 규칙이면 단일 store와 적용 상태를 callback 안에서 동기 해제한다. 다른 활성
+규칙이 남아 있거나 callback을 해석할 수 없으면 단일 store를 부분 변경하지 않고 coordinator가 전체
+규칙을 재평가해 합집합을 다시 쓴다.
+
+**근거**: DEC-061의 규칙별 named store 구현은 protocol test double과 Simulator build에서는
+통과했지만 실제 기기에서 Screen Time 제한이 전혀 적용되지 않는 회귀를 만들었다. 단일 store는 이전
+실기기 검수에서 앱·카테고리·웹 도메인 shield 적용이 확인된 경로다. 마지막 규칙 종료는 합집합 전체를
+안전하게 비울 수 있으므로 동기 처리할 수 있고, 겹친 규칙 종료는 남은 규칙의 전체 selection 없이는
+부분 해제가 안전하지 않으므로 기존 재평가가 필요하다.
+
+**영향 범위**: `ManagedSettingsRestrictionAdapter`, `DeviceActivityIntervalEndHandler`, adapter 테스트,
+`platform-events-contract.md`, `FR-077`과 T114에 적용한다. DEC-061의 규칙별 store 및 migration 설명은
+더 이상 현재 구현 계약이 아니다.

@@ -77,6 +77,8 @@ Apple Developer 계정의 Family Controls 배포 승인, App Group 할당과 갱
 
 ## T113 — 시간 종료 callback 동기 해제
 
+**상태**: T114에서 규칙별 store 방식 대체 — 실기기 제한 미적용 회귀
+
 ### 자동 검증
 
 `DeviceActivityIntervalEndHandler` 회귀는 종료된 규칙의 store만 동기 해제하고 다른 활성 규칙의
@@ -88,6 +90,17 @@ store와 적용 상태를 유지하는지 검증한다. 기존 단일 합집합 
 237회가 실패·skip 없이 통과했다. 앱·Device Activity Monitor·Shield 확장을 포함한 generic Simulator
 build도 통과했다. 이 자동 검증은 실제 iOS callback 전달 시각이나 대상 앱의 system shield 해제를
 입증하지 않으며, 해당 관찰은 T083·T085 실기기 인수에 남긴다.
+
+## T114 — 단일 제한 store 복원
+
+T113의 규칙별 named store 적용 후 실기기에서 Screen Time 제한이 전혀 적용되지 않는 회귀가 보고됐다.
+실제 제한 적용을 기존 단일 `getup.restriction` 합집합 store로 복원하고, 종료 callback은 마지막 활성
+규칙만 동기 해제하도록 축소했다. 다른 활성 규칙이 남거나 현재 적용 상태에 없는 stale callback인
+테스트에서는 store와 적용 상태가 변경되지 않고 coordinator 호환 경로로 넘어가는 것을 검증한다.
+
+2026-08-26 iPhone 17 Pro iOS 26.5 Simulator에서 전체 `GetUpTests` 193개 test case, 동적 실행 포함
+236회가 실패·skip 없이 통과했다. 앱과 세 Screen Time 확장을 포함한 generic Simulator build도
+통과했다. 수정 빌드의 실제 제한 적용과 시간 종료 해제는 실기기에서 다시 확인해야 한다.
 
 ## 전체 suite
 

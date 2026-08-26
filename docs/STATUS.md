@@ -11,8 +11,8 @@ T083 — 자동 latency 100회 계측과 결과 형식은 구현·검증했으�
 앱 사용 가능 상태의 실기기 관찰을 진행 중
 
 ## 마지막 완료 작업
-T113 — 시간 종료 callback에서 종료 규칙을 동기 해제하고 다른 활성 규칙을 보존하도록 규칙별
-Managed Settings store를 도입함
+T114 — T113의 규칙별 store 도입으로 제한이 적용되지 않던 실기기 회귀를 수정하고 단일 합집합
+store와 마지막 활성 규칙 동기 해제로 복원함
 
 ## 다음 작업
 T083 — 승인된 entitlement·profile을 사용한 실기기 활성화·해제 latency 관찰 완료
@@ -24,10 +24,18 @@ BLK-010 열림. `com.dxyn02.GetUp` namespace의 네 App ID 등록과
 
 ## 계획 갱신 필요
 없음. Apple의 `intervalDidEnd` 전달 시점은 물리적 종료 정각이 아니라 종료 구간 밖에서 기기를 처음
-사용할 때일 수 있다. callback 전달 이후 해제는 T113에서 동기화했으며, 기기가 사용되지 않는 동안의
-정각 callback은 제품이 보장하지 않는다.
+사용할 때일 수 있다. callback 전달 이후 마지막 활성 규칙 해제는 T114에서 동기화했으며, 기기가
+사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-08-26 T114에서 T113의 규칙별 named store 전환 뒤 실기기에서 제한이 전혀 적용되지 않는 회귀를
+확인했다. 실제 제한 적용 경로를 기존 단일 `getup.restriction` 합집합 store로 복원했다. 종료 callback은
+현재 적용 상태에서 마지막 활성 규칙이 끝난 경우에만 단일 store와 상태를 동기적으로 비우며, 다른
+규칙이 남거나 stale callback이면 store를 건드리지 않고 기존 coordinator가 전체 합집합을 다시
+계산한다. 전체 `GetUpTests` 193개(동적 실행 포함 236회)가 실패·skip 없이 통과했고 앱·확장 generic
+build도 통과했다.
+실제 제한 재적용과 종료 구간 밖 첫 사용 시 shield 해제는 수정 빌드의 실기기에서 재확인한다.
+
 2026-08-26 T113에서 기존 단일 `getup.restriction` 합집합 store를 활성 규칙별
 `getup.restriction.<rule UUID>` store로 분리했다. `intervalDidEnd`는 activity name에서 rule ID를
 해석해 해당 store를 callback 안에서 동기적으로 비우고 App Group 적용 상태를 갱신한다. 다른 활성

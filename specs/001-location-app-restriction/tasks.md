@@ -244,6 +244,7 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 - [x] T111 [US1] [US2] [US4] 외부 제품명을 `나서`로 변경해 홈·권한 안내·시스템 표시명·위치 권한 설명·Shield와 접근성 문구를 “밖으로 나서기” 톤으로 정렬하고, Bundle ID·App Group·target/module·영속 key와 앱 아이콘·Shield SVG는 보존한 채 단위·UI·extension 회귀를 검증한다
 - [x] T112 [US1] [US2] 홈 빈 상태 설명을 `밖으로 나가면 제한된 앱이 다시 열려요`로 보정하고 위치 `적용` CTA 전체 hit area와 새 `NaseoShieldLogo` SVG의 Shield extension 연결을 UI 회귀·extension build·asset rendition 검사로 검증한다
 - [x] T113 [US2] [US3] 활성 규칙별 독립 Managed Settings store를 적용하고 `DeviceActivityMonitor.intervalDidEnd`에서 종료된 규칙을 동기 해제해 extension 생명주기에 따른 지연을 제거하며, 겹친 규칙 보존·기존 단일 store 마이그레이션 회귀와 전체 extension build를 검증한다
+- [x] T114 [US2] [US3] T113의 규칙별 named store 도입 후 실기기에서 제한이 적용되지 않는 회귀를 수정해 검증된 단일 `getup.restriction` 합집합 store로 복원하고, 마지막 활성 규칙만 callback에서 동기 해제하며 겹친 규칙은 전체 재평가로 넘기는 회귀·전체 extension build를 검증한다
 
 **Checkpoint**: 자동 테스트, 필수 실기기 검증, entitlement 승인 및 SC-001·SC-007 사용성 평가가
 모두 기록된 경우에만 feature 완료로 표시한다.
