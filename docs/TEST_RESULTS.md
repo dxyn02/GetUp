@@ -11,6 +11,30 @@
   상태를 입증하지 않는다.
 - 실기기 관찰은 실제 대상 앱에서 shield 표시 또는 해제를 확인한 시각까지 포함한다.
 
+## T120 — 앱 비실행 시간 시작 실기기 진단
+
+**상태**: 통과
+
+2026-08-26 iPhone 17, iOS 26.6.1에서 `intervalDidStart`의 개인정보 없는 단계 record를 App Group에
+추가하고 실패를 재현했다. 첫 record는 규칙 2개·위치 snapshot 2개·시작 위치 `inside`를 읽었지만,
+앱에서 `approved`인 Family Controls가 extension에서 `notDetermined`로 반환돼
+`startedRuleDecision=missingPermissions`, `desiredRuleCount=0`, `stage=completed`였다.
+
+extension의 `notDetermined` Family Controls만 24시간 미만의 앱 snapshot으로 보완하고 현재 `denied`는
+우선하도록 수정했다. 시작 전 단일 store와 적용 revision을 비우고 메인 앱을 종료한 뒤 실제 시간
+경계를 통과한 결과 monitor extension이 앱 없이 실행됐고 다음 값을 기록했다.
+
+- Family Controls `approved`, 위치 권한 `always`, 정확도 `full`
+- 시작 위치 `inside`, 위치 근거 나이 약 13초
+- `startedRuleDecision=conditionsSatisfied`, `desiredRuleCount=1`
+- `currentAppliedRuleCount=0`, `stage=completed`
+- 메인 앱 프로세스 없음, Device Activity Monitor·Shield Configuration·Shield Action extension 실행
+
+관련 adapter 회귀는 extension `notDetermined` 보완과 현재 `denied` 우선을 모두 통과했다. 이 결과로
+BLK-012를 해결 처리한다. 격리 DerivedData `/tmp/getup-interval-start-final-tests`의 전체
+`GetUpTests` 209개가 통과했고 실패·skip·expected failure는 모두 0이다. Swift Testing 동적 인자를
+포함한 device configuration 실행은 243회 통과했다.
+
 ## T119 — extension 권한 snapshot 보완
 
 **상태**: 자동 검증·실기기 설치 통과, 실제 예약 경계 관찰 대기

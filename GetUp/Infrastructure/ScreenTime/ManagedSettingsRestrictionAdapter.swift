@@ -262,8 +262,12 @@ struct DeviceActivityAuthorizationSnapshotReader {
             if age >= 0, age < Self.maximumTrustedAge {
                 let usesApplicationLocation = current.locationAuthorization
                     == .notDetermined
+                let usesApplicationFamilyControls = current.familyControls
+                    == .notDetermined
                 return AuthorizationSnapshot(
-                    familyControls: current.familyControls,
+                    familyControls: usesApplicationFamilyControls
+                        ? record.snapshot.familyControls
+                        : current.familyControls,
                     locationAuthorization: usesApplicationLocation
                         ? record.snapshot.locationAuthorization
                         : current.locationAuthorization,
@@ -403,29 +407,62 @@ struct DeviceActivityIntervalStartHandler {
 
     @discardableResult
     func handle(activityName: String) -> Bool {
+        let observedAt = now()
+        saveDiagnostic(
+            IntervalStartDiagnosticRecord(
+                stage: .callbackReceived,
+                observedAt: observedAt,
+                activityName: activityName,
+                ruleCount: nil,
+                locationConditionCount: nil,
+                desiredRuleCount: nil,
+                currentAppliedRuleCount: nil,
+                startedRuleDecision: nil,
+                startedLocationState: nil,
+                startedLocationAgeSeconds: nil,
+                authorization: nil,
+                errorCode: nil
+            )
+        )
         guard
             let startedRuleID = SharedIdentifiers.ruleID(
                 fromDeviceActivityName: activityName
             )
         else {
+            saveDiagnostic(
+                diagnostic(
+                    stage: .invalidActivityName,
+                    observedAt: observedAt,
+                    activityName: activityName
+                )
+            )
             return false
         }
 
         do {
             let snapshot = try loadSnapshot()
             guard snapshot.rules.contains(where: { $0.id == startedRuleID }) else {
+                saveDiagnostic(
+                    diagnostic(
+                        stage: .startedRuleMissing,
+                        observedAt: observedAt,
+                        activityName: activityName,
+                        snapshot: snapshot
+                    )
+                )
                 return false
             }
 
             let currentState = RestrictionApplicationStateDefaultsCodec.load(
                 from: defaults
             )
+            let authorization = authorizationSnapshot()
             let evaluation = RestrictionRuleSetEvaluator.evaluate(
                 rules: snapshot.rules,
                 locationConditions: snapshot.locationConditions,
-                authorization: authorizationSnapshot(),
+                authorization: authorization,
                 currentAppliedState: currentState,
-                now: now(),
+                now: observedAt,
                 calendar: calendar,
                 timeZone: timeZone
             )
@@ -451,6 +488,18 @@ struct DeviceActivityIntervalStartHandler {
                     storeAccess.shieldSelection(named: storeName)
                         == desiredSelection
                 else {
+                    saveDiagnostic(
+                        diagnostic(
+                            stage: .storeVerificationFailed,
+                            observedAt: observedAt,
+                            activityName: activityName,
+                            snapshot: snapshot,
+                            evaluation: evaluation,
+                            authorization: authorization,
+                            currentState: currentState,
+                            startedRuleID: startedRuleID
+                        )
+                    )
                     return false
                 }
             }
@@ -461,10 +510,111 @@ struct DeviceActivityIntervalStartHandler {
                     to: defaults
                 )
             }
+            saveDiagnostic(
+                diagnostic(
+                    stage: .completed,
+                    observedAt: observedAt,
+                    activityName: activityName,
+                    snapshot: snapshot,
+                    evaluation: evaluation,
+                    authorization: authorization,
+                    currentState: currentState,
+                    startedRuleID: startedRuleID
+                )
+            )
             return true
         } catch {
+            saveDiagnostic(
+                diagnostic(
+                    stage: .snapshotReadFailed,
+                    observedAt: observedAt,
+                    activityName: activityName,
+                    errorCode: DiagnosticErrorClassifier.classify(error).rawValue
+                )
+            )
             return false
         }
+    }
+
+    private func saveDiagnostic(_ record: IntervalStartDiagnosticRecord) {
+        IntervalStartDiagnosticDefaultsCodec.save(record, to: defaults)
+    }
+
+    private func diagnostic(
+        stage: IntervalStartDiagnosticStage,
+        observedAt: Date,
+        activityName: String,
+        snapshot: DeviceActivityIntervalStartSnapshot? = nil,
+        evaluation: RestrictionRuleSetEvaluation? = nil,
+        authorization: AuthorizationSnapshot? = nil,
+        currentState: AppliedRestrictionState? = nil,
+        startedRuleID: UUID? = nil,
+        errorCode: String? = nil
+    ) -> IntervalStartDiagnosticRecord {
+        let condition = startedRuleID.flatMap { ruleID in
+            snapshot?.locationConditions.first { $0.ruleID == ruleID }
+        }
+        let decision = startedRuleID.flatMap { evaluation?.decisions[$0] }
+        return IntervalStartDiagnosticRecord(
+            stage: stage,
+            observedAt: observedAt,
+            activityName: activityName,
+            ruleCount: snapshot?.rules.count,
+            locationConditionCount: snapshot?.locationConditions.count,
+            desiredRuleCount: evaluation?.desiredRules.count,
+            currentAppliedRuleCount: currentState?.activeRuleRevisions.count,
+            startedRuleDecision: decision.map { decisionName($0.reason) },
+            startedLocationState: condition?.state,
+            startedLocationAgeSeconds: condition.map {
+                max(0, observedAt.timeIntervalSince($0.observedAt))
+            },
+            authorization: authorization,
+            errorCode: errorCode
+        )
+    }
+
+    private func decisionName(_ reason: EvaluationReason) -> String {
+        switch reason {
+        case .configurationMissing: "configurationMissing"
+        case .ruleDisabled: "ruleDisabled"
+        case .scheduleInactive: "scheduleInactive"
+        case .missingPermissions: "missingPermissions"
+        case .locationRevisionMismatch: "locationRevisionMismatch"
+        case .locationOutside: "locationOutside"
+        case .locationUnavailable: "locationUnavailable"
+        case .conditionsSatisfied: "conditionsSatisfied"
+        }
+    }
+}
+
+enum IntervalStartDiagnosticDefaultsCodec {
+    static func load(
+        from defaults: UserDefaults
+    ) -> IntervalStartDiagnosticRecord? {
+        guard
+            let data = defaults.data(
+                forKey: SharedIdentifiers.intervalStartDiagnosticDefaultsKey
+            )
+        else {
+            return nil
+        }
+        return try? JSONDecoder().decode(
+            IntervalStartDiagnosticRecord.self,
+            from: data
+        )
+    }
+
+    static func save(
+        _ record: IntervalStartDiagnosticRecord,
+        to defaults: UserDefaults
+    ) {
+        guard let data = try? JSONEncoder().encode(record) else {
+            return
+        }
+        defaults.set(
+            data,
+            forKey: SharedIdentifiers.intervalStartDiagnosticDefaultsKey
+        )
     }
 }
 

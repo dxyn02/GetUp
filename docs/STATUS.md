@@ -7,12 +7,12 @@
 Phase 7 마무리 및 교차 관심사 진행 중
 
 ## 진행 중
-T083·T085 — 자동 latency 100회 계측과 결과 형식은 구현·검증했으며, T116 위치 이탈과 T119
-extension 권한 보완 수정 빌드의 실제 `ManagedSettingsStore` 반영을 실기기로 재확인할 예정
+T083·T085 — 시간 시작 callback의 앱 비실행 실기기 적용은 T120에서 확인했으며, T116 위치 이탈의
+background·시스템 종료 상태와 100회 실기기 latency를 후속 확인할 예정
 
 ## 마지막 완료 작업
-T119 — 메인 앱의 최신 권한 snapshot을 App Group에 기록하고 Device Activity extension의
-`notDetermined` 위치 권한만 보완하되 현재 권한 철회와 24시간 이상 지난 값은 우선하지 않도록 수정함
+T120 — 실기기 callback 진단으로 extension의 Family Controls `notDetermined` 오판정을 확정하고 최근
+앱 `approved` 상태로 보완해 앱 종료 상태의 시간 시작 자동 Shield를 검증함
 
 ## 다음 작업
 T083·T085 — 설치된 수정 빌드에서 다음 설정 시간 시작 callback 뒤 제한 자동 적용, 앱을 강제
@@ -20,8 +20,7 @@ T083·T085 — 설치된 수정 빌드에서 다음 설정 시간 시작 callbac
 재검증. 저장소에서 바로 진행 가능한 후속은 T086 구현·하이파이 편차 대조
 
 ## 차단 상태
-BLK-010과 BLK-012 열림. BLK-012는 코드·자동 테스트·실기기 설치를 마쳤고 다음 실제 설정 시간의
-shield 표시 확인을 기다린다. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록과
+BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록과
 `group.com.dxyn02.GetUp` 할당, Family Controls Distribution `Assigned`와 갱신 profile을 사용한
 실기기 설치·실행은 사용자 확인됐으며, extension별 서명 entitlement와 archive 증적이 추가로 필요함.
 
@@ -31,6 +30,15 @@ shield 표시 확인을 기다린다. BLK-010은 `com.dxyn02.GetUp` namespace의
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-08-26 T120에서 앱 비실행 시간 경계의 각 단계를 App Group에 기록했다. 첫 실기기 재현은 규칙·
+위치 로드는 정상이지만 extension Family Controls가 `notDetermined`여서 `missingPermissions`로 종료된
+사실을 확인했다. 최근 앱 snapshot의 Family Controls가 `approved`이면 이 미결정 값만 보완하고 현재
+`denied`는 우선하도록 수정했다. 수정 뒤 시작 전 Shield를 비우고 앱을 종료한 실기기 시간 경계에서
+메인 앱 없이 monitor extension이 실행돼 `conditionsSatisfied`, 원하는 규칙 1개, `completed`를
+기록했고 Shield Configuration·Action extension 실행과 자동 Shield 경로를 확인했다.
+격리 DerivedData `/tmp/getup-interval-start-final-tests`의 전체 `GetUpTests` 209개가 실패·skip 없이
+통과했고 Swift Testing 동적 인자를 포함한 device configuration 실행은 243회 통과했다.
+
 2026-08-26 T119에서 실기기 `GetUpDeviceActivityMonitor` 프로세스 실행을 확인해 callback 내부 권한
 평가로 원인을 좁혔다. 메인 앱이 최신 권한 snapshot을 App Group에 기록하고, extension이 위치 권한을
 `notDetermined`로 읽을 때 24시간 미만의 앱 위치 권한·정확도만 보완하도록 수정했다. 현재 Family

@@ -80,9 +80,16 @@ schema 2에는 rule ID별 최신 condition을 하나씩 저장한다. rule ID가
 
 App Group `UserDefaults`에는 메인 앱이 마지막으로 확인한 Family Controls·위치 권한·위치 정확도·
 Background App Refresh 상태와 `observedAt`을 JSON data로 저장한다. 전체 규칙, 위치 좌표 또는 앱 선택
-token은 포함하지 않는다. Device Activity extension은 자체 위치 권한이 `notDetermined`일 때에만
-24시간 미만의 앱 위치 권한·정확도를 보완값으로 사용한다. 현재 Family Controls 상태와 extension이
-명시적으로 확인한 위치 권한은 항상 이 값보다 우선한다.
+token은 포함하지 않는다. Device Activity extension은 자체 위치 권한 또는 Family Controls가
+`notDetermined`일 때에만 24시간 미만의 해당 앱 권한 값을 보완값으로 사용한다. 현재 `denied`
+Family Controls와 extension이 명시적으로 확인한 위치 권한은 항상 이 값보다 우선한다.
+
+### getup.diagnostics.interval-start.latest
+
+App Group `UserDefaults`에는 가장 최근 `intervalDidStart`의 callback 시각·activity name, 규칙·위치
+snapshot 개수, 현재 권한, 시작 규칙의 위치 상태·근거 나이·평가 사유, 원하는 규칙 수와 store 검증
+단계를 저장한다. 위치 좌표와 거리, 앱·카테고리·도메인 token은 저장하지 않으며 다음 callback이 이전
+record를 덮어쓴다.
 
 ## Ownership and Atomicity
 

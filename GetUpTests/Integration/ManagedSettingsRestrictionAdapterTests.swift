@@ -66,6 +66,31 @@ struct ManagedSettingsRestrictionAdapterTests {
         defaults.removePersistentDomain(forName: suiteName)
     }
 
+    @Test("The interval extension fills an undetermined Family Controls status")
+    func intervalAuthorizationFillsUndeterminedFamilyControlsStatus() throws {
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        let approved = TestFixtures.makeAuthorization()
+        AuthorizationSnapshotDefaultsCodec.save(
+            AuthorizationSnapshotRecord(
+                snapshot: approved,
+                observedAt: TestFixtures.now
+            ),
+            to: defaults
+        )
+        let reader = DeviceActivityAuthorizationSnapshotReader(
+            defaults: defaults,
+            currentSnapshot: {
+                TestFixtures.makeAuthorization(familyControls: .notDetermined)
+            },
+            now: { TestFixtures.now }
+        )
+
+        #expect(reader.snapshot() == approved)
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
     @Test("The interval extension honors a live location revocation")
     func intervalAuthorizationHonorsLiveLocationRevocation() throws {
         let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
@@ -317,6 +342,15 @@ struct ManagedSettingsRestrictionAdapterTests {
                     ActiveRuleRevision(ruleID: second.id, revision: second.revision),
                 ])
         )
+        let diagnostic = try #require(
+            IntervalStartDiagnosticDefaultsCodec.load(from: defaults)
+        )
+        #expect(diagnostic.stage == .completed)
+        #expect(diagnostic.ruleCount == 2)
+        #expect(diagnostic.locationConditionCount == 2)
+        #expect(diagnostic.desiredRuleCount == 2)
+        #expect(diagnostic.startedRuleDecision == "conditionsSatisfied")
+        #expect(diagnostic.authorization == TestFixtures.makeAuthorization())
         defaults.removePersistentDomain(forName: suiteName)
     }
 

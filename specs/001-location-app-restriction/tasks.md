@@ -250,6 +250,7 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 - [x] T117 [US1] [US2] 선택 가능한 반경을 100m·250m·500m·1km 네 단계로 교체하고 기존 2km·3km·4km·5km 저장값 호환을 제거하며 모델·validator·slider·위치 monitoring 회귀와 명세·설계·운영 문서를 갱신한다
 - [x] T118 [US2] 설정 시간이 되었는데도 Screen Time 제한이 시작되지 않는 회귀를 분석하고, `intervalDidStart` callback 반환 전에 공유 snapshot·현재 권한으로 모든 규칙을 동기 평가해 단일 `getup.restriction` store를 적용·검증하며 callback 안의 일정 제거·재등록을 금지하는 회귀와 전체 app·extension build를 검증한다
 - [x] T119 [US2] 실기기에서 `DeviceActivityMonitor`가 실행되어도 Screen Time이 적용되지 않는 회귀를 분석하고, 메인 앱의 최신 권한 snapshot을 App Group에 기록해 extension의 `notDetermined` 위치 권한만 보완하되 현재 Family Controls 철회·명시적 위치 철회·24시간 이상 지난 snapshot은 우선하지 않는 회귀와 실기기 서명 빌드·설치를 검증한다
+- [x] T120 [US2] 앱 비실행 시간 경계에서 callback 단계·규칙 수·위치 상태·권한·평가·store 검증 결과를 App Group에 기록해 extension의 Family Controls가 `notDetermined`로 판정되는 실기기 원인을 확인하고, 최근 앱 `approved` 상태만 보완하되 현재 `denied`는 우선하는 회귀와 실기기 자동 Shield를 검증한다
 
 **Checkpoint**: 자동 테스트, 필수 실기기 검증, entitlement 승인 및 SC-001·SC-007 사용성 평가가
 모두 기록된 경우에만 feature 완료로 표시한다.

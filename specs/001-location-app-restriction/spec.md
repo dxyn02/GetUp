@@ -494,8 +494,9 @@
 - **FR-079**: 메인 앱은 권한을 확인할 때마다 관찰 시각을 포함한 최신 권한 snapshot을 App Group에
   저장해야 한다. `DeviceActivityMonitor` 확장에서 생성한 `CLLocationManager`가 위치 권한을
   `notDetermined`로 보고할 때에는 24시간 미만의 앱 위치 권한·정확도 snapshot으로 보완해야 한다.
-  Family Controls와 확장에서 명시적으로 확인되는 위치 권한 철회는 항상 현재 시스템 값을 우선하며,
-  오래되거나 손상된 snapshot으로 새 제한을 적용해서는 안 된다.
+  Family Controls도 확장의 값이 `notDetermined`일 때 같은 방식으로 보완해야 한다. 확장에서
+  `denied`로 확인되는 Family Controls와 명시적으로 확인되는 위치 권한 철회는 항상 현재 시스템 값을
+  우선하며, 오래되거나 손상된 snapshot으로 새 제한을 적용해서는 안 된다.
 
 ### Key Entities *(include if feature involves data)*
 
