@@ -100,8 +100,9 @@ T113의 규칙별 named store 적용 후 실기기에서 Screen Time 제한이 �
 
 2026-08-26 iPhone 17 Pro iOS 26.5 Simulator에서 전체 `GetUpTests` 193개 test case, 동적 실행 포함
 236회가 실패·skip 없이 통과했다. 앱과 세 Screen Time 확장을 포함한 generic Simulator build도
-통과했다. 같은 날 사용자가 수정 빌드의 실기기에서 Screen Time 제한이 정상 적용됨을 확인했다.
-시간 종료 callback 이후 실제 shield 해제는 실기기에서 추가 확인해야 한다.
+통과했다. 같은 날 사용자가 수정 빌드의 실기기에서 Screen Time 제한이 정상 적용되고 설정 시간 종료
+뒤 실제 shield가 자동 해제됨을 확인했다. 이 확인은 기능 경로 1회 이상의 수동 인수 결과이며,
+T083의 활성화·해제 각 100회 latency 판정을 대체하지 않는다.
 
 ## 전체 suite
 

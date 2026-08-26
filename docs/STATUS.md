@@ -34,8 +34,9 @@ BLK-010 열림. `com.dxyn02.GetUp` namespace의 네 App ID 등록과
 규칙이 남거나 stale callback이면 store를 건드리지 않고 기존 coordinator가 전체 합집합을 다시
 계산한다. 전체 `GetUpTests` 193개(동적 실행 포함 236회)가 실패·skip 없이 통과했고 앱·확장 generic
 build도 통과했다.
-사용자가 수정 빌드의 실기기에서 Screen Time 제한이 다시 정상 적용됨을 확인했다. 종료 구간 밖 첫
-사용 시 shield 해제는 계속 실기기에서 확인한다.
+사용자가 수정 빌드의 실기기에서 Screen Time 제한이 다시 정상 적용되고, 설정 시간이 지난 뒤 시간
+종료 자동 해제도 정상 동작함을 확인했다. 이는 기능 경로의 실기기 확인이며 T083의 100회 지연 계측
+완료를 의미하지는 않는다.
 
 2026-08-26 T113에서 기존 단일 `getup.restriction` 합집합 store를 활성 규칙별
 `getup.restriction.<rule UUID>` store로 분리했다. `intervalDidEnd`는 activity name에서 rule ID를
