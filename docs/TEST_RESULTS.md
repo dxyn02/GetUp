@@ -60,16 +60,18 @@ RESTRICTION_LATENCY_RESULT mode=automatic effect=<effect> samples=<count> <metri
 
 ### 실기기 관찰
 
-**상태**: 미실행 — BLK-010
+**상태**: 일부 기능 경로 확인, 100회 계측 및 archive 증적 미완료 — BLK-010
 
-Apple Developer 계정의 Family Controls 배포 승인, App Group 할당과 갱신된 provisioning profile
-증적이 없어 실제 `ManagedSettingsStore` 및 선택 앱 사용 가능 상태를 현재 환경에서 검증할 수 없다.
-승인 증적이 준비되면 다음 표에 자동 계측과 섞지 않고 기록한다.
+갱신 profile로 설치한 실기기에서 단일 합집합 store 복원 뒤 Screen Time 제한 적용과 시간 종료 자동
+해제는 사용자가 확인했다. 위치 이탈은 기존 빌드에서 앱을 한 번 열고 나와야 해제되는 실패가
+관찰됐으며, T116에서 누락된 Core Location region delegate 경로를 수정했다. 수정 빌드의 background·
+시스템 종료 상태 재검증과 100회 latency 측정은 아직 완료되지 않았다.
 
 | 실행 ID | 기기·OS | 경로 | trigger 종류 | 물리 경계 시각 | event `confirmedAt` | store read-back 시각 | 대상 앱 반영 시각 | event 전달 지연 | SLA 지연 | 결과 | 증적 reference |
 |---|---|---|---|---|---|---|---|---:|---:|---|---|
 | 미실행 | 확인 필요 | 활성화 | 시간 시작 또는 위치 진입 | — | — | — | — | — | — | BLK-010 | `docs/ENTITLEMENTS.md` |
-| 미실행 | 확인 필요 | 해제 | 시간 종료 또는 위치 이탈 | — | — | — | — | — | — | BLK-010 | `docs/ENTITLEMENTS.md` |
+| 수동 관찰 | 사용자 실기기 | 해제 | 시간 종료 | 미기록 | 미기록 | 미기록 | 정상 해제 확인 | 미계측 | 미계측 | 기능 경로 통과 | 사용자 확인 |
+| 수동 관찰 | 사용자 실기기 | 해제 | 위치 이탈 | 미기록 | callback 미연결 | 앱 진입 뒤 갱신 | 앱 진입 뒤 해제 | 미계측 | 미계측 | 실패, T116 수정 | 사용자 확인 |
 
 실기기 판정 시 활성화는 100개 이상 사례의 p95, 해제는 100개 이상 모든 사례와 최대값을 별도
 요약한다. store read-back과 대상 앱 반영 시각이 다르면 SLA 지연은 더 늦은 대상 앱 반영 시각을
@@ -103,6 +105,19 @@ T113의 규칙별 named store 적용 후 실기기에서 Screen Time 제한이 �
 통과했다. 같은 날 사용자가 수정 빌드의 실기기에서 Screen Time 제한이 정상 적용되고 설정 시간 종료
 뒤 실제 shield가 자동 해제됨을 확인했다. 이 확인은 기능 경로 1회 이상의 수동 인수 결과이며,
 T083의 활성화·해제 각 100회 latency 판정을 대체하지 않는다.
+
+## T115·T116 — 제한 store 재조정과 background 위치 event 연결
+
+T115는 현재 적용 revision이 활성인 경우에도 adapter가 실제 단일 store selection을 read-back하고,
+application shield가 유실됐으면 같은 revision을 다시 적용하도록 보강했다. T116은 앱 launch 시점의
+`CLLocationManagerDelegate`가 `didEnterRegion`·`didExitRegion`을 받아 GetUp rule ID를 복원하고,
+시스템이 확인한 전이를 `.regionEvent` snapshot으로 저장한 뒤 제한 합집합을 즉시 재평가한다.
+
+2026-08-26 iPhone 17 Pro iOS 26.5 Simulator에서 위치 adapter 대상 7개 test case(동적 실행 포함
+27회), 전체 `GetUpTests` 195개 test case(동적 실행 포함 238회)가 실패·skip 없이 통과했다. 앱과 세
+Screen Time 확장을 포함한 generic Simulator build도 통과했다. Simulator 검증은 Core Location의
+실제 background wake와 system shield 반영을 입증하지 않으므로, 수정 빌드의 suspended·background·
+시스템 종료 상태 위치 이탈은 T083·T085 실기기 표에 후속 기록한다.
 
 ## 전체 suite
 

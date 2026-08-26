@@ -1,3 +1,4 @@
+@preconcurrency import CoreLocation
 @preconcurrency import FamilyControls
 import Foundation
 import ManagedSettings
@@ -7,6 +8,8 @@ import UIKit
 @main
 @MainActor
 struct GetUpApp: App {
+    @UIApplicationDelegateAdaptor(LocationRegionAppDelegate.self)
+    private var appDelegate
     private let runtime = AppRuntime.make()
 
     var body: some Scene {
@@ -18,6 +21,108 @@ struct GetUpApp: App {
                 StartupUnavailableView()
             }
         }
+    }
+}
+
+@MainActor
+final class LocationRegionAppDelegate: NSObject,
+    UIApplicationDelegate,
+    @preconcurrency CLLocationManagerDelegate
+{
+    private let locationManager: CLLocationManager
+    private let diagnostics: any DiagnosticsLogging
+    private var eventHandler: LocationRegionEventHandler?
+
+    override init() {
+        locationManager = CLLocationManager()
+        diagnostics = DiagnosticsLogger()
+        super.init()
+        locationManager.delegate = self
+    }
+
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions:
+            [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        // Creating a main-run-loop manager with a delegate at launch lets Core
+        // Location deliver pending region events after a background relaunch.
+        locationManager.delegate = self
+        return true
+    }
+
+    func locationManager(
+        _ manager: CLLocationManager,
+        didEnterRegion region: CLRegion
+    ) {
+        handle(region: region, transition: .entered)
+    }
+
+    func locationManager(
+        _ manager: CLLocationManager,
+        didExitRegion region: CLRegion
+    ) {
+        handle(region: region, transition: .exited)
+    }
+
+    func locationManager(
+        _ manager: CLLocationManager,
+        monitoringDidFailFor region: CLRegion?,
+        withError error: any Error
+    ) {
+        diagnostics.record(error, operation: .locationConditionRefresh)
+    }
+
+    func locationManager(
+        _ manager: CLLocationManager,
+        didFailWithError error: any Error
+    ) {
+        diagnostics.record(error, operation: .locationConditionRefresh)
+    }
+
+    private func handle(
+        region: CLRegion,
+        transition: LocationRegionTransition
+    ) {
+        let confirmedAt = Date()
+        let regionIdentifier = region.identifier
+
+        Task {
+            do {
+                let handler = try eventHandler ?? makeEventHandler()
+                eventHandler = handler
+                _ = try await handler.handle(
+                    regionIdentifier: regionIdentifier,
+                    transition: transition,
+                    confirmedAt: confirmedAt
+                )
+            } catch {
+                diagnostics.record(error, operation: .restrictionEvaluate)
+            }
+        }
+    }
+
+    private func makeEventHandler() throws -> LocationRegionEventHandler {
+        let container = try DependencyContainer.live()
+        return try container.makeLocationRegionEventHandler()
+    }
+}
+
+@MainActor
+private extension DependencyContainer {
+    func makeLocationRegionEventHandler(
+        bundle: Bundle = .main,
+        authorizationProvider: any AuthorizationProviding =
+            SystemAuthorizationProvider.forApplication()
+    ) throws -> LocationRegionEventHandler {
+        LocationRegionEventHandler(
+            ruleRepository: ruleRepository,
+            conditionRepository: locationConditionRepository,
+            restrictionCoordinator: try makeRestrictionCoordinator(
+                bundle: bundle,
+                authorizationProvider: authorizationProvider
+            )
+        )
     }
 }
 

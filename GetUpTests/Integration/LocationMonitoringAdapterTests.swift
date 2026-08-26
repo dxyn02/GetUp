@@ -4,6 +4,22 @@ import Testing
 
 @Suite("Location monitoring adapter")
 struct LocationMonitoringAdapterTests {
+    @Test("Location region identifiers round-trip only for the app namespace")
+    func locationRegionIdentifierRoundTrip() throws {
+        let ruleID = TestFixtures.makeRule().id
+        let identifier = SharedIdentifiers.locationRegionIdentifier(for: ruleID)
+
+        #expect(
+            SharedIdentifiers.ruleID(fromLocationRegionIdentifier: identifier)
+                == ruleID
+        )
+        #expect(
+            SharedIdentifiers.ruleID(
+                fromLocationRegionIdentifier: "another.location.\(ruleID)"
+            ) == nil
+        )
+    }
+
     @Test(
         "Every supported radius classifies a fully contained accuracy circle as inside",
         arguments: RadiusOption.allCases
@@ -97,6 +113,77 @@ struct LocationMonitoringAdapterTests {
                 == [snapshot]
         )
         #expect(await evidenceProvider.requestedRuleIDs == [rule.id])
+    }
+
+    @Test("A background region exit records outside evidence and releases the shield")
+    func backgroundRegionExitReleasesRestriction() async throws {
+        let rule = TestFixtures.makeRule()
+        let repository = RegionEventSnapshotRepository(rule: rule)
+        let adapter = RegionEventRestrictionAdapter(initialRule: rule)
+        let coordinator = RestrictionCoordinator(
+            ruleRepository: repository,
+            locationConditionRepository: repository,
+            authorizationProvider: RegionEventAuthorizationProvider(),
+            restrictionAdapter: adapter,
+            clock: FixedClock(now: TestFixtures.now),
+            calendar: TestFixtures.calendar,
+            timeZone: TestFixtures.timeZone
+        )
+        let handler = LocationRegionEventHandler(
+            ruleRepository: repository,
+            conditionRepository: repository,
+            restrictionCoordinator: coordinator
+        )
+
+        let result = try await handler.handle(
+            regionIdentifier: SharedIdentifiers.locationRegionIdentifier(
+                for: rule.id
+            ),
+            transition: .exited,
+            confirmedAt: TestFixtures.now
+        )
+
+        #expect(result?.decisions[rule.id]?.reason == .locationOutside)
+        #expect(result?.appliedState.activeRuleRevisions.isEmpty == true)
+        #expect(result?.transitionMeasurement?.effect == .removeShield)
+        let condition = try #require(
+            try await repository.loadLocationConditionCollection()?.conditions.first
+        )
+        #expect(condition.state == .outside)
+        #expect(condition.source == .regionEvent)
+        #expect(condition.observedAt == TestFixtures.now)
+        #expect(await adapter.removeCount == 1)
+    }
+
+    @Test("An unrelated or stale region event cannot change the restriction")
+    func ignoresUnknownRegionEvent() async throws {
+        let rule = TestFixtures.makeRule()
+        let repository = RegionEventSnapshotRepository(rule: rule)
+        let adapter = RegionEventRestrictionAdapter(initialRule: rule)
+        let coordinator = RestrictionCoordinator(
+            ruleRepository: repository,
+            locationConditionRepository: repository,
+            authorizationProvider: RegionEventAuthorizationProvider(),
+            restrictionAdapter: adapter,
+            clock: FixedClock(now: TestFixtures.now),
+            calendar: TestFixtures.calendar,
+            timeZone: TestFixtures.timeZone
+        )
+        let handler = LocationRegionEventHandler(
+            ruleRepository: repository,
+            conditionRepository: repository,
+            restrictionCoordinator: coordinator
+        )
+
+        let result = try await handler.handle(
+            regionIdentifier: "another.location.\(rule.id)",
+            transition: .exited,
+            confirmedAt: TestFixtures.now
+        )
+
+        #expect(result == nil)
+        #expect(try await repository.loadLocationConditionCollection() == nil)
+        #expect(await adapter.removeCount == 0)
     }
 
     @MainActor
@@ -194,6 +281,81 @@ struct LocationMonitoringAdapterTests {
 
     private func regionIdentifier(for ruleID: UUID) -> String {
         "getup.location.\(ruleID.uuidString.lowercased())"
+    }
+}
+
+private actor RegionEventSnapshotRepository: RuleRepository,
+    LocationConditionRepository
+{
+    private let ruleCollection: RestrictionRuleCollectionSnapshot
+    private var conditionCollection: LocationConditionCollectionSnapshot?
+
+    init(rule: RestrictionRuleSnapshot) {
+        ruleCollection = RestrictionRuleCollectionSnapshot(revision: 1, rules: [rule])
+    }
+
+    func loadRuleCollection() -> RestrictionRuleCollectionSnapshot? {
+        ruleCollection
+    }
+
+    func saveRuleCollection(_ collection: RestrictionRuleCollectionSnapshot) {}
+    func deleteRuleCollection() {}
+
+    func loadLocationConditionCollection() -> LocationConditionCollectionSnapshot? {
+        conditionCollection
+    }
+
+    func saveLocationCondition(_ condition: LocationConditionSnapshot) {
+        conditionCollection = LocationConditionCollectionSnapshot(
+            conditions: [condition]
+        )
+    }
+
+    func deleteLocationCondition(for ruleID: UUID) {
+        conditionCollection = nil
+    }
+
+    func deleteLocationConditions() {
+        conditionCollection = nil
+    }
+}
+
+private struct RegionEventAuthorizationProvider: AuthorizationProviding {
+    func authorizationSnapshot() -> AuthorizationSnapshot {
+        TestFixtures.makeAuthorization()
+    }
+}
+
+private actor RegionEventRestrictionAdapter: RestrictionApplying {
+    private var state: AppliedRestrictionState
+    private(set) var removeCount = 0
+
+    init(initialRule: RestrictionRuleSnapshot) {
+        state = AppliedRestrictionState(
+            activeRuleRevisions: [
+                ActiveRuleRevision(
+                    ruleID: initialRule.id,
+                    revision: initialRule.revision
+                ),
+            ]
+        )
+    }
+
+    func currentAppliedState() -> AppliedRestrictionState { state }
+
+    func applyRestriction(for rules: [RestrictionRuleSnapshot]) {
+        state = AppliedRestrictionState(
+            activeRuleRevisions: Set(
+                rules.map {
+                    ActiveRuleRevision(ruleID: $0.id, revision: $0.revision)
+                }
+            )
+        )
+    }
+
+    func removeRestriction() {
+        removeCount += 1
+        state = AppliedRestrictionState(activeRuleRevisions: [])
     }
 }
 

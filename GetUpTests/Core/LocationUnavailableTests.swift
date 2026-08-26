@@ -22,7 +22,7 @@ struct LocationUnavailableTests {
         )
         #expect(result.coordination.appliedState.contains(result.rule))
         #expect(result.coordination.transitionMeasurement == nil)
-        #expect(await result.adapter.applyCount == 0)
+        #expect(await result.adapter.applyCount == 1)
         #expect(await result.adapter.removeCount == 0)
     }
 
