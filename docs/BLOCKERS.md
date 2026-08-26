@@ -1,5 +1,30 @@
 # 차단 사항
 
+## BLK-012 — extension 위치 권한 오판정으로 시작 제한 누락
+
+**상태**: 수정 완료·실기기 예약 경계 재검증 대기(OPEN) — 2026-08-26
+
+T118 수정 빌드에서도 설정 시간이 지난 뒤 Screen Time 제한이 적용되지 않았다. 연결된 iPhone의 실행
+프로세스를 확인한 결과 메인 앱뿐 아니라 `GetUpDeviceActivityMonitor` extension도 시스템에 의해
+실행되어, callback 자체가 전혀 전달되지 않는 경우보다는 callback 내부 평가가 제한 적용을 거부하는
+경로로 범위가 좁혀졌다.
+
+시작 handler는 짧게 실행되는 extension 안에서 새 `CLLocationManager`를 만들고 즉시 위치 권한과
+정확도를 읽었다. 이 값이 앱에서 이미 승인된 Always·Full Accuracy 대신 초기 `notDetermined`로 보이면
+공통 상태 머신은 필수 권한 부족으로 판정해 store 쓰기를 수행하지 않는다. 앱을 열면 메인 앱의 실제
+권한 컨텍스트로 재평가되므로, 앱이 열려 있을 때만 동작하는 것처럼 보일 수 있었다.
+
+**해결**: 메인 앱이 권한을 확인할 때 관찰 시각과 함께 최신 snapshot을 App Group `UserDefaults`에
+기록한다. 시작 extension은 현재 위치 권한이 `notDetermined`이고 snapshot이 24시간 미만일 때에만
+앱의 위치 권한·정확도로 보완한다. 현재 Family Controls 철회, extension에서 명시적으로 확인된 위치
+권한, 24시간 이상 지난 값과 decode 실패는 캐시로 덮지 않는다.
+
+**검증**: 최신 앱 snapshot 사용, 24시간 경계 거부, 현재 Family Controls 철회 우선, 앱 권한 기록
+회귀를 포함해 격리 DerivedData의 전체 `GetUpTests` 208개가 실패·skip 없이 통과했다. 앱과 세 Screen
+Time 확장의 실기기 서명 빌드와 iPhone 설치가 성공했고, 앱을 한 번 실행해 최신 권한 기록 후 정상
+종료했다. 다음 실제 설정 시간 callback에서 대상 앱 shield가 표시되는지 확인하면 이 blocker를
+RESOLVED로 전환한다.
+
 ## BLK-011 — 설정 시간 시작 callback의 Screen Time 적용 유실
 
 **상태**: 해결됨(RESOLVED) — 2026-08-26

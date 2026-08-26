@@ -98,6 +98,11 @@ struct AuthorizationSnapshot: Codable, Equatable, Sendable {
     let backgroundRefresh: BackgroundRefreshStatus
 }
 
+struct AuthorizationSnapshotRecord: Codable, Equatable, Sendable {
+    let snapshot: AuthorizationSnapshot
+    let observedAt: Date
+}
+
 enum RequiredPermission: String, Codable, Hashable, Sendable {
     case familyControls
     case alwaysLocation

@@ -11,6 +11,26 @@
   상태를 입증하지 않는다.
 - 실기기 관찰은 실제 대상 앱에서 shield 표시 또는 해제를 확인한 시각까지 포함한다.
 
+## T119 — extension 권한 snapshot 보완
+
+**상태**: 자동 검증·실기기 설치 통과, 실제 예약 경계 관찰 대기
+
+실기기 프로세스 조사에서 `GetUpDeviceActivityMonitor`가 시스템에 의해 실행된 사실을 확인했다. 시작
+handler가 extension에서 새 `CLLocationManager`의 권한을 즉시 읽을 때 `notDetermined`가 반환되면,
+앱에서 이미 승인된 Always·Full Accuracy와 달라 새 제한이 거부될 수 있는 경로를 수정했다.
+
+- 메인 앱이 최신 권한과 관찰 시각을 App Group에 기록한다.
+- extension의 위치 권한이 `notDetermined`이고 기록이 24시간 미만일 때만 앱 위치 권한·정확도를 쓴다.
+- 현재 Family Controls 철회와 명시적 위치 권한 상태는 캐시보다 우선한다.
+- 24시간 이상 지난 값과 손상된 값은 사용하지 않는다.
+
+2026-08-26 iPhone 17 Pro iOS 26.5 Simulator의 격리 DerivedData
+`/tmp/getup-reassert-missing-shield-tests`에서 전체 `GetUpTests` 208개가 통과했고 실패·skip·expected
+failure는 모두 0이다. Swift Testing 동적 인자를 포함한 device configuration 실행은 242회 통과했다.
+같은 최종 코드로 iPhone 17 iOS 26.6.1 대상 서명 build와 연결 기기 설치가 성공했다. 설치 뒤 앱을
+실행해 규칙 복원·최신 권한 기록을 유도하고 정상 종료했으며, 실제 다음 설정 시간의 system shield
+표시는 BLK-012와 T083·T085에서 후속 관찰한다.
+
 ## T117 — 네 단계 반경 선택
 
 **상태**: 자동 테스트 통과

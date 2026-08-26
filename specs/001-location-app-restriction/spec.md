@@ -491,6 +491,11 @@
   합집합을 쓰고 read-back으로 확인해야 한다. 이 callback 안에서는 현재 실행 중인 Device Activity
   일정을 제거하거나 재등록해서는 안 된다. snapshot을 읽지 못하거나 store 반영을 확인하지 못하면
   기존 일정·shield·적용 상태를 보존하고 다음 신뢰 가능한 event에서 재시도해야 한다.
+- **FR-079**: 메인 앱은 권한을 확인할 때마다 관찰 시각을 포함한 최신 권한 snapshot을 App Group에
+  저장해야 한다. `DeviceActivityMonitor` 확장에서 생성한 `CLLocationManager`가 위치 권한을
+  `notDetermined`로 보고할 때에는 24시간 미만의 앱 위치 권한·정확도 snapshot으로 보완해야 한다.
+  Family Controls와 확장에서 명시적으로 확인되는 위치 권한 철회는 항상 현재 시스템 값을 우선하며,
+  오래되거나 손상된 snapshot으로 새 제한을 적용해서는 안 된다.
 
 ### Key Entities *(include if feature involves data)*
 

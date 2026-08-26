@@ -236,8 +236,48 @@ private struct DeviceActivityIntervalStartSnapshotFileReader {
     }
 }
 
-private struct DeviceActivityAuthorizationSnapshotReader {
+struct DeviceActivityAuthorizationSnapshotReader {
+    typealias CurrentSnapshot = () -> AuthorizationSnapshot
+
+    private static let maximumTrustedAge: TimeInterval = 24 * 60 * 60
+
+    private let defaults: UserDefaults
+    private let currentSnapshot: CurrentSnapshot
+    private let now: () -> Date
+
+    init(
+        defaults: UserDefaults,
+        currentSnapshot: @escaping CurrentSnapshot = Self.systemSnapshot,
+        now: @escaping () -> Date = Date.init
+    ) {
+        self.defaults = defaults
+        self.currentSnapshot = currentSnapshot
+        self.now = now
+    }
+
     func snapshot() -> AuthorizationSnapshot {
+        let current = currentSnapshot()
+        if let record = AuthorizationSnapshotDefaultsCodec.load(from: defaults) {
+            let age = now().timeIntervalSince(record.observedAt)
+            if age >= 0, age < Self.maximumTrustedAge {
+                let usesApplicationLocation = current.locationAuthorization
+                    == .notDetermined
+                return AuthorizationSnapshot(
+                    familyControls: current.familyControls,
+                    locationAuthorization: usesApplicationLocation
+                        ? record.snapshot.locationAuthorization
+                        : current.locationAuthorization,
+                    locationAccuracy: usesApplicationLocation
+                        ? record.snapshot.locationAccuracy
+                        : current.locationAccuracy,
+                    backgroundRefresh: record.snapshot.backgroundRefresh
+                )
+            }
+        }
+        return current
+    }
+
+    private static func systemSnapshot() -> AuthorizationSnapshot {
         let locationManager = CLLocationManager()
         return AuthorizationSnapshot(
             familyControls: familyControlsStatus(),
@@ -251,7 +291,7 @@ private struct DeviceActivityAuthorizationSnapshotReader {
         )
     }
 
-    private func familyControlsStatus() -> FamilyControlsAuthorizationStatus {
+    private static func familyControlsStatus() -> FamilyControlsAuthorizationStatus {
         switch AuthorizationCenter.shared.authorizationStatus {
         case .approved, .approvedWithDataAccess:
             .approved
@@ -264,7 +304,7 @@ private struct DeviceActivityAuthorizationSnapshotReader {
         }
     }
 
-    private func locationAuthorizationStatus(
+    private static func locationAuthorizationStatus(
         _ status: CLAuthorizationStatus
     ) -> LocationAuthorizationStatus {
         switch status {
@@ -283,7 +323,7 @@ private struct DeviceActivityAuthorizationSnapshotReader {
         }
     }
 
-    private func locationAccuracyStatus(
+    private static func locationAccuracyStatus(
         _ status: CLAccuracyAuthorization
     ) -> LocationAccuracyStatus {
         switch status {
@@ -350,7 +390,9 @@ struct DeviceActivityIntervalStartHandler {
         let snapshotReader = DeviceActivityIntervalStartSnapshotFileReader(
             containerURL: containerURL
         )
-        let authorizationReader = DeviceActivityAuthorizationSnapshotReader()
+        let authorizationReader = DeviceActivityAuthorizationSnapshotReader(
+            defaults: defaults
+        )
         return Self(
             storeAccess: SystemManagedSettingsStoreAccess(),
             defaults: defaults,

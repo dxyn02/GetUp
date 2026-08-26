@@ -7,20 +7,21 @@
 Phase 7 마무리 및 교차 관심사 진행 중
 
 ## 진행 중
-T083·T085 — 자동 latency 100회 계측과 결과 형식은 구현·검증했으며, T116 위치 이탈 수정과 T118
-시간 시작 동기 적용 수정 빌드의 실제 `ManagedSettingsStore` 반영을 실기기로 재확인할 예정
+T083·T085 — 자동 latency 100회 계측과 결과 형식은 구현·검증했으며, T116 위치 이탈과 T119
+extension 권한 보완 수정 빌드의 실제 `ManagedSettingsStore` 반영을 실기기로 재확인할 예정
 
 ## 마지막 완료 작업
-T117·T118 — 반경 설정을 100m·250m·500m·1km 네 단계로 교체하고, `intervalDidStart` 반환 전 단일
-Screen Time store를 동기 적용·검증하며 시작 callback 안의 일정 제거·재등록을 금지함
+T119 — 메인 앱의 최신 권한 snapshot을 App Group에 기록하고 Device Activity extension의
+`notDetermined` 위치 권한만 보완하되 현재 권한 철회와 24시간 이상 지난 값은 우선하지 않도록 수정함
 
 ## 다음 작업
-T083·T085 — 수정 빌드를 실기기에 설치하고 설정 시간 시작 callback 뒤 제한 자동 적용, 앱을 강제
+T083·T085 — 설치된 수정 빌드에서 다음 설정 시간 시작 callback 뒤 제한 자동 적용, 앱을 강제
 종료하지 않은 suspended·background 상태와 시스템에 의한 종료 상태의 위치 이탈 자동 해제를
 재검증. 저장소에서 바로 진행 가능한 후속은 T086 구현·하이파이 편차 대조
 
 ## 차단 상태
-BLK-010 열림. `com.dxyn02.GetUp` namespace의 네 App ID 등록과
+BLK-010과 BLK-012 열림. BLK-012는 코드·자동 테스트·실기기 설치를 마쳤고 다음 실제 설정 시간의
+shield 표시 확인을 기다린다. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록과
 `group.com.dxyn02.GetUp` 할당, Family Controls Distribution `Assigned`와 갱신 profile을 사용한
 실기기 설치·실행은 사용자 확인됐으며, extension별 서명 entitlement와 archive 증적이 추가로 필요함.
 
@@ -30,6 +31,13 @@ BLK-010 열림. `com.dxyn02.GetUp` namespace의 네 App ID 등록과
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-08-26 T119에서 실기기 `GetUpDeviceActivityMonitor` 프로세스 실행을 확인해 callback 내부 권한
+평가로 원인을 좁혔다. 메인 앱이 최신 권한 snapshot을 App Group에 기록하고, extension이 위치 권한을
+`notDetermined`로 읽을 때 24시간 미만의 앱 위치 권한·정확도만 보완하도록 수정했다. 현재 Family
+Controls 철회와 명시적 위치 권한은 항상 우선한다. 격리 DerivedData의 전체 `GetUpTests` 208개가
+실패·skip 없이 통과했고 동적 인자 포함 242회가 통과했다. iPhone 17 iOS 26.6.1용 서명 build·설치,
+앱 1회 실행과 정상 종료까지 성공했으며 실제 다음 설정 시간 shield 표시는 재검증 대기다.
+
 2026-08-26 T117 반경 변경과 T118 시간 시작 동기 적용을 같은 브랜치로 합친 상태에서 전체
 `GetUpTests` 203회가 실패·skip 없이 통과했다. 반경 slider를 100m→250m→500m→1km로 조절하고 저장
 요약을 확인하는 UI 회귀 1개도 통과했으며, 앱과 세 Screen Time 확장을 포함한 Simulator build가

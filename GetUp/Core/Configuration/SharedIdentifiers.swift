@@ -13,6 +13,7 @@ enum SharedIdentifiers {
     static let deviceActivityNamePrefix = "getup.schedule"
     static let locationRegionIdentifierPrefix = "getup.location"
     static let activeRuleRevisionsDefaultsKey = "getup.restriction.active-rule-revisions"
+    static let authorizationSnapshotDefaultsKey = "getup.authorization.last-known-snapshot"
     static let legacyRestrictionIsAppliedDefaultsKey = "getup.restriction.is-applied"
     static let legacyRestrictionRuleRevisionDefaultsKey = "getup.restriction.rule-revision"
 

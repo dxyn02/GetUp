@@ -40,6 +40,9 @@
   read-back으로 확인한다. callback 안에서는 현재 실행 중인 일정을 제거하거나 재등록하지 않는다.
 - `intervalDidStart`의 snapshot read 또는 store 검증이 실패하면 기존 일정·shield·적용 상태를
   보존하고 비동기 호환 재평가는 일정 초기화 없이 수행한다.
+- 메인 앱은 권한 확인 결과와 관찰 시각을 App Group에 기록한다. extension의 즉시 조회 위치 권한이
+  `notDetermined`이면 24시간 미만의 앱 위치 권한·정확도를 사용하되, 현재 Family Controls 철회와
+  extension에서 명시적으로 확인되는 위치 권한 상태는 캐시보다 우선한다.
 - `intervalDidEnd`는 종료 시각 정각이 아니라 schedule 구간 밖에서 기기가 처음 사용될 때 전달될 수
   있다. callback이 도착하면 activity name의 rule ID가 현재 적용 상태의 마지막 활성 규칙인 경우에만
   단일 `getup.restriction` store를 callback 안에서 동기적으로 비우고 적용 상태를 제거한다.

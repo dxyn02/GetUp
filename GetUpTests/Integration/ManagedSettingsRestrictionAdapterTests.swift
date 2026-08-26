@@ -7,6 +7,118 @@ import Testing
 @MainActor
 @Suite("Managed Settings restriction adapter")
 struct ManagedSettingsRestrictionAdapterTests {
+    @Test("The interval extension uses a recent app authorization snapshot")
+    func intervalAuthorizationUsesRecentApplicationSnapshot() throws {
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        let approved = TestFixtures.makeAuthorization()
+        AuthorizationSnapshotDefaultsCodec.save(
+            AuthorizationSnapshotRecord(
+                snapshot: approved,
+                observedAt: TestFixtures.now
+            ),
+            to: defaults
+        )
+        let reader = DeviceActivityAuthorizationSnapshotReader(
+            defaults: defaults,
+            currentSnapshot: {
+                TestFixtures.makeAuthorization(
+                    locationAuthorization: .notDetermined,
+                    locationAccuracy: .reduced
+                )
+            },
+            now: { TestFixtures.now }
+        )
+
+        #expect(reader.snapshot() == approved)
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    @Test("The interval extension honors a live Family Controls revocation")
+    func intervalAuthorizationHonorsLiveFamilyControlsRevocation() throws {
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        AuthorizationSnapshotDefaultsCodec.save(
+            AuthorizationSnapshotRecord(
+                snapshot: TestFixtures.makeAuthorization(),
+                observedAt: TestFixtures.now
+            ),
+            to: defaults
+        )
+        let reader = DeviceActivityAuthorizationSnapshotReader(
+            defaults: defaults,
+            currentSnapshot: {
+                TestFixtures.makeAuthorization(
+                    familyControls: .denied,
+                    locationAuthorization: .notDetermined,
+                    locationAccuracy: .reduced
+                )
+            },
+            now: { TestFixtures.now }
+        )
+
+        #expect(
+            reader.snapshot()
+                == TestFixtures.makeAuthorization(familyControls: .denied)
+        )
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    @Test("The interval extension honors a live location revocation")
+    func intervalAuthorizationHonorsLiveLocationRevocation() throws {
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        AuthorizationSnapshotDefaultsCodec.save(
+            AuthorizationSnapshotRecord(
+                snapshot: TestFixtures.makeAuthorization(),
+                observedAt: TestFixtures.now
+            ),
+            to: defaults
+        )
+        let current = TestFixtures.makeAuthorization(
+            locationAuthorization: .denied,
+            locationAccuracy: .reduced
+        )
+        let reader = DeviceActivityAuthorizationSnapshotReader(
+            defaults: defaults,
+            currentSnapshot: { current },
+            now: { TestFixtures.now }
+        )
+
+        #expect(reader.snapshot() == current)
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    @Test("The interval extension rejects a stale app authorization snapshot")
+    func intervalAuthorizationRejectsStaleApplicationSnapshot() throws {
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        AuthorizationSnapshotDefaultsCodec.save(
+            AuthorizationSnapshotRecord(
+                snapshot: TestFixtures.makeAuthorization(),
+                observedAt: TestFixtures.now.addingTimeInterval(-24 * 60 * 60)
+            ),
+            to: defaults
+        )
+        let current = TestFixtures.makeAuthorization(
+            familyControls: .denied,
+            locationAuthorization: .notDetermined,
+            locationAccuracy: .reduced
+        )
+        let reader = DeviceActivityAuthorizationSnapshotReader(
+            defaults: defaults,
+            currentSnapshot: { current },
+            now: { TestFixtures.now }
+        )
+
+        #expect(reader.snapshot() == current)
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
     @Test("Applying a rule shields exactly its selected applications")
     func appliesOnlySelectedApplicationTokens() async throws {
         let selected = try Set([

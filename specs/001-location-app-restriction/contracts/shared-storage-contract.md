@@ -76,12 +76,21 @@
 schema 2에는 rule ID별 최신 condition을 하나씩 저장한다. rule ID가 없는 schema 1 단일 snapshot은
 특정 규칙에 귀속하지 않고 빈 schema 2 collection으로 migration한다.
 
+### getup.authorization.last-known-snapshot
+
+App Group `UserDefaults`에는 메인 앱이 마지막으로 확인한 Family Controls·위치 권한·위치 정확도·
+Background App Refresh 상태와 `observedAt`을 JSON data로 저장한다. 전체 규칙, 위치 좌표 또는 앱 선택
+token은 포함하지 않는다. Device Activity extension은 자체 위치 권한이 `notDetermined`일 때에만
+24시간 미만의 앱 위치 권한·정확도를 보완값으로 사용한다. 현재 Family Controls 상태와 extension이
+명시적으로 확인한 위치 권한은 항상 이 값보다 우선한다.
+
 ## Ownership and Atomicity
 
 - 메인 앱만 규칙 파일을 쓴다.
 - 메인 앱만 저장 장소 파일을 쓴다.
 - 메인 앱의 위치 adapter만 위치 판정 파일을 쓴다.
 - 확장은 규칙·장소·위치 판정 파일을 읽기 전용으로 사용한다.
+- 메인 앱만 최신 권한 snapshot을 쓰고 Device Activity extension은 이를 읽기 전용으로 사용한다.
 - write는 같은 디렉터리의 임시 파일을 완전히 기록한 뒤 atomic replace한다.
 - 파일 보호는 `completeUntilFirstUserAuthentication`을 사용한다.
 - 규칙 저장마다 대상 규칙 revision과 규칙 collection revision을 각각 1 증가시킨다.

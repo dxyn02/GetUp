@@ -1216,3 +1216,23 @@ shield·적용 상태를 보존한다. 비동기 호환 경로는 일정 초기�
 `platform-events-contract.md`, `FR-078`, T118과 BLK-011에 적용한다. DEC-028의 공통 전체 복구 결정은
 앱 foreground에는 유지하지만 `intervalDidStart`에는 더 이상 적용하지 않는다. 실제 system callback과
 shield 반영은 T083·T085 실기기 인수에서 확인한다.
+
+## DEC-066 — 앱 권한 snapshot으로 extension의 미결정 위치 권한 보완
+
+**날짜**: 2026-08-26
+
+**결정**: 메인 앱의 `SystemAuthorizationProvider`는 권한을 읽을 때마다 관찰 시각을 포함한
+`AuthorizationSnapshotRecord`를 App Group `UserDefaults`에 저장한다. Device Activity extension은
+자체 `CLLocationManager`가 위치 권한을 `notDetermined`로 반환하고 기록이 24시간 미만일 때에만 앱이
+관찰한 위치 권한·정확도를 사용한다. Family Controls는 항상 extension의 현재 시스템 상태를 사용하고,
+extension에서 위치 권한이 `denied`·`restricted`·`whenInUse`·`always`로 명시되면 그 값을 우선한다.
+
+**근거**: 실기기에서 `GetUpDeviceActivityMonitor` 프로세스 실행은 확인됐지만 제한이 적용되지 않았다.
+짧게 실행되는 extension에서 delegate 없이 새 `CLLocationManager`를 생성한 직후 읽는 초기 권한이
+`notDetermined`이면 승인된 규칙도 필수 권한 부족으로 탈락할 수 있다. 앱이 실제 권한 컨텍스트에서
+확인한 최근 값으로 이 미결정 상태만 보완하면 앱 상주 의존성을 제거하면서, 사용자의 명시적 권한
+철회를 오래된 캐시가 무시하는 위험을 막을 수 있다. 24시간은 기존 위치 snapshot 신뢰 한계와 맞춘다.
+
+**영향 범위**: `SharedIdentifiers`, `AuthorizationSnapshotRecord`, `SystemAuthorizationProvider`,
+`DeviceActivityAuthorizationSnapshotReader`, authorization·Managed Settings adapter 테스트,
+`shared-storage-contract.md`, `platform-events-contract.md`, `FR-079`, T119와 BLK-012에 적용한다.

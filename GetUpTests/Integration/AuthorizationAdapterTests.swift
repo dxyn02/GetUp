@@ -47,6 +47,26 @@ struct AuthorizationAdapterTests {
         #expect(changedSnapshot == reader.snapshot)
     }
 
+    @Test("The application provider records the latest authorization snapshot")
+    func recordsLatestAuthorizationSnapshot() async {
+        let expected = AuthorizationSnapshot(
+            familyControls: .approved,
+            locationAuthorization: .always,
+            locationAccuracy: .full,
+            backgroundRefresh: .available
+        )
+        let reader = FakeAuthorizationStatusReader(snapshot: expected)
+        var recordedSnapshots: [AuthorizationSnapshot] = []
+        let provider = SystemAuthorizationProvider(
+            statusReader: reader,
+            recordSnapshot: { recordedSnapshots.append($0) }
+        )
+
+        _ = await provider.authorizationSnapshot()
+
+        #expect(recordedSnapshots == [expected])
+    }
+
     @Test("Every background refresh state is normalized")
     func normalizesBackgroundRefreshStatus() {
         #expect(
