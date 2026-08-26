@@ -7,17 +7,17 @@
 Phase 7 마무리 및 교차 관심사 진행 중
 
 ## 진행 중
-T083·T085 — 자동 latency 100회 계측과 결과 형식은 구현·검증했으며, T116 수정 빌드에서 위치 이탈
-callback의 실제 `ManagedSettingsStore` 해제를 실기기로 재확인할 예정
+T083·T085 — 자동 latency 100회 계측과 결과 형식은 구현·검증했으며, T116 위치 이탈 수정과 T118
+시간 시작 동기 적용 수정 빌드의 실제 `ManagedSettingsStore` 반영을 실기기로 재확인할 예정
 
 ## 마지막 완료 작업
-T116 — app launch 상주 Core Location delegate를 연결해 background·재실행 region 이탈 event가
-App Group 위치 상태와 Screen Time 제한 합집합을 즉시 재평가하도록 수정함
+T118 — `intervalDidStart` 반환 전에 현재 공유 snapshot·권한으로 모든 규칙을 동기 평가해 단일 Screen
+Time store를 적용·검증하고, 시작 callback 안의 일정 제거·재등록을 금지해 제한 시작 유실을 수정함
 
 ## 다음 작업
-T083·T085 — 수정 빌드를 실기기에 설치하고 앱을 강제 종료하지 않은 suspended·background 상태와
-시스템에 의한 종료 상태에서 위치 이탈 자동 해제를 재검증. 저장소에서 바로 진행 가능한 후속은
-T086 구현·하이파이 편차 대조
+T083·T085 — 수정 빌드를 실기기에 설치하고 설정 시간 시작 callback 뒤 제한 자동 적용, 앱을 강제
+종료하지 않은 suspended·background 상태와 시스템에 의한 종료 상태의 위치 이탈 자동 해제를
+재검증. 저장소에서 바로 진행 가능한 후속은 T086 구현·하이파이 편차 대조
 
 ## 차단 상태
 BLK-010 열림. `com.dxyn02.GetUp` namespace의 네 App ID 등록과
@@ -25,11 +25,22 @@ BLK-010 열림. `com.dxyn02.GetUp` namespace의 네 App ID 등록과
 실기기 설치·실행은 사용자 확인됐으며, extension별 서명 entitlement와 archive 증적이 추가로 필요함.
 
 ## 계획 갱신 필요
-없음. Apple의 `intervalDidEnd` 전달 시점은 물리적 종료 정각이 아니라 종료 구간 밖에서 기기를 처음
-사용할 때일 수 있다. callback 전달 이후 마지막 활성 규칙 해제는 T114에서 동기화했으며, 기기가
-사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
+없음. Apple의 `intervalDidStart`·`intervalDidEnd` 전달은 물리적 시작·종료 정각이 아니라 해당 구간에서
+기기를 사용할 때일 수 있다. callback 전달 이후 시작 적용은 T118, 마지막 활성 규칙 해제는 T114에서
+동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-08-26 T118에서 설정 시간이 지나도 Screen Time 제한이 시작되지 않는 실기기 회귀를 분석했다.
+기존 시작 callback은 unstructured `Task`만 예약하고 반환했으며 그 Task가 먼저 전체 일정을 제거·
+재등록하고 위치를 갱신한 뒤 제한을 적용해 extension 종료와 callback 재진입에 취약했다. callback
+반환 전에 현재 schema 공유 snapshot·권한을 읽어 모든 규칙을 공통 순수 평가기로 계산하고, 단일
+store에 제한 대상 합집합을 쓰고 read-back을 확인하도록 변경했다. 시작 callback에서는 일정·region
+전체 복구를 호출하지 않는다. 만족 규칙 합집합 적용, 위치 외부·권한 거부 미적용, snapshot 실패 시
+기존 상태 보존·store read-back 실패 시 상태 미저장을 포함한 adapter·coordinator 대상 테스트 24개가
+실패·skip 없이 통과했다. 전체 `GetUpTests` 203회 실행도 실패·skip 없이 통과했고, 앱과 세 Screen
+Time 확장을 포함한 Simulator build도 통과했다. 실제 callback·system shield 반영은 수정 빌드의
+실기기 재검증이 남았다.
+
 2026-08-26 T115에서 적용 revision set이 그대로여도 활성 규칙이 있으면 adapter의 idempotent store
 read-back·reconcile을 실행하도록 변경했다. App Group 상태만 활성이고 실제 application shield가 빈
 경우 동일 selection을 다시 쓰는 회귀를 추가했으며, 논리 상태가 같으면 transition measurement는

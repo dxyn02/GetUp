@@ -483,6 +483,11 @@
   종료된 activity가 마지막 활성 규칙인 경우에만 이 store와 적용 상태를 동기적으로 해제해야 한다.
   다른 활성 규칙이 남아 있으면 store를 부분 변경하지 않고 전체 규칙 재평가 경로에서 제한 대상
   합집합을 다시 계산해야 한다.
+- **FR-078**: `intervalDidStart` callback이 도착하면 callback 반환 전에 보호된 공유 규칙·위치 snapshot과
+  현재 권한을 읽어 모든 활성 규칙을 동기 평가하고, 단일 `getup.restriction` store의 제한 대상
+  합집합을 쓰고 read-back으로 확인해야 한다. 이 callback 안에서는 현재 실행 중인 Device Activity
+  일정을 제거하거나 재등록해서는 안 된다. snapshot을 읽지 못하거나 store 반영을 확인하지 못하면
+  기존 일정·shield·적용 상태를 보존하고 다음 신뢰 가능한 event에서 재시도해야 한다.
 
 ### Key Entities *(include if feature involves data)*
 

@@ -1,3 +1,4 @@
+@preconcurrency import CoreLocation
 @preconcurrency import FamilyControls
 import Foundation
 @preconcurrency import ManagedSettings
@@ -159,6 +160,269 @@ enum RestrictionApplicationStateDefaultsCodec {
         defaults.removeObject(
             forKey: SharedIdentifiers.legacyRestrictionRuleRevisionDefaultsKey
         )
+    }
+}
+
+struct DeviceActivityIntervalStartSnapshot {
+    let rules: [RestrictionRuleSnapshot]
+    let locationConditions: [LocationConditionSnapshot]
+}
+
+private struct DeviceActivityIntervalStartSnapshotFileReader {
+    let containerURL: URL
+
+    func load() throws -> DeviceActivityIntervalStartSnapshot {
+        let ruleCollection = try loadCollection(
+            RestrictionRuleCollectionSnapshot.self,
+            fileName: SharedIdentifiers.restrictionRulesFileName
+        )
+        if let ruleCollection,
+           ruleCollection.schemaVersion
+            != RestrictionRuleCollectionSnapshot.currentSchemaVersion
+        {
+            throw SharedSnapshotRepositoryError.unsupportedSchema(
+                fileName: SharedIdentifiers.restrictionRulesFileName,
+                found: ruleCollection.schemaVersion,
+                supported: RestrictionRuleCollectionSnapshot.currentSchemaVersion
+            )
+        }
+
+        let locationCollection = try loadCollection(
+            LocationConditionCollectionSnapshot.self,
+            fileName: SharedIdentifiers.locationConditionFileName
+        )
+        if let locationCollection,
+           locationCollection.schemaVersion
+            != LocationConditionCollectionSnapshot.currentSchemaVersion
+        {
+            throw SharedSnapshotRepositoryError.unsupportedSchema(
+                fileName: SharedIdentifiers.locationConditionFileName,
+                found: locationCollection.schemaVersion,
+                supported: LocationConditionCollectionSnapshot.currentSchemaVersion
+            )
+        }
+
+        return DeviceActivityIntervalStartSnapshot(
+            rules: ruleCollection?.rules ?? [],
+            locationConditions: locationCollection?.conditions ?? []
+        )
+    }
+
+    private func loadCollection<Collection: Decodable>(
+        _ type: Collection.Type,
+        fileName: String
+    ) throws -> Collection? {
+        let fileURL = containerURL.appendingPathComponent(fileName)
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
+            return nil
+        }
+
+        let data: Data
+        do {
+            data = try Data(contentsOf: fileURL)
+        } catch {
+            throw SharedSnapshotRepositoryError.readFailed(fileName: fileName)
+        }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        do {
+            return try decoder.decode(type, from: data)
+        } catch {
+            throw SharedSnapshotRepositoryError.decodingFailed(
+                fileName: fileName
+            )
+        }
+    }
+}
+
+private struct DeviceActivityAuthorizationSnapshotReader {
+    func snapshot() -> AuthorizationSnapshot {
+        let locationManager = CLLocationManager()
+        return AuthorizationSnapshot(
+            familyControls: familyControlsStatus(),
+            locationAuthorization: locationAuthorizationStatus(
+                locationManager.authorizationStatus
+            ),
+            locationAccuracy: locationAccuracyStatus(
+                locationManager.accuracyAuthorization
+            ),
+            backgroundRefresh: .available
+        )
+    }
+
+    private func familyControlsStatus() -> FamilyControlsAuthorizationStatus {
+        switch AuthorizationCenter.shared.authorizationStatus {
+        case .approved, .approvedWithDataAccess:
+            .approved
+        case .denied:
+            .denied
+        case .notDetermined:
+            .notDetermined
+        @unknown default:
+            .notDetermined
+        }
+    }
+
+    private func locationAuthorizationStatus(
+        _ status: CLAuthorizationStatus
+    ) -> LocationAuthorizationStatus {
+        switch status {
+        case .authorizedAlways:
+            .always
+        case .authorizedWhenInUse:
+            .whenInUse
+        case .denied:
+            .denied
+        case .restricted:
+            .restricted
+        case .notDetermined:
+            .notDetermined
+        @unknown default:
+            .notDetermined
+        }
+    }
+
+    private func locationAccuracyStatus(
+        _ status: CLAccuracyAuthorization
+    ) -> LocationAccuracyStatus {
+        switch status {
+        case .fullAccuracy:
+            .full
+        case .reducedAccuracy:
+            .reduced
+        @unknown default:
+            .reduced
+        }
+    }
+}
+
+struct DeviceActivityIntervalStartHandler {
+    typealias SnapshotLoader = () throws -> DeviceActivityIntervalStartSnapshot
+    typealias AuthorizationSnapshotLoader = () -> AuthorizationSnapshot
+
+    private let storeAccess: any ManagedSettingsStoreAccess
+    private let defaults: UserDefaults
+    private let loadSnapshot: SnapshotLoader
+    private let authorizationSnapshot: AuthorizationSnapshotLoader
+    private let now: () -> Date
+    private let calendar: Calendar
+    private let timeZone: TimeZone
+
+    init(
+        storeAccess: any ManagedSettingsStoreAccess,
+        defaults: UserDefaults,
+        loadSnapshot: @escaping SnapshotLoader,
+        authorizationSnapshot: @escaping AuthorizationSnapshotLoader,
+        now: @escaping () -> Date = Date.init,
+        calendar: Calendar = .current,
+        timeZone: TimeZone = .current
+    ) {
+        self.storeAccess = storeAccess
+        self.defaults = defaults
+        self.loadSnapshot = loadSnapshot
+        self.authorizationSnapshot = authorizationSnapshot
+        self.now = now
+        self.calendar = calendar
+        self.timeZone = timeZone
+    }
+
+    static func live(
+        bundle: Bundle = .main,
+        fileManager: FileManager = .default
+    ) throws -> Self {
+        guard
+            let identifier = SharedIdentifiers.appGroupIdentifier(in: bundle)
+        else {
+            throw ManagedSettingsRestrictionAdapterError.missingAppGroupIdentifier
+        }
+        guard let defaults = UserDefaults(suiteName: identifier) else {
+            throw ManagedSettingsRestrictionAdapterError.sharedDefaultsUnavailable
+        }
+        guard
+            let containerURL = fileManager.containerURL(
+                forSecurityApplicationGroupIdentifier: identifier
+            )
+        else {
+            throw DependencyContainerError.appGroupContainerUnavailable
+        }
+
+        let snapshotReader = DeviceActivityIntervalStartSnapshotFileReader(
+            containerURL: containerURL
+        )
+        let authorizationReader = DeviceActivityAuthorizationSnapshotReader()
+        return Self(
+            storeAccess: SystemManagedSettingsStoreAccess(),
+            defaults: defaults,
+            loadSnapshot: snapshotReader.load,
+            authorizationSnapshot: authorizationReader.snapshot
+        )
+    }
+
+    @discardableResult
+    func handle(activityName: String) -> Bool {
+        guard
+            let startedRuleID = SharedIdentifiers.ruleID(
+                fromDeviceActivityName: activityName
+            )
+        else {
+            return false
+        }
+
+        do {
+            let snapshot = try loadSnapshot()
+            guard snapshot.rules.contains(where: { $0.id == startedRuleID }) else {
+                return false
+            }
+
+            let currentState = RestrictionApplicationStateDefaultsCodec.load(
+                from: defaults
+            )
+            let evaluation = RestrictionRuleSetEvaluator.evaluate(
+                rules: snapshot.rules,
+                locationConditions: snapshot.locationConditions,
+                authorization: authorizationSnapshot(),
+                currentAppliedState: currentState,
+                now: now(),
+                calendar: calendar,
+                timeZone: timeZone
+            )
+            let desiredState = AppliedRestrictionState(
+                activeRuleRevisions: Set(
+                    evaluation.desiredRules.map {
+                        ActiveRuleRevision(ruleID: $0.id, revision: $0.revision)
+                    }
+                )
+            )
+            let desiredSelection = ManagedSettingsShieldSelection(
+                rules: evaluation.desiredRules
+            )
+            let storeName = SharedIdentifiers.managedSettingsStoreName
+            let currentSelection = storeAccess.shieldSelection(named: storeName)
+
+            if currentSelection != desiredSelection {
+                storeAccess.setShieldSelection(
+                    desiredSelection,
+                    named: storeName
+                )
+                guard
+                    storeAccess.shieldSelection(named: storeName)
+                        == desiredSelection
+                else {
+                    return false
+                }
+            }
+
+            if currentState != desiredState {
+                RestrictionApplicationStateDefaultsCodec.save(
+                    desiredState,
+                    to: defaults
+                )
+            }
+            return true
+        } catch {
+            return false
+        }
     }
 }
 

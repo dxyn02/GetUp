@@ -27,8 +27,110 @@ struct SystemRestrictionClock: Clock {
     var now: Date { Date() }
 }
 
-actor RestrictionCoordinator {
+struct RestrictionRuleSetEvaluation: Sendable {
+    let decisions: [UUID: EvaluationDecision]
+    let desiredRules: [RestrictionRuleSnapshot]
+}
+
+enum RestrictionRuleSetEvaluator {
     private static let maximumTrustedLocationAge: TimeInterval = 24 * 60 * 60
+
+    static func evaluate(
+        rules: [RestrictionRuleSnapshot],
+        locationConditions: [LocationConditionSnapshot],
+        authorization: AuthorizationSnapshot,
+        currentAppliedState: AppliedRestrictionState,
+        now: Date,
+        calendar: Calendar,
+        timeZone: TimeZone
+    ) -> RestrictionRuleSetEvaluation {
+        var decisions: [UUID: EvaluationDecision] = [:]
+        var desiredRules: [RestrictionRuleSnapshot] = []
+
+        for rule in rules.sorted(by: ruleOrder) {
+            let storedLocationCondition = locationConditions.first {
+                $0.ruleID == rule.id && $0.ruleRevision == rule.revision
+            } ?? unavailableLocationCondition(for: rule, now: now)
+            let locationCondition = trustedLocationCondition(
+                storedLocationCondition,
+                for: rule,
+                now: now
+            )
+            let ruleAppliedState = AppliedRestrictionState(
+                activeRuleRevisions: currentAppliedState.activeRuleRevisions.filter {
+                    $0.ruleID == rule.id && $0.revision == rule.revision
+                }
+            )
+            let decision = RestrictionStateMachine.evaluate(
+                EvaluationInput(
+                    rule: rule,
+                    now: now,
+                    calendar: calendar,
+                    timeZone: timeZone,
+                    locationCondition: locationCondition,
+                    authorization: authorization,
+                    appliedRestriction: ruleAppliedState
+                )
+            )
+            decisions[rule.id] = decision
+
+            if decision.desiredRestriction == .active
+                || (decision.desiredRestriction == .preserve
+                    && currentAppliedState.contains(rule)) {
+                desiredRules.append(rule)
+            }
+        }
+
+        return RestrictionRuleSetEvaluation(
+            decisions: decisions,
+            desiredRules: desiredRules
+        )
+    }
+
+    private static func unavailableLocationCondition(
+        for rule: RestrictionRuleSnapshot,
+        now: Date
+    ) -> LocationConditionSnapshot {
+        LocationConditionSnapshot(
+            ruleID: rule.id,
+            ruleRevision: rule.revision,
+            state: .unavailable,
+            observedAt: now,
+            distanceMeters: nil,
+            horizontalAccuracyMeters: nil,
+            source: .restoration
+        )
+    }
+
+    private static func trustedLocationCondition(
+        _ condition: LocationConditionSnapshot,
+        for rule: RestrictionRuleSnapshot,
+        now: Date
+    ) -> LocationConditionSnapshot {
+        let age = now.timeIntervalSince(condition.observedAt)
+        guard age < maximumTrustedLocationAge else {
+            return LocationConditionSnapshot(
+                ruleID: rule.id,
+                ruleRevision: rule.revision,
+                state: .unavailable,
+                observedAt: condition.observedAt,
+                distanceMeters: nil,
+                horizontalAccuracyMeters: nil,
+                source: condition.source
+            )
+        }
+        return condition
+    }
+
+    private static func ruleOrder(
+        _ lhs: RestrictionRuleSnapshot,
+        _ rhs: RestrictionRuleSnapshot
+    ) -> Bool {
+        lhs.id.uuidString < rhs.id.uuidString
+    }
+}
+
+actor RestrictionCoordinator {
 
     private let ruleRepository: any RuleRepository
     private let locationConditionRepository: any LocationConditionRepository
@@ -89,41 +191,17 @@ actor RestrictionCoordinator {
         let authorization = await authorizationProvider.authorizationSnapshot()
         let currentAppliedState = await restrictionAdapter.currentAppliedState()
 
-        var decisions: [UUID: EvaluationDecision] = [:]
-        var desiredRules: [RestrictionRuleSnapshot] = []
-
-        for rule in rules.sorted(by: Self.ruleOrder) {
-            let storedLocationCondition = locationConditions.first {
-                $0.ruleID == rule.id && $0.ruleRevision == rule.revision
-            } ?? unavailableLocationCondition(for: rule)
-            let locationCondition = trustedLocationCondition(
-                storedLocationCondition,
-                for: rule
-            )
-            let ruleAppliedState = AppliedRestrictionState(
-                activeRuleRevisions: currentAppliedState.activeRuleRevisions.filter {
-                    $0.ruleID == rule.id && $0.revision == rule.revision
-                }
-            )
-            let decision = RestrictionStateMachine.evaluate(
-                EvaluationInput(
-                    rule: rule,
-                    now: clock.now,
-                    calendar: calendar,
-                    timeZone: timeZone,
-                    locationCondition: locationCondition,
-                    authorization: authorization,
-                    appliedRestriction: ruleAppliedState
-                )
-            )
-            decisions[rule.id] = decision
-
-            if decision.desiredRestriction == .active
-                || (decision.desiredRestriction == .preserve
-                    && currentAppliedState.contains(rule)) {
-                desiredRules.append(rule)
-            }
-        }
+        let evaluation = RestrictionRuleSetEvaluator.evaluate(
+            rules: rules,
+            locationConditions: locationConditions,
+            authorization: authorization,
+            currentAppliedState: currentAppliedState,
+            now: clock.now,
+            calendar: calendar,
+            timeZone: timeZone
+        )
+        let decisions = evaluation.decisions
+        let desiredRules = evaluation.desiredRules
 
         let desiredRuleRevisions = Set(
             desiredRules.map {
@@ -170,45 +248,6 @@ actor RestrictionCoordinator {
         )
     }
 
-    private func unavailableLocationCondition(
-        for rule: RestrictionRuleSnapshot
-    ) -> LocationConditionSnapshot {
-        LocationConditionSnapshot(
-            ruleID: rule.id,
-            ruleRevision: rule.revision,
-            state: .unavailable,
-            observedAt: clock.now,
-            distanceMeters: nil,
-            horizontalAccuracyMeters: nil,
-            source: .restoration
-        )
-    }
-
-    private func trustedLocationCondition(
-        _ condition: LocationConditionSnapshot,
-        for rule: RestrictionRuleSnapshot
-    ) -> LocationConditionSnapshot {
-        let age = clock.now.timeIntervalSince(condition.observedAt)
-        guard age < Self.maximumTrustedLocationAge else {
-            return LocationConditionSnapshot(
-                ruleID: rule.id,
-                ruleRevision: rule.revision,
-                state: .unavailable,
-                observedAt: condition.observedAt,
-                distanceMeters: nil,
-                horizontalAccuracyMeters: nil,
-                source: condition.source
-            )
-        }
-        return condition
-    }
-
-    private static func ruleOrder(
-        _ lhs: RestrictionRuleSnapshot,
-        _ rhs: RestrictionRuleSnapshot
-    ) -> Bool {
-        lhs.id.uuidString < rhs.id.uuidString
-    }
 }
 
 @MainActor

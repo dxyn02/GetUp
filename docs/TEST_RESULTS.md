@@ -63,13 +63,14 @@ RESTRICTION_LATENCY_RESULT mode=automatic effect=<effect> samples=<count> <metri
 **상태**: 일부 기능 경로 확인, 100회 계측 및 archive 증적 미완료 — BLK-010
 
 갱신 profile로 설치한 실기기에서 단일 합집합 store 복원 뒤 Screen Time 제한 적용과 시간 종료 자동
-해제는 사용자가 확인했다. 위치 이탈은 기존 빌드에서 앱을 한 번 열고 나와야 해제되는 실패가
-관찰됐으며, T116에서 누락된 Core Location region delegate 경로를 수정했다. 수정 빌드의 background·
-시스템 종료 상태 재검증과 100회 latency 측정은 아직 완료되지 않았다.
+해제는 사용자가 확인했다. 이후 설정 시간 시작 제한이 다시 적용되지 않는 실패가 관찰되어 T118에서
+callback 동기 적용 경로를 수정했다. 위치 이탈은 기존 빌드에서 앱을 한 번 열고 나와야 해제되는
+실패가 관찰되어 T116에서 누락된 Core Location region delegate 경로를 수정했다. 수정 빌드의 시작
+적용, background·시스템 종료 위치 이탈 재검증과 100회 latency 측정은 아직 완료되지 않았다.
 
 | 실행 ID | 기기·OS | 경로 | trigger 종류 | 물리 경계 시각 | event `confirmedAt` | store read-back 시각 | 대상 앱 반영 시각 | event 전달 지연 | SLA 지연 | 결과 | 증적 reference |
 |---|---|---|---|---|---|---|---|---:|---:|---|---|
-| 미실행 | 확인 필요 | 활성화 | 시간 시작 또는 위치 진입 | — | — | — | — | — | — | BLK-010 | `docs/ENTITLEMENTS.md` |
+| 수동 관찰 | 사용자 실기기 | 활성화 | 시간 시작 | 미기록 | 미기록 | 미기록 | 미적용 | 미계측 | 미계측 | 실패, T118 수정 | 사용자 확인 |
 | 수동 관찰 | 사용자 실기기 | 해제 | 시간 종료 | 미기록 | 미기록 | 미기록 | 정상 해제 확인 | 미계측 | 미계측 | 기능 경로 통과 | 사용자 확인 |
 | 수동 관찰 | 사용자 실기기 | 해제 | 위치 이탈 | 미기록 | callback 미연결 | 앱 진입 뒤 갱신 | 앱 진입 뒤 해제 | 미계측 | 미계측 | 실패, T116 수정 | 사용자 확인 |
 
@@ -118,6 +119,22 @@ application shield가 유실됐으면 같은 revision을 다시 적용하도록 
 Screen Time 확장을 포함한 generic Simulator build도 통과했다. Simulator 검증은 Core Location의
 실제 background wake와 system shield 반영을 입증하지 않으므로, 수정 빌드의 suspended·background·
 시스템 종료 상태 위치 이탈은 T083·T085 실기기 표에 후속 기록한다.
+
+## T118 — 시간 시작 callback 동기 제한 적용
+
+실기기에서 설정 시간이 지나도 Screen Time 제한이 시작되지 않는 회귀를 분석했다. 기존
+`intervalDidStart`는 unstructured `Task`만 예약하고 반환했으며, Task 내부에서 현재 Device Activity
+일정을 모두 제거·재등록하고 위치를 갱신한 뒤 제한을 적용했다. extension이 먼저 종료되면 store
+쓰기가 유실될 수 있고, 진행 중인 interval 재등록은 callback 재진입과 경합을 만들 수 있었다.
+
+`DeviceActivityIntervalStartHandler`가 callback 안에서 현재 schema 공유 snapshot과 권한을 읽어
+모든 규칙을 동기 평가하고, 단일 store의 제한 합집합을 쓰고 read-back을 확인하도록 수정했다. 만족한
+두 규칙의 합집합 적용, 위치 외부·권한 거부 시 미적용, snapshot read 실패 시 기존 shield·revision
+보존과 store read-back 실패 시 상태 미저장 회귀를 추가했다. 2026-08-26 iPhone 17 Pro iOS 26.5
+Simulator에서 adapter·coordinator 대상 24개 test case가 실패·skip 없이 통과했다. 실제 Device
+Activity callback 전달과 system shield 반영은
+Simulator가 입증하지 못하므로 T083·T085 실기기 표에 후속 기록한다. 이어 실행한 전체 `GetUpTests`
+203회가 실패·skip 없이 통과했고, 앱과 세 Screen Time 확장을 포함한 Simulator build도 통과했다.
 
 ## 전체 suite
 

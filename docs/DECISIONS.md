@@ -272,6 +272,8 @@ revision을 collection revision으로 간주하거나 마지막 event 규칙에 
 
 **날짜**: 2026-08-24
 
+**상태**: `intervalDidStart` 경로는 DEC-065로 대체됨. 앱 foreground 복구 경로는 유지함.
+
 **결정**: 앱 foreground 활성화와 Device Activity extension의 `intervalDidStart`는 동일한
 `AppLifecycleCoordinator`를 사용한다. coordinator는 보호된 규칙 collection을 먼저 읽고, 읽기에
 성공한 경우에만 GetUp 소유 일정과 region을 초기화한다. 이후 활성 규칙을 안정적인 ID 순서로
@@ -1169,3 +1171,30 @@ event로 재실행될 때도 launch에서 manager와 delegate를 다시 구성�
 테스트, `FR-030`·`FR-031`·`FR-077`, T116과 T083·T085 실기기 인수에 적용한다. 사용자가 앱을 강제
 종료했거나 Background App Refresh를 끈 플랫폼 제한에서는 iOS가 앱을 깨우지 않을 수 있으며, 이는
 권한 안내와 실기기 인수에서 구분해 기록한다.
+
+## DEC-065 — 시작 callback 내 동기 제한 적용과 일정 재등록 금지
+
+**날짜**: 2026-08-26
+
+**결정**: `DeviceActivityMonitor.intervalDidStart`는 callback 반환 전에 App Group의 현재 schema 규칙·
+위치 snapshot과 현재 Family Controls·위치 권한을 동기적으로 읽는다. 앱의 `RestrictionCoordinator`와
+같은 순수 규칙 평가기를 사용해 모든 규칙을 평가하고, 조건을 충족하거나 안전하게 보존해야 하는 활성
+규칙의 제한 대상 합집합을 단일 `getup.restriction` store에 쓰고 read-back으로 확인한다. 실제 store
+확인 뒤에만 App Group 적용 revision 집합을 갱신한다.
+
+시작 callback에서는 `AppLifecycleCoordinator.restore()`를 호출하지 않으며 Device Activity 일정과
+region을 제거·재등록하지 않는다. snapshot read, schema 또는 store read-back이 실패하면 기존 일정·
+shield·적용 상태를 보존한다. 비동기 호환 경로는 일정 초기화 없이 현재 시간 제한만 다시 평가한다.
+
+**근거**: 기존 경로는 callback에서 unstructured `Task`만 예약하고 반환한 뒤, 그 Task 안에서 일정
+전체 제거·재등록과 위치 갱신을 거쳐 제한을 적용했다. extension이 Task 완료 전에 종료되면 store
+쓰기가 실행되지 않을 수 있고, 이미 활성인 interval을 재등록하면 시작 callback이 즉시 재전달되어
+재진입과 경합을 만들 수 있다. Apple의 Device Activity 사용 예도 시작 callback 본문에서
+`ManagedSettingsStore` shield를 직접 변경한다. callback 전달 자체는 기기 사용 시점에 의존하므로
+벽시계 정각보다 늦을 수 있지만, 전달된 callback 안의 제한 반영은 동기적으로 완료할 수 있다.
+
+**영향 범위**: `DeviceActivityMonitorExtension`, `DeviceActivityIntervalStartHandler`,
+`RestrictionRuleSetEvaluator`, Managed Settings adapter·coordinator 테스트,
+`platform-events-contract.md`, `FR-078`, T118과 BLK-011에 적용한다. DEC-028의 공통 전체 복구 결정은
+앱 foreground에는 유지하지만 `intervalDidStart`에는 더 이상 적용하지 않는다. 실제 system callback과
+shield 반영은 T083·T085 실기기 인수에서 확인한다.

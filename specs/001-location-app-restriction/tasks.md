@@ -247,6 +247,7 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 - [x] T114 [US2] [US3] T113의 규칙별 named store 도입 후 실기기에서 제한이 적용되지 않는 회귀를 수정해 검증된 단일 `getup.restriction` 합집합 store로 복원하고, 마지막 활성 규칙만 callback에서 동기 해제하며 겹친 규칙은 전체 재평가로 넘기는 회귀·전체 extension build를 검증한다
 - [x] T115 [US2] [US3] App Group 적용 revision은 활성인데 iOS의 실제 Managed Settings shield가 비어 있는 상태를 foreground·복구 재평가에서 감지해 동일 revision의 제한 selection을 다시 쓰고, 논리적 전환 측정은 중복하지 않는 adapter·coordinator 회귀를 검증한다
 - [x] T116 [US2] [US3] 앱 launch 시점부터 `CLLocationManagerDelegate`를 유지해 background·재실행 region 진입·이탈 callback을 받고, GetUp region 식별자를 현재 규칙과 연결해 `.regionEvent` 위치 근거 저장과 제한 합집합 재평가를 수행하며 외부·stale event 무시 회귀와 전체 app·extension build를 검증한다
+- [x] T118 [US2] 설정 시간이 되었는데도 Screen Time 제한이 시작되지 않는 회귀를 분석하고, `intervalDidStart` callback 반환 전에 공유 snapshot·현재 권한으로 모든 규칙을 동기 평가해 단일 `getup.restriction` store를 적용·검증하며 callback 안의 일정 제거·재등록을 금지하는 회귀와 전체 app·extension build를 검증한다
 
 **Checkpoint**: 자동 테스트, 필수 실기기 검증, entitlement 승인 및 SC-001·SC-007 사용성 평가가
 모두 기록된 경우에만 feature 완료로 표시한다.

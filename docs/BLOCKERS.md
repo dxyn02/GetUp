@@ -1,5 +1,33 @@
 # 차단 사항
 
+## BLK-011 — 설정 시간 시작 callback의 Screen Time 적용 유실
+
+**상태**: 해결됨(RESOLVED) — 2026-08-26
+
+설정 시간이 지난 뒤에도 선택 앱에 Screen Time 제한이 시작되지 않는 현상이 실기기에서 다시
+관찰됐다. 기존 `DeviceActivityMonitorExtension.intervalDidStart`는 callback 안에서 제한을 적용하지
+않고 unstructured `Task`만 예약한 뒤 반환했다. 비동기 작업은 먼저 `AppLifecycleCoordinator.restore()`로
+현재 Device Activity 일정을 모두 제거·재등록하고 위치를 갱신한 뒤에야 제한 store를 썼다.
+
+짧게 실행되는 extension이 `Task` 완료 전에 종료되면 store 쓰기가 유실될 수 있다. 또한 이미 진행
+중인 interval에서 같은 일정을 제거·재등록하면 iOS가 시작 callback을 즉시 다시 전달할 수 있어
+callback 재진입과 일정 경합이 발생한다. 이는 시작 callback 안에서 shield를 직접 설정하는 Apple의
+사용 방식과도 맞지 않았다. 단, iOS는 기기가 사용 중일 때 Device Activity callback을 전달하므로
+기기가 유휴 상태인 동안 정확한 벽시계 정각 적용 자체는 앱이 보장할 수 없다.
+
+**해결**: `DeviceActivityIntervalStartHandler`가 callback 반환 전에 App Group의 현재 schema 규칙·위치
+snapshot과 Family Controls·위치 권한을 동기적으로 읽고 공통 순수 평가기로 모든 규칙을 계산한다.
+조건을 충족한 규칙의 앱·카테고리·웹 도메인 합집합을 단일 `getup.restriction` store에 즉시 쓰고
+read-back을 확인한 뒤 적용 revision을 저장한다. 시작 callback에서는 일정·region 전체 복구를
+호출하지 않으며, snapshot read 또는 store 검증 실패 시 기존 일정·shield·상태를 보존한 채 일정
+초기화 없는 시간 재평가만 후속 시도한다.
+
+**검증**: 만족 규칙 합집합 동기 적용, 위치 외부·권한 거부 시 미적용, snapshot 실패 시 기존 상태
+보존 회귀와 store read-back 실패 시 상태 미저장을 포함한 adapter·coordinator 대상 테스트 24개와
+전체 `GetUpTests` 203회 실행이 실패·skip 없이 통과했다. 앱과 세 Screen Time 확장을 포함한
+Simulator build도 통과했다. 실제 callback 전달과
+system shield 반영은 수정 빌드로 T083·T085 실기기 인수에서 재확인한다.
+
 ## BLK-010 — Family Controls 배포 entitlement·App Group 계정 증적
 
 **상태**: 열림(OPEN) — 2026-08-25
