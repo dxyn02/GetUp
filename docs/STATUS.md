@@ -30,6 +30,11 @@ BLK-010 열림. `com.dxyn02.GetUp` namespace의 네 App ID 등록과
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-08-26 T117 반경 변경과 T118 시간 시작 동기 적용을 같은 브랜치로 합친 상태에서 전체
+`GetUpTests` 203회가 실패·skip 없이 통과했다. 반경 slider를 100m→250m→500m→1km로 조절하고 저장
+요약을 확인하는 UI 회귀 1개도 통과했으며, 앱과 세 Screen Time 확장을 포함한 Simulator build가
+성공했다. 두 변경은 현재 브랜치에서 함께 유지된다.
+
 2026-08-26 T117에서 `RadiusOption`과 slider의 selectable value를 100m·250m·500m·1km로 교체하고,
 validator가 이 네 값만 허용하며 위치 판정 parameterized test가 모든 새 반경을 실행하도록 갱신했다.
 격리 DerivedData에서 전체 `GetUpTests` 193개 test case(동적 인자 포함 227회)가 실패·skip 없이

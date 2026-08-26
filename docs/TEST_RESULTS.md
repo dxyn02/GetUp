@@ -24,6 +24,10 @@
 - 전체 `GetUpTests` 193개 test case, 동적 인자 포함 227회가 실패·skip 없이 통과했다.
 - 기존 2km·3km·4km·5km 저장값은 사용자 결정에 따라 migration·복원 범위에서 제외했다.
 
+T118 시간 시작 동기 적용 변경과 같은 브랜치로 합친 뒤 전체 `GetUpTests` 203회가 다시 실패·skip 없이
+통과했다. `testRequiredInputValidationAndApplicationSelection` UI 회귀 1개도 네 반경을 차례로 조절하고
+1km 저장 요약을 확인해 통과했으며, 앱과 세 Screen Time 확장을 포함한 Simulator build가 성공했다.
+
 ## T083 — 제한 활성화·해제 지연
 
 ### 합격 기준
