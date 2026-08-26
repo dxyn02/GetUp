@@ -131,13 +131,20 @@ actor RestrictionCoordinator {
             }
         )
         var performedEffect: RestrictionEffect?
-        if currentAppliedState.requiresReset
-            || desiredRuleRevisions != currentAppliedState.activeRuleRevisions {
-            if desiredRules.isEmpty {
+        let logicalStateChanged = currentAppliedState.requiresReset
+            || desiredRuleRevisions != currentAppliedState.activeRuleRevisions
+        if desiredRules.isEmpty {
+            if logicalStateChanged {
                 try await restrictionAdapter.removeRestriction()
                 performedEffect = .removeShield
-            } else {
-                try await restrictionAdapter.applyRestriction(for: desiredRules)
+            }
+        } else {
+            // The persisted revision set can remain active even when iOS has
+            // dropped the underlying Managed Settings shield. The adapter
+            // performs a store read-back and writes only when reconciliation
+            // is actually needed.
+            try await restrictionAdapter.applyRestriction(for: desiredRules)
+            if logicalStateChanged {
                 performedEffect = desiredRuleRevisions.isStrictSubset(
                     of: currentAppliedState.activeRuleRevisions
                 ) ? .removeShield : .applyShield

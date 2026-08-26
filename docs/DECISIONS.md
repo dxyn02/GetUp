@@ -1142,3 +1142,30 @@ store가 확인될 때만 동기 제거하며, 안전하게 분리할 수 없으
 **영향 범위**: `ManagedSettingsRestrictionAdapter`, `DeviceActivityIntervalEndHandler`, adapter 테스트,
 `platform-events-contract.md`, `FR-077`과 T114에 적용한다. DEC-061의 규칙별 store 및 migration 설명은
 더 이상 현재 구현 계약이 아니다.
+
+## DEC-063 — 앱 launch 상주 delegate의 region event 직접 재평가
+
+**날짜**: 2026-08-26
+
+**결정**: SwiftUI 앱은 `UIApplicationDelegateAdaptor`로 main run loop에서 생성한
+`CLLocationManager`와 delegate를 launch 시점부터 유지한다. `didEnterRegion`·`didExitRegion` callback의
+identifier가 `getup.location.<rule UUID>`이고 현재 활성 규칙과 일치할 때, 시스템이 확인한 전이를
+각각 `.inside`·`.outside`인 `.regionEvent` 위치 snapshot으로 App Group에 저장하고 즉시
+`RestrictionCoordinator.handleLocationEvent`로 제한 합집합을 재평가한다. 외부 namespace, 삭제됐거나
+비활성화된 규칙의 stale event는 무시한다.
+
+region callback 뒤 별도의 `requestLocation()` 성공을 해제 조건으로 추가하지 않는다. iOS geofence
+전이 자체를 신뢰 가능한 플랫폼 event로 사용하고, callback 전달 시각을 30초 측정의 `confirmedAt`으로
+삼는다. foreground 복구의 fresh fix와 위치 오류 보존 정책은 그대로 유지한다.
+
+**근거**: 기존 구현은 `CLCircularRegion`을 등록했지만 어느 `CLLocationManager`에도 region delegate를
+연결하지 않았다. 따라서 백그라운드 이탈 시 저장 위치와 제한을 갱신할 실행 지점이 없었고, 사용자가
+앱을 열었을 때만 `AppLifecycleCoordinator.restore()`의 fresh fix가 동작해 제한이 풀렸다. Core
+Location은 등록한 manager와 무관하게 활성 manager delegate에 region event를 전달하며, 앱이 region
+event로 재실행될 때도 launch에서 manager와 delegate를 다시 구성해야 한다. 전이 뒤 단발 위치 조회를
+추가하면 짧은 background 실행 시간과 위치 조회 실패 때문에 이미 확인된 이탈을 놓칠 수 있다.
+
+**영향 범위**: `GetUpApp`, `SharedIdentifiers`, `LocationRegionEventHandler`, 위치 monitoring adapter
+테스트, `FR-030`·`FR-031`·`FR-077`, T116과 T083·T085 실기기 인수에 적용한다. 사용자가 앱을 강제
+종료했거나 Background App Refresh를 끈 플랫폼 제한에서는 iOS가 앱을 깨우지 않을 수 있으며, 이는
+권한 안내와 실기기 인수에서 구분해 기록한다.

@@ -85,12 +85,12 @@ struct RestrictionCoordinatorTests {
 
         #expect(result.appliedState.activeRuleRevisions == identities([preserved]))
         #expect(result.transitionMeasurement == nil)
-        #expect(await adapter.applyCount == 0)
+        #expect(await adapter.applyCount == 1)
         #expect(await adapter.removeCount == 0)
     }
 
-    @Test("The same active rule revision set is idempotent")
-    func repeatedEvaluationHasNoAdapterEffect() async throws {
+    @Test("The same active revision still requests idempotent store reconciliation")
+    func repeatedEvaluationReconcilesAdapterWithoutLogicalTransition() async throws {
         let rule = TestFixtures.makeRule()
         let adapter = RecordingRestrictionAdapter(initialRules: [rule])
         let coordinator = makeCoordinator(
@@ -102,8 +102,29 @@ struct RestrictionCoordinatorTests {
         let result = try await coordinator.handleTimeEvent()
 
         #expect(result.transitionMeasurement == nil)
-        #expect(await adapter.applyCount == 0)
+        #expect(await adapter.applyCount == 1)
         #expect(await adapter.removeCount == 0)
+    }
+
+    @Test("An active state reasserts a shield that the system store lost")
+    func activeStateReassertsMissingShield() async throws {
+        let rule = TestFixtures.makeRule()
+        let adapter = RecordingRestrictionAdapter(
+            initialRules: [rule],
+            isShieldPresent: false
+        )
+        let coordinator = makeCoordinator(
+            rules: [rule],
+            conditions: [TestFixtures.makeLocationCondition(ruleID: rule.id)],
+            adapter: adapter
+        )
+
+        let result = try await coordinator.restore()
+
+        #expect(result.appliedState.activeRuleRevisions == identities([rule]))
+        #expect(result.transitionMeasurement == nil)
+        #expect(await adapter.applyCount == 1)
+        #expect(await adapter.isShieldPresent)
     }
 
     private func makeCoordinator(
@@ -183,8 +204,12 @@ private actor RecordingRestrictionAdapter: RestrictionApplying {
     private(set) var appliedRuleIDs: Set<UUID>
     private(set) var applyCount = 0
     private(set) var removeCount = 0
+    private(set) var isShieldPresent: Bool
 
-    init(initialRules: [RestrictionRuleSnapshot] = []) {
+    init(
+        initialRules: [RestrictionRuleSnapshot] = [],
+        isShieldPresent: Bool? = nil
+    ) {
         state = AppliedRestrictionState(
             activeRuleRevisions: Set(
                 initialRules.map {
@@ -193,12 +218,14 @@ private actor RecordingRestrictionAdapter: RestrictionApplying {
             )
         )
         appliedRuleIDs = Set(initialRules.map(\.id))
+        self.isShieldPresent = isShieldPresent ?? !initialRules.isEmpty
     }
 
     func currentAppliedState() -> AppliedRestrictionState { state }
 
     func applyRestriction(for rules: [RestrictionRuleSnapshot]) {
         applyCount += 1
+        isShieldPresent = true
         appliedRuleIDs = Set(rules.map(\.id))
         state = AppliedRestrictionState(
             activeRuleRevisions: Set(
@@ -211,6 +238,7 @@ private actor RecordingRestrictionAdapter: RestrictionApplying {
 
     func removeRestriction() {
         removeCount += 1
+        isShieldPresent = false
         appliedRuleIDs = []
         state = AppliedRestrictionState(activeRuleRevisions: [])
     }

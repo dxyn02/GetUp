@@ -329,6 +329,36 @@ struct ManagedSettingsRestrictionAdapterTests {
         )
     }
 
+    @Test("An unchanged revision repairs a missing application shield")
+    func unchangedRevisionRepairsApplicationShield() async throws {
+        let application = try applicationToken(seed: 25)
+        let rule = TestFixtures.makeRule(
+            revision: 7,
+            activitySelection: selection(applicationTokens: [application])
+        )
+        let store = RecordingManagedSettingsStoreAccess()
+        let stateStore = RecordingRestrictionApplicationStateStore(
+            initialState: AppliedRestrictionState(
+                activeRuleRevisions: [
+                    ActiveRuleRevision(ruleID: rule.id, revision: rule.revision),
+                ]
+            )
+        )
+        let adapter = ManagedSettingsRestrictionAdapter(
+            storeAccess: store,
+            stateStore: stateStore
+        )
+
+        try await adapter.applyRestriction(for: [rule])
+
+        #expect(store.writeCount == 1)
+        #expect(
+            store.shieldSelection(
+                named: SharedIdentifiers.managedSettingsStoreName
+            ).applications == [application]
+        )
+    }
+
     @Test("A legacy applied flag forces the old named store to be cleared")
     func legacyAppliedStateRequiresReset() async throws {
         let stateStore = RecordingRestrictionApplicationStateStore(

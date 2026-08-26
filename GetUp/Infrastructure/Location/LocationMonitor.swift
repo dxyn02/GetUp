@@ -241,8 +241,6 @@ final class CoreLocationFixProvider: NSObject,
 }
 
 actor LocationMonitor: LocationMonitoring {
-    private static let regionIdentifierPrefix = "getup.location."
-
     private let evidenceProvider: any LocationEvidenceProviding
     private let conditionRepository: any LocationConditionRepository
     private let savedPlaceRepository: (any SavedPlaceRepository)?
@@ -285,7 +283,7 @@ actor LocationMonitor: LocationMonitoring {
             throw LocationMonitorError.monitoringUnavailable
         }
 
-        let identifier = Self.regionIdentifier(for: rule.id)
+        let identifier = SharedIdentifiers.locationRegionIdentifier(for: rule.id)
 
         guard rule.isEnabled else {
             await regionMonitor.stopMonitoring(identifier: identifier)
@@ -329,7 +327,7 @@ actor LocationMonitor: LocationMonitoring {
         }
 
         let identifiers = await regionMonitor.monitoredRegionIdentifiers().filter {
-            $0.hasPrefix(Self.regionIdentifierPrefix)
+            $0.hasPrefix("\(SharedIdentifiers.locationRegionIdentifierPrefix).")
         }
         for identifier in identifiers {
             await regionMonitor.stopMonitoring(identifier: identifier)
@@ -372,9 +370,68 @@ actor LocationMonitor: LocationMonitoring {
         try? await conditionRepository.saveLocationCondition(snapshot)
         return snapshot
     }
+}
 
-    private static func regionIdentifier(for ruleID: UUID) -> String {
-        "\(regionIdentifierPrefix)\(ruleID.uuidString.lowercased())"
+enum LocationRegionTransition: Equatable, Sendable {
+    case entered
+    case exited
+
+    var conditionState: LocationConditionState {
+        switch self {
+        case .entered:
+            .inside
+        case .exited:
+            .outside
+        }
+    }
+}
+
+actor LocationRegionEventHandler {
+    private let ruleRepository: any RuleRepository
+    private let conditionRepository: any LocationConditionRepository
+    private let restrictionCoordinator: RestrictionCoordinator
+
+    init(
+        ruleRepository: any RuleRepository,
+        conditionRepository: any LocationConditionRepository,
+        restrictionCoordinator: RestrictionCoordinator
+    ) {
+        self.ruleRepository = ruleRepository
+        self.conditionRepository = conditionRepository
+        self.restrictionCoordinator = restrictionCoordinator
+    }
+
+    func handle(
+        regionIdentifier: String,
+        transition: LocationRegionTransition,
+        confirmedAt: Date
+    ) async throws -> RestrictionCoordinationResult? {
+        guard
+            let ruleID = SharedIdentifiers.ruleID(
+                fromLocationRegionIdentifier: regionIdentifier
+            ),
+            let rule = try await ruleRepository.loadRuleCollection()?.rules
+                .first(where: { $0.id == ruleID && $0.isEnabled })
+        else {
+            return nil
+        }
+
+        try await conditionRepository.saveLocationCondition(
+            LocationConditionSnapshot(
+                ruleID: rule.id,
+                ruleRevision: rule.revision,
+                state: transition.conditionState,
+                observedAt: confirmedAt,
+                distanceMeters: nil,
+                horizontalAccuracyMeters: nil,
+                source: .regionEvent
+            )
+        )
+
+        return try await restrictionCoordinator.handleLocationEvent(
+            ruleID: rule.id,
+            confirmedAt: confirmedAt
+        )
     }
 }
 
@@ -386,4 +443,5 @@ extension DependencyContainer {
             savedPlaceRepository: savedPlaceRepository
         )
     }
+
 }

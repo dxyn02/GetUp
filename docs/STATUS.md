@@ -7,15 +7,16 @@
 Phase 7 마무리 및 교차 관심사 진행 중
 
 ## 진행 중
-T083 — 자동 latency 100회 계측과 결과 형식은 구현·검증했으며, 실제 `ManagedSettingsStore`와 선택
-앱 사용 가능 상태의 실기기 관찰을 진행 중
+T083·T085 — 자동 latency 100회 계측과 결과 형식은 구현·검증했으며, T116 수정 빌드에서 위치 이탈
+callback의 실제 `ManagedSettingsStore` 해제를 실기기로 재확인할 예정
 
 ## 마지막 완료 작업
-T084 — `GetUp.xctestplan`의 전체 단위·통합·UI suite 234개를 실행해 실패·skip 없이 통과하고
-Simulator 미검증 동작을 분리 기록함
+T116 — app launch 상주 Core Location delegate를 연결해 background·재실행 region 이탈 event가
+App Group 위치 상태와 Screen Time 제한 합집합을 즉시 재평가하도록 수정함
 
 ## 다음 작업
-T085 — quickstart 실기기 인수 시나리오 수행 및 결과 기록. 저장소에서 바로 진행 가능한 후속은
+T083·T085 — 수정 빌드를 실기기에 설치하고 앱을 강제 종료하지 않은 suspended·background 상태와
+시스템에 의한 종료 상태에서 위치 이탈 자동 해제를 재검증. 저장소에서 바로 진행 가능한 후속은
 T086 구현·하이파이 편차 대조
 
 ## 차단 상태
@@ -29,6 +30,20 @@ BLK-010 열림. `com.dxyn02.GetUp` namespace의 네 App ID 등록과
 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-08-26 T115에서 적용 revision set이 그대로여도 활성 규칙이 있으면 adapter의 idempotent store
+read-back·reconcile을 실행하도록 변경했다. App Group 상태만 활성이고 실제 application shield가 빈
+경우 동일 selection을 다시 쓰는 회귀를 추가했으며, 논리 상태가 같으면 transition measurement는
+중복 생성하지 않는다.
+
+같은 날 T116에서 실기기 위치 이탈 뒤 나서 앱에 진입해야 제한이 해제된다는 사용자 관찰을 재현 경로로
+분석했다. 기존 `SystemLocationRegionMonitor`는 region을 등록하지만 `didEnterRegion`·`didExitRegion`
+delegate가 전혀 없어 백그라운드에서 `RestrictionCoordinator`가 실행되지 않았다. 앱 launch 상주
+`LocationRegionAppDelegate`와 `LocationRegionEventHandler`를 추가해 현재 GetUp 규칙의 region 전이를
+`.regionEvent` snapshot으로 저장하고 즉시 제한 합집합을 재평가한다. 외부 namespace·stale event는
+무시한다. iPhone 17 Pro iOS 26.5 Simulator에서 전체 `GetUpTests` 195개(동적 실행 포함 238회)가
+실패·skip 없이 통과했고, 앱과 세 Screen Time 확장을 포함한 generic Simulator build도 통과했다.
+실제 background·시스템 종료 상태의 callback 전달과 shield 해제는 수정 빌드 실기기 재검증이 남았다.
+
 2026-08-26 T084에서 `GetUp.xctestplan`의 `GetUpTests`와 `GetUpUITests`를 iPhone 17 Pro iOS 26.5
 Simulator에서 순차 실행했다. 단위·통합 193개와 UI 41개, 총 234개 test case가 모두 통과했고 실패·
 skip·expected failure는 0개였다. Swift Testing 동적 인자를 포함한 device configuration 실행 수는
