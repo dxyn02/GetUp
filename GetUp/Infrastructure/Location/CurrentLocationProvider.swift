@@ -1,5 +1,6 @@
 import CoreLocation
 import Foundation
+import UIKit
 
 enum CurrentLocationProviderError: Error, Equatable, Sendable {
     case authorizationRequired
@@ -68,23 +69,35 @@ final class CoreLocationCurrentLocationSession: NSObject,
     CurrentLocationSession,
     @preconcurrency CLLocationManagerDelegate
 {
+    private static let defaultAlwaysAuthorizationFallbackNanoseconds: UInt64 = 1_000_000_000
+
     private enum SessionError: Error {
         case requestInProgress
         case locationUnavailable
     }
 
     private let manager: CLLocationManager
+    private let alwaysAuthorizationFallbackNanoseconds: UInt64
     private var authorizationContinuation: CheckedContinuation<
         LocationAuthorizationStatus,
         Never
     >?
+    private var authorizationFallbackTask: Task<Void, Never>?
+    private var alwaysAuthorizationPromptWasPresented = false
+    private var isAwaitingAlwaysAuthorization = false
     private var locationContinuation: CheckedContinuation<
         ReferenceLocation,
         any Error
     >?
 
-    init(manager: CLLocationManager = CLLocationManager()) {
+    init(
+        manager: CLLocationManager = CLLocationManager(),
+        alwaysAuthorizationFallbackNanoseconds: UInt64 =
+            defaultAlwaysAuthorizationFallbackNanoseconds
+    ) {
         self.manager = manager
+        self.alwaysAuthorizationFallbackNanoseconds =
+            alwaysAuthorizationFallbackNanoseconds
         super.init()
         manager.delegate = self
     }
@@ -121,7 +134,10 @@ final class CoreLocationCurrentLocationSession: NSObject,
 
         return await withCheckedContinuation { continuation in
             authorizationContinuation = continuation
+            isAwaitingAlwaysAuthorization = true
+            observeApplicationLifecycleForAlwaysAuthorization()
             manager.requestAlwaysAuthorization()
+            scheduleAlwaysAuthorizationFallbackIfNeeded()
         }
     }
 
@@ -141,9 +157,11 @@ final class CoreLocationCurrentLocationSession: NSObject,
         guard status != .notDetermined else {
             return
         }
+        if isAwaitingAlwaysAuthorization, status == .whenInUse {
+            return
+        }
 
-        authorizationContinuation?.resume(returning: status)
-        authorizationContinuation = nil
+        finishAuthorizationRequest(returning: status)
     }
 
     func locationManager(
@@ -184,6 +202,91 @@ final class CoreLocationCurrentLocationSession: NSObject,
 
         self.locationContinuation = nil
         locationContinuation.resume(with: result)
+    }
+
+    private func scheduleAlwaysAuthorizationFallbackIfNeeded() {
+        guard authorizationContinuation != nil else {
+            return
+        }
+
+        // Core Location ignores this request after Allow Once and also sends no
+        // authorization callback when the user keeps When In Use permission.
+        authorizationFallbackTask?.cancel()
+        let delay = alwaysAuthorizationFallbackNanoseconds
+        authorizationFallbackTask = Task { @MainActor [weak self] in
+            do {
+                try await Task.sleep(nanoseconds: delay)
+            } catch {
+                return
+            }
+
+            guard let self else {
+                return
+            }
+            guard !alwaysAuthorizationPromptWasPresented else {
+                return
+            }
+            finishAuthorizationRequest(returning: authorizationStatus())
+        }
+    }
+
+    private func observeApplicationLifecycleForAlwaysAuthorization() {
+        alwaysAuthorizationPromptWasPresented = false
+        let center = NotificationCenter.default
+        center.addObserver(
+            self,
+            selector: #selector(applicationWillResignActiveDuringAuthorizationRequest),
+            name: UIApplication.willResignActiveNotification,
+            object: nil
+        )
+        center.addObserver(
+            self,
+            selector: #selector(applicationDidBecomeActiveAfterAuthorizationRequest),
+            name: UIApplication.didBecomeActiveNotification,
+            object: nil
+        )
+    }
+
+    @objc
+    private func applicationWillResignActiveDuringAuthorizationRequest() {
+        guard authorizationContinuation != nil else {
+            return
+        }
+        alwaysAuthorizationPromptWasPresented = true
+    }
+
+    @objc
+    private func applicationDidBecomeActiveAfterAuthorizationRequest() {
+        guard alwaysAuthorizationPromptWasPresented else {
+            return
+        }
+        finishAuthorizationRequest(returning: authorizationStatus())
+    }
+
+    private func finishAuthorizationRequest(
+        returning status: LocationAuthorizationStatus
+    ) {
+        guard let authorizationContinuation else {
+            return
+        }
+
+        self.authorizationContinuation = nil
+        authorizationFallbackTask?.cancel()
+        authorizationFallbackTask = nil
+        alwaysAuthorizationPromptWasPresented = false
+        isAwaitingAlwaysAuthorization = false
+        let center = NotificationCenter.default
+        center.removeObserver(
+            self,
+            name: UIApplication.willResignActiveNotification,
+            object: nil
+        )
+        center.removeObserver(
+            self,
+            name: UIApplication.didBecomeActiveNotification,
+            object: nil
+        )
+        authorizationContinuation.resume(returning: status)
     }
 
     private static func authorizationStatus(

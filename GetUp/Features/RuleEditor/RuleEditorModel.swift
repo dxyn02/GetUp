@@ -167,6 +167,7 @@ final class RuleEditorModel {
         modificationGuard: RestrictionModificationGuard? = nil,
         makeID: @escaping () -> UUID = UUID.init,
         now: @escaping () -> Date = Date.init,
+        calendar: Calendar = .autoupdatingCurrent,
         applicationTokenCounter: @escaping (FamilyActivitySelection) -> Int = {
             $0.restrictionTargetCount
         }
@@ -177,19 +178,30 @@ final class RuleEditorModel {
         self.savedPlaces = savedPlaces
         self.modificationGuard = modificationGuard
 
-        let source = draft ?? RuleEditorDraft(
-            id: makeID(),
-            sourceRevision: nil,
-            isEnabled: true,
-            name: nil,
-            weekdays: [],
-            startTime: TimeOfDay(hour: 6, minute: 0),
-            endTime: TimeOfDay(hour: 9, minute: 0),
-            savedPlaceID: nil,
-            radius: .meters1000,
-            activitySelection: FamilyActivitySelection(),
-            createdAt: now()
-        )
+        let source: RuleEditorDraft
+        if let draft {
+            source = draft
+        } else {
+            let timestamp = now()
+            let components = calendar.dateComponents([.hour, .minute], from: timestamp)
+            let startTime = TimeOfDay(
+                hour: components.hour ?? 0,
+                minute: components.minute ?? 0
+            )
+            source = RuleEditorDraft(
+                id: makeID(),
+                sourceRevision: nil,
+                isEnabled: true,
+                name: nil,
+                weekdays: [],
+                startTime: startTime,
+                endTime: ScheduleEvaluator.minimumEndTime(startTime: startTime),
+                savedPlaceID: nil,
+                radius: .meters1000,
+                activitySelection: FamilyActivitySelection(),
+                createdAt: timestamp
+            )
+        }
 
         mode = draft == nil ? .creating : .editing
         ruleID = source.id
@@ -229,6 +241,13 @@ final class RuleEditorModel {
 
     func replaceSavedPlaces(with savedPlaces: [SavedPlaceSnapshot]) {
         self.savedPlaces = savedPlaces
+    }
+
+    func removeSavedPlace(id: UUID) {
+        savedPlaces.removeAll { $0.id == id }
+        if selectedSavedPlaceID == id {
+            selectedSavedPlaceID = nil
+        }
     }
 
     func applyLocationCompletion(_ completion: LocationPickerCompletion) {

@@ -21,7 +21,7 @@ enum PermissionGuideCapability: CaseIterable, Equatable, Sendable {
         case .familyControls: "앱 사용 제한"
         case .alwaysLocation: "위치 접근"
         case .fullAccuracy: "정확한 위치"
-        case .backgroundRefresh: "Background App Refresh"
+        case .backgroundRefresh: "백그라운드 앱 새로고침"
         }
     }
 }
@@ -413,15 +413,23 @@ final class PermissionGuideModel {
             }
             let isWhenInUseRequest = action == .requestLocationAuthorization
             let isAlwaysRequest = action == .requestAlwaysLocationAuthorization
+            let message: String
+            if isWhenInUseRequest {
+                message = "정확한 위치를 ‘켬’으로 설정한 뒤, ‘앱을 사용하는 동안 허용’을 눌러 주세요."
+            } else if authorization.locationAuthorization == .whenInUse
+                && alwaysLocationRequestWasDeclined
+            {
+                message = "‘한 번만 허용’을 선택했거나 ‘항상 허용’으로 변경하지 않았다면, 설정에서 위치 접근을 ‘항상’으로 바꿔 주세요."
+            } else {
+                message = "앱이 닫혀 있어도 규칙을 자동으로 적용하거나 해제하려면 ‘항상 허용으로 변경’을 눌러주세요."
+            }
             return PermissionGuideScreenState(
                 kind: kind,
                 eyebrow: isAlwaysRequest ? "LOCATION ACCESS · ALWAYS" : "LOCATION ACCESS",
                 title: isAlwaysRequest
                     ? "항상 위치 접근 권한이 필요해요"
                     : "정확한 위치 접근 권한이 필요해요",
-                message: isWhenInUseRequest
-                    ? "정확한 위치를 ‘켬’으로 설정한 뒤, ‘앱을 사용하는 동안 허용’을 눌러 주세요."
-                    : "앱이 닫혀 있어도 규칙을 자동으로 적용하거나 해제하려면 ‘항상 허용으로 변경’을 눌러주세요.",
+                message: message,
                 capabilityItems: [
                     makeCapabilityItem(.alwaysLocation),
                     makeCapabilityItem(.fullAccuracy),

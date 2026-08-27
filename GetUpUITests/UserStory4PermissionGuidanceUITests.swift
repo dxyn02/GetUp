@@ -189,6 +189,11 @@ final class UserStory4PermissionGuidanceUITests: XCTestCase {
         XCTAssertTrue(
             app.buttons["permissionGuide.openSettings"].waitForExistence(timeout: 2)
         )
+        XCTAssertTrue(
+            app.staticTexts[
+                "‘한 번만 허용’을 선택했거나 ‘항상 허용’으로 변경하지 않았다면, 설정에서 위치 접근을 ‘항상’으로 바꿔 주세요."
+            ].exists
+        )
         XCTAssertFalse(app.buttons["permissionGuide.requestAlwaysLocationAuthorization"].exists)
     }
 

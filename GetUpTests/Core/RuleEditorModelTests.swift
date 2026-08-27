@@ -6,6 +6,40 @@ import Testing
 @MainActor
 @Suite("Rule editor model")
 struct RuleEditorModelTests {
+    @Test("A new rule starts now and ends fifteen minutes later")
+    func newRuleUsesCurrentTimeForInitialSchedule() {
+        var calendar = TestFixtures.calendar
+        calendar.timeZone = TestFixtures.timeZone
+        let model = RuleEditorModel(
+            savedPlaces: [],
+            makeID: { Self.ruleID },
+            now: { TestFixtures.now },
+            calendar: calendar
+        )
+
+        #expect(model.startTime == TimeOfDay(hour: 7, minute: 0))
+        #expect(model.endTime == TimeOfDay(hour: 7, minute: 15))
+        #expect(model.createdAt == TestFixtures.now)
+    }
+
+    @Test("A new rule wraps its default end time across midnight")
+    func newRuleInitialScheduleWrapsAcrossMidnight() {
+        var calendar = TestFixtures.calendar
+        calendar.timeZone = TestFixtures.timeZone
+        let lateNow = calendar.date(
+            from: DateComponents(year: 2026, month: 8, day: 17, hour: 23, minute: 50)
+        )!
+        let model = RuleEditorModel(
+            savedPlaces: [],
+            makeID: { Self.ruleID },
+            now: { lateNow },
+            calendar: calendar
+        )
+
+        #expect(model.startTime == TimeOfDay(hour: 23, minute: 50))
+        #expect(model.endTime == TimeOfDay(hour: 0, minute: 5))
+    }
+
     @Test("A new rule keeps its optional name but reports every required input")
     func newRuleStartsWithRequiredValidationErrors() {
         let model = makeModel()
@@ -218,6 +252,19 @@ struct RuleEditorModelTests {
         #expect(model.validationErrors.contains(.savedPlaceNotFound))
     }
 
+    @Test("Deleting a custom place clears an unsaved draft selection")
+    func explicitSavedPlaceDeletionClearsDraftSelection() {
+        let savedPlace = makeSavedPlace()
+        let model = makeModel(savedPlaces: [savedPlace])
+        model.selectSavedPlace(id: savedPlace.id)
+
+        model.removeSavedPlace(id: savedPlace.id)
+
+        #expect(model.savedPlaces.isEmpty)
+        #expect(model.selectedSavedPlaceID == nil)
+        #expect(model.validationErrors.contains(.savedPlaceRequired))
+    }
+
     @Test("New editors keep separate stable rule identities")
     func newRulesHaveIndependentIdentities() {
         let first = makeModel(ruleID: Self.ruleID)
@@ -245,6 +292,7 @@ struct RuleEditorModelTests {
             modificationGuard: modificationGuard,
             makeID: IDSequence([ruleID, Self.newPlaceID]).next,
             now: { TestFixtures.now },
+            calendar: TestFixtures.calendar,
             applicationTokenCounter: { _ in applicationTokenCount }
         )
     }

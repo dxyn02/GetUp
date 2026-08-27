@@ -18,6 +18,12 @@ enum AppRuleSaveError: Error, Equatable, Sendable {
     case activeRestriction
 }
 
+enum AppSavedPlaceDeletionError: Error, Equatable, Sendable {
+    case notFound
+    case protectedPreset
+    case inUse(ruleCount: Int)
+}
+
 struct HomeRuleItem: Equatable, Identifiable, @unchecked Sendable {
     let rule: RestrictionRuleSnapshot
     let savedPlace: SavedPlaceSnapshot
@@ -235,6 +241,50 @@ final class AppModel {
         self.editorModel = nil
     }
 
+    func deleteSavedPlace(id: UUID) async throws {
+        if !savedPlaces.contains(where: { $0.id == id }) {
+            guard let draftOnlyPlace = editorModel?.savedPlaces.first(where: {
+                $0.id == id
+            }) else {
+                throw AppSavedPlaceDeletionError.notFound
+            }
+            guard !Self.isProtectedPreset(draftOnlyPlace) else {
+                throw AppSavedPlaceDeletionError.protectedPreset
+            }
+
+            editorModel?.removeSavedPlace(id: id)
+            return
+        }
+
+        let service = RuleConfigurationService(
+            ruleRepository: ruleRepository,
+            savedPlaceRepository: savedPlaceRepository,
+            now: now,
+            applicationTokenCounter: applicationTokenCounter
+        )
+
+        let updatedPlaces: SavedPlaceCollectionSnapshot
+        do {
+            updatedPlaces = try await service.deleteSavedPlace(id: id)
+        } catch RuleConfigurationServiceError.savedPlaceNotFound {
+            throw AppSavedPlaceDeletionError.notFound
+        } catch RuleConfigurationServiceError.protectedSavedPlace {
+            throw AppSavedPlaceDeletionError.protectedPreset
+        } catch RuleConfigurationServiceError.savedPlaceInUse(let ruleIDs) {
+            throw AppSavedPlaceDeletionError.inUse(ruleCount: ruleIDs.count)
+        }
+
+        savedPlaces = updatedPlaces.places
+        editorModel?.removeSavedPlace(id: id)
+    }
+
+    private static func isProtectedPreset(_ place: SavedPlaceSnapshot) -> Bool {
+        let key = SavedPlaceNamePolicy.uniquenessKey(place.name)
+        return ["집", "회사"].contains {
+            SavedPlaceNamePolicy.uniquenessKey($0) == key
+        }
+    }
+
     private func makeEditorModel(
         draft: RuleEditorDraft?,
         modificationGuard: RestrictionModificationGuard? = nil,
@@ -246,6 +296,7 @@ final class AppModel {
             modificationGuard: modificationGuard,
             makeID: makeID,
             now: now,
+            calendar: calendar,
             applicationTokenCounter: tokenCounter ?? applicationTokenCounter
         )
     }

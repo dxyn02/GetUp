@@ -81,6 +81,117 @@ final class UserStory1RuleConfigurationUITests: XCTestCase {
     }
 
     @MainActor
+    func testCustomPlaceChipUsesEnteredNameAndCanReopenTheNameField() {
+        let app = launchApp(
+            scenario: "empty-editor",
+            storeID: #function,
+            resetStore: true
+        )
+
+        app.buttons["ruleEditor.locationRow"].tap()
+        let customPlace = app.buttons["locationPicker.customPlace"]
+        customPlace.tap()
+
+        let placeName = app.textFields["locationPicker.placeName"]
+        XCTAssertTrue(placeName.waitForExistence(timeout: 2))
+        placeName.typeText("Study")
+        XCTAssertEqual(customPlace.label, "Study")
+
+        placeName.typeText("\n")
+        XCTAssertFalse(placeName.exists)
+
+        customPlace.tap()
+        XCTAssertTrue(placeName.waitForExistence(timeout: 2))
+        placeName.typeText("2")
+        XCTAssertEqual(customPlace.label, "Study2")
+    }
+
+    @MainActor
+    func testSelectedPlaceRemainsSelectedAfterLeavingAndReenteringLocationPicker() {
+        let app = launchApp(
+            scenario: "empty-editor",
+            storeID: #function,
+            resetStore: true
+        )
+
+        app.buttons["ruleEditor.locationRow"].tap()
+        let home = app.buttons["locationPicker.savedPlace.home"]
+        XCTAssertTrue(home.waitForExistence(timeout: 2))
+        home.tap()
+        XCTAssertTrue(home.isSelected)
+
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(app.buttons["ruleEditor.locationRow"].waitForExistence(timeout: 2))
+        app.buttons["ruleEditor.locationRow"].tap()
+
+        XCTAssertTrue(home.waitForExistence(timeout: 2))
+        XCTAssertTrue(home.isSelected)
+    }
+
+    @MainActor
+    func testDeletingUnusedCustomPlaceRequiresConfirmationAndPersists() {
+        let storeID = #function
+        let customID = "locationPicker.savedPlace.00000000-0000-4000-8000-000000000503"
+        var app = launchApp(
+            scenario: "unused-custom-place-editor",
+            storeID: storeID,
+            resetStore: true
+        )
+
+        app.buttons["ruleEditor.locationRow"].tap()
+        let customPlace = app.buttons[customID]
+        XCTAssertTrue(customPlace.waitForExistence(timeout: 2))
+        app.buttons["\(customID).delete"].tap()
+
+        let confirmation = app.alerts["도서관을 삭제할까요?"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 2))
+        confirmation.buttons["삭제"].tap()
+        XCTAssertFalse(customPlace.waitForExistence(timeout: 1))
+
+        app.terminate()
+        app = launchApp(
+            scenario: "unused-custom-place-editor",
+            storeID: storeID
+        )
+        app.buttons["ruleEditor.locationRow"].tap()
+        XCTAssertFalse(app.buttons[customID].waitForExistence(timeout: 1))
+    }
+
+    @MainActor
+    func testDeletingCustomPlaceImmediatelyAfterAddingItRemovesTheDraftPlace() {
+        let app = launchApp(
+            scenario: "empty-editor",
+            storeID: #function,
+            resetStore: true
+        )
+
+        app.buttons["ruleEditor.locationRow"].tap()
+        app.buttons["locationPicker.customPlace"].tap()
+        let nameField = app.textFields["locationPicker.placeName"]
+        XCTAssertTrue(nameField.waitForExistence(timeout: 2))
+        nameField.typeText("Study")
+        nameField.typeText("\n")
+        let applyButton = app.buttons["locationPicker.confirm"]
+        XCTAssertTrue(applyButton.isEnabled)
+        applyButton.tap()
+
+        XCTAssertTrue(app.buttons["ruleEditor.locationRow"].waitForExistence(timeout: 2))
+        app.buttons["ruleEditor.locationRow"].tap()
+        let deleteButton = app.buttons["Study 삭제"]
+        XCTAssertTrue(deleteButton.waitForExistence(timeout: 2))
+        deleteButton.tap()
+
+        let confirmation = app.alerts["Study을 삭제할까요?"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 2))
+        confirmation.buttons["삭제"].tap()
+
+        XCTAssertFalse(deleteButton.waitForExistence(timeout: 1))
+        XCTAssertFalse(app.buttons["Study"].exists)
+        XCTAssertFalse(app.alerts["장소를 삭제하지 못했어요"].exists)
+        XCTAssertFalse(app.buttons["locationPicker.confirm"].isEnabled)
+    }
+
+    @MainActor
     func testApplicationSelectionWithoutScreenTimePermissionPresentsPermissionGuide() {
         let app = launchApp(
             scenario: "empty-editor-family-controls-undetermined",
@@ -329,6 +440,32 @@ final class UserStory1RuleConfigurationUITests: XCTestCase {
     }
 
     @MainActor
+    func testDeletingEveryRuleTransitionsFromPagerToEmptyHomeWithoutTerminating() {
+        let app = launchApp(
+            scenario: "three-saved-rules",
+            storeID: #function,
+            resetStore: true
+        )
+
+        deleteRule(accessibilityID: "rule-1", in: app)
+        XCTAssertEqual(app.otherElements["home.rulePageIndicator"].label, "1 / 2")
+
+        deleteRule(accessibilityID: "rule-2", in: app)
+        XCTAssertFalse(app.otherElements["home.rulePager"].exists)
+        XCTAssertTrue(app.otherElements["home.ruleCard.rule-3"].waitForExistence(timeout: 2))
+
+        deleteRule(accessibilityID: "rule-3", in: app)
+
+        XCTAssertEqual(app.state, .runningForeground)
+        XCTAssertTrue(
+            app.staticTexts["home.emptyState.description"]
+                .waitForExistence(timeout: 2)
+        )
+        XCTAssertFalse(app.otherElements["home.rulePager"].exists)
+        XCTAssertFalse(app.otherElements["home.ruleCard.rule-3"].exists)
+    }
+
+    @MainActor
     private func launchApp(
         scenario: String? = nil,
         storeID: String,
@@ -388,10 +525,25 @@ final class UserStory1RuleConfigurationUITests: XCTestCase {
             line: line
         )
         XCTAssertEqual(
-            app.otherElements["home.rulePageIndicator"].label,
-            "1 / 1",
+            app.scrollViews.count,
+            0,
             file: file,
             line: line
         )
+        XCTAssertFalse(app.otherElements["home.rulePager"].exists, file: file, line: line)
+        XCTAssertFalse(app.otherElements["home.rulePageIndicator"].exists, file: file, line: line)
+        XCTAssertFalse(app.staticTexts["좌우로 밀어 보기"].exists, file: file, line: line)
+    }
+
+    @MainActor
+    private func deleteRule(accessibilityID: String, in app: XCUIApplication) {
+        let edit = app.buttons["home.ruleCard.\(accessibilityID).edit"]
+        XCTAssertTrue(edit.waitForExistence(timeout: 2))
+        edit.tap()
+
+        app.buttons["ruleEditor.delete"].tap()
+        let confirmation = app.alerts["규칙을 삭제할까요?"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 2))
+        confirmation.buttons["삭제"].tap()
     }
 }

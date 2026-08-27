@@ -382,6 +382,8 @@ struct PermissionGuideModelTests {
 
         #expect(model.currentScreen?.kind == .location)
         #expect(model.currentScreen?.primaryAction == .openSettings)
+        #expect(model.currentScreen?.message.contains("한 번만 허용") == true)
+        #expect(model.currentScreen?.message.contains("설정") == true)
     }
 
     @Test("Background refresh remains diagnostic and finishes onboarding with Start")

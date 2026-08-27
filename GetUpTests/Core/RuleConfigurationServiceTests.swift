@@ -284,6 +284,57 @@ struct RuleConfigurationServiceTests {
         #expect(await repository.writeOrder.isEmpty)
     }
 
+    @Test("Deleting an unused custom place persists an empty collection with a new revision")
+    func deletesUnusedCustomPlace() async throws {
+        let customPlace = makePlace(name: "도서관")
+        let repository = InMemoryRuleConfigurationRepository(
+            places: SavedPlaceCollectionSnapshot(revision: 3, places: [customPlace])
+        )
+        let service = makeService(repository: repository)
+
+        let deleted = try await service.deleteSavedPlace(id: customPlace.id)
+
+        #expect(deleted.revision == 4)
+        #expect(deleted.places.isEmpty)
+        #expect(await repository.storedPlaces == deleted)
+        #expect(await repository.writeOrder == [.places])
+    }
+
+    @Test("A custom place referenced by any rule cannot be deleted")
+    func rejectsReferencedCustomPlaceDeletion() async throws {
+        let customPlace = makePlace(name: "도서관")
+        let rule = makeRule(revision: 2, savedPlaceID: customPlace.id)
+        let repository = InMemoryRuleConfigurationRepository(
+            rules: RestrictionRuleCollectionSnapshot(revision: 4, rules: [rule]),
+            places: SavedPlaceCollectionSnapshot(revision: 3, places: [customPlace])
+        )
+        let service = makeService(repository: repository)
+
+        await #expect(throws: RuleConfigurationServiceError.savedPlaceInUse(
+            ruleIDs: [rule.id]
+        )) {
+            try await service.deleteSavedPlace(id: customPlace.id)
+        }
+
+        #expect(await repository.storedPlaces?.places == [customPlace])
+        #expect(await repository.writeOrder.isEmpty)
+    }
+
+    @Test("Home and work preset places cannot be deleted")
+    func rejectsProtectedPresetDeletion() async throws {
+        let home = makePlace(name: " 집 ")
+        let repository = InMemoryRuleConfigurationRepository(
+            places: SavedPlaceCollectionSnapshot(revision: 3, places: [home])
+        )
+        let service = makeService(repository: repository)
+
+        await #expect(throws: RuleConfigurationServiceError.protectedSavedPlace) {
+            try await service.deleteSavedPlace(id: home.id)
+        }
+
+        #expect(await repository.writeOrder.isEmpty)
+    }
+
     private func makeService(
         repository: InMemoryRuleConfigurationRepository,
         synchronizeRuntimeAfterSave: @escaping @Sendable (
@@ -322,10 +373,10 @@ struct RuleConfigurationServiceTests {
         )
     }
 
-    private func makePlace() -> SavedPlaceSnapshot {
+    private func makePlace(name: String = "집") -> SavedPlaceSnapshot {
         SavedPlaceSnapshot(
             id: UUID(uuidString: "00000000-0000-4000-8000-000000000203")!,
-            name: "집",
+            name: name,
             coordinate: ReferenceLocation(latitude: 37.0, longitude: 127.0),
             createdAt: Date(timeIntervalSince1970: 1_000),
             updatedAt: Date(timeIntervalSince1970: 1_000)

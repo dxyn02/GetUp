@@ -8,6 +8,7 @@ struct LocationPickerView: View {
 
     private let onApply: () -> Void
     private let onOpenSettings: () -> Void
+    private let onDeleteSavedPlace: @MainActor (UUID) async throws -> Void
 
     @State private var cameraPosition: MapCameraPosition
     @State private var visibleCenter: ReferenceLocation
@@ -15,18 +16,22 @@ struct LocationPickerView: View {
     @State private var isLocating = false
     @State private var showsCustomNameField = false
     @State private var customPlaceNameInput = ""
+    @State private var savedPlaceAlert: SavedPlaceAlert?
+    @State private var deletingSavedPlaceID: UUID?
     @FocusState private var isCustomNameFocused: Bool
 
     init(
         model: LocationPickerModel,
         radius: Binding<RadiusOption>,
         onApply: @escaping () -> Void,
-        onOpenSettings: @escaping () -> Void
+        onOpenSettings: @escaping () -> Void,
+        onDeleteSavedPlace: @escaping @MainActor (UUID) async throws -> Void
     ) {
         self.model = model
         self._radius = radius
         self.onApply = onApply
         self.onOpenSettings = onOpenSettings
+        self.onDeleteSavedPlace = onDeleteSavedPlace
         self._cameraPosition = State(
             initialValue: .region(
                 Self.cameraRegion(
@@ -36,6 +41,7 @@ struct LocationPickerView: View {
             )
         )
         self._visibleCenter = State(initialValue: model.cameraCenter)
+        self._pendingProgrammaticCenter = State(initialValue: model.cameraCenter)
     }
 
     var body: some View {
@@ -73,6 +79,9 @@ struct LocationPickerView: View {
         }
         .task {
             await loadInitialCurrentLocation()
+        }
+        .alert(item: $savedPlaceAlert) { alert in
+            savedPlaceDeletionAlert(alert)
         }
     }
 
@@ -193,16 +202,30 @@ struct LocationPickerView: View {
                 }
 
                 let isCustomSelected = model.selectedPlaceChoice == .custom
-                Button("직접 입력", systemImage: "chevron.forward") {
+                Button {
                     showsCustomNameField = true
-                    customPlaceNameInput = ""
-                    model.selectCustomPlaceName()
+                    if isCustomSelected {
+                        customPlaceNameInput = model.placeName
+                    } else {
+                        customPlaceNameInput = ""
+                        model.selectCustomPlaceName()
+                    }
                     isCustomNameFocused = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(customPlaceChipTitle)
+                        if customPlaceChipTitle == "직접 입력" {
+                            Image(systemName: "chevron.forward")
+                        }
+                    }
                 }
-                .labelStyle(.titleAndIcon)
                 .buttonStyle(LocationChoiceButtonStyle(isSelected: isCustomSelected))
                 .accessibilityAddTraits(isCustomSelected ? .isSelected : [])
-                .accessibilityHint("현재 지도 좌표에 새 장소 이름을 입력합니다.")
+                .accessibilityHint(
+                    isCustomSelected
+                        ? "현재 장소 이름을 다시 입력합니다."
+                        : "현재 지도 좌표에 새 장소 이름을 입력합니다."
+                )
                 .accessibilityIdentifier("locationPicker.customPlace")
             }
         }
@@ -234,6 +257,10 @@ struct LocationPickerView: View {
                     .submitLabel(.done)
                     .focused($isCustomNameFocused)
                     .accessibilityIdentifier("locationPicker.placeName")
+                    .onSubmit {
+                        isCustomNameFocused = false
+                        showsCustomNameField = false
+                    }
                     .onChange(of: customPlaceNameInput) { _, newValue in
                         let capped = String(newValue.prefix(SavedPlaceNamePolicy.maximumLength))
                         if capped != newValue {
@@ -253,17 +280,104 @@ struct LocationPickerView: View {
         }
     }
 
+    private var customPlaceChipTitle: String {
+        guard model.selectedPlaceChoice == .custom else {
+            return "직접 입력"
+        }
+
+        let normalizedName = SavedPlaceNamePolicy.normalized(model.placeName)
+        return normalizedName.isEmpty ? "직접 입력" : normalizedName
+    }
+
     private func savedPlaceButton(_ place: SavedPlaceSnapshot) -> some View {
         let isSelected = model.selectedPlaceChoice == .saved(place.id)
 
-        return Button(place.name) {
-            model.selectSavedPlace(id: place.id)
-            moveCamera(to: place.coordinate, radius: radius)
+        return HStack(spacing: 0) {
+            Button {
+                showsCustomNameField = false
+                model.selectSavedPlace(id: place.id)
+                moveCamera(to: place.coordinate, radius: radius)
+            } label: {
+                Text(place.name)
+                    .padding(.leading, 14)
+                    .padding(.trailing, 8)
+                    .frame(minHeight: 44)
+            }
+            .accessibilityAddTraits(isSelected ? .isSelected : [])
+            .accessibilityHint("저장된 장소를 기준 위치로 선택합니다.")
+            .accessibilityIdentifier(place.accessibilityIdentifier)
+
+            Button {
+                savedPlaceAlert = .confirmation(place)
+            } label: {
+                if deletingSavedPlaceID == place.id {
+                    ProgressView()
+                        .controlSize(.small)
+                        .frame(width: 16, height: 16)
+                } else {
+                    Image(systemName: "xmark")
+                        .font(.caption.weight(.bold))
+                }
+            }
+            .padding(.trailing, 12)
+            .frame(minHeight: 44)
+            .disabled(deletingSavedPlaceID != nil)
+            .accessibilityLabel("\(place.name) 삭제")
+            .accessibilityHint("저장 장소 목록에서 삭제를 요청합니다.")
+            .accessibilityIdentifier("\(place.accessibilityIdentifier).delete")
         }
-        .buttonStyle(LocationChoiceButtonStyle(isSelected: isSelected))
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-        .accessibilityHint("저장된 장소를 기준 위치로 선택합니다.")
-        .accessibilityIdentifier(place.accessibilityIdentifier)
+        .buttonStyle(.plain)
+        .foregroundStyle(isSelected ? FocusColor.background : FocusColor.textPrimary)
+        .background(
+            isSelected ? FocusColor.accent : FocusColor.surfaceElevated,
+            in: Capsule()
+        )
+    }
+
+    private func savedPlaceDeletionAlert(_ alert: SavedPlaceAlert) -> Alert {
+        switch alert {
+        case .confirmation(let place):
+            Alert(
+                title: Text("\(place.name)을 삭제할까요?"),
+                message: Text("저장 장소 목록에서 삭제돼요."),
+                primaryButton: .destructive(Text("삭제")) {
+                    deleteSavedPlace(place)
+                },
+                secondaryButton: .cancel(Text("취소"))
+            )
+        case .inUse(let name, let ruleCount):
+            Alert(
+                title: Text("장소를 삭제할 수 없어요"),
+                message: Text(
+                    "\(name)을 사용하는 규칙이 \(ruleCount)개 있어요. 먼저 해당 규칙의 장소를 바꾸거나 규칙을 삭제해주세요."
+                ),
+                dismissButton: .default(Text("확인"))
+            )
+        case .failed(let name):
+            Alert(
+                title: Text("장소를 삭제하지 못했어요"),
+                message: Text("\(name)은 그대로 유지됐어요. 잠시 후 다시 시도해주세요."),
+                dismissButton: .default(Text("확인"))
+            )
+        }
+    }
+
+    private func deleteSavedPlace(_ place: SavedPlaceSnapshot) {
+        guard deletingSavedPlaceID == nil else {
+            return
+        }
+
+        deletingSavedPlaceID = place.id
+        Task { @MainActor in
+            defer { deletingSavedPlaceID = nil }
+            do {
+                try await onDeleteSavedPlace(place.id)
+            } catch AppSavedPlaceDeletionError.inUse(let ruleCount) {
+                savedPlaceAlert = .inUse(name: place.name, ruleCount: ruleCount)
+            } catch {
+                savedPlaceAlert = .failed(name: place.name)
+            }
+        }
     }
 
     private func guidanceCard(for guidance: LocationPickerGuidance) -> some View {
@@ -400,6 +514,23 @@ private struct LocationChoiceButtonStyle: ButtonStyle {
                 in: .capsule
             )
             .opacity(configuration.isPressed ? 0.72 : 1)
+    }
+}
+
+private enum SavedPlaceAlert: Identifiable {
+    case confirmation(SavedPlaceSnapshot)
+    case inUse(name: String, ruleCount: Int)
+    case failed(name: String)
+
+    var id: String {
+        switch self {
+        case .confirmation(let place):
+            "confirmation-\(place.id.uuidString)"
+        case .inUse(let name, let ruleCount):
+            "in-use-\(name)-\(ruleCount)"
+        case .failed(let name):
+            "failed-\(name)"
+        }
     }
 }
 

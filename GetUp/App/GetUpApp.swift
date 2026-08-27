@@ -359,7 +359,10 @@ private struct GetUpRootView: View {
                 onSave: { draft, savedPlaces in
                     try await model.save(draft: draft, savedPlaces: savedPlaces)
                 },
-                onDelete: deleteAction
+                onDelete: deleteAction,
+                onDeleteSavedPlace: { id in
+                    try await model.deleteSavedPlace(id: id)
+                }
             )
         } else {
             EmptyView()
@@ -419,20 +422,21 @@ private struct HomeView: View {
     let showsRestrictionProbe: Bool
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                header
+        VStack(alignment: .leading, spacing: 22) {
+            header
 
-                if model.homeRules.isEmpty {
-                    emptyState
-                } else {
-                    rulePager
-                }
+            if model.homeRules.isEmpty {
+                emptyState
+            } else if model.homeRules.count == 1, let item = model.homeRules.first {
+                singleRuleCard(item)
+            } else {
+                rulePager
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
-            .padding(.bottom, 24)
         }
+        .frame(maxHeight: .infinity, alignment: .top)
+        .padding(.horizontal, 20)
+        .padding(.top, 12)
+        .padding(.bottom, 24)
         .background(HomeColor.background.ignoresSafeArea())
         .foregroundStyle(HomeColor.textPrimary)
         .toolbarBackground(HomeColor.background, for: .navigationBar)
@@ -530,25 +534,9 @@ private struct HomeView: View {
             VStack(spacing: 0) {
                 TabView(selection: selectedRuleBinding) {
                     ForEach(Array(model.homeRules.enumerated()), id: \.element.id) { index, item in
-                        if model.restrictionStatus.isActive(item.rule) {
-                            RestrictionStatusView(
-                                item: item,
-                                rulePosition: index + 1,
-                                ruleCount: model.homeRules.count
-                            )
+                        ruleCard(item, at: index)
                             .padding(.horizontal, 22)
-                            .tag(item.id)
-                        } else {
-                            HomeRuleCard(
-                                item: item,
-                                rulePosition: index + 1,
-                                ruleCount: model.homeRules.count
-                            ) {
-                                model.beginEditingRule(id: item.id)
-                            }
-                            .padding(.horizontal, 22)
-                            .tag(item.id)
-                        }
+                            .tag(Optional(item.id))
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
@@ -576,9 +564,34 @@ private struct HomeView: View {
         }
     }
 
-    private var selectedRuleBinding: Binding<UUID> {
+    private func singleRuleCard(_ item: HomeRuleItem) -> some View {
+        ruleCard(item, at: 0)
+            .padding(.horizontal, 2)
+            .frame(height: rulePagerHeight)
+    }
+
+    @ViewBuilder
+    private func ruleCard(_ item: HomeRuleItem, at index: Int) -> some View {
+        if model.restrictionStatus.isActive(item.rule) {
+            RestrictionStatusView(
+                item: item,
+                rulePosition: index + 1,
+                ruleCount: model.homeRules.count
+            )
+        } else {
+            HomeRuleCard(
+                item: item,
+                rulePosition: index + 1,
+                ruleCount: model.homeRules.count
+            ) {
+                model.beginEditingRule(id: item.id)
+            }
+        }
+    }
+
+    private var selectedRuleBinding: Binding<UUID?> {
         Binding(
-            get: { model.selectedRuleID ?? model.homeRules[0].id },
+            get: { model.selectedRuleID ?? model.homeRules.first?.id },
             set: { model.selectedRuleID = $0 }
         )
     }
@@ -975,7 +988,10 @@ private enum UITestConfiguration {
             }
 
             try await container.savedPlaceRepository.saveSavedPlaceCollection(
-                SavedPlaceCollectionSnapshot(revision: 1, places: fixtures.places)
+                SavedPlaceCollectionSnapshot(
+                    revision: 1,
+                    places: fixtures.places(for: scenario)
+                )
             )
 
             if scenario == "three-saved-rules" || scenario == "startup-slow-recovery" {
@@ -1428,8 +1444,20 @@ private enum UITestConfiguration {
             createdAt: now,
             updatedAt: now
         )
+        let library = SavedPlaceSnapshot(
+            id: UUID(uuidString: "00000000-0000-4000-8000-000000000503")!,
+            name: "도서관",
+            coordinate: ReferenceLocation(latitude: 37.5796, longitude: 126.9770),
+            createdAt: now,
+            updatedAt: now
+        )
 
-        var places: [SavedPlaceSnapshot] { [home, work] }
+        func places(for scenario: String?) -> [SavedPlaceSnapshot] {
+            if scenario == "unused-custom-place-editor" {
+                return [home, work, library]
+            }
+            return [home, work]
+        }
 
         var rules: [RestrictionRuleSnapshot] {
             [
@@ -1477,7 +1505,8 @@ private enum UITestConfiguration {
 
         func initialDraft(for scenario: String?) -> RuleEditorDraft? {
             switch scenario {
-            case "empty-editor", "empty-editor-family-controls-undetermined":
+            case "empty-editor", "empty-editor-family-controls-undetermined",
+                "unused-custom-place-editor":
                 RuleEditorDraft(
                     id: Self.rule1ID,
                     sourceRevision: nil,

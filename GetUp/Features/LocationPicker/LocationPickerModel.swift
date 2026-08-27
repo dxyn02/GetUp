@@ -33,10 +33,10 @@ enum LocationPickerPlaceChoice: Equatable, Sendable {
 @MainActor
 @Observable
 final class LocationPickerModel {
-    private let savedPlacesByID: [UUID: SavedPlaceSnapshot]
+    private var savedPlacesByID: [UUID: SavedPlaceSnapshot]
     private let currentLocationProvider: any CurrentLocationProviding
 
-    let savedPlaces: [SavedPlaceSnapshot]
+    private(set) var savedPlaces: [SavedPlaceSnapshot]
     private(set) var cameraCenter: ReferenceLocation
     private(set) var pinCandidate: ReferenceLocation?
     private(set) var selectedSavedPlaceID: UUID?
@@ -108,8 +108,18 @@ final class LocationPickerModel {
     }
 
     func mapDidSettle(at coordinate: ReferenceLocation) {
+        let selectedCoordinate = selectedSavedPlaceID.flatMap {
+            savedPlacesByID[$0]?.coordinate
+        } ?? pinCandidate
         cameraCenter = coordinate
         pinCandidate = coordinate
+
+        if selectedPlaceChoice != nil,
+           let selectedCoordinate,
+           selectedCoordinate.isApproximatelyEqual(to: coordinate) {
+            return
+        }
+
         selectedSavedPlaceID = nil
         selectedPlaceChoice = nil
         placeName = ""
@@ -166,6 +176,21 @@ final class LocationPickerModel {
         cameraCenter = savedPlace.coordinate
         pinCandidate = savedPlace.coordinate
         guidance = nil
+    }
+
+    func removeSavedPlace(id: UUID) {
+        savedPlaces.removeAll { $0.id == id }
+        savedPlacesByID[id] = nil
+
+        guard selectedSavedPlaceID == id else {
+            return
+        }
+
+        selectedSavedPlaceID = nil
+        selectedPlaceChoice = nil
+        placeName = ""
+        guidance = nil
+        completion = nil
     }
 
     func selectPreset(named name: String) {
@@ -236,5 +261,12 @@ final class LocationPickerModel {
             return .preset(savedPlace.name)
         }
         return .saved(savedPlace.id)
+    }
+}
+
+private extension ReferenceLocation {
+    func isApproximatelyEqual(to other: ReferenceLocation) -> Bool {
+        abs(latitude - other.latitude) < 0.0001
+            && abs(longitude - other.longitude) < 0.0001
     }
 }

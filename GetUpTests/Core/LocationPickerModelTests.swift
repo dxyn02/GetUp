@@ -183,6 +183,32 @@ struct LocationPickerModelTests {
         #expect(model.savedPlaces == [savedPlace])
     }
 
+    @Test("A camera settle at the selected saved place keeps its selection")
+    func selectedPlaceProgrammaticSettleKeepsSelection() {
+        let savedPlace = makeSavedPlace()
+        let model = makeModel(savedPlaces: [savedPlace])
+        model.selectSavedPlace(id: savedPlace.id)
+
+        model.mapDidSettle(at: savedPlace.coordinate)
+
+        #expect(model.selectedSavedPlaceID == savedPlace.id)
+        #expect(model.selectedPlaceChoice == .preset("회사"))
+        #expect(model.placeName == savedPlace.name)
+    }
+
+    @Test("An unsaved preset keeps its selection when the camera settles at its pin")
+    func unsavedPresetProgrammaticSettleKeepsSelection() throws {
+        let model = makeModel()
+        model.selectPreset(named: "집")
+        let pin = try #require(model.pinCandidate)
+
+        model.mapDidSettle(at: pin)
+
+        #expect(model.selectedSavedPlaceID == nil)
+        #expect(model.selectedPlaceChoice == .preset("집"))
+        #expect(model.placeName == "집")
+    }
+
     @Test("Confirming a reused place returns the existing saved place")
     func confirmationReusesExistingSavedPlace() {
         let savedPlace = makeSavedPlace()
@@ -192,6 +218,23 @@ struct LocationPickerModelTests {
         model.confirm(placeName: savedPlace.name)
 
         #expect(model.completion == .reused(savedPlace))
+    }
+
+    @Test("Deleting the selected custom place clears its choice but preserves the map pin")
+    func deletingSelectedCustomPlacePreservesPin() {
+        let savedPlace = makeSavedPlace(name: "도서관")
+        let model = makeModel(savedPlaces: [savedPlace])
+        model.selectSavedPlace(id: savedPlace.id)
+        let selectedPin = model.pinCandidate
+
+        model.removeSavedPlace(id: savedPlace.id)
+
+        #expect(model.savedPlaces.isEmpty)
+        #expect(model.selectedSavedPlaceID == nil)
+        #expect(model.selectedPlaceChoice == nil)
+        #expect(model.placeName.isEmpty)
+        #expect(model.pinCandidate == selectedPin)
+        #expect(!model.canApplySelection)
     }
 
     @Test("Cancelling records no location selection")
@@ -238,10 +281,10 @@ struct LocationPickerModelTests {
         )
     }
 
-    private func makeSavedPlace() -> SavedPlaceSnapshot {
+    private func makeSavedPlace(name: String = "회사") -> SavedPlaceSnapshot {
         SavedPlaceSnapshot(
             id: UUID(uuidString: "E82EFC71-CB77-44AF-8E22-C7942BDF0177")!,
-            name: "회사",
+            name: name,
             coordinate: ReferenceLocation(latitude: 37.4021, longitude: 127.1087),
             createdAt: TestFixtures.now,
             updatedAt: TestFixtures.now

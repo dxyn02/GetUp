@@ -11,8 +11,8 @@ T083·T085 — 시간 시작 callback의 앱 비실행 실기기 적용은 T120�
 background·시스템 종료 상태와 100회 실기기 latency를 후속 확인할 예정
 
 ## 마지막 완료 작업
-T120 — 실기기 callback 진단으로 extension의 Family Controls `notDetermined` 오판정을 확정하고 최근
-앱 `approved` 상태로 보완해 앱 종료 상태의 시간 시작 자동 Shield를 검증함
+T125 — 규칙 저장 전 편집 초안에만 추가된 직접 입력 장소 삭제를 영속 저장소 오류 없이 로컬에서
+처리하고 저장소 무변경·즉시 삭제 UI 회귀를 검증함
 
 ## 다음 작업
 T083·T085 — 설치된 수정 빌드에서 다음 설정 시간 시작 callback 뒤 제한 자동 적용, 앱을 강제
@@ -30,6 +30,55 @@ BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록�
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-08-27 T125에서 직접 입력 장소가 위치 `적용` 뒤에는 `RuleEditorModel`에만 존재하고 규칙 저장
+전에는 영속 장소 collection에 없다는 상태 차이를 삭제 경로에 반영했다. 기존 구현은 모든 chip을
+`RuleConfigurationService.deleteSavedPlace`로 보내 `savedPlaceNotFound`를 일반 실패 Alert로
+표시했다. `AppModel`이 앱의 영속 장소 목록에는 없고 열린 editor에만 있는 대상을 초안 전용으로
+판별해 저장소 write 없이 editor·picker에서 제거하며, 초안 프리셋 보호는 유지한다. AppModel 대상
+13개와 직접 입력→적용→즉시 삭제 UI 회귀 1개가 통과했다. 최종 전체 `GetUpTests`는 발견 224개·
+동적 실행 포함 225회, `UserStory1RuleConfigurationUITests`는 16개가 실패·skip 없이 통과했다.
+iPhone 17 Pro iOS 26.5 Simulator의 앱·extension build와 `git diff --check`도 통과했다.
+
+2026-08-27 T124에서 `집`·`회사`를 제외한 직접 입력 저장 장소 chip에 별도 삭제 행동과 확인 Alert를
+추가했다. 전용 `RuleConfigurationService.deleteSavedPlace`가 최신 활성·비활성 규칙 참조를 모두
+검사해 사용 중이면 규칙 수와 함께 차단하고, 미사용이면 장소 collection revision을 증가시켜 마지막
+장소의 빈 collection까지 저장한다. 저장 성공 뒤에만 `AppModel`·열린 편집 초안·위치 picker 목록을
+갱신하며, 미저장 초안의 선택 장소를 삭제하면 선택·이름만 지우고 지도 핀은 보존한다. 같은 편집
+세션에서 위치 화면을 적용하지 않고 나갔다 다시 들어올 때 동일 `LocationPickerModel`을 재사용하고,
+선택 장소 좌표의 MapKit 정착 callback이 선택을 해제하지 않도록 보정했다. 삭제 service·앱·편집·
+위치 모델 대상 테스트 56개가 통과했고, 최종 전체 `GetUpTests`는 발견 223개·동적 실행 포함 224회,
+`UserStory1RuleConfigurationUITests`는 15개가 실패·skip 없이 통과했다. iPhone 17 Pro iOS 26.5
+Simulator의 앱·extension build와 `git diff --check`도 통과했다.
+
+2026-08-27 T123에서 `CoreLocationCurrentLocationSession.requestAlwaysAuthorization()`이
+`.whenInUse`의 권한 변경 callback만 기다려 checked continuation을 끝내지 못하는 원인을 수정했다.
+delegate callback은 즉시 반영하고, 시스템 prompt가 표시되면 앱이 다시 active가 될 때 권한을 읽으며,
+prompt와 callback이 모두 없으면 1초 fallback으로 `.whenInUse`를 미승격 반환한다. 권한 안내는
+로딩을 끝내고 `한 번만 허용` 또는 Always 미변경 상황을 설명하며
+`설정 열기`로 전환한다. callback 정상 승인·무응답 미승격 어댑터 회귀와 모델 문구 회귀를 포함한
+전체 `GetUpTests` 214개 test case가 동적 실행 포함 215회 실패·skip 없이 통과했고, US4 권한 안내
+UI 테스트 19개와 iOS Simulator app·extension build도 통과했다.
+
+2026-08-27 T122에서 `GetUp-2026-08-25-225630.ips`의 main-thread crash stack을 확인했다. 규칙 삭제
+저장과 `AppModel.apply`는 마지막 규칙에서 빈 collection·`nil` selection으로 정상 전환했지만,
+SwiftUI가 사라지는 `TabView`의 이전 `Binding`을 지연 갱신하면서 `HomeView.selectedRuleBinding`의
+`homeRules[0]` fallback을 호출해 `Swift runtime failure: Index out of range`가 발생한 것이 원인이었다.
+pager selection과 page tag를 `UUID?`로 변경해 빈 규칙 상태를 `nil`로 표현하고 index 접근을
+제거했다. 마지막 규칙 삭제 시 `homeRules.isEmpty`, `selectedRuleID == nil`, 저장 장소 보존을 검증하는
+`AppModelTests`와 세 규칙을 3→2→1→0으로 삭제한 뒤 앱 foreground·빈 홈을 확인하는 UI 회귀를
+추가했다. XcodeBuildMCP 격리 환경에서 전체 `GetUpTests` 212회와
+`UserStory1RuleConfigurationUITests` 13개가 실패·skip 없이 통과했다.
+
+2026-08-27 T121에서 신규 규칙 생성 시 주입된 현재 현지 시·분과 15분 뒤 종료 시각, 자정 초과를
+단위 테스트로 검증했다. 직접 입력 이름으로 chip이 바뀌고 이름 field를 닫은 뒤 chip 재탭으로 기존
+이름을 유지해 다시 편집하는 UI 회귀를 추가했다. 홈 외부 `ScrollView`를 제거하고 규칙이 하나면
+`TabView`·page indicator·`좌우로 밀어 보기`를 생성하지 않되, 세 규칙 pager의 양방향 swipe는
+유지되는지 함께 검증했다. 격리 DerivedData `/tmp/getup-t121-tests`에서 전체 `GetUpTests` 211개가
+실패·skip 없이 통과했고 Swift Testing 동적 인자를 포함한 device configuration 실행은 245회
+통과했다. `UserStory1RuleConfigurationUITests` 12개도 실패·skip 없이 통과했다. Simulator 자동
+부팅 중 두 차례 test runner `Busy` 오류가 있었으나 명시적 부팅 뒤 정상 실행됐으며, 반복된 LLDB
+version-store warning은 테스트 판정에 영향을 주지 않았다.
+
 2026-08-26 T120에서 앱 비실행 시간 경계의 각 단계를 App Group에 기록했다. 첫 실기기 재현은 규칙·
 위치 로드는 정상이지만 extension Family Controls가 `notDetermined`여서 `missingPermissions`로 종료된
 사실을 확인했다. 최근 앱 snapshot의 Family Controls가 `approved`이면 이 미결정 값만 보완하고 현재
