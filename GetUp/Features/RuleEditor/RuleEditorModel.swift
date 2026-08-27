@@ -32,7 +32,7 @@ struct RestrictionModificationGuard: Equatable, Sendable {
                 localized: "restriction_guard.message",
                 defaultValue: "%@ %@ 밖으로 이동하거나 %@이 지나면 규칙을 수정·끄기·삭제할 수 있어요."
             ),
-            savedPlaceName,
+            AppLocalizedCopy.savedPlaceName(savedPlaceName),
             radiusDisplayName,
             endTimeDisplayName
         )

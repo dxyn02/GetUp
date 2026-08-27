@@ -256,6 +256,7 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 - [x] T123 [US4] 최초 위치 권한의 `한 번만 허용`으로 Always 요청이 무시되거나 권한 변경 callback이 오지 않아 온보딩이 무한 대기하는 문제를 bounded fallback으로 종료하고, Settings 복구 안내·어댑터·모델·UI 회귀와 Simulator build를 검증한다
 - [x] T124 [US1] 직접 입력 저장 장소 chip에 확인형 삭제를 추가하고 최신 전체 규칙 참조 시 개수 안내와 함께 차단하며, 미사용 장소의 revision 증가·빈 collection 영속화·실패 시 보존·미저장 초안 선택 해제를 구현한다. 같은 편집 세션에서 위치 화면을 나갔다 다시 들어와도 마지막 장소 버튼 선택과 핀을 유지하도록 모델·SwiftUI·단위·UI 회귀와 명세·설계·운영 문서를 갱신한다
 - [x] T125 [US1] 규칙 저장 전 현재 편집 초안에만 생성된 직접 입력 장소를 삭제할 때 영속 저장소의 `savedPlaceNotFound` 오류로 실패하는 회귀를 수정하고, 초안 전용 장소는 저장소 write 없이 편집 모델과 picker에서만 제거하는 앱 모델·UI 회귀를 검증한다
+- [x] T126 [P] `Localizable.xcstrings`의 모든 사용자 노출 문자열에 자연스러운 영어 번역을 추가하고, 동적 `String`·프리셋 장소 이름을 명시적 localization lookup에 연결하며 번역 상태·format placeholder·전체 target compile과 영어 Simulator 주요 화면을 검증한다
 
 **Checkpoint**: 자동 테스트, 필수 실기기 검증, entitlement 승인 및 SC-001·SC-007 사용성 평가가
 모두 기록된 경우에만 feature 완료로 표시한다.

@@ -121,7 +121,10 @@ struct RuleEditorView: View {
         ) {
             Button(RestrictionCopy.guardConfirm, role: .cancel) {}
         } message: {
-            Text(model.modificationGuard?.message ?? "조건이 종료되면 규칙을 변경할 수 있어요.")
+            Text(
+                model.modificationGuard?.message
+                    ?? AppLocalizedCopy.string("조건이 종료되면 규칙을 변경할 수 있어요.")
+            )
         }
         .familyActivityPicker(
             isPresented: $isApplicationPickerPresented,
@@ -166,7 +169,7 @@ struct RuleEditorView: View {
 
             if hasTimeValidationError {
                 validationMessage(
-                    "종료 시각은 시작 시각으로부터 15분 이상, 12시간 이내여야 해요.",
+                    AppLocalizedCopy.string("종료 시각은 시작 시각으로부터 15분 이상, 12시간 이내여야 해요."),
                     identifier: "ruleEditor.time.validation"
                 )
             }
@@ -209,9 +212,13 @@ struct RuleEditorView: View {
             .background(RuleEditorColor.surfaceElevated.opacity(0.62), in: .rect(cornerRadius: 16))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(boundary == .start ? "시작 시간" : "종료 시간")
+        .accessibilityLabel(
+            boundary == .start
+                ? AppLocalizedCopy.string("시작 시간")
+                : AppLocalizedCopy.string("종료 시간")
+        )
         .accessibilityValue(TimePickerComponents(time: time).displayName)
-        .accessibilityHint("시간 선택 화면을 엽니다.")
+        .accessibilityHint(AppLocalizedCopy.string("시간 선택 화면을 엽니다."))
         .accessibilityIdentifier(identifier)
     }
 
@@ -221,7 +228,7 @@ struct RuleEditorView: View {
 
             if model.validationErrors.contains(.weekdaysRequired) {
                 validationMessage(
-                    "반복할 요일을 하나 이상 선택해 주세요.",
+                    AppLocalizedCopy.string("반복할 요일을 하나 이상 선택해 주세요."),
                     identifier: "ruleEditor.weekday.validation"
                 )
             }
@@ -301,7 +308,7 @@ struct RuleEditorView: View {
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .accessibilityHint("선택 화면을 엽니다.")
+        .accessibilityHint(AppLocalizedCopy.string("선택 화면을 엽니다."))
         .accessibilityIdentifier(identifier)
     }
 
@@ -310,14 +317,14 @@ struct RuleEditorView: View {
         VStack(alignment: .leading, spacing: 6) {
             if hasLocationValidationError {
                 validationMessage(
-                    "기준 위치를 선택해 주세요.",
+                    AppLocalizedCopy.string("기준 위치를 선택해 주세요."),
                     identifier: "ruleEditor.location.validation"
                 )
             }
 
             if model.validationErrors.contains(.applicationTokenRequired) {
                 validationMessage(
-                    "제한할 앱을 하나 이상 선택해 주세요.",
+                    AppLocalizedCopy.string("제한할 앱을 하나 이상 선택해 주세요."),
                     identifier: "ruleEditor.application.validation"
                 )
             }
@@ -454,7 +461,11 @@ struct RuleEditorView: View {
             }
             .buttonStyle(.plain)
             .disabled(!model.canSave || saveState == .saving)
-            .accessibilityLabel(saveState == .failed ? "다시 저장" : "완료")
+        .accessibilityLabel(
+            saveState == .failed
+                ? AppLocalizedCopy.string("다시 저장")
+                : AppLocalizedCopy.string("완료")
+        )
             .accessibilityHint(saveAccessibilityHint)
             .accessibilityIdentifier(
                 saveState == .failed ? "ruleSaveError.retry" : "ruleEditor.save"
@@ -473,7 +484,11 @@ struct RuleEditorView: View {
                 .fontWeight(.bold)
                 .foregroundStyle(RuleEditorColor.accent)
 
-            Text(boundary == .start ? "시작 시각" : "종료 시각")
+            Text(
+                boundary == .start
+                    ? AppLocalizedCopy.string("시작 시각")
+                    : AppLocalizedCopy.string("종료 시각")
+            )
                 .font(.largeTitle)
                 .fontWeight(.bold)
                 .padding(.top, 6)
@@ -530,8 +545,8 @@ struct RuleEditorView: View {
             .contentShape(.rect)
             .accessibilityHint(
                 canCompleteTimeSelection(boundary)
-                    ? "선택한 시각을 적용합니다."
-                    : "종료 시각을 시작 시각부터 15분 이상, 12시간 이내로 설정해 주세요."
+                    ? AppLocalizedCopy.string("선택한 시각을 적용합니다.")
+                    : AppLocalizedCopy.string("종료 시각을 시작 시각부터 15분 이상, 12시간 이내로 설정해 주세요.")
             )
             .accessibilityIdentifier("ruleEditor.timePicker.done")
             .padding(.horizontal, 20)
@@ -589,10 +604,10 @@ struct RuleEditorView: View {
 
     private var locationSummary: String {
         guard let place = model.selectedSavedPlace else {
-            return "장소 설정"
+            return AppLocalizedCopy.string("장소 설정")
         }
 
-        return "\(place.name) · \(RadiusPicker.displayName(for: model.radius))"
+        return "\(AppLocalizedCopy.savedPlaceName(place.name)) · \(RadiusPicker.displayName(for: model.radius))"
     }
 
     private var applicationSummary: String {
@@ -600,11 +615,11 @@ struct RuleEditorView: View {
             countedTargets: model.applicationTokenCount
         ) {
         case .none:
-            return "앱 선택"
+            return AppLocalizedCopy.string("앱 선택")
         case .exact(let count):
-            return "\(count)개 앱 선택됨"
+            return AppLocalizedCopy.format("%@개 앱 선택됨", String(count))
         case .multiple:
-            return "여러 앱 선택됨"
+            return AppLocalizedCopy.string("여러 앱 선택됨")
         }
     }
 
@@ -625,12 +640,12 @@ struct RuleEditorView: View {
 
     private var saveAccessibilityHint: String {
         if !model.canSave {
-            return "필수 조건을 모두 설정하면 저장할 수 있습니다."
+            return AppLocalizedCopy.string("필수 조건을 모두 설정하면 저장할 수 있습니다.")
         }
         if saveState == .failed {
-            return "보존된 입력 내용으로 저장을 다시 시도합니다."
+            return AppLocalizedCopy.string("보존된 입력 내용으로 저장을 다시 시도합니다.")
         }
-        return "이 규칙을 저장합니다."
+        return AppLocalizedCopy.string("이 규칙을 저장합니다.")
     }
 
     private func presentLocationPicker() {

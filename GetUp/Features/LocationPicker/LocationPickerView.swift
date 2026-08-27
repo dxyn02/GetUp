@@ -154,7 +154,9 @@ struct LocationPickerView: View {
         .aspectRatio(353 / 402, contentMode: .fit)
         .clipShape(.rect(cornerRadius: 24))
         .accessibilityLabel("기준 위치 지도")
-        .accessibilityValue("선택된 반경 \(radius.displayName)")
+        .accessibilityValue(
+            AppLocalizedCopy.format("선택된 반경 %@", radius.displayName)
+        )
         .accessibilityHint("지도를 이동하면 화면 중앙 좌표가 기준 위치로 선택됩니다.")
         .accessibilityIdentifier("locationPicker.map")
     }
@@ -214,7 +216,7 @@ struct LocationPickerView: View {
                 } label: {
                     HStack(spacing: 6) {
                         Text(customPlaceChipTitle)
-                        if customPlaceChipTitle == "직접 입력" {
+                        if showsCustomPlaceChevron {
                             Image(systemName: "chevron.forward")
                         }
                     }
@@ -223,8 +225,8 @@ struct LocationPickerView: View {
                 .accessibilityAddTraits(isCustomSelected ? .isSelected : [])
                 .accessibilityHint(
                     isCustomSelected
-                        ? "현재 장소 이름을 다시 입력합니다."
-                        : "현재 지도 좌표에 새 장소 이름을 입력합니다."
+                        ? AppLocalizedCopy.string("현재 장소 이름을 다시 입력합니다.")
+                        : AppLocalizedCopy.string("현재 지도 좌표에 새 장소 이름을 입력합니다.")
                 )
                 .accessibilityIdentifier("locationPicker.customPlace")
             }
@@ -235,17 +237,25 @@ struct LocationPickerView: View {
 
     private func presetButton(_ name: String, identifier: String) -> some View {
         let isSelected = model.selectedPlaceChoice == .preset(name)
-        return Button(name) {
+        return Button {
             showsCustomNameField = false
             model.selectPreset(named: name)
             if let selected = model.selectedSavedPlaceID,
                let place = model.savedPlaces.first(where: { $0.id == selected }) {
                 moveCamera(to: place.coordinate, radius: radius)
             }
+        } label: {
+            Text(AppLocalizedCopy.savedPlaceName(name))
         }
         .buttonStyle(LocationChoiceButtonStyle(isSelected: isSelected))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
-        .accessibilityHint("현재 지도 위치를 \(name) 프리셋으로 저장하거나 저장된 \(name) 위치를 선택합니다.")
+        .accessibilityHint(
+            AppLocalizedCopy.format(
+                "현재 지도 위치를 %@ 프리셋으로 저장하거나 저장된 %@ 위치를 선택합니다.",
+                AppLocalizedCopy.savedPlaceName(name),
+                AppLocalizedCopy.savedPlaceName(name)
+            )
+        )
         .accessibilityIdentifier(identifier)
     }
 
@@ -282,11 +292,18 @@ struct LocationPickerView: View {
 
     private var customPlaceChipTitle: String {
         guard model.selectedPlaceChoice == .custom else {
-            return "직접 입력"
+            return AppLocalizedCopy.string("직접 입력")
         }
 
         let normalizedName = SavedPlaceNamePolicy.normalized(model.placeName)
-        return normalizedName.isEmpty ? "직접 입력" : normalizedName
+        return normalizedName.isEmpty
+            ? AppLocalizedCopy.string("직접 입력")
+            : normalizedName
+    }
+
+    private var showsCustomPlaceChevron: Bool {
+        model.selectedPlaceChoice != .custom
+            || SavedPlaceNamePolicy.normalized(model.placeName).isEmpty
     }
 
     private func savedPlaceButton(_ place: SavedPlaceSnapshot) -> some View {
@@ -298,7 +315,7 @@ struct LocationPickerView: View {
                 model.selectSavedPlace(id: place.id)
                 moveCamera(to: place.coordinate, radius: radius)
             } label: {
-                Text(place.name)
+                Text(AppLocalizedCopy.savedPlaceName(place.name))
                     .padding(.leading, 14)
                     .padding(.trailing, 8)
                     .frame(minHeight: 44)
@@ -322,8 +339,13 @@ struct LocationPickerView: View {
             .padding(.trailing, 12)
             .frame(minHeight: 44)
             .disabled(deletingSavedPlaceID != nil)
-            .accessibilityLabel("\(place.name) 삭제")
-            .accessibilityHint("저장 장소 목록에서 삭제를 요청합니다.")
+            .accessibilityLabel(
+                AppLocalizedCopy.format(
+                    "%@ 삭제",
+                    AppLocalizedCopy.savedPlaceName(place.name)
+                )
+            )
+            .accessibilityHint(AppLocalizedCopy.string("저장 장소 목록에서 삭제를 요청합니다."))
             .accessibilityIdentifier("\(place.accessibilityIdentifier).delete")
         }
         .buttonStyle(.plain)
@@ -337,8 +359,9 @@ struct LocationPickerView: View {
     private func savedPlaceDeletionAlert(_ alert: SavedPlaceAlert) -> Alert {
         switch alert {
         case .confirmation(let place):
-            Alert(
-                title: Text("\(place.name)을 삭제할까요?"),
+            let displayName = AppLocalizedCopy.savedPlaceName(place.name)
+            return Alert(
+                title: Text(AppLocalizedCopy.format("%@을 삭제할까요?", displayName)),
                 message: Text("저장 장소 목록에서 삭제돼요."),
                 primaryButton: .destructive(Text("삭제")) {
                     deleteSavedPlace(place)
@@ -346,17 +369,26 @@ struct LocationPickerView: View {
                 secondaryButton: .cancel(Text("취소"))
             )
         case .inUse(let name, let ruleCount):
-            Alert(
+            return Alert(
                 title: Text("장소를 삭제할 수 없어요"),
                 message: Text(
-                    "\(name)을 사용하는 규칙이 \(ruleCount)개 있어요. 먼저 해당 규칙의 장소를 바꾸거나 규칙을 삭제해주세요."
+                    AppLocalizedCopy.format(
+                        "%@을 사용하는 규칙이 %@개 있어요. 먼저 해당 규칙의 장소를 바꾸거나 규칙을 삭제해주세요.",
+                        AppLocalizedCopy.savedPlaceName(name),
+                        String(ruleCount)
+                    )
                 ),
                 dismissButton: .default(Text("확인"))
             )
         case .failed(let name):
-            Alert(
+            return Alert(
                 title: Text("장소를 삭제하지 못했어요"),
-                message: Text("\(name)은 그대로 유지됐어요. 잠시 후 다시 시도해주세요."),
+                message: Text(
+                    AppLocalizedCopy.format(
+                        "%@은 그대로 유지됐어요. 잠시 후 다시 시도해주세요.",
+                        AppLocalizedCopy.savedPlaceName(name)
+                    )
+                ),
                 dismissButton: .default(Text("확인"))
             )
         }
@@ -453,16 +485,18 @@ struct LocationPickerView: View {
     private var currentLocationAccessibilityValue: String {
         switch model.guidance {
         case .whenInUseRequired:
-            "위치 권한 필요"
+            AppLocalizedCopy.string("위치 권한 필요")
         case .locationUnavailable:
-            "현재 위치 확인 불가"
+            AppLocalizedCopy.string("현재 위치 확인 불가")
         case .placeNameRequired, .placeNameTooLong, .duplicatePlaceName, nil:
-            isLocating ? "확인 중" : "사용 가능"
+            isLocating
+                ? AppLocalizedCopy.string("확인 중")
+                : AppLocalizedCopy.string("사용 가능")
         }
     }
 
     private var applyAccessibilityHint: String {
-        "선택한 저장 장소와 반경을 규칙에 적용합니다."
+        AppLocalizedCopy.string("선택한 저장 장소와 반경을 규칙에 적용합니다.")
     }
 
     private func moveCamera(to coordinate: ReferenceLocation, radius: RadiusOption) {
@@ -590,15 +624,15 @@ private extension LocationPickerGuidance {
     var message: String {
         switch self {
         case .whenInUseRequired:
-            "현재 위치를 사용할 수 없어요. 지도 핀으로 직접 설정할 수 있어요."
+            AppLocalizedCopy.string("현재 위치를 사용할 수 없어요. 지도 핀으로 직접 설정할 수 있어요.")
         case .locationUnavailable:
-            "현재 위치를 확인하지 못했어요. 지도 핀을 이동해 직접 설정해 주세요."
+            AppLocalizedCopy.string("현재 위치를 확인하지 못했어요. 지도 핀을 이동해 직접 설정해 주세요.")
         case .placeNameRequired:
-            "장소 이름을 입력해 주세요."
+            AppLocalizedCopy.string("장소 이름을 입력해 주세요.")
         case .placeNameTooLong:
-            "장소 이름은 10자 이내로 입력해 주세요."
+            AppLocalizedCopy.string("장소 이름은 10자 이내로 입력해 주세요.")
         case .duplicatePlaceName:
-            "이미 저장된 장소 이름이에요. 다른 이름을 입력해 주세요."
+            AppLocalizedCopy.string("이미 저장된 장소 이름이에요. 다른 이름을 입력해 주세요.")
         }
     }
 

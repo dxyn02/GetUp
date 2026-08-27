@@ -495,9 +495,18 @@ private struct HomeView: View {
                     .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 14) {
-                    emptyInstruction("01", "기상 후 휴대폰 보는 시간을 줄여봐요")
-                    emptyInstruction("02", "취침 전 휴대폰 보는 시간을 줄여봐요")
-                    emptyInstruction("03", "근무 또는 학습 중 휴대폰 보는 시간을 줄여봐요")
+                    emptyInstruction(
+                        "01",
+                        AppLocalizedCopy.string("기상 후 휴대폰 보는 시간을 줄여봐요")
+                    )
+                    emptyInstruction(
+                        "02",
+                        AppLocalizedCopy.string("취침 전 휴대폰 보는 시간을 줄여봐요")
+                    )
+                    emptyInstruction(
+                        "03",
+                        AppLocalizedCopy.string("근무 또는 학습 중 휴대폰 보는 시간을 줄여봐요")
+                    )
                 }
             }
             .padding(24)
@@ -622,7 +631,7 @@ private struct HomeRuleCard: View {
                 .fontWeight(.bold)
                 .foregroundStyle(HomeColor.accent)
                 .accessibilityIdentifier("restrictionStatus.inactive")
-            Text(item.rule.name ?? item.savedPlace.name)
+            Text(item.rule.name ?? displayPlaceName)
                 .font(.largeTitle)
                 .fontWeight(.bold)
 
@@ -645,7 +654,7 @@ private struct HomeRuleCard: View {
                         .frame(width: 78, height: 78)
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("\(item.savedPlace.name)에서 \(radiusLabel) 밖으로 나서면")
+                        Text("\(displayPlaceName)에서 \(radiusLabel) 밖으로 나서면")
                             .font(.title2)
                             .fontWeight(.bold)
                         Text(item.applicationReleaseDescription)
@@ -654,7 +663,7 @@ private struct HomeRuleCard: View {
                     }
                 }
 
-                conditionRow(label: "LOCATION", value: "\(item.savedPlace.name) · \(radiusLabel)", identifier: "home.ruleCard.\(item.accessibilityID).location")
+                conditionRow(label: "LOCATION", value: "\(displayPlaceName) · \(radiusLabel)", identifier: "home.ruleCard.\(item.accessibilityID).location")
                 conditionRow(label: "BLOCKED", value: item.applicationSummary, identifier: "home.ruleCard.\(item.accessibilityID).applications")
 
                 Spacer(minLength: 0)
@@ -719,6 +728,9 @@ private struct HomeRuleCard: View {
     }
 
     private var radiusLabel: String { RadiusPicker.displayName(for: item.rule.radius) }
+    private var displayPlaceName: String {
+        AppLocalizedCopy.savedPlaceName(item.savedPlace.name)
+    }
     private static func clock(_ time: TimeOfDay) -> String {
         let hour = time.hour % 12 == 0 ? 12 : time.hour % 12
         return String(format: "%02d:%02d", hour, time.minute)

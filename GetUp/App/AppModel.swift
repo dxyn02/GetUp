@@ -2,6 +2,28 @@
 import Foundation
 import Observation
 
+enum AppLocalizedCopy {
+    static func string(_ key: String.LocalizationValue) -> String {
+        String(localized: key)
+    }
+
+    static func format(
+        _ key: String.LocalizationValue,
+        _ arguments: CVarArg...
+    ) -> String {
+        String(format: string(key), arguments: arguments)
+    }
+
+    static func savedPlaceName(_ storedName: String) -> String {
+        switch storedName {
+        case "집": string("집")
+        case "회사": string("회사")
+        case "기존 장소": string("기존 장소")
+        default: storedName
+        }
+    }
+}
+
 enum AppLoadingState: Equatable, Sendable {
     case idle
     case loading
