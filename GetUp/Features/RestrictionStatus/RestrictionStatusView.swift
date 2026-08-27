@@ -45,6 +45,7 @@ struct RestrictionStatusView: View {
                         Text(item.applicationReleaseDescription)
                             .font(.subheadline)
                             .foregroundStyle(HomeColor.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
 
@@ -161,7 +162,9 @@ extension HomeRuleItem {
         case .none:
             AppLocalizedCopy.string("앱 없음")
         case .exact(let count):
-            AppLocalizedCopy.format("%@개 앱", String(count))
+            count == 1
+                ? AppLocalizedCopy.string("1개 앱")
+                : AppLocalizedCopy.format("%@개 앱", String(count))
         case .multiple:
             AppLocalizedCopy.string("여러 앱")
         }
@@ -172,10 +175,12 @@ extension HomeRuleItem {
         case .none:
             AppLocalizedCopy.string("선택한 앱이 없어요")
         case .exact(let count):
-            AppLocalizedCopy.format(
-                "선택한 앱 %@개를\n다시 사용할 수 있어요",
-                String(count)
-            )
+            count == 1
+                ? AppLocalizedCopy.string("선택한 앱 1개를\n다시 사용할 수 있어요")
+                : AppLocalizedCopy.format(
+                    "선택한 앱 %@개를\n다시 사용할 수 있어요",
+                    String(count)
+                )
         case .multiple:
             AppLocalizedCopy.string("선택한 여러 앱을\n다시 사용할 수 있어요")
         }

@@ -169,6 +169,36 @@
         }
       }
     },
+    "1개 앱" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 app"
+          }
+        }
+      }
+    },
+    "1개 앱 선택됨" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 app selected"
+          }
+        }
+      }
+    },
+    "선택한 앱 1개를\n다시 사용할 수 있어요" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can use the selected app\nagain"
+          }
+        }
+      }
+    },
     "%@부터 최소 15분 이후, 12시간 이내만 선택할 수 있어요" : {
       "extractionState" : "stale",
       "localizations" : {
