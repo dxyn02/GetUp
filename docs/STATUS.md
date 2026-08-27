@@ -11,8 +11,8 @@ T083·T085 — 시간 시작 callback의 앱 비실행 실기기 적용은 T120�
 background·시스템 종료 상태와 100회 실기기 latency를 후속 확인할 예정
 
 ## 마지막 완료 작업
-T127 — 저장된 장소를 선택한 뒤 지도·현재 위치로 새 좌표를 고르면 장소 ID와 이름을 유지해 좌표를
-갱신하고, 모든 참조 규칙에 반영하되 활성 규칙의 공유 장소는 수정하지 못하도록 보호함
+T128 — App Store Connect 제출용 iPhone 14 Plus 6.5인치 한국어·영어 스크린샷과 메타데이터 초안을
+작성하고, 홈 설명 두 줄 압축과 영어 단수 app/apps 문구를 보정함
 
 ## 다음 작업
 T083·T085 — 설치된 수정 빌드에서 다음 설정 시간 시작 callback 뒤 제한 자동 적용, 앱을 강제
@@ -30,6 +30,19 @@ BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록�
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-08-27 T128에서 iPhone 14 Plus iOS 26.5 Simulator의 상태 막대를 9:41·배터리 100%로 고정하고
+한국어 6장, 영어 5장의 1284×2778 원본 PNG와 알파 채널이 없는 JPEG 제출본을 생성했다. 한국어·영어
+Promotional Text·Description·Keywords와 공통 Copyright 초안을 `AppStore/metadata`에 기록하고,
+키워드는 UTF-8 100바이트 이내로 검증했다. 홈 조건 설명이 고정 548pt pager 안에서 한 줄로 압축되던
+문제는 두 홈 카드의 설명에 세로 고정 크기를 부여해 두 줄을 유지하도록 수정했다. 영어 개수 문구는
+`count == 1`에서 `1 app`, `1 app selected`, `You can use the selected app again` 전용 문자열을 사용하고
+복수에서만 `apps`를 사용하도록 보정했다. 실제 system-owned Shield는 Simulator의 UI test probe와
+다르므로 제출 이미지에 포함하지 않았고 Family Controls entitlement·token이 적용된 실기기 캡처로
+남겼다. 전체 `GetUpTests` 231개가 동적 실행 포함 265회 실패·skip 없이 통과했다. US1 UI 회귀 전체
+실행에서 기존 한국어 어순과 달라진 두 테스트만 실패해 `1개 앱`·`1개 앱 선택됨`을 보존하도록 수정한
+뒤 해당 두 테스트와 `RestrictionStatusModelTests`를 재실행해 통과했다. 최종 Simulator build,
+String Catalog JSON 구조, 11개 JPEG의 1284×2778·알파 없음과 `git diff --check`를 검증했다.
+
 2026-08-27 T127에서 저장 장소를 선택한 뒤 지도 정착 또는 현재 위치 이동이 선택 ID·이름·chip 상태를
 지우던 원인과, 선택을 유지해도 같은 이름을 재사용하면서 새 좌표를 버리던 두 번째 원인을 함께
 수정했다. `LocationPickerCompletion.updated`가 기존 장소 ID와 새 좌표를 전달하고,
