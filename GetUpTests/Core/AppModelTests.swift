@@ -353,6 +353,77 @@ struct AppModelTests {
         #expect(model.homeRules.first?.rule.isEnabled == false)
     }
 
+    @Test("Deleting an unused custom place updates persistence and clears an unsaved selection")
+    func deletingUnusedCustomPlaceClearsDraftSelection() async throws {
+        let customPlace = makePlace(name: "도서관")
+        let repository = AppModelRepository(
+            places: SavedPlaceCollectionSnapshot(revision: 2, places: [customPlace])
+        )
+        let model = makeModel(repository: repository)
+        await model.load()
+        model.beginCreatingRule()
+        let editor = try #require(model.editorModel)
+        editor.selectSavedPlace(id: customPlace.id)
+
+        try await model.deleteSavedPlace(id: customPlace.id)
+
+        #expect(model.savedPlaces.isEmpty)
+        #expect(editor.savedPlaces.isEmpty)
+        #expect(editor.selectedSavedPlaceID == nil)
+        #expect(await repository.storedPlacesSnapshot?.revision == 3)
+        #expect(await repository.storedPlacesSnapshot?.places.isEmpty == true)
+    }
+
+    @Test("Deleting a custom place created only in the current draft skips persistence")
+    func deletingDraftOnlyCustomPlaceSkipsPersistence() async throws {
+        let originalPlaces = SavedPlaceCollectionSnapshot(revision: 2, places: [])
+        let repository = AppModelRepository(places: originalPlaces)
+        let model = makeModel(repository: repository)
+        await model.load()
+        model.beginCreatingRule()
+        let editor = try #require(model.editorModel)
+        editor.applyLocationCompletion(
+            .confirmed(
+                SavedPlaceDraft(
+                    name: "도서관",
+                    coordinate: ReferenceLocation(latitude: 37.5, longitude: 127.0)
+                )
+            )
+        )
+        let draftOnlyPlace = try #require(editor.selectedSavedPlace)
+
+        try await model.deleteSavedPlace(id: draftOnlyPlace.id)
+
+        #expect(model.savedPlaces.isEmpty)
+        #expect(editor.savedPlaces.isEmpty)
+        #expect(editor.selectedSavedPlaceID == nil)
+        #expect(await repository.storedPlacesSnapshot == originalPlaces)
+    }
+
+    @Test("Deleting a referenced custom place reports the number of blocking rules")
+    func referencedCustomPlaceDeletionIsBlocked() async throws {
+        let customPlace = makePlace(name: "도서관")
+        let rule = makeRule(
+            id: Self.todayRuleID,
+            weekdays: [.monday],
+            start: TimeOfDay(hour: 6, minute: 0),
+            placeID: customPlace.id
+        )
+        let repository = AppModelRepository(
+            rules: RestrictionRuleCollectionSnapshot(revision: 4, rules: [rule]),
+            places: SavedPlaceCollectionSnapshot(revision: 2, places: [customPlace])
+        )
+        let model = makeModel(repository: repository)
+        await model.load()
+
+        await #expect(throws: AppSavedPlaceDeletionError.inUse(ruleCount: 1)) {
+            try await model.deleteSavedPlace(id: customPlace.id)
+        }
+
+        #expect(model.savedPlaces == [customPlace])
+        #expect(await repository.storedPlacesSnapshot?.places == [customPlace])
+    }
+
     private func makeModel(
         repository: AppModelRepository,
         now: Date = date(year: 2026, month: 8, day: 24, hour: 12),
@@ -378,10 +449,10 @@ struct AppModelTests {
         )
     }
 
-    private func makePlace() -> SavedPlaceSnapshot {
+    private func makePlace(name: String = "집") -> SavedPlaceSnapshot {
         SavedPlaceSnapshot(
             id: Self.placeID,
-            name: "집",
+            name: name,
             coordinate: ReferenceLocation(latitude: 37.0, longitude: 127.0),
             createdAt: Self.referenceDate,
             updatedAt: Self.referenceDate

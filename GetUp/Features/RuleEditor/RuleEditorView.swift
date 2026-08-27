@@ -8,6 +8,7 @@ struct RuleEditorView: View {
         [SavedPlaceSnapshot]
     ) async throws -> Void
     typealias DeleteAction = @MainActor () async throws -> Void
+    typealias DeleteSavedPlaceAction = @MainActor (UUID) async throws -> Void
 
     @Bindable private var model: RuleEditorModel
 
@@ -22,6 +23,7 @@ struct RuleEditorView: View {
     private let onOpenSettings: () -> Void
     private let onSave: SaveAction
     private let onDelete: DeleteAction?
+    private let onDeleteSavedPlace: DeleteSavedPlaceAction
 
     @State private var presentedTimeBoundary: TimeRangeBoundary?
     @State private var locationPickerModel: LocationPickerModel?
@@ -45,7 +47,8 @@ struct RuleEditorView: View {
             @escaping @MainActor (FamilyControlsAuthorizationStatus) -> Void = { _ in },
         onOpenSettings: @escaping () -> Void,
         onSave: @escaping SaveAction,
-        onDelete: DeleteAction? = nil
+        onDelete: DeleteAction? = nil,
+        onDeleteSavedPlace: @escaping DeleteSavedPlaceAction
     ) {
         self.model = model
         self.currentLocationProvider = currentLocationProvider
@@ -60,6 +63,7 @@ struct RuleEditorView: View {
         self.onOpenSettings = onOpenSettings
         self.onSave = onSave
         self.onDelete = onDelete
+        self.onDeleteSavedPlace = onDeleteSavedPlace
     }
 
     var body: some View {
@@ -561,7 +565,11 @@ struct RuleEditorView: View {
                 model: locationPickerModel,
                 radius: $model.radius,
                 onApply: applyLocationSelection,
-                onOpenSettings: onOpenSettings
+                onOpenSettings: onOpenSettings,
+                onDeleteSavedPlace: { id in
+                    try await onDeleteSavedPlace(id)
+                    locationPickerModel.removeSavedPlace(id: id)
+                }
             )
         } else {
             ProgressView()
@@ -626,13 +634,15 @@ struct RuleEditorView: View {
     }
 
     private func presentLocationPicker() {
-        locationPickerModel = LocationPickerModel(
-            savedPlaces: model.savedPlaces,
-            initialSavedPlaceID: model.selectedSavedPlaceID,
-            initialCoordinate: model.selectedSavedPlace?.coordinate,
-            defaultCoordinate: defaultCoordinate,
-            currentLocationProvider: currentLocationProvider
-        )
+        if locationPickerModel == nil {
+            locationPickerModel = LocationPickerModel(
+                savedPlaces: model.savedPlaces,
+                initialSavedPlaceID: model.selectedSavedPlaceID,
+                initialCoordinate: model.selectedSavedPlace?.coordinate,
+                defaultCoordinate: defaultCoordinate,
+                currentLocationProvider: currentLocationProvider
+            )
+        }
         isLocationPickerPresented = true
     }
 

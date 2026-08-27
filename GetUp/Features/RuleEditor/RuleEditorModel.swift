@@ -243,6 +243,13 @@ final class RuleEditorModel {
         self.savedPlaces = savedPlaces
     }
 
+    func removeSavedPlace(id: UUID) {
+        savedPlaces.removeAll { $0.id == id }
+        if selectedSavedPlaceID == id {
+            selectedSavedPlaceID = nil
+        }
+    }
+
     func applyLocationCompletion(_ completion: LocationPickerCompletion) {
         switch completion {
         case .confirmed(let draft):

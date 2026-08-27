@@ -5,6 +5,9 @@ enum RuleConfigurationServiceError: Error, Equatable, Sendable {
     case invalidDraft(Set<RestrictionRuleValidationError>)
     case invalidSavedPlaces
     case staleRevision(expected: Int?, actual: Int?)
+    case savedPlaceNotFound
+    case protectedSavedPlace
+    case savedPlaceInUse(ruleIDs: Set<UUID>)
 }
 
 struct SavedRuleConfiguration: Equatable, Sendable {
@@ -125,6 +128,41 @@ struct RuleConfigurationService: Sendable {
         return updatedRules
     }
 
+    @discardableResult
+    func deleteSavedPlace(
+        id: UUID
+    ) async throws -> SavedPlaceCollectionSnapshot {
+        let currentRules = try await ruleRepository.loadRuleCollection()
+            ?? RestrictionRuleCollectionSnapshot(revision: 0, rules: [])
+        let currentPlaces = try await savedPlaceRepository.loadSavedPlaceCollection()
+            ?? SavedPlaceCollectionSnapshot(revision: 0, places: [])
+
+        guard let savedPlace = currentPlaces.places.first(where: { $0.id == id }) else {
+            throw RuleConfigurationServiceError.savedPlaceNotFound
+        }
+        guard !Self.isProtectedPreset(savedPlace) else {
+            throw RuleConfigurationServiceError.protectedSavedPlace
+        }
+
+        let referencingRuleIDs = Set(
+            currentRules.rules
+                .filter { $0.savedPlaceID == id }
+                .map(\.id)
+        )
+        guard referencingRuleIDs.isEmpty else {
+            throw RuleConfigurationServiceError.savedPlaceInUse(
+                ruleIDs: referencingRuleIDs
+            )
+        }
+
+        let updatedPlaces = SavedPlaceCollectionSnapshot(
+            revision: currentPlaces.revision + 1,
+            places: currentPlaces.places.filter { $0.id != id }
+        )
+        try await savedPlaceRepository.saveSavedPlaceCollection(updatedPlaces)
+        return updatedPlaces
+    }
+
     private func validateRevision(
         of existingRule: RestrictionRuleSnapshot?,
         against draft: RuleEditorDraft
@@ -188,5 +226,12 @@ struct RuleConfigurationService: Sendable {
         }
 
         return rules + [rule]
+    }
+
+    private static func isProtectedPreset(_ place: SavedPlaceSnapshot) -> Bool {
+        let key = SavedPlaceNamePolicy.uniquenessKey(place.name)
+        return ["집", "회사"].contains {
+            SavedPlaceNamePolicy.uniquenessKey($0) == key
+        }
     }
 }

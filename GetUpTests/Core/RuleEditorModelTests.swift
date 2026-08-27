@@ -252,6 +252,19 @@ struct RuleEditorModelTests {
         #expect(model.validationErrors.contains(.savedPlaceNotFound))
     }
 
+    @Test("Deleting a custom place clears an unsaved draft selection")
+    func explicitSavedPlaceDeletionClearsDraftSelection() {
+        let savedPlace = makeSavedPlace()
+        let model = makeModel(savedPlaces: [savedPlace])
+        model.selectSavedPlace(id: savedPlace.id)
+
+        model.removeSavedPlace(id: savedPlace.id)
+
+        #expect(model.savedPlaces.isEmpty)
+        #expect(model.selectedSavedPlaceID == nil)
+        #expect(model.validationErrors.contains(.savedPlaceRequired))
+    }
+
     @Test("New editors keep separate stable rule identities")
     func newRulesHaveIndependentIdentities() {
         let first = makeModel(ruleID: Self.ruleID)

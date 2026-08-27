@@ -359,7 +359,10 @@ private struct GetUpRootView: View {
                 onSave: { draft, savedPlaces in
                     try await model.save(draft: draft, savedPlaces: savedPlaces)
                 },
-                onDelete: deleteAction
+                onDelete: deleteAction,
+                onDeleteSavedPlace: { id in
+                    try await model.deleteSavedPlace(id: id)
+                }
             )
         } else {
             EmptyView()
@@ -985,7 +988,10 @@ private enum UITestConfiguration {
             }
 
             try await container.savedPlaceRepository.saveSavedPlaceCollection(
-                SavedPlaceCollectionSnapshot(revision: 1, places: fixtures.places)
+                SavedPlaceCollectionSnapshot(
+                    revision: 1,
+                    places: fixtures.places(for: scenario)
+                )
             )
 
             if scenario == "three-saved-rules" || scenario == "startup-slow-recovery" {
@@ -1438,8 +1444,20 @@ private enum UITestConfiguration {
             createdAt: now,
             updatedAt: now
         )
+        let library = SavedPlaceSnapshot(
+            id: UUID(uuidString: "00000000-0000-4000-8000-000000000503")!,
+            name: "도서관",
+            coordinate: ReferenceLocation(latitude: 37.5796, longitude: 126.9770),
+            createdAt: now,
+            updatedAt: now
+        )
 
-        var places: [SavedPlaceSnapshot] { [home, work] }
+        func places(for scenario: String?) -> [SavedPlaceSnapshot] {
+            if scenario == "unused-custom-place-editor" {
+                return [home, work, library]
+            }
+            return [home, work]
+        }
 
         var rules: [RestrictionRuleSnapshot] {
             [
@@ -1487,7 +1505,8 @@ private enum UITestConfiguration {
 
         func initialDraft(for scenario: String?) -> RuleEditorDraft? {
             switch scenario {
-            case "empty-editor", "empty-editor-family-controls-undetermined":
+            case "empty-editor", "empty-editor-family-controls-undetermined",
+                "unused-custom-place-editor":
                 RuleEditorDraft(
                     id: Self.rule1ID,
                     sourceRevision: nil,
