@@ -251,6 +251,11 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 - [x] T118 [US2] 설정 시간이 되었는데도 Screen Time 제한이 시작되지 않는 회귀를 분석하고, `intervalDidStart` callback 반환 전에 공유 snapshot·현재 권한으로 모든 규칙을 동기 평가해 단일 `getup.restriction` store를 적용·검증하며 callback 안의 일정 제거·재등록을 금지하는 회귀와 전체 app·extension build를 검증한다
 - [x] T119 [US2] 실기기에서 `DeviceActivityMonitor`가 실행되어도 Screen Time이 적용되지 않는 회귀를 분석하고, 메인 앱의 최신 권한 snapshot을 App Group에 기록해 extension의 `notDetermined` 위치 권한만 보완하되 현재 Family Controls 철회·명시적 위치 철회·24시간 이상 지난 snapshot은 우선하지 않는 회귀와 실기기 서명 빌드·설치를 검증한다
 - [x] T120 [US2] 앱 비실행 시간 경계에서 callback 단계·규칙 수·위치 상태·권한·평가·store 검증 결과를 App Group에 기록해 extension의 Family Controls가 `notDetermined`로 판정되는 실기기 원인을 확인하고, 최근 앱 `approved` 상태만 보완하되 현재 `denied`는 우선하는 회귀와 실기기 자동 Shield를 검증한다
+- [x] T121 [US1] 신규 규칙의 현재 시각·15분 뒤 초기값, 직접 입력 장소 이름 chip과 재편집, 홈 세로 scroll 제거, 단일 규칙의 pager·indicator·swipe 안내 숨김을 SwiftUI·단위·UI 회귀와 명세·설계·운영 문서에 반영한다
+- [x] T122 [US1] 모든 규칙 삭제 뒤 SwiftUI pager selection이 빈 `homeRules[0]`을 지연 평가해 발생하는 index crash를 optional selection으로 수정하고, 마지막 규칙의 모델 상태·3→0 UI 전환 회귀와 원인 기록을 추가한다
+- [x] T123 [US4] 최초 위치 권한의 `한 번만 허용`으로 Always 요청이 무시되거나 권한 변경 callback이 오지 않아 온보딩이 무한 대기하는 문제를 bounded fallback으로 종료하고, Settings 복구 안내·어댑터·모델·UI 회귀와 Simulator build를 검증한다
+- [x] T124 [US1] 직접 입력 저장 장소 chip에 확인형 삭제를 추가하고 최신 전체 규칙 참조 시 개수 안내와 함께 차단하며, 미사용 장소의 revision 증가·빈 collection 영속화·실패 시 보존·미저장 초안 선택 해제를 구현한다. 같은 편집 세션에서 위치 화면을 나갔다 다시 들어와도 마지막 장소 버튼 선택과 핀을 유지하도록 모델·SwiftUI·단위·UI 회귀와 명세·설계·운영 문서를 갱신한다
+- [x] T125 [US1] 규칙 저장 전 현재 편집 초안에만 생성된 직접 입력 장소를 삭제할 때 영속 저장소의 `savedPlaceNotFound` 오류로 실패하는 회귀를 수정하고, 초안 전용 장소는 저장소 write 없이 편집 모델과 picker에서만 제거하는 앱 모델·UI 회귀를 검증한다
 
 **Checkpoint**: 자동 테스트, 필수 실기기 검증, entitlement 승인 및 SC-001·SC-007 사용성 평가가
 모두 기록된 경우에만 feature 완료로 표시한다.

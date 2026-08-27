@@ -1239,3 +1239,81 @@ Family Controls도 앱 `approved`와 달리 extension에서 `notDetermined`로 �
 **영향 범위**: `SharedIdentifiers`, `AuthorizationSnapshotRecord`, `SystemAuthorizationProvider`,
 `DeviceActivityAuthorizationSnapshotReader`, authorization·Managed Settings adapter 테스트,
 `shared-storage-contract.md`, `platform-events-contract.md`, `FR-079`, T119와 BLK-012에 적용한다.
+
+## DEC-067 — 신규 규칙 초기 시간과 단일 규칙 홈 상호작용 단순화
+
+**날짜**: 2026-08-27
+
+**결정**: 신규 규칙은 생성 시점의 현재 현지 시·분을 시작 시각으로, 15분 뒤를 종료 시각으로
+초기화한다. 직접 입력 장소 chip은 입력한 이름을 표시하고 재탭하면 이름을 지우지 않은 채 입력
+field와 focus를 다시 제공한다.
+
+홈 화면 전체는 세로 scroll container를 사용하지 않는다. 저장 규칙이 하나면 card를 직접 표시하고
+pager, page indicator와 `좌우로 밀어 보기` 문구를 만들지 않으며, 두 개 이상일 때만 좌우 pager를
+사용한다.
+
+**근거**: 신규 규칙이 고정된 `06:00`~`09:00`으로 시작하면 현재 상황에 맞춰 두 값을 모두 다시
+조정해야 한다. 최소 유효 구간인 15분을 현재 시각에서 바로 제공하면 유효한 초안을 유지하면서 입력
+부담을 줄인다. 직접 입력 이름을 chip에 반영하고 재편집 진입점으로 사용하면 선택 결과와 행동이
+일치한다. 홈은 고정된 한 화면이며, 이동할 규칙이 없을 때 pager affordance를 노출하면 실제로 가능한
+상호작용을 잘못 안내한다.
+
+**영향 범위**: `RuleEditorModel`, `LocationPickerView`, `HomeView`, US1 단위·UI 테스트,
+`FR-080`~`FR-083`과 T121에 적용한다.
+
+**구현 메모 (2026-08-27)**: 규칙 삭제 저장과 `AppModel.apply`는 마지막 규칙에서 `homeRules = []`,
+`selectedRuleID = nil`로 정상 전환했지만, 사라지는 SwiftUI `TabView`가 기존 `Binding`을 지연 평가하며
+fallback `homeRules[0]`을 호출해 main thread에서 index crash가 발생했다. pager selection과 page
+tag를 `UUID?`로 바꿔 빈 collection을 `nil` selection으로 표현한다. 마지막 규칙 삭제 뒤에도 저장
+장소는 보존하며 빈 홈으로 전환한다. `FR-084`와 T122에 적용한다.
+
+## DEC-068 — Always 위치 권한 요청의 bounded callback 대기
+
+**날짜**: 2026-08-27
+
+**결정**: `.whenInUse`에서 실행한 `requestAlwaysAuthorization()`은 권한 변경 delegate callback을
+우선 기다린다. 권한 prompt로 앱이 inactive가 되면 다시 active가 될 때 현재 권한을 읽고, prompt가
+표시되지 않은 채 1초 안에 callback도 없을 때에는 bounded fallback으로 현재 권한을 다시 읽는다.
+결과가 `.always`이면 기존 성공 전환을 유지하고, `.whenInUse`이면 현재 안내 세션에서 미승격으로
+기록해 무한 로딩 대신 `설정 열기`와 수동 Always 변경 안내를 제공한다. 이후 시스템 prompt 응답으로
+앱이 다시 active가 되면 기존 foreground 복구가 최종 권한 상태를 다시 반영한다.
+
+**근거**: Core Location은 최초 요청에서 `한 번만 허용`을 선택한 임시 `.authorizedWhenInUse` 상태의
+후속 Always 요청을 무시하며, 사용자가 `앱을 사용하는 동안 허용`을 유지한 경우에도 권한 값이 바뀌지
+않아 delegate callback을 보내지 않는다. 기존 checked continuation은 이 callback만 종료 조건으로
+사용해 온보딩 버튼이 영구 로딩 상태가 됐다. callback 우선 처리와 bounded fallback을 함께 사용하면
+정상 승격은 즉시 반영하면서 무응답 경로도 예측 가능한 Settings 복구로 끝낼 수 있다.
+
+**영향 범위**: `CoreLocationCurrentLocationSession`, `PermissionGuideModel`, US4 어댑터·모델·UI
+테스트, `FR-085`와 T123에 적용하며 `DEC-044`의 미승격 Settings 전환을 비동기 무응답에도 보장한다.
+
+## DEC-069 — 저장 장소 독립 삭제와 위치 선택 세션 보존
+
+**날짜**: 2026-08-27
+
+**결정**: `집`·`회사` 프리셋을 제외하고 사용자가 직접 입력해 저장한 장소만 장소 선택 chip에서
+삭제할 수 있다. destructive 확인 뒤 최신 영속 규칙 collection의 활성·비활성 규칙을 모두 검사하며,
+참조 규칙이 하나라도 있으면 장소·규칙을 그대로 두고 참조 수를 안내한다. cascade 삭제와 dangling
+reference는 만들지 않는다. 미사용 장소만 장소 collection revision을 증가시켜 저장하고 마지막
+장소여도 빈 collection을 기록한다. 저장 실패 전에는 메모리 chip을 제거하지 않는다.
+
+저장되지 않은 현재 초안이 삭제 장소를 선택 중이면 선택 ID와 이름은 지우되 지도 핀은 보존한다.
+같은 규칙 편집 세션에서 위치 화면을 적용하지 않고 나갔다 다시 들어올 때에는 `RuleEditorView`가
+동일한 `LocationPickerModel`을 재사용한다. 선택 장소 좌표와 같은 MapKit 정착 callback은 프로그램
+이동으로 취급해 선택을 유지하고, 실제로 다른 좌표에 정착했을 때만 선택을 해제한다.
+
+**근거**: 규칙 저장 service는 들어온 장소를 기존 collection과 병합하므로 화면 목록에서만 제거하면
+다음 규칙 저장 때 장소가 되살아난다. 반대로 참조 중인 장소를 먼저 제거하면 `AppModel`의 규칙-장소
+결합과 runtime 조건에 dangling reference가 생긴다. 전용 저장소 삭제 경계에서 최신 참조를 검사하고
+성공 뒤에만 메모리를 갱신하면 데이터 무결성과 재시도 가능성을 함께 보장한다. 위치 선택은 Apply 전
+임시 상태이므로 편집 세션이 유지되는 동안 별도 picker 모델이 소유하는 것이 사용자의 선택 기대와
+일치한다.
+
+**영향 범위**: `RuleConfigurationService`, `AppModel`, `RuleEditorModel`, `RuleEditorView`,
+`LocationPickerModel`, `LocationPickerView`, US1 단위·UI 테스트, `FR-086`~`FR-089`와 T124에 적용한다.
+
+**구현 메모 (2026-08-27)**: 직접 입력 장소는 위치 `적용` 직후 `RuleEditorModel.savedPlaces`에 먼저
+추가되고 규칙을 저장할 때에만 영속 장소 collection에 기록된다. 따라서 삭제 대상이
+`AppModel.savedPlaces`에는 없고 현재 editor에만 있으면 초안 전용 장소로 판정한다. 이 경우 저장소
+service를 호출하지 않고 editor와 picker에서만 제거한다. 영속 장소만 기존 최신 규칙 참조 검사와
+revision 증가 경로를 사용하며, 초안 전용 `집`·`회사`도 삭제 불가 원칙을 유지한다. T125에 적용한다.
