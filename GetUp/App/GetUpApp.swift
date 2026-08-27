@@ -660,6 +660,7 @@ private struct HomeRuleCard: View {
                         Text(item.applicationReleaseDescription)
                             .font(.subheadline)
                             .foregroundStyle(HomeColor.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
 
@@ -994,6 +995,9 @@ private enum UITestConfiguration {
         let container = DependencyContainer(containerURL: root)
         let fixtures = Fixtures()
         let initialDraft = fixtures.initialDraft(for: scenario)
+        let restrictionActivationRule = fixtures.restrictionActivationRule(
+            name: scenario == "appstore-active" ? nil : "출근 준비"
+        )
         let bootstrap: @Sendable () async throws -> Void = {
             guard shouldReset else {
                 return
@@ -1014,11 +1018,12 @@ private enum UITestConfiguration {
                     )
                 )
             } else if scenario == "restriction-activation"
+                || scenario == "appstore-active"
                 || scenario?.hasPrefix("location-unavailable-") == true {
                 try await container.ruleRepository.saveRuleCollection(
                     RestrictionRuleCollectionSnapshot(
                         revision: 1,
-                        rules: [fixtures.restrictionActivationRule]
+                        rules: [restrictionActivationRule]
                     )
                 )
             }
@@ -1057,7 +1062,7 @@ private enum UITestConfiguration {
                 initialEditorDraft: initialDraft,
                 bootstrap: bootstrap,
                 loadAppliedRestrictionState: {
-                    let rule = fixtures.restrictionActivationRule
+                    let rule = restrictionActivationRule
                     let scheduleIsActive = ScheduleEvaluator.isActive(
                         weekdays: rule.weekdays,
                         startTime: rule.startTime,
@@ -1503,10 +1508,10 @@ private enum UITestConfiguration {
             ]
         }
 
-        var restrictionActivationRule: RestrictionRuleSnapshot {
+        func restrictionActivationRule(name: String?) -> RestrictionRuleSnapshot {
             makeRule(
                 id: Self.rule1ID,
-                name: "출근 준비",
+                name: name,
                 weekdays: [.monday, .tuesday, .wednesday, .thursday, .friday],
                 start: TimeOfDay(hour: 6, minute: 0),
                 end: TimeOfDay(hour: 9, minute: 0),
@@ -1566,7 +1571,7 @@ private enum UITestConfiguration {
 
         private func makeRule(
             id: UUID,
-            name: String,
+            name: String?,
             weekdays: Set<Weekday>,
             start: TimeOfDay,
             end: TimeOfDay,

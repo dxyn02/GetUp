@@ -617,7 +617,9 @@ struct RuleEditorView: View {
         case .none:
             return AppLocalizedCopy.string("앱 선택")
         case .exact(let count):
-            return AppLocalizedCopy.format("%@개 앱 선택됨", String(count))
+            return count == 1
+                ? AppLocalizedCopy.string("1개 앱 선택됨")
+                : AppLocalizedCopy.format("%@개 앱 선택됨", String(count))
         case .multiple:
             return AppLocalizedCopy.string("여러 앱 선택됨")
         }

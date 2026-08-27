@@ -51,6 +51,33 @@ struct RestrictionStatusModelTests {
         )
     }
 
+    @Test("A single selected app uses singular home copy")
+    func singleSelectedApplicationUsesSingularCopy() {
+        let rule = makeRule(revision: 1)
+        let place = SavedPlaceSnapshot(
+            id: Self.placeID,
+            name: "집",
+            coordinate: ReferenceLocation(latitude: 37.5665, longitude: 126.9780),
+            createdAt: Date(timeIntervalSince1970: 0),
+            updatedAt: Date(timeIntervalSince1970: 0)
+        )
+        let item = HomeRuleItem(
+            rule: rule,
+            savedPlace: place,
+            isScheduledToday: true,
+            nextStart: Date(timeIntervalSince1970: 0),
+            sortDate: Date(timeIntervalSince1970: 0),
+            applicationCount: 1,
+            accessibilityID: "single-app"
+        )
+
+        #expect(item.applicationSummary == "1개 앱")
+        #expect(
+            item.applicationReleaseDescription
+                == "선택한 앱 1개를\n다시 사용할 수 있어요"
+        )
+    }
+
     private func makeRule(revision: Int) -> RestrictionRuleSnapshot {
         RestrictionRuleSnapshot(
             id: Self.ruleID,
