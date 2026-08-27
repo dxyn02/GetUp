@@ -329,6 +329,32 @@ final class UserStory1RuleConfigurationUITests: XCTestCase {
     }
 
     @MainActor
+    func testDeletingEveryRuleTransitionsFromPagerToEmptyHomeWithoutTerminating() {
+        let app = launchApp(
+            scenario: "three-saved-rules",
+            storeID: #function,
+            resetStore: true
+        )
+
+        deleteRule(accessibilityID: "rule-1", in: app)
+        XCTAssertEqual(app.otherElements["home.rulePageIndicator"].label, "1 / 2")
+
+        deleteRule(accessibilityID: "rule-2", in: app)
+        XCTAssertFalse(app.otherElements["home.rulePager"].exists)
+        XCTAssertTrue(app.otherElements["home.ruleCard.rule-3"].waitForExistence(timeout: 2))
+
+        deleteRule(accessibilityID: "rule-3", in: app)
+
+        XCTAssertEqual(app.state, .runningForeground)
+        XCTAssertTrue(
+            app.staticTexts["home.emptyState.description"]
+                .waitForExistence(timeout: 2)
+        )
+        XCTAssertFalse(app.otherElements["home.rulePager"].exists)
+        XCTAssertFalse(app.otherElements["home.ruleCard.rule-3"].exists)
+    }
+
+    @MainActor
     private func launchApp(
         scenario: String? = nil,
         storeID: String,
@@ -393,5 +419,20 @@ final class UserStory1RuleConfigurationUITests: XCTestCase {
             file: file,
             line: line
         )
+        XCTAssertFalse(app.otherElements["home.rulePager"].exists, file: file, line: line)
+        XCTAssertFalse(app.otherElements["home.rulePageIndicator"].exists, file: file, line: line)
+        XCTAssertFalse(app.staticTexts["좌우로 밀어 보기"].exists, file: file, line: line)
+    }
+
+    @MainActor
+    private func deleteRule(accessibilityID: String, in app: XCUIApplication) {
+        let edit = app.buttons["home.ruleCard.\(accessibilityID).edit"]
+        XCTAssertTrue(edit.waitForExistence(timeout: 2))
+        edit.tap()
+
+        app.buttons["ruleEditor.delete"].tap()
+        let confirmation = app.alerts["규칙을 삭제할까요?"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 2))
+        confirmation.buttons["삭제"].tap()
     }
 }

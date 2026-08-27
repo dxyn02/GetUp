@@ -203,6 +203,35 @@ struct AppModelTests {
         #expect(await repository.storedPlacesSnapshot?.places == [place])
     }
 
+    @Test("Deleting the last rule leaves an empty home selection and preserves its place")
+    func deletingLastRuleClearsHomeSelection() async throws {
+        let place = makePlace()
+        let rule = makeRule(
+            id: Self.todayRuleID,
+            revision: 3,
+            weekdays: [.monday],
+            start: TimeOfDay(hour: 6, minute: 0),
+            placeID: place.id
+        )
+        let repository = AppModelRepository(
+            rules: RestrictionRuleCollectionSnapshot(revision: 5, rules: [rule]),
+            places: SavedPlaceCollectionSnapshot(revision: 2, places: [place])
+        )
+        let model = makeModel(repository: repository)
+        await model.load()
+        model.beginEditingRule(id: rule.id)
+
+        try await model.deleteEditingRule()
+
+        #expect(model.editorModel == nil)
+        #expect(model.homeRules.isEmpty)
+        #expect(model.selectedRuleID == nil)
+        #expect(model.savedPlaces == [place])
+        #expect(await repository.storedRules?.revision == 6)
+        #expect(await repository.storedRules?.rules.isEmpty == true)
+        #expect(await repository.storedPlacesSnapshot?.places == [place])
+    }
+
     @Test("The deletion guard rejects an active rule without writing")
     func deletionGuardRejectsActiveRule() async throws {
         let place = makePlace()

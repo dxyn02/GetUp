@@ -533,8 +533,7 @@ private struct HomeView: View {
                     ForEach(Array(model.homeRules.enumerated()), id: \.element.id) { index, item in
                         ruleCard(item, at: index)
                             .padding(.horizontal, 22)
-                            .tag(item.id)
-                        }
+                            .tag(Optional(item.id))
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
@@ -589,7 +588,7 @@ private struct HomeView: View {
 
     private var selectedRuleBinding: Binding<UUID?> {
         Binding(
-            get: { model.selectedRuleID ?? model.homeRules[0].id },
+            get: { model.selectedRuleID ?? model.homeRules.first?.id },
             set: { model.selectedRuleID = $0 }
         )
     }
