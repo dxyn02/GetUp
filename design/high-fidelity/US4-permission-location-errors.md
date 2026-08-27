@@ -198,7 +198,9 @@ AX1~AX5, Increase Contrast와 시스템 설정 복귀 focus는 구현 후 물리
   안내하지 않는다.
 - 위치는 alert 목업의 `앱을 사용하는 동안 허용`을 누른 뒤 첫 요청을 실행하고, `.whenInUse`와
   Full Accuracy를 얻으면 별도 alert 목업의 `항상 허용으로 변경`을 눌러 Always 요청을 실행한다.
-  Always 요청 뒤에도 `.whenInUse`가 유지되면 거부 결과로 취급해 Settings 복구를 제공한다.
+  최초 요청의 `한 번만 허용` 때문에 Always 요청이 무시되거나 요청 뒤에도 `.whenInUse`가 유지되면
+  callback을 무기한 기다리지 않고 `‘한 번만 허용’을 선택했거나 ‘항상 허용’으로 변경하지 않았다면,
+  설정에서 위치 접근을 ‘항상’으로 바꿔 주세요.`와 Settings 복구를 제공한다.
 - Background App Refresh는 진단·복구 지연 정보이며 특정 background 실행 시각을 보장하지 않는다.
   앱별 Settings에서 변경할 수 없으므로 시스템 전체 `설정 > 일반 > 백그라운드 앱 새로 고침` 경로를
   설명하고 앱별 Settings action을 제공하지 않는다. 이 진단만 제한된 foreground 복귀에서는 권한
@@ -261,6 +263,7 @@ AX1~AX5, Increase Contrast와 시스템 설정 복귀 focus는 구현 후 물리
 | `2026-08-25` | 사용자·`Codex` | 첨부 실기기 화면을 참고해 Family Controls·위치·Background App Refresh에 설명용 alert·Settings 목업을 추가하고 눌러야 할 항목과 Always·정확한 위치 문구를 accent로 강조 | 권한 복구 행동의 시각적 이해 보강 |
 | `2026-08-25` | 사용자·`Codex` | 승인된 `204:2014` frame에 맞춰 Family Controls·위치 사용 중·Always alert 목업을 중앙 배치하고, 강조 버튼의 명시적 요청과 허용·거부 후 문맥별 전환을 구현 기준으로 확정 | 권한 요청 클릭 유도 하이파이 최종 승인 |
 | `2026-08-25` | 사용자·`Codex` | 마지막 Background App Refresh 행동을 `시작하기`로 바꾸고, 이 행동에서만 완료를 저장해 중단 재실행은 온보딩을 반복하고 완료 재실행은 홈으로 진입하도록 확정 | 온보딩 완료 시점 보정 |
+| `2026-08-27` | 사용자·`Codex` | `한 번만 허용` 뒤 무시되는 Always 요청과 callback 없는 미승격 결과를 bounded fallback으로 종료하고 Settings 수동 변경 안내로 전환 | 위치 온보딩 무한 대기 회귀 수정 |
 
 ## 구현 승인
 
