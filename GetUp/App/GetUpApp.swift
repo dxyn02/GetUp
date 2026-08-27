@@ -419,20 +419,21 @@ private struct HomeView: View {
     let showsRestrictionProbe: Bool
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                header
+        VStack(alignment: .leading, spacing: 22) {
+            header
 
-                if model.homeRules.isEmpty {
-                    emptyState
-                } else {
-                    rulePager
-                }
+            if model.homeRules.isEmpty {
+                emptyState
+            } else if model.homeRules.count == 1, let item = model.homeRules.first {
+                singleRuleCard(item)
+            } else {
+                rulePager
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
-            .padding(.bottom, 24)
         }
+        .frame(maxHeight: .infinity, alignment: .top)
+        .padding(.horizontal, 20)
+        .padding(.top, 12)
+        .padding(.bottom, 24)
         .background(HomeColor.background.ignoresSafeArea())
         .foregroundStyle(HomeColor.textPrimary)
         .toolbarBackground(HomeColor.background, for: .navigationBar)
@@ -530,22 +531,7 @@ private struct HomeView: View {
             VStack(spacing: 0) {
                 TabView(selection: selectedRuleBinding) {
                     ForEach(Array(model.homeRules.enumerated()), id: \.element.id) { index, item in
-                        if model.restrictionStatus.isActive(item.rule) {
-                            RestrictionStatusView(
-                                item: item,
-                                rulePosition: index + 1,
-                                ruleCount: model.homeRules.count
-                            )
-                            .padding(.horizontal, 22)
-                            .tag(item.id)
-                        } else {
-                            HomeRuleCard(
-                                item: item,
-                                rulePosition: index + 1,
-                                ruleCount: model.homeRules.count
-                            ) {
-                                model.beginEditingRule(id: item.id)
-                            }
+                        ruleCard(item, at: index)
                             .padding(.horizontal, 22)
                             .tag(item.id)
                         }
@@ -576,7 +562,32 @@ private struct HomeView: View {
         }
     }
 
-    private var selectedRuleBinding: Binding<UUID> {
+    private func singleRuleCard(_ item: HomeRuleItem) -> some View {
+        ruleCard(item, at: 0)
+            .padding(.horizontal, 2)
+            .frame(height: rulePagerHeight)
+    }
+
+    @ViewBuilder
+    private func ruleCard(_ item: HomeRuleItem, at index: Int) -> some View {
+        if model.restrictionStatus.isActive(item.rule) {
+            RestrictionStatusView(
+                item: item,
+                rulePosition: index + 1,
+                ruleCount: model.homeRules.count
+            )
+        } else {
+            HomeRuleCard(
+                item: item,
+                rulePosition: index + 1,
+                ruleCount: model.homeRules.count
+            ) {
+                model.beginEditingRule(id: item.id)
+            }
+        }
+    }
+
+    private var selectedRuleBinding: Binding<UUID?> {
         Binding(
             get: { model.selectedRuleID ?? model.homeRules[0].id },
             set: { model.selectedRuleID = $0 }

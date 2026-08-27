@@ -388,8 +388,8 @@ final class UserStory1RuleConfigurationUITests: XCTestCase {
             line: line
         )
         XCTAssertEqual(
-            app.otherElements["home.rulePageIndicator"].label,
-            "1 / 1",
+            app.scrollViews.count,
+            0,
             file: file,
             line: line
         )

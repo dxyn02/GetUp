@@ -246,6 +246,7 @@ final class AppModel {
             modificationGuard: modificationGuard,
             makeID: makeID,
             now: now,
+            calendar: calendar,
             applicationTokenCounter: tokenCounter ?? applicationTokenCounter
         )
     }

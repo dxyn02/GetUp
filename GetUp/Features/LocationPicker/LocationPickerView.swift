@@ -193,16 +193,30 @@ struct LocationPickerView: View {
                 }
 
                 let isCustomSelected = model.selectedPlaceChoice == .custom
-                Button("직접 입력", systemImage: "chevron.forward") {
+                Button {
                     showsCustomNameField = true
-                    customPlaceNameInput = ""
-                    model.selectCustomPlaceName()
+                    if isCustomSelected {
+                        customPlaceNameInput = model.placeName
+                    } else {
+                        customPlaceNameInput = ""
+                        model.selectCustomPlaceName()
+                    }
                     isCustomNameFocused = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(customPlaceChipTitle)
+                        if customPlaceChipTitle == "직접 입력" {
+                            Image(systemName: "chevron.forward")
+                        }
+                    }
                 }
-                .labelStyle(.titleAndIcon)
                 .buttonStyle(LocationChoiceButtonStyle(isSelected: isCustomSelected))
                 .accessibilityAddTraits(isCustomSelected ? .isSelected : [])
-                .accessibilityHint("현재 지도 좌표에 새 장소 이름을 입력합니다.")
+                .accessibilityHint(
+                    isCustomSelected
+                        ? "현재 장소 이름을 다시 입력합니다."
+                        : "현재 지도 좌표에 새 장소 이름을 입력합니다."
+                )
                 .accessibilityIdentifier("locationPicker.customPlace")
             }
         }
@@ -234,6 +248,10 @@ struct LocationPickerView: View {
                     .submitLabel(.done)
                     .focused($isCustomNameFocused)
                     .accessibilityIdentifier("locationPicker.placeName")
+                    .onSubmit {
+                        isCustomNameFocused = false
+                        showsCustomNameField = false
+                    }
                     .onChange(of: customPlaceNameInput) { _, newValue in
                         let capped = String(newValue.prefix(SavedPlaceNamePolicy.maximumLength))
                         if capped != newValue {
@@ -251,6 +269,15 @@ struct LocationPickerView: View {
             .background(FocusColor.surfaceElevated, in: .rect(cornerRadius: 16))
 
         }
+    }
+
+    private var customPlaceChipTitle: String {
+        guard model.selectedPlaceChoice == .custom else {
+            return "직접 입력"
+        }
+
+        let normalizedName = SavedPlaceNamePolicy.normalized(model.placeName)
+        return normalizedName.isEmpty ? "직접 입력" : normalizedName
     }
 
     private func savedPlaceButton(_ place: SavedPlaceSnapshot) -> some View {
