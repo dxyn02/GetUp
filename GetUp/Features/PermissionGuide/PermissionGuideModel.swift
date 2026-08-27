@@ -18,10 +18,10 @@ enum PermissionGuideCapability: CaseIterable, Equatable, Sendable {
 
     var title: String {
         switch self {
-        case .familyControls: "앱 사용 제한"
-        case .alwaysLocation: "위치 접근"
-        case .fullAccuracy: "정확한 위치"
-        case .backgroundRefresh: "백그라운드 앱 새로고침"
+        case .familyControls: AppLocalizedCopy.string("앱 사용 제한")
+        case .alwaysLocation: AppLocalizedCopy.string("위치 접근")
+        case .fullAccuracy: AppLocalizedCopy.string("정확한 위치")
+        case .backgroundRefresh: AppLocalizedCopy.string("백그라운드 앱 새로고침")
         }
     }
 }
@@ -328,37 +328,37 @@ final class PermissionGuideModel {
             return PermissionGuideCapabilityItem(
                 capability: capability,
                 status: authorization.familyControls == .approved ? .ready : .actionRequired,
-                cause: "선택한 앱에 사용 제한 화면을 적용하는 데 필요해요.",
+                cause: AppLocalizedCopy.string("선택한 앱에 사용 제한 화면을 적용하는 데 필요해요."),
                 recovery: authorization.familyControls == .approved
-                    ? "승인됨"
-                    : "개인용 권한을 다시 승인한 뒤 제한할 앱을 다시 선택해 주세요."
+                    ? AppLocalizedCopy.string("승인됨")
+                    : AppLocalizedCopy.string("개인용 권한을 다시 승인한 뒤 제한할 앱을 다시 선택해 주세요.")
             )
         case .alwaysLocation:
             return PermissionGuideCapabilityItem(
                 capability: capability,
                 status: authorization.locationAuthorization == .always ? .ready : .actionRequired,
-                cause: "나서 앱이 열려 있지 않을 때도 설정한 장소를 확인하는 데 필요해요.",
+                cause: AppLocalizedCopy.string("나서 앱이 열려 있지 않을 때도 설정한 장소를 확인하는 데 필요해요."),
                 recovery: authorization.locationAuthorization == .always
-                    ? "항상 허용됨"
-                    : "설정에서 위치 접근을 ‘항상 허용’으로 바꿔 주세요."
+                    ? AppLocalizedCopy.string("항상 허용됨")
+                    : AppLocalizedCopy.string("설정에서 위치 접근을 ‘항상 허용’으로 바꿔 주세요.")
             )
         case .fullAccuracy:
             return PermissionGuideCapabilityItem(
                 capability: capability,
                 status: authorization.locationAccuracy == .full ? .ready : .actionRequired,
-                cause: "설정한 반경의 안과 밖을 안전하게 판단하는 데 필요해요.",
+                cause: AppLocalizedCopy.string("설정한 반경의 안과 밖을 안전하게 판단하는 데 필요해요."),
                 recovery: authorization.locationAccuracy == .full
-                    ? "정확한 위치 사용 중"
-                    : "설정에서 ‘정확한 위치’를 켜 주세요."
+                    ? AppLocalizedCopy.string("정확한 위치 사용 중")
+                    : AppLocalizedCopy.string("설정에서 ‘정확한 위치’를 켜 주세요.")
             )
         case .backgroundRefresh:
             return PermissionGuideCapabilityItem(
                 capability: capability,
                 status: authorization.backgroundRefresh == .available ? .ready : .limited,
-                cause: "앱이 닫힌 동안 상태 복구가 지연되지 않도록 도와줘요.",
+                cause: AppLocalizedCopy.string("앱이 닫힌 동안 상태 복구가 지연되지 않도록 도와줘요."),
                 recovery: authorization.backgroundRefresh == .available
-                    ? "사용 가능"
-                    : "설정과 저전력 모드를 확인해 주세요."
+                    ? AppLocalizedCopy.string("사용 가능")
+                    : AppLocalizedCopy.string("설정과 저전력 모드를 확인해 주세요.")
             )
         }
     }
@@ -369,8 +369,8 @@ final class PermissionGuideModel {
             return PermissionGuideScreenState(
                 kind: kind,
                 eyebrow: "PERMISSION CHECK",
-                title: "원활한 사용을 위해 아래 권한이 필요해요",
-                message: "필요한 항목을 확인하면 자동 제한 상태를 안전하게 다시 평가해요.",
+                title: AppLocalizedCopy.string("원활한 사용을 위해 아래 권한이 필요해요"),
+                message: AppLocalizedCopy.string("필요한 항목을 확인하면 자동 제한 상태를 안전하게 다시 평가해요."),
                 capabilityItems: capabilityItems,
                 primaryAction: .next,
                 secondaryAction: nil,
@@ -390,8 +390,8 @@ final class PermissionGuideModel {
             return PermissionGuideScreenState(
                 kind: kind,
                 eyebrow: "SCREEN TIME ACCESS",
-                title: "앱 사용 제한 권한이 필요해요",
-                message: "내용을 확인한 뒤 아래 버튼을 눌러 주세요.",
+                title: AppLocalizedCopy.string("앱 사용 제한 권한이 필요해요"),
+                message: AppLocalizedCopy.string("내용을 확인한 뒤 아래 버튼을 눌러 주세요."),
                 capabilityItems: [makeCapabilityItem(.familyControls)],
                 primaryAction: action,
                 secondaryAction: nil,
@@ -415,20 +415,20 @@ final class PermissionGuideModel {
             let isAlwaysRequest = action == .requestAlwaysLocationAuthorization
             let message: String
             if isWhenInUseRequest {
-                message = "정확한 위치를 ‘켬’으로 설정한 뒤, ‘앱을 사용하는 동안 허용’을 눌러 주세요."
+                message = AppLocalizedCopy.string("정확한 위치를 ‘켬’으로 설정한 뒤, ‘앱을 사용하는 동안 허용’을 눌러 주세요.")
             } else if authorization.locationAuthorization == .whenInUse
                 && alwaysLocationRequestWasDeclined
             {
-                message = "‘한 번만 허용’을 선택했거나 ‘항상 허용’으로 변경하지 않았다면, 설정에서 위치 접근을 ‘항상’으로 바꿔 주세요."
+                message = AppLocalizedCopy.string("‘한 번만 허용’을 선택했거나 ‘항상 허용’으로 변경하지 않았다면, 설정에서 위치 접근을 ‘항상’으로 바꿔 주세요.")
             } else {
-                message = "앱이 닫혀 있어도 규칙을 자동으로 적용하거나 해제하려면 ‘항상 허용으로 변경’을 눌러주세요."
+                message = AppLocalizedCopy.string("앱이 닫혀 있어도 규칙을 자동으로 적용하거나 해제하려면 ‘항상 허용으로 변경’을 눌러주세요.")
             }
             return PermissionGuideScreenState(
                 kind: kind,
                 eyebrow: isAlwaysRequest ? "LOCATION ACCESS · ALWAYS" : "LOCATION ACCESS",
                 title: isAlwaysRequest
-                    ? "항상 위치 접근 권한이 필요해요"
-                    : "정확한 위치 접근 권한이 필요해요",
+                    ? AppLocalizedCopy.string("항상 위치 접근 권한이 필요해요")
+                    : AppLocalizedCopy.string("정확한 위치 접근 권한이 필요해요"),
                 message: message,
                 capabilityItems: [
                     makeCapabilityItem(.alwaysLocation),
@@ -443,8 +443,8 @@ final class PermissionGuideModel {
             return PermissionGuideScreenState(
                 kind: kind,
                 eyebrow: "BACKGROUND REFRESH",
-                title: "백그라운드 새로 고침을 확인해 주세요",
-                message: "Background App Refresh가 제한되면 앱을 다시 열기 전까지 상태 복구가 늦어질 수 있어요. 저전력 모드에서도 시스템이 실행을 제한할 수 있어요.",
+                title: AppLocalizedCopy.string("백그라운드 새로 고침을 확인해 주세요"),
+                message: AppLocalizedCopy.string("Background App Refresh가 제한되면 앱을 다시 열기 전까지 상태 복구가 늦어질 수 있어요. 저전력 모드에서도 시스템이 실행을 제한할 수 있어요."),
                 capabilityItems: [makeCapabilityItem(.backgroundRefresh)],
                 primaryAction: presentationMode == .onboarding
                     ? .completeOnboarding
@@ -458,11 +458,11 @@ final class PermissionGuideModel {
                 kind: kind,
                 eyebrow: "LOCATION UNAVAILABLE",
                 title: isRestrictionApplied
-                    ? "위치를 확인할 수 없어 제한이 유지돼요"
-                    : "현재 위치를 확인할 수 없어요",
+                    ? AppLocalizedCopy.string("위치를 확인할 수 없어 제한이 유지돼요")
+                    : AppLocalizedCopy.string("현재 위치를 확인할 수 없어요"),
                 message: isRestrictionApplied
-                    ? "위치 실패만으로 제한을 해제하지 않고 현재 제한을 유지해요. 설정한 시간이 끝나면 위치와 관계없이 자동으로 해제돼요."
-                    : "위치를 확인할 수 없어 새 제한을 시작하지 않아요. 권한과 정확한 위치를 확인한 뒤 다시 시도해 주세요.",
+                    ? AppLocalizedCopy.string("위치 실패만으로 제한을 해제하지 않고 현재 제한을 유지해요. 설정한 시간이 끝나면 위치와 관계없이 자동으로 해제돼요.")
+                    : AppLocalizedCopy.string("위치를 확인할 수 없어 새 제한을 시작하지 않아요. 권한과 정확한 위치를 확인한 뒤 다시 시도해 주세요."),
                 capabilityItems: [],
                 primaryAction: .openSettings,
                 secondaryAction: .retryLocation,

@@ -40,7 +40,7 @@ struct TimeRangePicker: View {
 
                 HStack(spacing: 0) {
                     wheelPicker(
-                        title: "시",
+                        title: AppLocalizedCopy.string("시"),
                         selection: $selectedHour,
                         values: selectableHours,
                         label: String.init,
@@ -48,7 +48,7 @@ struct TimeRangePicker: View {
                     )
 
                     wheelPicker(
-                        title: "분",
+                        title: AppLocalizedCopy.string("분"),
                         selection: $selectedMinute,
                         values: selectableMinutes,
                         label: { String(format: "%02d", $0) },
@@ -56,7 +56,7 @@ struct TimeRangePicker: View {
                     )
 
                     wheelPicker(
-                        title: "오전 또는 오후",
+                        title: AppLocalizedCopy.string("오전 또는 오후"),
                         selection: $selectedPeriod,
                         values: selectablePeriods,
                         label: \.displayName,
@@ -132,7 +132,10 @@ struct TimeRangePicker: View {
     }
 
     private var minimumDurationMessage: String {
-        "\(TimePickerComponents(time: startTime).displayName)부터 최소 15분 이후, 12시간 이내만 선택할 수 있어요"
+        AppLocalizedCopy.format(
+            "%@부터 최소 15분 이후, 12시간 이내만 선택할 수 있어요",
+            TimePickerComponents(time: startTime).displayName
+        )
     }
 
     private var isEndTimeSelectable: Bool {

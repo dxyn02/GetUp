@@ -15,7 +15,7 @@ struct RestrictionStatusView: View {
                 .foregroundStyle(HomeColor.accent)
                 .accessibilityIdentifier("restrictionStatus.active")
 
-            Text(item.rule.name ?? item.savedPlace.name)
+            Text(item.rule.name ?? displayPlaceName)
                 .font(.largeTitle)
                 .fontWeight(.bold)
 
@@ -39,7 +39,7 @@ struct RestrictionStatusView: View {
                         .accessibilityHidden(true)
 
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("\(item.savedPlace.name)에서 \(radiusLabel) 밖으로 나서면")
+                        Text("\(displayPlaceName)에서 \(radiusLabel) 밖으로 나서면")
                             .font(.title2)
                             .fontWeight(.bold)
                         Text(item.applicationReleaseDescription)
@@ -50,7 +50,7 @@ struct RestrictionStatusView: View {
 
                 conditionRow(
                     label: "LOCATION",
-                    value: "\(item.savedPlace.name) · \(radiusLabel)",
+                    value: "\(displayPlaceName) · \(radiusLabel)",
                     identifier: "home.ruleCard.\(item.accessibilityID).location"
                 )
                 conditionRow(
@@ -119,9 +119,13 @@ struct RestrictionStatusView: View {
         RadiusPicker.displayName(for: item.rule.radius)
     }
 
+    private var displayPlaceName: String {
+        AppLocalizedCopy.savedPlaceName(item.savedPlace.name)
+    }
+
     private var modificationGuard: RestrictionModificationGuard {
         RestrictionModificationGuard(
-            savedPlaceName: item.savedPlace.name,
+            savedPlaceName: displayPlaceName,
             radius: item.rule.radius,
             endTime: item.rule.endTime
         )
@@ -155,22 +159,25 @@ extension HomeRuleItem {
     var applicationSummary: String {
         switch restrictionSelectionSummary {
         case .none:
-            "앱 없음"
+            AppLocalizedCopy.string("앱 없음")
         case .exact(let count):
-            "\(count)개 앱"
+            AppLocalizedCopy.format("%@개 앱", String(count))
         case .multiple:
-            "여러 앱"
+            AppLocalizedCopy.string("여러 앱")
         }
     }
 
     var applicationReleaseDescription: String {
         switch restrictionSelectionSummary {
         case .none:
-            "선택한 앱이 없어요"
+            AppLocalizedCopy.string("선택한 앱이 없어요")
         case .exact(let count):
-            "선택한 앱 \(count)개를\n다시 사용할 수 있어요"
+            AppLocalizedCopy.format(
+                "선택한 앱 %@개를\n다시 사용할 수 있어요",
+                String(count)
+            )
         case .multiple:
-            "선택한 여러 앱을\n다시 사용할 수 있어요"
+            AppLocalizedCopy.string("선택한 여러 앱을\n다시 사용할 수 있어요")
         }
     }
 }

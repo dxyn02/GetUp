@@ -46,7 +46,8 @@ Shield Action 확장
 위치 권한, 개인용 Family Controls 승인, App Group, Family Controls 배포 entitlement 필요;
 Core Location region monitoring과 event 시점의 단발성 위치 확인을 사용하며 지속적인 background
 location update나 일반 background processing을 사용하지 않는다. 재부팅 후 첫 잠금 해제 전에는
-위치 모니터링이 불가능하다.
+위치 모니터링이 불가능하다. 사용자 노출 문자열은 한국어 source와 영어 번역을 String Catalog에서
+관리하고 format placeholder 계약을 두 언어에서 동일하게 유지한다.
 
 **Scale/Scope**: 기기 소유자 1명, 여러 규칙과 저장 장소, 규칙별 선택 요일 최대 7개와 원형 위치
 조건 1개, 운영체제가 허용하는 선택 앱 토큰 집합, 외부 계정·서버·동기화 없음

@@ -11,8 +11,8 @@ T083·T085 — 시간 시작 callback의 앱 비실행 실기기 적용은 T120�
 background·시스템 종료 상태와 100회 실기기 latency를 후속 확인할 예정
 
 ## 마지막 완료 작업
-T125 — 규칙 저장 전 편집 초안에만 추가된 직접 입력 장소 삭제를 영속 저장소 오류 없이 로컬에서
-처리하고 저장소 무변경·즉시 삭제 UI 회귀를 검증함
+T126 — `Localizable.xcstrings`의 사용자 노출 문자열 246개에 영어 번역을 추가하고 동적 `String`과
+프리셋 장소 이름을 명시적 lookup에 연결해 온보딩·홈·규칙 편집·위치·시간 화면을 영어로 검증함
 
 ## 다음 작업
 T083·T085 — 설치된 수정 빌드에서 다음 설정 시간 시작 callback 뒤 제한 자동 적용, 앱을 강제
@@ -30,6 +30,19 @@ BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록�
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-08-27 T126에서 한국어 source인 `Localizable.xcstrings`의 사용자 노출 항목 246개에 앱의 문체와
+iOS 시스템 설정 명칭을 반영한 영어 번역을 추가하고 모든 영어 `stringUnit`을 `translated`로
+전환했다. 첫 적용에서 영어 기기에도 한글이 남은 원인은 String Catalog가 `Text("…")` 정적 literal은
+자동 변환하지만 모델 속성, 삼항식, 문자열 보간 등으로 먼저 생성된 `String`은 자동 lookup하지 않기
+때문이었다. 공통 `AppLocalizedCopy`를 추가해 온보딩 모델·행동 문구·validation·접근성·앱 요약과
+시간 안내를 명시적으로 지역화하고, 영속 프리셋 값 `집`·`회사`는 변경하지 않은 채 표시 시에만
+`Home`·`Work`로 변환했다. 영어 Simulator에서 빈 홈, 규칙 편집, 위치 선택, 시작 시각, 온보딩 개요와
+Screen Time 권한, 활성 홈을 직접 확인했으며 사용자 입력 규칙명만 원문 보존됨을 확인했다. 앱과 세
+확장 Simulator build 및 전체 `GetUpTests` 발견 224개·동적 실행 포함 225회가 실패·skip 없이
+통과했다. `UserStory1RuleConfigurationUITests` 16개와 `UserStory4PermissionGuidanceUITests` 19개,
+총 35개 UI 회귀도 실패·skip 없이 통과했다. JSON 구조, 영어 번역 완료 상태, 한글 잔존과
+한국어·영어 format placeholder 종류·개수도 검사했다.
+
 2026-08-27 T125에서 직접 입력 장소가 위치 `적용` 뒤에는 `RuleEditorModel`에만 존재하고 규칙 저장
 전에는 영속 장소 collection에 없다는 상태 차이를 삭제 경로에 반영했다. 기존 구현은 모든 chip을
 `RuleConfigurationService.deleteSavedPlace`로 보내 `savedPlaceNotFound`를 일반 실패 Alert로

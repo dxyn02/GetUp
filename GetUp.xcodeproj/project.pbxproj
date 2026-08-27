@@ -858,6 +858,7 @@
 			knownRegions = (
 				ko,
 				Base,
+				en,
 			);
 			mainGroup = BB0000000000000000000001;
 			productRefGroup = BB0000000000000000000002 /* Products */;

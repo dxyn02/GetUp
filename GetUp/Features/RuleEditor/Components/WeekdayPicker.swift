@@ -46,9 +46,17 @@ struct WeekdayPicker: View {
         .buttonStyle(.plain)
         .contentShape(.circle)
         .accessibilityLabel(weekday.fullName)
-        .accessibilityValue(isSelected ? "선택됨" : "선택 안 됨")
+        .accessibilityValue(
+            isSelected
+                ? AppLocalizedCopy.string("선택됨")
+                : AppLocalizedCopy.string("선택 안 됨")
+        )
         .accessibilityAddTraits(isSelected ? .isSelected : [])
-        .accessibilityHint(isSelected ? "반복 요일에서 제외합니다." : "반복 요일에 추가합니다.")
+        .accessibilityHint(
+            isSelected
+                ? AppLocalizedCopy.string("반복 요일에서 제외합니다.")
+                : AppLocalizedCopy.string("반복 요일에 추가합니다.")
+        )
         .accessibilityIdentifier("ruleEditor.weekday.\(weekday.rawValue)")
     }
 }
@@ -68,13 +76,13 @@ private extension Weekday {
 
     var fullName: String {
         switch self {
-        case .monday: "월요일"
-        case .tuesday: "화요일"
-        case .wednesday: "수요일"
-        case .thursday: "목요일"
-        case .friday: "금요일"
-        case .saturday: "토요일"
-        case .sunday: "일요일"
+        case .monday: AppLocalizedCopy.string("월요일")
+        case .tuesday: AppLocalizedCopy.string("화요일")
+        case .wednesday: AppLocalizedCopy.string("수요일")
+        case .thursday: AppLocalizedCopy.string("목요일")
+        case .friday: AppLocalizedCopy.string("금요일")
+        case .saturday: AppLocalizedCopy.string("토요일")
+        case .sunday: AppLocalizedCopy.string("일요일")
         }
     }
 }

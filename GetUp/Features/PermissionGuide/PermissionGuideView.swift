@@ -102,7 +102,7 @@ struct PermissionGuideView: View {
     ) -> some View {
         centeredPermissionPreview(
             minHeight: 484,
-            hint: "↑ ‘계속’을 눌러 진행"
+            hint: AppLocalizedCopy.string("↑ ‘계속’을 눌러 진행")
         ) {
             VStack(spacing: 0) {
                 VStack(spacing: 14) {
@@ -120,13 +120,16 @@ struct PermissionGuideView: View {
 
                 HStack(spacing: 1) {
                     permissionPreviewAction(
-                        "계속",
+                        AppLocalizedCopy.string("계속"),
                         isHighlighted: true,
                         action: screen.primaryAction == .requestFamilyControlsAuthorization
                             ? .requestFamilyControlsAuthorization
                             : nil
                     )
-                    permissionPreviewAction("허용 안 함", isHighlighted: false)
+                    permissionPreviewAction(
+                        AppLocalizedCopy.string("허용 안 함"),
+                        isHighlighted: false
+                    )
                 }
                 .background(Color.white.opacity(0.16))
             }
@@ -210,11 +213,11 @@ struct PermissionGuideView: View {
     private var locationPermissionAlertMockup: some View {
         centeredPermissionPreview(
             minHeight: 521,
-            hint: "↑ 지도 왼쪽 상단에서 ‘정확한 위치’를 켜주세요."
+            hint: AppLocalizedCopy.string("↑ 지도 왼쪽 상단에서 ‘정확한 위치’를 켜주세요.")
         ) {
             VStack(spacing: 0) {
                 locationPermissionPreviewHeader(
-                    title: "“나서”가 사용자의\n위치를 사용하도록 허용할까요?"
+                    title: AppLocalizedCopy.string("“나서”가 사용자의\n위치를 사용하도록 허용할까요?")
                 )
 
                 Image("LocationWhenInUsePreview")
@@ -224,13 +227,19 @@ struct PermissionGuideView: View {
                     .clipShape(.rect(cornerRadius: 17))
 
                 VStack(spacing: 1) {
-                    permissionPreviewAction("한 번 허용", isHighlighted: false)
                     permissionPreviewAction(
-                        "앱을 사용하는 동안 허용",
+                        AppLocalizedCopy.string("한 번 허용"),
+                        isHighlighted: false
+                    )
+                    permissionPreviewAction(
+                        AppLocalizedCopy.string("앱을 사용하는 동안 허용"),
                         isHighlighted: true,
                         action: .requestLocationAuthorization
                     )
-                    permissionPreviewAction("허용 안 함", isHighlighted: false)
+                    permissionPreviewAction(
+                        AppLocalizedCopy.string("허용 안 함"),
+                        isHighlighted: false
+                    )
                 }
                 .background(Color.white.opacity(0.16))
             }
@@ -244,11 +253,11 @@ struct PermissionGuideView: View {
     private var locationAlwaysPermissionAlertMockup: some View {
         centeredPermissionPreview(
             minHeight: 494,
-            hint: "↑ ‘항상 허용으로 변경’을 눌러 주세요."
+            hint: AppLocalizedCopy.string("↑ ‘항상 허용으로 변경’을 눌러 주세요.")
         ) {
             VStack(spacing: 0) {
                 locationPermissionPreviewHeader(
-                    title: "“나서”가 사용자의\n위치를 항상 사용하도록\n허용할까요?"
+                    title: AppLocalizedCopy.string("“나서”가 사용자의\n위치를 항상 사용하도록\n허용할까요?")
                 )
 
                 Image("LocationAlwaysPreview")
@@ -258,9 +267,12 @@ struct PermissionGuideView: View {
                     .clipShape(.rect(cornerRadius: 17))
 
                 VStack(spacing: 1) {
-                    permissionPreviewAction("앱 사용 중 허용 유지", isHighlighted: false)
                     permissionPreviewAction(
-                        "항상 허용으로 변경",
+                        AppLocalizedCopy.string("앱 사용 중 허용 유지"),
+                        isHighlighted: false
+                    )
+                    permissionPreviewAction(
+                        AppLocalizedCopy.string("항상 허용으로 변경"),
                         isHighlighted: true,
                         action: .requestAlwaysLocationAuthorization
                     )
@@ -379,16 +391,19 @@ struct PermissionGuideView: View {
     private var locationSettingsMockup: some View {
         systemMockupCard(
             icon: "gearshape.fill",
-            title: "설정 · 나서 · 위치",
+            title: AppLocalizedCopy.string("설정 · 나서 · 위치"),
             accessibilityIdentifier: "permissionGuide.mockup.locationSettings",
-            accessibilityLabel: "위치 설정 예시. 위치 접근은 항상, 정확한 위치는 켬으로 설정해 주세요."
+            accessibilityLabel: AppLocalizedCopy.string("위치 설정 예시. 위치 접근은 항상, 정확한 위치는 켬으로 설정해 주세요.")
         ) {
             mockupSettingRow(
-                title: "위치 접근",
-                value: "항상",
+                title: AppLocalizedCopy.string("위치 접근"),
+                value: AppLocalizedCopy.string("항상"),
                 isHighlighted: true
             )
-            mockupToggleRow(title: "정확한 위치", isOn: true)
+            mockupToggleRow(
+                title: AppLocalizedCopy.string("정확한 위치"),
+                isOn: true
+            )
         }
     }
 
@@ -396,16 +411,19 @@ struct PermissionGuideView: View {
         VStack(alignment: .leading, spacing: 14) {
             systemMockupCard(
                 icon: "arrow.clockwise",
-                title: "설정 · 일반",
+                title: AppLocalizedCopy.string("설정 · 일반"),
                 accessibilityIdentifier: "permissionGuide.mockup.backgroundRefresh",
-                accessibilityLabel: "백그라운드 앱 새로 고침 설정 예시. 기능과 나서를 켜 주세요."
+                accessibilityLabel: AppLocalizedCopy.string("백그라운드 앱 새로 고침 설정 예시. 기능과 나서를 켜 주세요.")
             ) {
                 mockupSettingRow(
-                    title: "백그라운드 앱 새로 고침",
-                    value: "켬",
+                    title: AppLocalizedCopy.string("백그라운드 앱 새로 고침"),
+                    value: AppLocalizedCopy.string("켬"),
                     isHighlighted: true
                 )
-                mockupToggleRow(title: "나서", isOn: true)
+                mockupToggleRow(
+                    title: AppLocalizedCopy.string("나서"),
+                    isOn: true
+                )
             }
 
             Text("설정  ›  일반  ›  백그라운드 앱 새로 고침")
@@ -507,8 +525,8 @@ struct PermissionGuideView: View {
         VStack(alignment: .leading, spacing: 14) {
             Text(
                 isRestrictionApplied
-                    ? "현재 상태 · 제한 활성 유지"
-                    : "현재 상태 · 제한 비활성 유지"
+                    ? AppLocalizedCopy.string("현재 상태 · 제한 활성 유지")
+                    : AppLocalizedCopy.string("현재 상태 · 제한 비활성 유지")
             )
             .font(.headline)
 
@@ -650,25 +668,25 @@ struct PermissionGuideView: View {
     private func subtitle(for screen: PermissionGuideScreenState) -> String {
         switch screen.kind {
         case .overview:
-            "필수 권한을 허용해야 규칙을 적용할 수 있어요."
+            AppLocalizedCopy.string("필수 권한을 허용해야 규칙을 적용할 수 있어요.")
         case .familyControls:
             screen.message
         case .location:
             screen.message
         case .backgroundRefresh:
-            "꺼져 있으면 앱이 닫힌 동안 권한·위치 상태 복구가 늦어질 수 있어요."
+            AppLocalizedCopy.string("꺼져 있으면 앱이 닫힌 동안 권한·위치 상태 복구가 늦어질 수 있어요.")
         case .locationUnavailable(let isRestrictionApplied):
             isRestrictionApplied
-                ? "위치를 확인할 수 없어도 현재 제한을 유지해요."
-                : "위치를 추정하지 않고 새 제한을 시작하지 않아요."
+                ? AppLocalizedCopy.string("위치를 확인할 수 없어도 현재 제한을 유지해요.")
+                : AppLocalizedCopy.string("위치를 추정하지 않고 새 제한을 시작하지 않아요.")
         }
     }
 
     private func overviewTitle(for capability: PermissionGuideCapability) -> String {
         switch capability {
-        case .familyControls: "앱 사용 제한"
-        case .alwaysLocation: "위치 접근 · 항상"
-        case .fullAccuracy: "정확한 위치"
+        case .familyControls: AppLocalizedCopy.string("앱 사용 제한")
+        case .alwaysLocation: AppLocalizedCopy.string("위치 접근 · 항상")
+        case .fullAccuracy: AppLocalizedCopy.string("정확한 위치")
         case .backgroundRefresh: "Background App Refresh"
         }
     }
@@ -677,23 +695,23 @@ struct PermissionGuideView: View {
         for capability: PermissionGuideCapability
     ) -> String {
         switch capability {
-        case .familyControls: "선택한 앱을 제한하려면 필요"
-        case .alwaysLocation: "앱이 닫혀 있어도 조건 확인"
-        case .fullAccuracy: "반경 경계를 안전하게 판단"
-        case .backgroundRefresh: "복구 가능 상태 확인"
+        case .familyControls: AppLocalizedCopy.string("선택한 앱을 제한하려면 필요")
+        case .alwaysLocation: AppLocalizedCopy.string("앱이 닫혀 있어도 조건 확인")
+        case .fullAccuracy: AppLocalizedCopy.string("반경 경계를 안전하게 판단")
+        case .backgroundRefresh: AppLocalizedCopy.string("복구 가능 상태 확인")
         }
     }
 
     private func label(for action: PermissionGuideAction) -> String {
         switch action {
-        case .next: "다음"
-        case .confirm: "확인"
-        case .completeOnboarding: "시작하기"
-        case .requestFamilyControlsAuthorization: "권한 허용하기"
-        case .requestLocationAuthorization: "위치 권한 허용하기"
-        case .requestAlwaysLocationAuthorization: "항상 허용으로 변경"
-        case .openSettings: "설정 열기"
-        case .retryLocation: "위치 다시 확인"
+        case .next: AppLocalizedCopy.string("다음")
+        case .confirm: AppLocalizedCopy.string("확인")
+        case .completeOnboarding: AppLocalizedCopy.string("시작하기")
+        case .requestFamilyControlsAuthorization: AppLocalizedCopy.string("권한 허용하기")
+        case .requestLocationAuthorization: AppLocalizedCopy.string("위치 권한 허용하기")
+        case .requestAlwaysLocationAuthorization: AppLocalizedCopy.string("항상 허용으로 변경")
+        case .openSettings: AppLocalizedCopy.string("설정 열기")
+        case .retryLocation: AppLocalizedCopy.string("위치 다시 확인")
         }
     }
 
@@ -719,17 +737,17 @@ struct PermissionGuideView: View {
 
     private func hint(for action: PermissionGuideAction) -> String {
         switch action {
-        case .next: "다음 권한 안내로 이동합니다."
-        case .confirm: "안내를 확인하고 닫습니다."
-        case .completeOnboarding: "온보딩을 완료하고 나서 사용을 시작합니다."
+        case .next: AppLocalizedCopy.string("다음 권한 안내로 이동합니다.")
+        case .confirm: AppLocalizedCopy.string("안내를 확인하고 닫습니다.")
+        case .completeOnboarding: AppLocalizedCopy.string("온보딩을 완료하고 나서 사용을 시작합니다.")
         case .requestFamilyControlsAuthorization:
-            "앱 사용 제한을 위한 iOS 권한 요청을 표시합니다."
+            AppLocalizedCopy.string("앱 사용 제한을 위한 iOS 권한 요청을 표시합니다.")
         case .requestLocationAuthorization:
-            "위치 접근을 위한 iOS 권한 요청을 표시합니다."
+            AppLocalizedCopy.string("위치 접근을 위한 iOS 권한 요청을 표시합니다.")
         case .requestAlwaysLocationAuthorization:
-            "항상 위치 접근을 위한 iOS 권한 요청을 표시합니다."
-        case .openSettings: "나서의 권한을 변경할 수 있는 시스템 설정을 엽니다."
-        case .retryLocation: "현재 위치를 다시 확인하고 제한 상태를 재평가합니다."
+            AppLocalizedCopy.string("항상 위치 접근을 위한 iOS 권한 요청을 표시합니다.")
+        case .openSettings: AppLocalizedCopy.string("나서의 권한을 변경할 수 있는 시스템 설정을 엽니다.")
+        case .retryLocation: AppLocalizedCopy.string("현재 위치를 다시 확인하고 제한 상태를 재평가합니다.")
         }
     }
 
