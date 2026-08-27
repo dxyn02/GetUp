@@ -254,6 +254,8 @@ final class RuleEditorModel {
         switch completion {
         case .confirmed(let draft):
             selectOrCreateSavedPlace(from: draft)
+        case .updated(let id, let draft):
+            updateSavedPlace(id: id, from: draft)
         case .reused(let savedPlace):
             upsert(savedPlace)
             selectedSavedPlaceID = savedPlace.id
@@ -289,6 +291,22 @@ final class RuleEditorModel {
         )
         savedPlaces.append(savedPlace)
         selectedSavedPlaceID = savedPlace.id
+    }
+
+    private func updateSavedPlace(id: UUID, from draft: SavedPlaceDraft) {
+        guard let index = savedPlaces.firstIndex(where: { $0.id == id }) else {
+            return
+        }
+
+        let existing = savedPlaces[index]
+        savedPlaces[index] = SavedPlaceSnapshot(
+            id: existing.id,
+            name: draft.name,
+            coordinate: draft.coordinate,
+            createdAt: existing.createdAt,
+            updatedAt: now()
+        )
+        selectedSavedPlaceID = existing.id
     }
 
     private func upsert(_ savedPlace: SavedPlaceSnapshot) {

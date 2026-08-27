@@ -20,6 +20,7 @@ struct SavedPlaceDraft: Equatable, Sendable {
 
 enum LocationPickerCompletion: Equatable, Sendable {
     case confirmed(SavedPlaceDraft)
+    case updated(id: UUID, draft: SavedPlaceDraft)
     case reused(SavedPlaceSnapshot)
     case cancelled
 }
@@ -108,21 +109,8 @@ final class LocationPickerModel {
     }
 
     func mapDidSettle(at coordinate: ReferenceLocation) {
-        let selectedCoordinate = selectedSavedPlaceID.flatMap {
-            savedPlacesByID[$0]?.coordinate
-        } ?? pinCandidate
         cameraCenter = coordinate
         pinCandidate = coordinate
-
-        if selectedPlaceChoice != nil,
-           let selectedCoordinate,
-           selectedCoordinate.isApproximatelyEqual(to: coordinate) {
-            return
-        }
-
-        selectedSavedPlaceID = nil
-        selectedPlaceChoice = nil
-        placeName = ""
         guidance = nil
     }
 
@@ -145,9 +133,6 @@ final class LocationPickerModel {
             let coordinate = try await currentLocationProvider.currentLocation()
             cameraCenter = coordinate
             pinCandidate = coordinate
-            selectedSavedPlaceID = nil
-            selectedPlaceChoice = nil
-            placeName = ""
             guidance = nil
             return true
         } catch let error as CurrentLocationProviderError {
@@ -235,13 +220,20 @@ final class LocationPickerModel {
             return
         }
 
-        if
-            let selectedSavedPlaceID,
-            let savedPlace = savedPlacesByID[selectedSavedPlaceID],
-            savedPlace.name == normalizedName,
-            savedPlace.coordinate == pinCandidate
-        {
-            completion = .reused(savedPlace)
+        if let selectedSavedPlaceID,
+           let savedPlace = savedPlacesByID[selectedSavedPlaceID],
+           savedPlace.name == normalizedName {
+            if savedPlace.coordinate.isApproximatelyEqual(to: pinCandidate) {
+                completion = .reused(savedPlace)
+            } else {
+                completion = .updated(
+                    id: selectedSavedPlaceID,
+                    draft: SavedPlaceDraft(
+                        name: normalizedName,
+                        coordinate: pinCandidate
+                    )
+                )
+            }
         } else {
             completion = .confirmed(
                 SavedPlaceDraft(name: normalizedName, coordinate: pinCandidate)

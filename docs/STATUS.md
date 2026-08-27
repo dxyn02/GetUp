@@ -11,8 +11,8 @@ T083·T085 — 시간 시작 callback의 앱 비실행 실기기 적용은 T120�
 background·시스템 종료 상태와 100회 실기기 latency를 후속 확인할 예정
 
 ## 마지막 완료 작업
-T126 — `Localizable.xcstrings`의 사용자 노출 문자열 246개에 영어 번역을 추가하고 동적 `String`과
-프리셋 장소 이름을 명시적 lookup에 연결해 온보딩·홈·규칙 편집·위치·시간 화면을 영어로 검증함
+T127 — 저장된 장소를 선택한 뒤 지도·현재 위치로 새 좌표를 고르면 장소 ID와 이름을 유지해 좌표를
+갱신하고, 모든 참조 규칙에 반영하되 활성 규칙의 공유 장소는 수정하지 못하도록 보호함
 
 ## 다음 작업
 T083·T085 — 설치된 수정 빌드에서 다음 설정 시간 시작 callback 뒤 제한 자동 적용, 앱을 강제
@@ -30,6 +30,16 @@ BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록�
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-08-27 T127에서 저장 장소를 선택한 뒤 지도 정착 또는 현재 위치 이동이 선택 ID·이름·chip 상태를
+지우던 원인과, 선택을 유지해도 같은 이름을 재사용하면서 새 좌표를 버리던 두 번째 원인을 함께
+수정했다. `LocationPickerCompletion.updated`가 기존 장소 ID와 새 좌표를 전달하고,
+`RuleEditorModel`은 ID·이름·`createdAt`을 보존한 채 좌표와 `updatedAt`을 갱신한다. 저장소는 같은 ID를
+upsert하며 `AppModel`이 모든 참조 규칙의 홈·runtime 복구에 새 좌표를 반영한다. 다른 활성 규칙이
+공유하는 장소는 기존 활성 중 수정 차단을 우회하지 못하도록 저장을 거부한다. iPhone 14 Plus iOS
+26.5 Simulator에서 전체 `GetUpTests` 230개가 동적 실행 포함 264회, US1 UI 회귀 17개가 실패·skip
+없이 통과했다. Map을 실제로 swipe한 뒤 `집` chip 선택과 적용 가능 상태가 유지되는 회귀를 포함하며,
+`git diff --check`도 통과했다.
+
 2026-08-27 T126에서 한국어 source인 `Localizable.xcstrings`의 사용자 노출 항목 246개에 앱의 문체와
 iOS 시스템 설정 명칭을 반영한 영어 번역을 추가하고 모든 영어 `stringUnit`을 `translated`로
 전환했다. 첫 적용에서 영어 기기에도 한글이 남은 원인은 String Catalog가 `Text("…")` 정적 literal은

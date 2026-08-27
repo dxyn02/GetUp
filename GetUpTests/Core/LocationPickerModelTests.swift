@@ -5,8 +5,8 @@ import Testing
 @MainActor
 @Suite("Location picker model")
 struct LocationPickerModelTests {
-    @Test("A settled map movement updates the center and pin candidate")
-    func mapMovementUpdatesCandidate() {
+    @Test("Moving a selected saved place keeps its name and identity for reassignment")
+    func mapMovementKeepsSelectedPlaceForReassignment() {
         let savedPlace = makeSavedPlace()
         let model = makeModel(savedPlaces: [savedPlace])
         model.selectSavedPlace(id: savedPlace.id)
@@ -16,12 +16,13 @@ struct LocationPickerModelTests {
 
         #expect(model.cameraCenter == movedCoordinate)
         #expect(model.pinCandidate == movedCoordinate)
-        #expect(model.selectedSavedPlaceID == nil)
-        #expect(model.placeName.isEmpty)
+        #expect(model.selectedSavedPlaceID == savedPlace.id)
+        #expect(model.selectedPlaceChoice == .preset("회사"))
+        #expect(model.placeName == savedPlace.name)
     }
 
-    @Test("The current-location shortcut moves both map and pin")
-    func currentLocationShortcutUpdatesCandidate() async {
+    @Test("The current-location shortcut keeps a selected place ready for reassignment")
+    func currentLocationShortcutKeepsSelectedPlaceForReassignment() async {
         let currentLocation = ReferenceLocation(latitude: 37.4563, longitude: 126.7052)
         let savedPlace = makeSavedPlace()
         let model = makeModel(
@@ -34,8 +35,9 @@ struct LocationPickerModelTests {
 
         #expect(model.cameraCenter == currentLocation)
         #expect(model.pinCandidate == currentLocation)
-        #expect(model.selectedSavedPlaceID == nil)
-        #expect(model.placeName.isEmpty)
+        #expect(model.selectedSavedPlaceID == savedPlace.id)
+        #expect(model.selectedPlaceChoice == .preset("회사"))
+        #expect(model.placeName == savedPlace.name)
         #expect(model.guidance == nil)
     }
 
@@ -218,6 +220,24 @@ struct LocationPickerModelTests {
         model.confirm(placeName: savedPlace.name)
 
         #expect(model.completion == .reused(savedPlace))
+    }
+
+    @Test("Confirming a moved saved place requests an update with the same identity")
+    func confirmationUpdatesMovedSavedPlace() {
+        let savedPlace = makeSavedPlace(name: "집")
+        let movedCoordinate = ReferenceLocation(latitude: 35.1796, longitude: 129.0756)
+        let model = makeModel(savedPlaces: [savedPlace])
+        model.selectPreset(named: "집")
+        model.mapDidSettle(at: movedCoordinate)
+
+        model.confirm(placeName: model.placeName)
+
+        #expect(
+            model.completion == .updated(
+                id: savedPlace.id,
+                draft: SavedPlaceDraft(name: "집", coordinate: movedCoordinate)
+            )
+        )
     }
 
     @Test("Deleting the selected custom place clears its choice but preserves the map pin")

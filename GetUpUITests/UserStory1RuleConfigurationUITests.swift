@@ -129,6 +129,36 @@ final class UserStory1RuleConfigurationUITests: XCTestCase {
     }
 
     @MainActor
+    func testMovingMapKeepsSavedHomeSelectedForLocationReassignment() {
+        let app = launchApp(
+            scenario: "three-saved-rules",
+            storeID: #function,
+            resetStore: true
+        )
+
+        let edit = app.buttons["home.ruleCard.rule-1.edit"]
+        XCTAssertTrue(edit.waitForExistence(timeout: 2))
+        edit.tap()
+        app.buttons["ruleEditor.locationRow"].tap()
+
+        let home = app.buttons["locationPicker.savedPlace.home"]
+        let map = app.buttons["locationPicker.map"]
+        XCTAssertTrue(home.waitForExistence(timeout: 2))
+        XCTAssertTrue(home.isSelected)
+        XCTAssertTrue(map.exists)
+
+        map.swipeUp()
+
+        let remainsSelected = expectation(
+            for: NSPredicate(format: "isSelected == true"),
+            evaluatedWith: home
+        )
+        wait(for: [remainsSelected], timeout: 2)
+        XCTAssertTrue(app.buttons["locationPicker.confirm"].isEnabled)
+        XCTAssertFalse(app.staticTexts["locationPicker.placeName.validation"].exists)
+    }
+
+    @MainActor
     func testDeletingUnusedCustomPlaceRequiresConfirmationAndPersists() {
         let storeID = #function
         let customID = "locationPicker.savedPlace.00000000-0000-4000-8000-000000000503"
