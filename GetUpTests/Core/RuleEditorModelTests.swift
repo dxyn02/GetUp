@@ -209,6 +209,33 @@ struct RuleEditorModelTests {
         )
     }
 
+    @Test("Updating a saved location keeps its identity and creation date")
+    func updatedLocationReplacesCoordinateWithoutDuplicatingPlace() {
+        let savedPlace = makeSavedPlace()
+        let movedCoordinate = ReferenceLocation(latitude: 35.1796, longitude: 129.0756)
+        let model = makeModel(savedPlaces: [savedPlace])
+
+        model.applyLocationCompletion(
+            .updated(
+                id: savedPlace.id,
+                draft: SavedPlaceDraft(name: savedPlace.name, coordinate: movedCoordinate)
+            )
+        )
+
+        #expect(model.savedPlaces.count == 1)
+        #expect(model.selectedSavedPlaceID == savedPlace.id)
+        #expect(
+            model.selectedSavedPlace
+                == SavedPlaceSnapshot(
+                    id: savedPlace.id,
+                    name: savedPlace.name,
+                    coordinate: movedCoordinate,
+                    createdAt: savedPlace.createdAt,
+                    updatedAt: TestFixtures.now
+                )
+        )
+    }
+
     @Test("A duplicate place name never appends another saved place")
     func duplicatePlaceNameDoesNotAppend() {
         let savedPlace = makeSavedPlace()

@@ -207,6 +207,9 @@ final class AppModel {
         if editorModel?.ruleID == draft.id, editorModel?.canModify == false {
             throw AppRuleSaveError.activeRestriction
         }
+        if changesLocationOfActiveRule(savedPlaces) {
+            throw AppRuleSaveError.activeRestriction
+        }
 
         let service = RuleConfigurationService(
             ruleRepository: ruleRepository,
@@ -224,6 +227,29 @@ final class AppModel {
         await refreshRestrictionStatus()
         selectedRuleID = saved.rule.id
         editorModel = nil
+    }
+
+    private func changesLocationOfActiveRule(
+        _ incomingPlaces: [SavedPlaceSnapshot]
+    ) -> Bool {
+        let currentPlacesByID = Dictionary(
+            uniqueKeysWithValues: savedPlaces.map { ($0.id, $0) }
+        )
+        let changedPlaceIDs = Set<UUID>(incomingPlaces.compactMap { place in
+            guard let current = currentPlacesByID[place.id],
+                  current.coordinate != place.coordinate else {
+                return nil
+            }
+            return place.id
+        })
+        guard !changedPlaceIDs.isEmpty else {
+            return false
+        }
+
+        return homeRules.contains { item in
+            changedPlaceIDs.contains(item.rule.savedPlaceID)
+                && restrictionStatus.isActive(item.rule)
+        }
     }
 
     func refreshRestrictionStatus() async {

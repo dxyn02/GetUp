@@ -44,6 +44,7 @@ Shield Action 확장
 **Constraints**: 완전 로컬 동작, 여러 독립 규칙, 15분 이상 12시간 이하 직접 시간 입력,
 중복 없는 10자 이내 저장 장소 이름, 100m/250m/500m/1km 반경, Always 및 Full Accuracy
 위치 권한, 개인용 Family Controls 승인, App Group, Family Controls 배포 entitlement 필요;
+저장 장소 좌표 변경은 새 장소를 만들지 않고 기존 장소 ID를 유지해 모든 참조 규칙에 반영한다.
 Core Location region monitoring과 event 시점의 단발성 위치 확인을 사용하며 지속적인 background
 location update나 일반 background processing을 사용하지 않는다. 재부팅 후 첫 잠금 해제 전에는
 위치 모니터링이 불가능하다. 사용자 노출 문자열은 한국어 source와 영어 번역을 String Catalog에서

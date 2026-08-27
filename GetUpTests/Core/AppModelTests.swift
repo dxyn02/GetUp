@@ -154,6 +154,113 @@ struct AppModelTests {
         #expect(await runtimeSync.ruleRevisions == [4])
     }
 
+    @Test("Updating a shared place refreshes every home rule without changing references")
+    func updatingSharedPlaceRefreshesEveryReferencingRule() async throws {
+        let place = makePlace()
+        let editedRule = makeRule(
+            id: Self.todayRuleID,
+            revision: 3,
+            weekdays: [.monday],
+            start: TimeOfDay(hour: 6, minute: 0),
+            placeID: place.id
+        )
+        let otherRule = makeRule(
+            id: Self.tuesdayRuleID,
+            revision: 2,
+            weekdays: [.tuesday],
+            start: TimeOfDay(hour: 6, minute: 0),
+            placeID: place.id
+        )
+        let repository = AppModelRepository(
+            rules: RestrictionRuleCollectionSnapshot(
+                revision: 5,
+                rules: [editedRule, otherRule]
+            ),
+            places: SavedPlaceCollectionSnapshot(revision: 2, places: [place])
+        )
+        let model = makeModel(repository: repository)
+        let movedCoordinate = ReferenceLocation(latitude: 35.1796, longitude: 129.0756)
+        await model.load()
+        model.beginEditingRule(id: editedRule.id)
+        let editor = try #require(model.editorModel)
+
+        editor.applyLocationCompletion(
+            .updated(
+                id: place.id,
+                draft: SavedPlaceDraft(name: place.name, coordinate: movedCoordinate)
+            )
+        )
+        try await model.save(
+            draft: editor.preparedDraft,
+            savedPlaces: editor.savedPlaces
+        )
+
+        #expect(model.savedPlaces.count == 1)
+        #expect(model.savedPlaces.first?.id == place.id)
+        #expect(model.savedPlaces.first?.coordinate == movedCoordinate)
+        #expect(model.homeRules.count == 2)
+        #expect(model.homeRules.allSatisfy { $0.savedPlace.coordinate == movedCoordinate })
+        #expect(model.homeRules.allSatisfy { $0.rule.savedPlaceID == place.id })
+        #expect(await repository.storedPlacesSnapshot?.places.first?.coordinate == movedCoordinate)
+    }
+
+    @Test("An inactive rule cannot move a place shared by another active rule")
+    func activeSharedPlaceBlocksLocationUpdate() async throws {
+        let place = makePlace()
+        let editedRule = makeRule(
+            id: Self.todayRuleID,
+            revision: 3,
+            weekdays: [.monday],
+            start: TimeOfDay(hour: 6, minute: 0),
+            placeID: place.id
+        )
+        let activeRule = makeRule(
+            id: Self.tuesdayRuleID,
+            revision: 2,
+            weekdays: [.tuesday],
+            start: TimeOfDay(hour: 6, minute: 0),
+            placeID: place.id
+        )
+        let repository = AppModelRepository(
+            rules: RestrictionRuleCollectionSnapshot(
+                revision: 5,
+                rules: [editedRule, activeRule]
+            ),
+            places: SavedPlaceCollectionSnapshot(revision: 2, places: [place])
+        )
+        let activeState = AppliedRestrictionState(
+            activeRuleRevisions: [
+                ActiveRuleRevision(ruleID: activeRule.id, revision: activeRule.revision),
+            ]
+        )
+        let model = makeModel(
+            repository: repository,
+            loadAppliedRestrictionState: { activeState }
+        )
+        await model.load()
+        model.beginEditingRule(id: editedRule.id)
+        let editor = try #require(model.editorModel)
+        editor.applyLocationCompletion(
+            .updated(
+                id: place.id,
+                draft: SavedPlaceDraft(
+                    name: place.name,
+                    coordinate: ReferenceLocation(latitude: 35.1796, longitude: 129.0756)
+                )
+            )
+        )
+
+        await #expect(throws: AppRuleSaveError.activeRestriction) {
+            try await model.save(
+                draft: editor.preparedDraft,
+                savedPlaces: editor.savedPlaces
+            )
+        }
+
+        #expect(model.editorModel != nil)
+        #expect(await repository.storedPlacesSnapshot?.places == [place])
+    }
+
     @Test("A repository read failure exposes a retryable load state")
     func loadFailureIsReported() async {
         let repository = AppModelRepository(shouldFailLoading: true)

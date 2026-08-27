@@ -94,6 +94,48 @@ struct RuleConfigurationServiceTests {
         #expect(saved.savedPlaces.revision == 4)
     }
 
+    @Test("Updating a shared saved place keeps its identity for every referencing rule")
+    func updatesSharedSavedPlaceWithoutBreakingRuleReferences() async throws {
+        let place = makePlace()
+        let movedPlace = SavedPlaceSnapshot(
+            id: place.id,
+            name: place.name,
+            coordinate: ReferenceLocation(latitude: 35.1796, longitude: 129.0756),
+            createdAt: place.createdAt,
+            updatedAt: Date(timeIntervalSince1970: 2_000)
+        )
+        let editedRule = makeRule(revision: 2, savedPlaceID: place.id)
+        let otherRule = makeRule(
+            id: UUID(uuidString: "00000000-0000-4000-8000-000000000205")!,
+            revision: 1,
+            savedPlaceID: place.id,
+            name: "공유 장소 규칙"
+        )
+        let repository = InMemoryRuleConfigurationRepository(
+            rules: RestrictionRuleCollectionSnapshot(
+                revision: 3,
+                rules: [editedRule, otherRule]
+            ),
+            places: SavedPlaceCollectionSnapshot(revision: 5, places: [place])
+        )
+        let service = makeService(repository: repository)
+
+        let saved = try await service.save(
+            draft: makeDraft(
+                id: editedRule.id,
+                sourceRevision: editedRule.revision,
+                savedPlaceID: place.id,
+                createdAt: editedRule.createdAt
+            ),
+            savedPlaces: [movedPlace]
+        )
+
+        #expect(saved.savedPlaces.revision == 6)
+        #expect(saved.savedPlaces.places == [movedPlace])
+        #expect(saved.rules.rules.first { $0.id == editedRule.id }?.savedPlaceID == place.id)
+        #expect(saved.rules.rules.first { $0.id == otherRule.id } == otherRule)
+    }
+
     @Test("A stale editor revision is rejected without writing")
     func rejectsStaleRevision() async throws {
         let place = makePlace()
