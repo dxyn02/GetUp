@@ -44,12 +44,10 @@ struct TimeOfDay: Codable, Equatable, Hashable, Sendable {
 }
 
 enum RadiusOption: Int, Codable, CaseIterable, Sendable {
+    case meters100 = 100
+    case meters250 = 250
     case meters500 = 500
     case meters1000 = 1_000
-    case meters2000 = 2_000
-    case meters3000 = 3_000
-    case meters4000 = 4_000
-    case meters5000 = 5_000
 
     var meters: Double {
         Double(rawValue)

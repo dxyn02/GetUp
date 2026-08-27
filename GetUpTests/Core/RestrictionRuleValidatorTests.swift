@@ -59,7 +59,7 @@ struct RestrictionRuleValidatorTests {
         }
     }
 
-    @Test("Every supported radius is accepted", arguments: [500, 1_000, 2_000, 3_000, 4_000, 5_000])
+    @Test("Every selectable radius is accepted", arguments: [100, 250, 500, 1_000])
     func supportedRadiusPassesValidation(radiusMeters: Int) {
         let errors = RestrictionRuleValidator.errors(
             in: validInput(radiusMeters: radiusMeters)
@@ -68,11 +68,9 @@ struct RestrictionRuleValidatorTests {
         #expect(!errors.contains(.unsupportedRadius))
     }
 
-    @Test("A radius outside the six slider values is rejected")
-    func unsupportedRadiusFailsValidation() {
-        let errors = RestrictionRuleValidator.errors(
-            in: validInput(radiusMeters: 750)
-        )
+    @Test("A radius outside the four slider values is rejected", arguments: [750, 2_000])
+    func unsupportedRadiusFailsValidation(radiusMeters: Int) {
+        let errors = RestrictionRuleValidator.errors(in: validInput(radiusMeters: radiusMeters))
 
         #expect(errors.contains(.unsupportedRadius))
     }

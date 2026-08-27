@@ -7,29 +7,68 @@
 Phase 7 마무리 및 교차 관심사 진행 중
 
 ## 진행 중
-T083·T085 — 자동 latency 100회 계측과 결과 형식은 구현·검증했으며, T116 수정 빌드에서 위치 이탈
-callback의 실제 `ManagedSettingsStore` 해제를 실기기로 재확인할 예정
+T083·T085 — 시간 시작 callback의 앱 비실행 실기기 적용은 T120에서 확인했으며, T116 위치 이탈의
+background·시스템 종료 상태와 100회 실기기 latency를 후속 확인할 예정
 
 ## 마지막 완료 작업
-T116 — app launch 상주 Core Location delegate를 연결해 background·재실행 region 이탈 event가
-App Group 위치 상태와 Screen Time 제한 합집합을 즉시 재평가하도록 수정함
+T120 — 실기기 callback 진단으로 extension의 Family Controls `notDetermined` 오판정을 확정하고 최근
+앱 `approved` 상태로 보완해 앱 종료 상태의 시간 시작 자동 Shield를 검증함
 
 ## 다음 작업
-T083·T085 — 수정 빌드를 실기기에 설치하고 앱을 강제 종료하지 않은 suspended·background 상태와
-시스템에 의한 종료 상태에서 위치 이탈 자동 해제를 재검증. 저장소에서 바로 진행 가능한 후속은
-T086 구현·하이파이 편차 대조
+T083·T085 — 설치된 수정 빌드에서 다음 설정 시간 시작 callback 뒤 제한 자동 적용, 앱을 강제
+종료하지 않은 suspended·background 상태와 시스템에 의한 종료 상태의 위치 이탈 자동 해제를
+재검증. 저장소에서 바로 진행 가능한 후속은 T086 구현·하이파이 편차 대조
 
 ## 차단 상태
-BLK-010 열림. `com.dxyn02.GetUp` namespace의 네 App ID 등록과
+BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록과
 `group.com.dxyn02.GetUp` 할당, Family Controls Distribution `Assigned`와 갱신 profile을 사용한
 실기기 설치·실행은 사용자 확인됐으며, extension별 서명 entitlement와 archive 증적이 추가로 필요함.
 
 ## 계획 갱신 필요
-없음. Apple의 `intervalDidEnd` 전달 시점은 물리적 종료 정각이 아니라 종료 구간 밖에서 기기를 처음
-사용할 때일 수 있다. callback 전달 이후 마지막 활성 규칙 해제는 T114에서 동기화했으며, 기기가
-사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
+없음. Apple의 `intervalDidStart`·`intervalDidEnd` 전달은 물리적 시작·종료 정각이 아니라 해당 구간에서
+기기를 사용할 때일 수 있다. callback 전달 이후 시작 적용은 T118, 마지막 활성 규칙 해제는 T114에서
+동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-08-26 T120에서 앱 비실행 시간 경계의 각 단계를 App Group에 기록했다. 첫 실기기 재현은 규칙·
+위치 로드는 정상이지만 extension Family Controls가 `notDetermined`여서 `missingPermissions`로 종료된
+사실을 확인했다. 최근 앱 snapshot의 Family Controls가 `approved`이면 이 미결정 값만 보완하고 현재
+`denied`는 우선하도록 수정했다. 수정 뒤 시작 전 Shield를 비우고 앱을 종료한 실기기 시간 경계에서
+메인 앱 없이 monitor extension이 실행돼 `conditionsSatisfied`, 원하는 규칙 1개, `completed`를
+기록했고 Shield Configuration·Action extension 실행과 자동 Shield 경로를 확인했다.
+격리 DerivedData `/tmp/getup-interval-start-final-tests`의 전체 `GetUpTests` 209개가 실패·skip 없이
+통과했고 Swift Testing 동적 인자를 포함한 device configuration 실행은 243회 통과했다.
+
+2026-08-26 T119에서 실기기 `GetUpDeviceActivityMonitor` 프로세스 실행을 확인해 callback 내부 권한
+평가로 원인을 좁혔다. 메인 앱이 최신 권한 snapshot을 App Group에 기록하고, extension이 위치 권한을
+`notDetermined`로 읽을 때 24시간 미만의 앱 위치 권한·정확도만 보완하도록 수정했다. 현재 Family
+Controls 철회와 명시적 위치 권한은 항상 우선한다. 격리 DerivedData의 전체 `GetUpTests` 208개가
+실패·skip 없이 통과했고 동적 인자 포함 242회가 통과했다. iPhone 17 iOS 26.6.1용 서명 build·설치,
+앱 1회 실행과 정상 종료까지 성공했으며 실제 다음 설정 시간 shield 표시는 재검증 대기다.
+
+2026-08-26 T117 반경 변경과 T118 시간 시작 동기 적용을 같은 브랜치로 합친 상태에서 전체
+`GetUpTests` 203회가 실패·skip 없이 통과했다. 반경 slider를 100m→250m→500m→1km로 조절하고 저장
+요약을 확인하는 UI 회귀 1개도 통과했으며, 앱과 세 Screen Time 확장을 포함한 Simulator build가
+성공했다. 두 변경은 현재 브랜치에서 함께 유지된다.
+
+2026-08-26 T117에서 `RadiusOption`과 slider의 selectable value를 100m·250m·500m·1km로 교체하고,
+validator가 이 네 값만 허용하며 위치 판정 parameterized test가 모든 새 반경을 실행하도록 갱신했다.
+격리 DerivedData에서 전체 `GetUpTests` 193개 test case(동적 인자 포함 227회)가 실패·skip 없이
+통과했고, UI 회귀에서 slider를 100m→250m→500m→1km로 조절한 뒤 저장 요약이 1km를 유지함을
+확인했다. 반복된 LLDB version-store warning은 테스트 판정에 영향을 주지 않았다. 기존 2km·3km·
+4km·5km 저장값은 사용자 결정에 따라 migration하거나 복원하지 않는다.
+
+2026-08-26 T118에서 설정 시간이 지나도 Screen Time 제한이 시작되지 않는 실기기 회귀를 분석했다.
+기존 시작 callback은 unstructured `Task`만 예약하고 반환했으며 그 Task가 먼저 전체 일정을 제거·
+재등록하고 위치를 갱신한 뒤 제한을 적용해 extension 종료와 callback 재진입에 취약했다. callback
+반환 전에 현재 schema 공유 snapshot·권한을 읽어 모든 규칙을 공통 순수 평가기로 계산하고, 단일
+store에 제한 대상 합집합을 쓰고 read-back을 확인하도록 변경했다. 시작 callback에서는 일정·region
+전체 복구를 호출하지 않는다. 만족 규칙 합집합 적용, 위치 외부·권한 거부 미적용, snapshot 실패 시
+기존 상태 보존·store read-back 실패 시 상태 미저장을 포함한 adapter·coordinator 대상 테스트 24개가
+실패·skip 없이 통과했다. 전체 `GetUpTests` 203회 실행도 실패·skip 없이 통과했고, 앱과 세 Screen
+Time 확장을 포함한 Simulator build도 통과했다. 실제 callback·system shield 반영은 수정 빌드의
+실기기 재검증이 남았다.
+
 2026-08-26 T115에서 적용 revision set이 그대로여도 활성 규칙이 있으면 adapter의 idempotent store
 read-back·reconcile을 실행하도록 변경했다. App Group 상태만 활성이고 실제 application shield가 빈
 경우 동일 selection을 다시 쓰는 회귀를 추가했으며, 논리 상태가 같으면 transition measurement는

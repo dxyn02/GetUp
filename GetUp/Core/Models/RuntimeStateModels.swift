@@ -98,6 +98,35 @@ struct AuthorizationSnapshot: Codable, Equatable, Sendable {
     let backgroundRefresh: BackgroundRefreshStatus
 }
 
+struct AuthorizationSnapshotRecord: Codable, Equatable, Sendable {
+    let snapshot: AuthorizationSnapshot
+    let observedAt: Date
+}
+
+enum IntervalStartDiagnosticStage: String, Codable, Sendable {
+    case callbackReceived
+    case invalidActivityName
+    case snapshotReadFailed
+    case startedRuleMissing
+    case storeVerificationFailed
+    case completed
+}
+
+struct IntervalStartDiagnosticRecord: Codable, Equatable, Sendable {
+    let stage: IntervalStartDiagnosticStage
+    let observedAt: Date
+    let activityName: String
+    let ruleCount: Int?
+    let locationConditionCount: Int?
+    let desiredRuleCount: Int?
+    let currentAppliedRuleCount: Int?
+    let startedRuleDecision: String?
+    let startedLocationState: LocationConditionState?
+    let startedLocationAgeSeconds: TimeInterval?
+    let authorization: AuthorizationSnapshot?
+    let errorCode: String?
+}
+
 enum RequiredPermission: String, Codable, Hashable, Sendable {
     case familyControls
     case alwaysLocation

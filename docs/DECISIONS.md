@@ -272,6 +272,8 @@ revision을 collection revision으로 간주하거나 마지막 event 규칙에 
 
 **날짜**: 2026-08-24
 
+**상태**: `intervalDidStart` 경로는 DEC-065로 대체됨. 앱 foreground 복구 경로는 유지함.
+
 **결정**: 앱 foreground 활성화와 Device Activity extension의 `intervalDidStart`는 동일한
 `AppLifecycleCoordinator`를 사용한다. coordinator는 보호된 규칙 collection을 먼저 읽고, 읽기에
 성공한 경우에만 GetUp 소유 일정과 region을 초기화한다. 이후 활성 규칙을 안정적인 ID 순서로
@@ -313,6 +315,8 @@ GetUp named store를 무조건 비우거나 위치를 새로 추정하지 않고
 ## DEC-018 — 여섯 단계 반경 slider
 
 **날짜**: 2026-08-23
+
+**상태**: DEC-064의 네 단계 반경 결정으로 대체됨
 
 **결정**: 반경은 `500m`, `1km`, `2km`, `3km`, `4km`, `5km`의 닫힌 집합이며 slider는 이 값에만
 snap한다.
@@ -1169,3 +1173,69 @@ event로 재실행될 때도 launch에서 manager와 delegate를 다시 구성�
 테스트, `FR-030`·`FR-031`·`FR-077`, T116과 T083·T085 실기기 인수에 적용한다. 사용자가 앱을 강제
 종료했거나 Background App Refresh를 끈 플랫폼 제한에서는 iOS가 앱을 깨우지 않을 수 있으며, 이는
 권한 안내와 실기기 인수에서 구분해 기록한다.
+
+## DEC-064 — 100m부터 1km까지 네 단계 반경
+
+**날짜**: 2026-08-26
+
+**결정**: 새 반경의 닫힌 집합은 `100m`, `250m`, `500m`, `1km`이며 slider는 이 네 값에만 snap한다.
+`RadiusOption`에서 기존 `2km`, `3km`, `4km`, `5km` case를 제거하고 구형 저장값을 migration하거나
+복원하지 않는다. 새 규칙의 기본 반경은 기존과 같은 `1km`를 유지한다.
+
+**근거**: 사용자가 실제 생활권에 맞는 더 작은 반경을 선택하고 최대 범위를 1km로 제한하도록 직접
+요청했으며, 기존 데이터 호환 없이 새 값 집합으로 덮어쓰는 정책을 승인했다. 모델·validator·UI가
+동일한 `RadiusOption.allCases`를 사용하면 화면에 보이는 값과 저장 가능한 값의 불일치를 막을 수 있다.
+
+**영향 범위**: `RadiusOption`, `RestrictionRuleValidator`, `RadiusPicker`, `LocationPickerView`, 위치
+monitoring parameterized test, `FR-007`, 위치 관련 contract와 T117에 적용한다. DEC-018의 여섯 단계
+결정과 구형 반경 저장값은 더 이상 현재 계약이 아니다.
+
+## DEC-065 — 시작 callback 내 동기 제한 적용과 일정 재등록 금지
+
+**날짜**: 2026-08-26
+
+**결정**: `DeviceActivityMonitor.intervalDidStart`는 callback 반환 전에 App Group의 현재 schema 규칙·
+위치 snapshot과 현재 Family Controls·위치 권한을 동기적으로 읽는다. 앱의 `RestrictionCoordinator`와
+같은 순수 규칙 평가기를 사용해 모든 규칙을 평가하고, 조건을 충족하거나 안전하게 보존해야 하는 활성
+규칙의 제한 대상 합집합을 단일 `getup.restriction` store에 쓰고 read-back으로 확인한다. 실제 store
+확인 뒤에만 App Group 적용 revision 집합을 갱신한다.
+
+시작 callback에서는 `AppLifecycleCoordinator.restore()`를 호출하지 않으며 Device Activity 일정과
+region을 제거·재등록하지 않는다. snapshot read, schema 또는 store read-back이 실패하면 기존 일정·
+shield·적용 상태를 보존한다. 비동기 호환 경로는 일정 초기화 없이 현재 시간 제한만 다시 평가한다.
+
+**근거**: 기존 경로는 callback에서 unstructured `Task`만 예약하고 반환한 뒤, 그 Task 안에서 일정
+전체 제거·재등록과 위치 갱신을 거쳐 제한을 적용했다. extension이 Task 완료 전에 종료되면 store
+쓰기가 실행되지 않을 수 있고, 이미 활성인 interval을 재등록하면 시작 callback이 즉시 재전달되어
+재진입과 경합을 만들 수 있다. Apple의 Device Activity 사용 예도 시작 callback 본문에서
+`ManagedSettingsStore` shield를 직접 변경한다. callback 전달 자체는 기기 사용 시점에 의존하므로
+벽시계 정각보다 늦을 수 있지만, 전달된 callback 안의 제한 반영은 동기적으로 완료할 수 있다.
+
+**영향 범위**: `DeviceActivityMonitorExtension`, `DeviceActivityIntervalStartHandler`,
+`RestrictionRuleSetEvaluator`, Managed Settings adapter·coordinator 테스트,
+`platform-events-contract.md`, `FR-078`, T118과 BLK-011에 적용한다. DEC-028의 공통 전체 복구 결정은
+앱 foreground에는 유지하지만 `intervalDidStart`에는 더 이상 적용하지 않는다. 실제 system callback과
+shield 반영은 T083·T085 실기기 인수에서 확인한다.
+
+## DEC-066 — 앱 권한 snapshot으로 extension의 미결정 위치 권한 보완
+
+**날짜**: 2026-08-26
+
+**결정**: 메인 앱의 `SystemAuthorizationProvider`는 권한을 읽을 때마다 관찰 시각을 포함한
+`AuthorizationSnapshotRecord`를 App Group `UserDefaults`에 저장한다. Device Activity extension은
+자체 `CLLocationManager`가 위치 권한을 `notDetermined`로 반환하고 기록이 24시간 미만일 때에만 앱이
+관찰한 위치 권한·정확도를 사용한다. Family Controls도 extension에서 `notDetermined`이면 같은 기록의
+앱 값을 사용한다. Family Controls가 `denied`이거나 extension의 위치 권한이 `denied`·`restricted`·
+`whenInUse`·`always`로 명시되면 현재 값을 우선한다.
+
+**근거**: 실기기에서 `GetUpDeviceActivityMonitor` 프로세스 실행은 확인됐지만 제한이 적용되지 않았다.
+짧게 실행되는 extension에서 delegate 없이 새 `CLLocationManager`를 생성한 직후 읽는 초기 권한이
+`notDetermined`이면 승인된 규칙도 필수 권한 부족으로 탈락할 수 있다. 실기기 진단에서 위치뿐 아니라
+Family Controls도 앱 `approved`와 달리 extension에서 `notDetermined`로 확인됐다. 앱이 실제 권한
+컨텍스트에서 확인한 최근 값으로 이 미결정 상태만 보완하면 앱 상주 의존성을 제거하면서, 사용자의
+명시적 권한 철회를 오래된 캐시가 무시하는 위험을 막을 수 있다. 24시간은 기존 위치 snapshot 신뢰
+한계와 맞춘다.
+
+**영향 범위**: `SharedIdentifiers`, `AuthorizationSnapshotRecord`, `SystemAuthorizationProvider`,
+`DeviceActivityAuthorizationSnapshotReader`, authorization·Managed Settings adapter 테스트,
+`shared-storage-contract.md`, `platform-events-contract.md`, `FR-079`, T119와 BLK-012에 적용한다.

@@ -11,6 +11,67 @@
   상태를 입증하지 않는다.
 - 실기기 관찰은 실제 대상 앱에서 shield 표시 또는 해제를 확인한 시각까지 포함한다.
 
+## T120 — 앱 비실행 시간 시작 실기기 진단
+
+**상태**: 통과
+
+2026-08-26 iPhone 17, iOS 26.6.1에서 `intervalDidStart`의 개인정보 없는 단계 record를 App Group에
+추가하고 실패를 재현했다. 첫 record는 규칙 2개·위치 snapshot 2개·시작 위치 `inside`를 읽었지만,
+앱에서 `approved`인 Family Controls가 extension에서 `notDetermined`로 반환돼
+`startedRuleDecision=missingPermissions`, `desiredRuleCount=0`, `stage=completed`였다.
+
+extension의 `notDetermined` Family Controls만 24시간 미만의 앱 snapshot으로 보완하고 현재 `denied`는
+우선하도록 수정했다. 시작 전 단일 store와 적용 revision을 비우고 메인 앱을 종료한 뒤 실제 시간
+경계를 통과한 결과 monitor extension이 앱 없이 실행됐고 다음 값을 기록했다.
+
+- Family Controls `approved`, 위치 권한 `always`, 정확도 `full`
+- 시작 위치 `inside`, 위치 근거 나이 약 13초
+- `startedRuleDecision=conditionsSatisfied`, `desiredRuleCount=1`
+- `currentAppliedRuleCount=0`, `stage=completed`
+- 메인 앱 프로세스 없음, Device Activity Monitor·Shield Configuration·Shield Action extension 실행
+
+관련 adapter 회귀는 extension `notDetermined` 보완과 현재 `denied` 우선을 모두 통과했다. 이 결과로
+BLK-012를 해결 처리한다. 격리 DerivedData `/tmp/getup-interval-start-final-tests`의 전체
+`GetUpTests` 209개가 통과했고 실패·skip·expected failure는 모두 0이다. Swift Testing 동적 인자를
+포함한 device configuration 실행은 243회 통과했다.
+
+## T119 — extension 권한 snapshot 보완
+
+**상태**: 자동 검증·실기기 설치 통과, 실제 예약 경계 관찰 대기
+
+실기기 프로세스 조사에서 `GetUpDeviceActivityMonitor`가 시스템에 의해 실행된 사실을 확인했다. 시작
+handler가 extension에서 새 `CLLocationManager`의 권한을 즉시 읽을 때 `notDetermined`가 반환되면,
+앱에서 이미 승인된 Always·Full Accuracy와 달라 새 제한이 거부될 수 있는 경로를 수정했다.
+
+- 메인 앱이 최신 권한과 관찰 시각을 App Group에 기록한다.
+- extension의 위치 권한이 `notDetermined`이고 기록이 24시간 미만일 때만 앱 위치 권한·정확도를 쓴다.
+- 현재 Family Controls 철회와 명시적 위치 권한 상태는 캐시보다 우선한다.
+- 24시간 이상 지난 값과 손상된 값은 사용하지 않는다.
+
+2026-08-26 iPhone 17 Pro iOS 26.5 Simulator의 격리 DerivedData
+`/tmp/getup-reassert-missing-shield-tests`에서 전체 `GetUpTests` 208개가 통과했고 실패·skip·expected
+failure는 모두 0이다. Swift Testing 동적 인자를 포함한 device configuration 실행은 242회 통과했다.
+같은 최종 코드로 iPhone 17 iOS 26.6.1 대상 서명 build와 연결 기기 설치가 성공했다. 설치 뒤 앱을
+실행해 규칙 복원·최신 권한 기록을 유도하고 정상 종료했으며, 실제 다음 설정 시간의 system shield
+표시는 BLK-012와 T083·T085에서 후속 관찰한다.
+
+## T117 — 네 단계 반경 선택
+
+**상태**: 자동 테스트 통과
+
+**실행 환경**: 2026-08-26, iPhone 17 Pro Simulator, iOS 26.5, arm64,
+`CODE_SIGNING_ALLOWED=NO`, 격리 DerivedData `/tmp/getup-radius-four-options`
+
+- `RadiusOption.allCases`와 validator가 100m·250m·500m·1km만 허용한다.
+- 네 반경 각각의 내부·정확한 경계·외부·오차 중첩 위치 판정이 통과한다.
+- slider UI를 100m→250m→500m→1km로 조절하고 1km 저장 요약으로 복귀하는 회귀가 통과한다.
+- 전체 `GetUpTests` 193개 test case, 동적 인자 포함 227회가 실패·skip 없이 통과했다.
+- 기존 2km·3km·4km·5km 저장값은 사용자 결정에 따라 migration·복원 범위에서 제외했다.
+
+T118 시간 시작 동기 적용 변경과 같은 브랜치로 합친 뒤 전체 `GetUpTests` 203회가 다시 실패·skip 없이
+통과했다. `testRequiredInputValidationAndApplicationSelection` UI 회귀 1개도 네 반경을 차례로 조절하고
+1km 저장 요약을 확인해 통과했으며, 앱과 세 Screen Time 확장을 포함한 Simulator build가 성공했다.
+
 ## T083 — 제한 활성화·해제 지연
 
 ### 합격 기준
@@ -63,13 +124,14 @@ RESTRICTION_LATENCY_RESULT mode=automatic effect=<effect> samples=<count> <metri
 **상태**: 일부 기능 경로 확인, 100회 계측 및 archive 증적 미완료 — BLK-010
 
 갱신 profile로 설치한 실기기에서 단일 합집합 store 복원 뒤 Screen Time 제한 적용과 시간 종료 자동
-해제는 사용자가 확인했다. 위치 이탈은 기존 빌드에서 앱을 한 번 열고 나와야 해제되는 실패가
-관찰됐으며, T116에서 누락된 Core Location region delegate 경로를 수정했다. 수정 빌드의 background·
-시스템 종료 상태 재검증과 100회 latency 측정은 아직 완료되지 않았다.
+해제는 사용자가 확인했다. 이후 설정 시간 시작 제한이 다시 적용되지 않는 실패가 관찰되어 T118에서
+callback 동기 적용 경로를 수정했다. 위치 이탈은 기존 빌드에서 앱을 한 번 열고 나와야 해제되는
+실패가 관찰되어 T116에서 누락된 Core Location region delegate 경로를 수정했다. 수정 빌드의 시작
+적용, background·시스템 종료 위치 이탈 재검증과 100회 latency 측정은 아직 완료되지 않았다.
 
 | 실행 ID | 기기·OS | 경로 | trigger 종류 | 물리 경계 시각 | event `confirmedAt` | store read-back 시각 | 대상 앱 반영 시각 | event 전달 지연 | SLA 지연 | 결과 | 증적 reference |
 |---|---|---|---|---|---|---|---|---:|---:|---|---|
-| 미실행 | 확인 필요 | 활성화 | 시간 시작 또는 위치 진입 | — | — | — | — | — | — | BLK-010 | `docs/ENTITLEMENTS.md` |
+| 수동 관찰 | 사용자 실기기 | 활성화 | 시간 시작 | 미기록 | 미기록 | 미기록 | 미적용 | 미계측 | 미계측 | 실패, T118 수정 | 사용자 확인 |
 | 수동 관찰 | 사용자 실기기 | 해제 | 시간 종료 | 미기록 | 미기록 | 미기록 | 정상 해제 확인 | 미계측 | 미계측 | 기능 경로 통과 | 사용자 확인 |
 | 수동 관찰 | 사용자 실기기 | 해제 | 위치 이탈 | 미기록 | callback 미연결 | 앱 진입 뒤 갱신 | 앱 진입 뒤 해제 | 미계측 | 미계측 | 실패, T116 수정 | 사용자 확인 |
 
@@ -119,6 +181,22 @@ Screen Time 확장을 포함한 generic Simulator build도 통과했다. Simulat
 실제 background wake와 system shield 반영을 입증하지 않으므로, 수정 빌드의 suspended·background·
 시스템 종료 상태 위치 이탈은 T083·T085 실기기 표에 후속 기록한다.
 
+## T118 — 시간 시작 callback 동기 제한 적용
+
+실기기에서 설정 시간이 지나도 Screen Time 제한이 시작되지 않는 회귀를 분석했다. 기존
+`intervalDidStart`는 unstructured `Task`만 예약하고 반환했으며, Task 내부에서 현재 Device Activity
+일정을 모두 제거·재등록하고 위치를 갱신한 뒤 제한을 적용했다. extension이 먼저 종료되면 store
+쓰기가 유실될 수 있고, 진행 중인 interval 재등록은 callback 재진입과 경합을 만들 수 있었다.
+
+`DeviceActivityIntervalStartHandler`가 callback 안에서 현재 schema 공유 snapshot과 권한을 읽어
+모든 규칙을 동기 평가하고, 단일 store의 제한 합집합을 쓰고 read-back을 확인하도록 수정했다. 만족한
+두 규칙의 합집합 적용, 위치 외부·권한 거부 시 미적용, snapshot read 실패 시 기존 shield·revision
+보존과 store read-back 실패 시 상태 미저장 회귀를 추가했다. 2026-08-26 iPhone 17 Pro iOS 26.5
+Simulator에서 adapter·coordinator 대상 24개 test case가 실패·skip 없이 통과했다. 실제 Device
+Activity callback 전달과 system shield 반영은
+Simulator가 입증하지 못하므로 T083·T085 실기기 표에 후속 기록한다. 이어 실행한 전체 `GetUpTests`
+203회가 실패·skip 없이 통과했고, 앱과 세 Screen Time 확장을 포함한 Simulator build도 통과했다.
+
 ## 전체 suite
 
 ### T084 — `GetUp.xctestplan` 전체 실행
@@ -150,7 +228,7 @@ Screen Time 확장을 포함한 generic Simulator build도 통과했다. Simulat
 
 - 실제 Family Controls system picker의 사용자 선택과 배포 entitlement 적용
 - 실제 대상 앱·카테고리·웹 도메인의 system shield 표시 및 해제
-- Core Location region 진입·이탈 callback과 여섯 반경의 실외 정확도
+- Core Location region 진입·이탈 callback과 네 반경의 실외 정확도
 - app background·terminated 상태와 재부팅 첫 잠금 해제 뒤 자동 복구
 - 실제 시스템 설정에서 권한 철회 후 복구
 - 실기기의 Dynamic Type·VoiceOver·Reduce Motion 및 Shield system-owned layout

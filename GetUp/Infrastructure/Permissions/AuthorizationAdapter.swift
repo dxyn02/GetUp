@@ -89,10 +89,21 @@ final class SystemAuthorizationStatusReader: AuthorizationStatusReading {
 
 @MainActor
 final class SystemAuthorizationProvider: AuthorizationProviding {
-    private let statusReader: any AuthorizationStatusReading
+    typealias SnapshotRecorder = @MainActor (AuthorizationSnapshot) -> Void
 
-    init(statusReader: any AuthorizationStatusReading) {
+    private let statusReader: any AuthorizationStatusReading
+    private let recordSnapshot: SnapshotRecorder
+
+    init(
+        statusReader: any AuthorizationStatusReading,
+        recordSnapshot: @escaping SnapshotRecorder
+    ) {
         self.statusReader = statusReader
+        self.recordSnapshot = recordSnapshot
+    }
+
+    convenience init(statusReader: any AuthorizationStatusReading) {
+        self.init(statusReader: statusReader, recordSnapshot: { _ in })
     }
 
     convenience init(
@@ -105,29 +116,51 @@ final class SystemAuthorizationProvider: AuthorizationProviding {
             statusReader: SystemAuthorizationStatusReader(
                 locationManager: locationManager,
                 backgroundRefreshStatus: backgroundRefreshStatus
-            )
+            ),
+            recordSnapshot: { _ in }
         )
     }
 
     func authorizationSnapshot() async -> AuthorizationSnapshot {
-        AuthorizationSnapshot(
+        let snapshot = AuthorizationSnapshot(
             familyControls: statusReader.familyControlsStatus(),
             locationAuthorization: statusReader.locationAuthorizationStatus(),
             locationAccuracy: statusReader.locationAccuracyStatus(),
             backgroundRefresh: statusReader.backgroundRefreshStatus()
         )
+        recordSnapshot(snapshot)
+        return snapshot
     }
 
     @available(iOSApplicationExtension, unavailable)
     static func forApplication(
         application: UIApplication = .shared,
-        locationManager: CLLocationManager = CLLocationManager()
+        locationManager: CLLocationManager = CLLocationManager(),
+        bundle: Bundle = .main,
+        now: @escaping @MainActor () -> Date = Date.init
     ) -> SystemAuthorizationProvider {
-        SystemAuthorizationProvider(
-            locationManager: locationManager,
-            backgroundRefreshStatus: {
-                SystemAuthorizationStatusReader.normalize(
-                    application.backgroundRefreshStatus
+        let defaults = SharedIdentifiers.appGroupIdentifier(in: bundle).flatMap {
+            UserDefaults(suiteName: $0)
+        }
+        return SystemAuthorizationProvider(
+            statusReader: SystemAuthorizationStatusReader(
+                locationManager: locationManager,
+                backgroundRefreshStatus: {
+                    SystemAuthorizationStatusReader.normalize(
+                        application.backgroundRefreshStatus
+                    )
+                }
+            ),
+            recordSnapshot: { snapshot in
+                guard let defaults else {
+                    return
+                }
+                AuthorizationSnapshotDefaultsCodec.save(
+                    AuthorizationSnapshotRecord(
+                        snapshot: snapshot,
+                        observedAt: now()
+                    ),
+                    to: defaults
                 )
             }
         )
@@ -136,5 +169,34 @@ final class SystemAuthorizationProvider: AuthorizationProviding {
     @available(iOSApplicationExtension, unavailable)
     static var settingsURL: URL? {
         URL(string: UIApplication.openSettingsURLString)
+    }
+}
+
+enum AuthorizationSnapshotDefaultsCodec {
+    static func load(from defaults: UserDefaults) -> AuthorizationSnapshotRecord? {
+        guard
+            let data = defaults.data(
+                forKey: SharedIdentifiers.authorizationSnapshotDefaultsKey
+            )
+        else {
+            return nil
+        }
+        return try? JSONDecoder().decode(
+            AuthorizationSnapshotRecord.self,
+            from: data
+        )
+    }
+
+    static func save(
+        _ record: AuthorizationSnapshotRecord,
+        to defaults: UserDefaults
+    ) {
+        guard let data = try? JSONEncoder().encode(record) else {
+            return
+        }
+        defaults.set(
+            data,
+            forKey: SharedIdentifiers.authorizationSnapshotDefaultsKey
+        )
     }
 }

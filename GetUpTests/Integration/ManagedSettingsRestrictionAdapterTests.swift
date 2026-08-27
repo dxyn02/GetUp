@@ -7,6 +7,143 @@ import Testing
 @MainActor
 @Suite("Managed Settings restriction adapter")
 struct ManagedSettingsRestrictionAdapterTests {
+    @Test("The interval extension uses a recent app authorization snapshot")
+    func intervalAuthorizationUsesRecentApplicationSnapshot() throws {
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        let approved = TestFixtures.makeAuthorization()
+        AuthorizationSnapshotDefaultsCodec.save(
+            AuthorizationSnapshotRecord(
+                snapshot: approved,
+                observedAt: TestFixtures.now
+            ),
+            to: defaults
+        )
+        let reader = DeviceActivityAuthorizationSnapshotReader(
+            defaults: defaults,
+            currentSnapshot: {
+                TestFixtures.makeAuthorization(
+                    locationAuthorization: .notDetermined,
+                    locationAccuracy: .reduced
+                )
+            },
+            now: { TestFixtures.now }
+        )
+
+        #expect(reader.snapshot() == approved)
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    @Test("The interval extension honors a live Family Controls revocation")
+    func intervalAuthorizationHonorsLiveFamilyControlsRevocation() throws {
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        AuthorizationSnapshotDefaultsCodec.save(
+            AuthorizationSnapshotRecord(
+                snapshot: TestFixtures.makeAuthorization(),
+                observedAt: TestFixtures.now
+            ),
+            to: defaults
+        )
+        let reader = DeviceActivityAuthorizationSnapshotReader(
+            defaults: defaults,
+            currentSnapshot: {
+                TestFixtures.makeAuthorization(
+                    familyControls: .denied,
+                    locationAuthorization: .notDetermined,
+                    locationAccuracy: .reduced
+                )
+            },
+            now: { TestFixtures.now }
+        )
+
+        #expect(
+            reader.snapshot()
+                == TestFixtures.makeAuthorization(familyControls: .denied)
+        )
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    @Test("The interval extension fills an undetermined Family Controls status")
+    func intervalAuthorizationFillsUndeterminedFamilyControlsStatus() throws {
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        let approved = TestFixtures.makeAuthorization()
+        AuthorizationSnapshotDefaultsCodec.save(
+            AuthorizationSnapshotRecord(
+                snapshot: approved,
+                observedAt: TestFixtures.now
+            ),
+            to: defaults
+        )
+        let reader = DeviceActivityAuthorizationSnapshotReader(
+            defaults: defaults,
+            currentSnapshot: {
+                TestFixtures.makeAuthorization(familyControls: .notDetermined)
+            },
+            now: { TestFixtures.now }
+        )
+
+        #expect(reader.snapshot() == approved)
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    @Test("The interval extension honors a live location revocation")
+    func intervalAuthorizationHonorsLiveLocationRevocation() throws {
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        AuthorizationSnapshotDefaultsCodec.save(
+            AuthorizationSnapshotRecord(
+                snapshot: TestFixtures.makeAuthorization(),
+                observedAt: TestFixtures.now
+            ),
+            to: defaults
+        )
+        let current = TestFixtures.makeAuthorization(
+            locationAuthorization: .denied,
+            locationAccuracy: .reduced
+        )
+        let reader = DeviceActivityAuthorizationSnapshotReader(
+            defaults: defaults,
+            currentSnapshot: { current },
+            now: { TestFixtures.now }
+        )
+
+        #expect(reader.snapshot() == current)
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    @Test("The interval extension rejects a stale app authorization snapshot")
+    func intervalAuthorizationRejectsStaleApplicationSnapshot() throws {
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        AuthorizationSnapshotDefaultsCodec.save(
+            AuthorizationSnapshotRecord(
+                snapshot: TestFixtures.makeAuthorization(),
+                observedAt: TestFixtures.now.addingTimeInterval(-24 * 60 * 60)
+            ),
+            to: defaults
+        )
+        let current = TestFixtures.makeAuthorization(
+            familyControls: .denied,
+            locationAuthorization: .notDetermined,
+            locationAccuracy: .reduced
+        )
+        let reader = DeviceActivityAuthorizationSnapshotReader(
+            defaults: defaults,
+            currentSnapshot: { current },
+            now: { TestFixtures.now }
+        )
+
+        #expect(reader.snapshot() == current)
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
     @Test("Applying a rule shields exactly its selected applications")
     func appliesOnlySelectedApplicationTokens() async throws {
         let selected = try Set([
@@ -144,6 +281,251 @@ struct ManagedSettingsRestrictionAdapterTests {
                 named: SharedIdentifiers.managedSettingsStoreName
             ).applications == [shared, firstOnly, secondOnly]
         )
+    }
+
+    @Test("The interval start handler synchronously applies every satisfied rule")
+    func intervalStartSynchronouslyAppliesSatisfiedRules() throws {
+        let firstApplication = try applicationToken(seed: 18)
+        let secondApplication = try applicationToken(seed: 19)
+        let first = TestFixtures.makeRule(
+            activitySelection: selection(applicationTokens: [firstApplication])
+        )
+        let second = TestFixtures.makeRule(
+            id: UUID(uuidString: "00000000-0000-4000-8000-000000000218")!,
+            revision: 2,
+            activitySelection: selection(applicationTokens: [secondApplication])
+        )
+        let store = RecordingManagedSettingsStoreAccess()
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        let handler = DeviceActivityIntervalStartHandler(
+            storeAccess: store,
+            defaults: defaults,
+            loadSnapshot: {
+                DeviceActivityIntervalStartSnapshot(
+                    rules: [first, second],
+                    locationConditions: [
+                        TestFixtures.makeLocationCondition(
+                            ruleID: first.id,
+                            ruleRevision: first.revision
+                        ),
+                        TestFixtures.makeLocationCondition(
+                            ruleID: second.id,
+                            ruleRevision: second.revision
+                        ),
+                    ]
+                )
+            },
+            authorizationSnapshot: { TestFixtures.makeAuthorization() },
+            now: { TestFixtures.now },
+            calendar: TestFixtures.calendar,
+            timeZone: TestFixtures.timeZone
+        )
+
+        let didHandle = handler.handle(
+            activityName: "\(SharedIdentifiers.deviceActivityNamePrefix)."
+                + "\(first.id.uuidString.lowercased()).monday"
+        )
+
+        #expect(didHandle)
+        #expect(store.writeCount == 1)
+        #expect(
+            store.shieldSelection(
+                named: SharedIdentifiers.managedSettingsStoreName
+            ).applications == [firstApplication, secondApplication]
+        )
+        #expect(
+            RestrictionApplicationStateDefaultsCodec.load(from: defaults)
+                == AppliedRestrictionState(activeRuleRevisions: [
+                    ActiveRuleRevision(ruleID: first.id, revision: first.revision),
+                    ActiveRuleRevision(ruleID: second.id, revision: second.revision),
+                ])
+        )
+        let diagnostic = try #require(
+            IntervalStartDiagnosticDefaultsCodec.load(from: defaults)
+        )
+        #expect(diagnostic.stage == .completed)
+        #expect(diagnostic.ruleCount == 2)
+        #expect(diagnostic.locationConditionCount == 2)
+        #expect(diagnostic.desiredRuleCount == 2)
+        #expect(diagnostic.startedRuleDecision == "conditionsSatisfied")
+        #expect(diagnostic.authorization == TestFixtures.makeAuthorization())
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    @Test("The interval start handler does not apply an outside rule")
+    func intervalStartDoesNotApplyOutsideRule() throws {
+        let rule = TestFixtures.makeRule(
+            activitySelection: selection(
+                applicationTokens: [try applicationToken(seed: 20)]
+            )
+        )
+        let store = RecordingManagedSettingsStoreAccess()
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        let handler = DeviceActivityIntervalStartHandler(
+            storeAccess: store,
+            defaults: defaults,
+            loadSnapshot: {
+                DeviceActivityIntervalStartSnapshot(
+                    rules: [rule],
+                    locationConditions: [
+                        TestFixtures.makeLocationCondition(
+                            ruleID: rule.id,
+                            state: .outside
+                        ),
+                    ]
+                )
+            },
+            authorizationSnapshot: { TestFixtures.makeAuthorization() },
+            now: { TestFixtures.now },
+            calendar: TestFixtures.calendar,
+            timeZone: TestFixtures.timeZone
+        )
+
+        let didHandle = handler.handle(
+            activityName: "\(SharedIdentifiers.deviceActivityNamePrefix)."
+                + "\(rule.id.uuidString.lowercased()).monday"
+        )
+
+        #expect(didHandle)
+        #expect(store.writeCount == 0)
+        #expect(store.shieldSelection(named: SharedIdentifiers.managedSettingsStoreName) == .empty)
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    @Test("The interval start handler does not apply a rule without required permissions")
+    func intervalStartDoesNotApplyWithoutRequiredPermissions() throws {
+        let rule = TestFixtures.makeRule(
+            activitySelection: selection(
+                applicationTokens: [try applicationToken(seed: 22)]
+            )
+        )
+        let store = RecordingManagedSettingsStoreAccess()
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        let handler = DeviceActivityIntervalStartHandler(
+            storeAccess: store,
+            defaults: defaults,
+            loadSnapshot: {
+                DeviceActivityIntervalStartSnapshot(
+                    rules: [rule],
+                    locationConditions: [
+                        TestFixtures.makeLocationCondition(ruleID: rule.id),
+                    ]
+                )
+            },
+            authorizationSnapshot: {
+                TestFixtures.makeAuthorization(familyControls: .denied)
+            },
+            now: { TestFixtures.now },
+            calendar: TestFixtures.calendar,
+            timeZone: TestFixtures.timeZone
+        )
+
+        let didHandle = handler.handle(
+            activityName: "\(SharedIdentifiers.deviceActivityNamePrefix)."
+                + "\(rule.id.uuidString.lowercased()).monday"
+        )
+
+        #expect(didHandle)
+        #expect(store.writeCount == 0)
+        #expect(
+            store.shieldSelection(
+                named: SharedIdentifiers.managedSettingsStoreName
+            ) == .empty
+        )
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    @Test("The interval start handler preserves state when snapshots cannot be read")
+    func intervalStartSnapshotFailurePreservesState() throws {
+        let rule = TestFixtures.makeRule(
+            activitySelection: selection(
+                applicationTokens: [try applicationToken(seed: 21)]
+            )
+        )
+        let storeName = SharedIdentifiers.managedSettingsStoreName
+        let shield = ManagedSettingsShieldSelection(rules: [rule])
+        let store = RecordingManagedSettingsStoreAccess(stores: [storeName: shield])
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        let initialState = AppliedRestrictionState(activeRuleRevisions: [
+            ActiveRuleRevision(ruleID: rule.id, revision: rule.revision),
+        ])
+        RestrictionApplicationStateDefaultsCodec.save(initialState, to: defaults)
+        let handler = DeviceActivityIntervalStartHandler(
+            storeAccess: store,
+            defaults: defaults,
+            loadSnapshot: {
+                throw SharedSnapshotRepositoryError.readFailed(
+                    fileName: SharedIdentifiers.restrictionRulesFileName
+                )
+            },
+            authorizationSnapshot: { TestFixtures.makeAuthorization() },
+            now: { TestFixtures.now },
+            calendar: TestFixtures.calendar,
+            timeZone: TestFixtures.timeZone
+        )
+
+        let didHandle = handler.handle(
+            activityName: "\(SharedIdentifiers.deviceActivityNamePrefix)."
+                + "\(rule.id.uuidString.lowercased()).monday"
+        )
+
+        #expect(!didHandle)
+        #expect(store.writeCount == 0)
+        #expect(store.shieldSelection(named: storeName) == shield)
+        #expect(RestrictionApplicationStateDefaultsCodec.load(from: defaults) == initialState)
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    @Test("The interval start handler does not persist state when the store rejects its write")
+    func intervalStartStoreFailureDoesNotPersistState() throws {
+        let rule = TestFixtures.makeRule(
+            activitySelection: selection(
+                applicationTokens: [try applicationToken(seed: 23)]
+            )
+        )
+        let storeName = SharedIdentifiers.managedSettingsStoreName
+        let store = RecordingManagedSettingsStoreAccess(ignoresWrites: true)
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        let handler = DeviceActivityIntervalStartHandler(
+            storeAccess: store,
+            defaults: defaults,
+            loadSnapshot: {
+                DeviceActivityIntervalStartSnapshot(
+                    rules: [rule],
+                    locationConditions: [
+                        TestFixtures.makeLocationCondition(ruleID: rule.id),
+                    ]
+                )
+            },
+            authorizationSnapshot: { TestFixtures.makeAuthorization() },
+            now: { TestFixtures.now },
+            calendar: TestFixtures.calendar,
+            timeZone: TestFixtures.timeZone
+        )
+
+        let didHandle = handler.handle(
+            activityName: "\(SharedIdentifiers.deviceActivityNamePrefix)."
+                + "\(rule.id.uuidString.lowercased()).monday"
+        )
+
+        #expect(!didHandle)
+        #expect(store.writeCount == 1)
+        #expect(store.shieldSelection(named: storeName) == .empty)
+        #expect(
+            RestrictionApplicationStateDefaultsCodec.load(from: defaults)
+                == AppliedRestrictionState(activeRuleRevisions: [])
+        )
+        defaults.removePersistentDomain(forName: suiteName)
     }
 
     @Test("The interval end handler synchronously clears the final active rule")

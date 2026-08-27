@@ -206,14 +206,14 @@ struct LocationMonitoringAdapterTests {
             savedPlaceRepository: savedPlaces,
             regionMonitor: regionMonitor
         )
-        let rule = TestFixtures.makeRule(radius: .meters2000)
+        let rule = TestFixtures.makeRule(radius: .meters250)
 
         try await monitor.replaceMonitoring(for: rule)
 
         #expect(regionMonitor.stoppedIdentifiers == [regionIdentifier(for: rule.id)])
         let registration = try #require(regionMonitor.registrations.first)
         #expect(registration.center == place.coordinate)
-        #expect(registration.radiusMeters == 2_000)
+        #expect(registration.radiusMeters == 250)
         #expect(registration.identifier == regionIdentifier(for: rule.id))
     }
 

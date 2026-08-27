@@ -35,6 +35,18 @@
 - 각 schedule은 15분 이상 12시간 이하이며 자정 초과 종료를 지원한다.
 - 저장 성공 시 기존 등록을 새 rule revision의 일정으로 교체한다.
 - interval start/end callback은 공유 규칙을 읽고 평가 계약을 호출한다.
+- `intervalDidStart`가 도착하면 callback 반환 전에 현재 schema의 공유 규칙·위치 snapshot과 권한을
+  동기 평가하고, 조건을 충족한 모든 규칙의 합집합을 단일 `getup.restriction` store에 쓰고
+  read-back으로 확인한다. callback 안에서는 현재 실행 중인 일정을 제거하거나 재등록하지 않는다.
+- `intervalDidStart`의 snapshot read 또는 store 검증이 실패하면 기존 일정·shield·적용 상태를
+  보존하고 비동기 호환 재평가는 일정 초기화 없이 수행한다.
+- 메인 앱은 권한 확인 결과와 관찰 시각을 App Group에 기록한다. extension의 즉시 조회 위치 권한이
+  `notDetermined`이면 24시간 미만의 앱 위치 권한·정확도를 사용한다. extension의 Family Controls가
+  `notDetermined`일 때에도 같은 기록의 앱 상태를 사용하되, 현재 `denied`와 extension에서 명시적으로
+  확인되는 위치 권한 상태는 캐시보다 우선한다.
+- `intervalDidStart`는 개인정보·좌표·앱 token을 포함하지 않고 callback 시각, activity name, 규칙·
+  위치 snapshot 개수, 권한 상태, 시작 규칙의 평가 사유와 store 검증 결과를 App Group에 마지막
+  진단 record 하나로 남겨 앱 비실행 실패를 foreground 진입과 구분할 수 있어야 한다.
 - `intervalDidEnd`는 종료 시각 정각이 아니라 schedule 구간 밖에서 기기가 처음 사용될 때 전달될 수
   있다. callback이 도착하면 activity name의 rule ID가 현재 적용 상태의 마지막 활성 규칙인 경우에만
   단일 `getup.restriction` store를 callback 안에서 동기적으로 비우고 적용 상태를 제거한다.
@@ -47,7 +59,7 @@
 
 ## Location Adapter
 
-- 규칙당 원형 위치 조건 하나를 500m, 1000m, 2000m, 3000m, 4000m 또는 5000m로 등록한다.
+- 규칙당 원형 위치 조건 하나를 100m, 250m, 500m 또는 1000m로 등록한다.
 - 모니터링 가용성과 기기의 최대 허용 반경을 등록 전에 확인한다.
 - region event는 새 위치 판정을 요청하는 트리거이며, 경계 event만으로 내부·외부를 확정하지 않는다.
 - 위치 fix의 거리와 horizontal accuracy로 `inside | outside | unavailable`을 계산한다.
@@ -73,9 +85,11 @@
 - 재부팅 후 첫 잠금 해제 전에는 자동 위치 복구를 약속하지 않는다.
 - 첫 잠금 해제 뒤 공유 파일, 권한, 일정, 위치 조건을 복구하고 사용자가 앱을 직접 열지 않아도
   다음 신뢰 가능한 event에서 상태를 일치시킨다.
-- Device Activity extension의 `intervalDidStart`와 앱 foreground 활성화는 같은 복구 coordinator를
-  호출한다. 복구는 공유 규칙을 먼저 읽은 뒤 GetUp 소유 일정·region을 초기화하고 활성 규칙별로
-  재등록·위치 갱신한 다음 제한 합집합을 재평가한다.
+- 앱 foreground 활성화는 공유 규칙을 먼저 읽은 뒤 GetUp 소유 일정·region을 재등록하고 위치를
+  갱신한 다음 제한 합집합을 재평가하는 복구 coordinator를 호출한다.
+- Device Activity extension의 `intervalDidStart`는 짧은 extension 생명주기 안에서 제한 반영이
+  유실되지 않도록 callback-local 동기 평가·store 적용 경로를 사용한다. 이미 진행 중인 interval에서
+  callback 재진입과 경합을 만들 수 있으므로 이 경로에서는 일정·region 전체 복구를 호출하지 않는다.
 - 규칙과 저장 장소 snapshot 저장이 모두 성공하면 같은 복구 coordinator를 호출해 새 revision을
   포함한 모든 활성 규칙의 일정·region·위치 근거를 재등록하고 제한 합집합을 즉시 재평가한다.
 - snapshot 저장이 완료되지 않으면 일정·region·shield를 변경하지 않는다.

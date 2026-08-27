@@ -8,7 +8,7 @@
 
 ## Summary
 
-사용자가 직접 설정한 요일·시간대와 500m, 1km, 2km, 3km, 4km 또는 5km 위치 조건이 모두 충족될 때 선택 앱에
+사용자가 직접 설정한 요일·시간대와 100m, 250m, 500m 또는 1km 위치 조건이 모두 충족될 때 선택 앱에
 시스템 제한 화면을 적용하는 로컬 iOS 앱을 구현한다. 메인 앱은 설정·권한·위치 상태를 관리하고,
 시스템 일정 확장은 앱이 열려 있지 않을 때 시간 이벤트를 처리하며, 제한 화면 확장은 선택 앱
 접근을 차단한다. 여러 독립 규칙, 재사용 가능한 저장 장소와 최근의 신뢰 가능한 위치 판정은 앱과
@@ -42,7 +42,7 @@ Shield Action 확장
 물리적 경계 통과부터 이벤트 전달까지는 별도로 관찰하고 기록한다.
 
 **Constraints**: 완전 로컬 동작, 여러 독립 규칙, 15분 이상 12시간 이하 직접 시간 입력,
-중복 없는 10자 이내 저장 장소 이름, 500m/1km/2km/3km/4km/5km 반경, Always 및 Full Accuracy
+중복 없는 10자 이내 저장 장소 이름, 100m/250m/500m/1km 반경, Always 및 Full Accuracy
 위치 권한, 개인용 Family Controls 승인, App Group, Family Controls 배포 entitlement 필요;
 Core Location region monitoring과 event 시점의 단발성 위치 확인을 사용하며 지속적인 background
 location update나 일반 background processing을 사용하지 않는다. 재부팅 후 첫 잠금 해제 전에는

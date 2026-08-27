@@ -11,7 +11,7 @@
 - 공통 App Group capability
 - 앱과 각 Screen Time 확장의 Family Controls 개발 entitlement
 - 배포 검증 시 Apple이 승인한 Family Controls 배포 entitlement
-- 위치 이동 검증을 위한 500m/1km/2km/3km/4km/5km 실기기 경로 또는 Xcode 위치 시뮬레이션 파일
+- 위치 이동 검증을 위한 100m/250m/500m/1km 실기기 경로 또는 Xcode 위치 시뮬레이션 파일
 
 Simulator는 도메인·화면 흐름에 사용할 수 있지만 실제 앱 shield, 종료 상태 위치 전달,
 재부팅 복구의 최종 근거로 사용하지 않는다.
@@ -36,7 +36,7 @@ xcodebuild test \
 필수 자동 테스트 결과:
 
 - 시간대 길이 14분은 거부되고 15분은 허용된다.
-- 여섯 반경이 slider 단계와 저장값에 정확히 대응하고 저장 장소가 다른 규칙에서 재사용된다.
+- 네 반경이 slider 단계와 저장값에 정확히 대응하고 저장 장소가 다른 규칙에서 재사용된다.
 - 선택 요일, 비선택 요일, 자정 초과, 시작·종료 경계가 기대한 시간 상태를 만든다.
 - 위치 오차 원의 내부·외부·경계 중첩 판정이 데이터 모델 공식과 일치한다.
 - 위치 `unavailable`은 기존 shield 상태를 보존한다.

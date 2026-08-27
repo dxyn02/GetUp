@@ -37,6 +37,18 @@ final class UserStory1RuleConfigurationUITests: XCTestCase {
         XCTAssertEqual(placeNameValidation.label, "장소 이름을 입력해 주세요.")
         XCTAssertEqual(app.staticTexts.matching(identifier: "locationPicker.placeName.validation").count, 1)
 
+        let radius = app.sliders["locationPicker.radius"]
+        XCTAssertTrue(radius.exists)
+        XCTAssertEqual(radius.value as? String, "1km")
+        radius.adjust(toNormalizedSliderPosition: 0)
+        XCTAssertEqual(radius.value as? String, "100m")
+        radius.adjust(toNormalizedSliderPosition: 1.0 / 3.0)
+        XCTAssertEqual(radius.value as? String, "250m")
+        radius.adjust(toNormalizedSliderPosition: 2.0 / 3.0)
+        XCTAssertEqual(radius.value as? String, "500m")
+        radius.adjust(toNormalizedSliderPosition: 1)
+        XCTAssertEqual(radius.value as? String, "1km")
+
         let customPlace = app.buttons["locationPicker.customPlace"]
         customPlace.tap()
         XCTAssertTrue(customPlace.isSelected)
@@ -49,6 +61,7 @@ final class UserStory1RuleConfigurationUITests: XCTestCase {
             evaluatedWith: placeName
         )
         wait(for: [cappedValue], timeout: 2)
+
         let home = app.buttons["locationPicker.savedPlace.home"]
         home.tap()
         XCTAssertTrue(home.isSelected)
