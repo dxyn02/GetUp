@@ -38,11 +38,13 @@ xcodebuild test \
 필수 자동 검증 결과:
 
 - 활성 occurrence와 대표 규칙 선택이 재실행에도 결정적이다.
-- 남은 거리 공식, 0 clamp, stale·unavailable 전환이 일치한다.
+- 기존 위치 평가가 `.inside`이고 5분 이내일 때만 남은 거리를 항상 미터·10m 단위 half-up으로
+  표시하며 5m 반올림 경계, 0 clamp, stale·unavailable 전환이 일치한다.
 - 앱 비실행 제한 시작에는 Live Activity를 만들지 않고 다음 foreground 확인에서 한 개만 시작한다.
 - 사용자가 Live Activity를 직접 제거해도 제한이 활성인 다음 foreground에서 다시 한 개를 만든다.
 - 무료분 2회가 서울 기준 월에만 유효하고 다음 달로 이월되지 않는다.
 - 무료분을 먼저 예약하며 같은 occurrence 동시 요청 100회에서 최대 한 번만 소모한다.
+- 당월 무료분이 아직 없을 때 첫 Shield action은 quota 2 생성과 무료 1회 예약을 원자적으로 처리한다.
 - StoreKit verified 거래만 지급하고 같은 transaction 100회에서 한 번만 지급한다.
 - 최신 CloudKit 장부가 `current`일 때만 1개·3개·5개 상품 구매를 시작하며 그 밖의 상태에서는 구매
   API를 호출하지 않는다.
@@ -112,7 +114,8 @@ xcodebuild test \
 - 현재 월 무료분은 계정 전체 최대 2회다.
 - 이전 월 무료분은 이월되지 않고 구매 코인은 그대로다.
 - 서버 creationDate와 맞지 않는 월 지급은 확정되지 않는다.
-- iCloud 불가·mirror stale에서는 Shield와 앱의 사용 행동이 비활성화된다.
+- iCloud 불가·mirror stale에서는 Shield와 앱이 코인을 차감하지 않으며, Shield 버튼은 구매가 아닌
+  해당 복구 화면 안내로만 동작한다.
 - 장부가 `current`가 아니면 구매도 시작할 수 없다.
 - 계정 전환 시 이전 계정 잔액을 표시하거나 사용하지 않는다.
 - 삭제 확정 뒤 자동 복원·자동 reset은 없고, 명시적 새 장부는 구매 잔액 0·당월 무료분 0으로
@@ -143,8 +146,9 @@ xcodebuild test \
 
 ### 무료분
 
-1. 무료 해제권이 2회인 상태에서 제한 앱 Shield를 연다.
-2. 표시된 대상·무료 1회·종료 시각·다른 제한 여부를 읽고 primary 버튼을 누른다.
+1. 당월 무료분이 아직 생성되지 않은 상태와 무료 해제권이 2회인 상태에서 각각 제한 앱 Shield를
+   연다.
+2. 기존 Shield 내용, `해제권 1회 사용`, `앱 닫기`를 확인하고 primary 버튼을 누른다.
 3. 앱 내역과 CloudKit·App Group snapshot을 확인한다.
 
 ### 구매 코인
@@ -157,13 +161,24 @@ xcodebuild test \
 
 1. reservation 뒤 App Group write, Managed Settings write, CloudKit commit을 각각 실패시킨다.
 2. 각 지점에서 앱 또는 extension을 종료하고 다시 실행한다.
+3. 무료분과 구매 코인이 모두 0인 `current` 장부에서 Shield 버튼을 누른다.
+4. iCloud unavailable·장부 삭제 확정·재조정 중인 상태에서 같은 버튼을 누른다.
+5. iOS 26.5 이상과 iOS 26.0~26.4 기기에서 잔액 부족·복구 route를 각각 실행한다.
 
 기대 결과:
 
 - 무료분이 구매 코인보다 먼저 사용된다.
+- 버튼 하나가 무료 우선 사용과 무료분 소진 시 구매 코인 1개 fallback에 대한 동의로 동작한다.
+- 당월 allowance가 없고 장부가 `current`이면 quota 2 생성과 첫 무료 사용이 한 command로 확정된다.
 - 같은 occurrence는 최대 한 번만 해제·소모된다.
 - 다른 규칙이 같은 앱을 제한하면 안내대로 Shield가 남는다.
 - 실패한 해제는 확정 차감으로 남지 않고 보상되거나 `처리 확인 중`에서 재조정된다.
+- `current` 장부의 잔액 부족만 coin store로 이동하며 iCloud·장부 불확실 상태는 결제를 시작하지
+  않고 해당 복구 화면으로 이동한다.
+- iOS 26.5 이상은 공식 응답으로 앱을 직접 열고, iOS 26.0~26.4는 Shield를 닫은 뒤 표시된 안내에
+  따라 사용자가 앱을 열면 저장된 route가 소비된다.
+- 해제 성공 직후 대표 Live Activity가 갱신되거나 모든 제한 종료 시 즉시 끝나며, ActivityKit 실패는
+  이미 성공한 해제와 차감을 되돌리지 않는다.
 - 재실행·재부팅 후 현재 occurrence 예외는 유지되고 다음 occurrence는 정상 제한된다.
 
 ## 개인정보·운영 점검

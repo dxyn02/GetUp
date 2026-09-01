@@ -1450,3 +1450,33 @@ Phase 1 ActivityKit·StoreKit·CloudKit 계약과 구매 전 고지 UI에 적용
 
 **영향 범위**: `specs/002-live-activity-coins/spec.md`의 구매 흐름, Live Activity 복구, IAP catalog,
 CloudKit 삭제 경계와 후속 계획·계약·테스트에 적용한다.
+
+## DEC-076 — Live Activity 거리 표시와 Shield 단일 해제 경로
+
+**날짜**: 2026-09-01
+
+**결정**: Live Activity 남은 거리는 기존 `LocationEvidenceEvaluator`가 `.inside`로 판정한 5분 이내
+근거에서만 `max(0, radius - centerDistance)`로 계산한다. 단위 전환 없이 항상 미터로 표시하며 가장
+가까운 10m로 half-up 반올림해 정확히 5m인 경계는 위쪽 값으로 올린다. 그 밖의 위치 상태에는 이전
+숫자를 유지하지 않고 확인 불가를 표시한다.
+
+Shield는 기존 제한 안내 요소와 `앱 닫기`를 유지하고 `해제권 1회 사용` primary button 하나를
+추가한다. 사용자가 누르면 최신 CloudKit 장부와 현재 occurrence를 확인해 당월 무료 해제권을 먼저
+예약하고, 없으면 구매 코인 1개를 예약한다. 당월 allowance가 없고 장부가 `current`이면 quota 2
+생성과 첫 무료 예약을 같은 원자적 command로 처리한다. 해제 성공 뒤 대표 Live Activity를 즉시
+갱신하거나 끝내되 ActivityKit 실패는 성공한 제한 해제와 장부 commit을 되돌리지 않는다.
+
+`current` 장부에서 잔액만 부족하면 `PendingAppRoute.coinStore`를 기록하고 앱의 구매 화면으로
+유도한다. iCloud·장부가 unavailable·stale·삭제 확정·재조정 중이면 구매를 유도하지 않고 복구
+route를 기록한다. iOS 26.5 이상은 공식 `ShieldActionResponse.openParentalControlsApp`을 사용하고,
+iOS 26.0~26.4는 앱 실행 안내와 `.close`를 사용한 뒤 사용자가 앱을 열면 pending route를 소비한다.
+Shield에는 상품·가격·결제 제안을 직접 표시하지 않는다.
+
+**근거**: 단일 버튼은 무료 우선 정책을 사용자에게 예측 가능하게 만들면서 stale mirror로 funding
+source를 미리 단정하지 않는다. 장부 불확실 상태와 실제 잔액 부족을 분리하면 지급을 확정할 수 없는
+결제로 유도하는 문제를 막는다. 설치된 iOS 26.5 SDK에서 앱 직접 열기 응답의 도입 버전을 확인했으므로
+최소 지원 버전 전체에는 명시적 호환 경로가 필요하다.
+
+**영향 범위**: `specs/002-live-activity-coins`의 `spec.md`, `plan.md`, `research.md`,
+`data-model.md`, Live Activity·규칙 해제·Shield UI contract, `quickstart.md`, `tasks.md`의 거리 정책,
+해제 state machine, 앱 route와 OS 버전별 실기기 검증에 적용한다.

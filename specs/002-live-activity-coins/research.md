@@ -209,7 +209,47 @@ CloudKit `userDeletedZone`, 삭제 event 또는 이전 동기화 흔적이 있�
 [CKError.userDeletedZone](https://developer.apple.com/documentation/cloudkit/ckerror/userdeletedzone),
 [Product](https://developer.apple.com/documentation/storekit/product)
 
+## 10. Shield 단일 해제 버튼과 앱 진입 가능성
+
+**결정**: Shield Configuration은 현재 제목·설명 등 기존 요소를 유지하고 primary button 하나를
+`해제권 1회 사용`으로 구성한다. 이 버튼은 최신 장부에서 무료 해제권을 먼저 사용하고, 무료분이
+없으면 구매 코인 1개를 사용하는 데 대한 단일 동의다. 당월 무료분이 아직 생성되지 않았고 장부가
+`current`이면 quota 2 생성과 1회 예약을 같은 원자적 command로 처리한다.
+
+잔액이 실제로 부족하면 App Group의 `PendingAppRoute.coinStore`를 기록하고 앱의 코인 상점으로
+유도한다. iCloud 계정·장부가 unavailable·stale·삭제 확정·재조정 중이면 구매를 유도하지 않고
+해당 복구 route를 기록한다. 네트워크 또는 CloudKit 응답이 Shield extension 실행 시간 안에
+확정되지 않으면 제한을 유지하는 fail-closed 결과로 끝내고 앱에서 상태를 확인하게 한다.
+
+iOS 26.5 이상에서는 `ShieldActionResponse.openParentalControlsApp`으로 containing parental
+controls app을 여는 공식 경로를 사용한다. 프로젝트 최소 지원 버전인 iOS 26.0~26.4에는 이 case가
+없으므로 Shield 문구로 앱 실행을 안내하고 `.close`를 반환한 뒤 사용자가 GetUp을 직접 열면 저장된
+`PendingAppRoute`를 소비한다. custom URL을 임의로 실행하거나 비공개 extension API를 사용하는
+방식은 채택하지 않는다. 실제 가격·상품·결제 버튼은 Shield가 아니라 앱 안에서만 표시한다.
+
+**근거**: `ShieldConfiguration`은 primary·secondary button을 구성할 수 있고,
+`ShieldActionDelegate`는 선택된 button action에 비동기 완료 응답을 반환한다. 설치된 iOS 26.5 SDK의
+Swift interface에서 `openParentalControlsApp`은 iOS 26.5부터 사용 가능함을 확인했다. 따라서 제안한
+무료 우선 해제와 잔액 부족 시 앱 유도는 공식 API만으로 구현할 수 있지만, 최소 지원 버전 전체에서
+자동 앱 열기를 동일하게 보장할 수는 없다. 또한 extension 내부에 IAP 제안을 직접 두지 않고 실제
+구매를 containing app에 한정하는 것이 App Extension과 인앱결제 경계를 명확히 한다.
+
+**검토한 대안**:
+
+- 무료·구매 버튼을 분리하면 사용자가 선택한 무료 우선 정책과 충돌하고 stale 잔액을 UI가 미리
+  단정할 수 있어 제외한다.
+- 장부 상태가 불명확할 때 바로 코인 상점으로 보내면 구매 성공 뒤 지급을 확정하지 못할 수 있어
+  복구 경로로 분리한다.
+- iOS 26.0~26.4에서 custom URL 또는 `UIApplication`으로 앱을 강제 실행하는 방식은 공개된 Shield
+  extension 계약이 아니므로 제외한다.
+
+**출처**: [ShieldConfiguration](https://developer.apple.com/documentation/managedsettingsui/shieldconfiguration),
+[ShieldActionDelegate](https://developer.apple.com/documentation/managedsettings/shieldactiondelegate),
+[ShieldActionResponse](https://developer.apple.com/documentation/managedsettings/shieldactionresponse),
+[openParentalControlsApp](https://developer.apple.com/documentation/managedsettings/shieldactionresponse/openparentalcontrolsapp)
+
 ## 최종 Phase 0 결론
 
-명확화된 구매 가능 상태, 고정 상품 catalog, Live Activity 재생성, 장부 삭제 잠금과 명시적 새 장부
-정책까지 결정했다. 남은 미확정 항목은 없으며 Phase 1 설계와 구현 task 생성을 진행할 수 있다.
+명확화된 구매 가능 상태, 고정 상품 catalog, Live Activity 재생성, 장부 삭제 잠금, 명시적 새 장부와
+Shield 단일 무료 우선 해제 흐름까지 결정했다. 공식 앱 진입 API의 iOS 26.5 가용성과 iOS 26.0~26.4
+호환 경로도 task와 검증 항목에 반영했으며 남은 제품 미확정 항목은 없다.
