@@ -4,11 +4,11 @@
 001-location-app-restriction, 002-live-activity-coins
 
 ## 현재 단계
-001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 분석 권장 수정 반영·문서 병합 준비 상태
+001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 교차 산출물 분석 권장 조치 반영 완료
 
 ## 진행 중
-002-live-activity-coins의 교차 산출물 분석 권장안 중 1·2·3·4·6을 채택하고, 5는 Shield 단일
-해제 버튼 흐름으로 대체해 명세·계획·계약·task에 반영함.
+002-live-activity-coins의 최초 분석 발견과 재분석 잔여 I1·C1·A1을 spec·plan·research·data model·
+다섯 contract·quickstart·98개 실행 task와 DEC-078에 반영하고 최종 형식 검증을 완료함.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
@@ -16,8 +16,8 @@ T129 — 영어 위치 권한 목업의 `정확한 위치: 켬`과 Shield의 `�
 각각 `Precise Location: On`, `Home`·`Work`로 표시되도록 현지화 경계를 보정함
 
 ## 다음 작업
-`002-live-activity-coins` 문서를 `codex/live-activity-coins-spec`에서 병합한 뒤 최신 `main`에서
-구현 브랜치를 만들고 `$speckit-analyze` 재검증 후 `$speckit-implement`를 진행한다. 001은
+`002-live-activity-coins` 산출물의 형식·추적성을 재검증한다. 검증 후 문서 브랜치를 병합하고 최신
+`main`에서 구현 브랜치를 만든다. 001은
 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -26,13 +26,45 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 실기기 설치·실행은 사용자 확인됐으며, extension별 서명 entitlement와 archive 증적이 추가로 필요함.
 
 ## 계획 갱신 필요
-없음. `002-live-activity-coins`의 Phase 0·Phase 1 산출물에 FR-037~FR-041과 DEC-075·DEC-076을
-재동기화하고 최신 `origin/main` 기반 `codex/live-activity-coins-spec` 브랜치로 분리했다. 001의 Apple
+없음. Phase 0·Phase 1과 `002-live-activity-coins/tasks.md`를 DEC-077·DEC-078과 최신 명세에 맞게
+재동기화했다. 001의 Apple
 `intervalDidStart`·`intervalDidEnd` 전달은 물리적 시작·종료 정각이 아니라 해당 구간에서
 기기를 사용할 때일 수 있다. callback 전달 이후 시작 적용은 T118, 마지막 활성 규칙 해제는 T114에서
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-02 `002-live-activity-coins` 재분석의 잔여 권장 조치 3건을 반영했다. T039는 US1의 T011·
+T032·T033 뒤 실행하고 T055의 직접 ActivityKit 연결만 차단하도록 의존성 그래프를 고쳤다.
+`setupRequired` 최초 활성화는 initial epoch+당월 무료 2회의 `CoinLedgerSetupService`, 삭제 확인은
+구매 0+당월 무료 0의 `CoinLedgerResetService`로 분리하고 T064·T065·T072·T075에 테스트·UI action을
+명시했다. `current` 5분 freshness는 비영속 monotonic session 기준으로 통일하고 wall-clock
+`syncedAt`은 표시·진단 전용, 프로세스 재시작 후 새 fetch 필수로 고정했다. 문서 변경이므로 코드
+테스트는 실행하지 않았다. task 98개 연속 ID·형식, FR 41개·SC 12개, placeholder·충돌 표식 부재와
+`git diff --check`를 검증해 모두 통과했다.
+
+2026-09-02 `002-live-activity-coins` 교차 산출물 분석의 전체 권장 조치를 반영했다. FR-041의
+`PendingAppRoute` 5분·일회 소비·종료 구간 폐기와 SC-003의 60초 정확도·0 clamp를 명시적 자동
+테스트 task로 강화했다. 월간 정책·지연 생성·Shield 원자 예약을 Phase 2 공통 기반으로 앞당기고,
+US2 구현 전 Shield Action ActivityKit 실기기 feasibility gate를 T039에 배치했다. `current`의 5분
+freshness·epoch/projection·reconciliation 조건, 최초 setup·기존 장부 복구·삭제 reset 시나리오,
+US2→US4 및 공유 파일 순차 의존성을 문서화했다. T092는 기존 계측 suite 집계로 한정했고 branch·상태
+metadata를 현재 작업과 일치시켰다. 문서 변경이므로 코드 테스트는 실행하지 않았으며 산출물 형식과
+`git diff --check`를 재검증해야 한다.
+
+2026-09-02 `$speckit-tasks`로 `002-live-activity-coins` 작업을 최신 설계에 맞춰 98개로 재생성했다.
+설정 6개, 공통 기반 15개, US1 17개, US2 20개, US3 19개, US4 12개, 마감 9개로 구성했다.
+Live Activity 적격 모집단·위치 기산점, Shield 4.9초·5초·late commit, 동일 iCloud 로컬 빈 새 설치
+복구, 새달 첫 앱·Shield 요청 지연 생성에 각각 선행 실패 테스트와 구체 구현 파일을 배정했다. 연속
+ID·story label·`[P]`·파일 경로 형식과 `git diff --check`를 검증하고 있으며 문서 변경이므로 코드
+테스트는 실행하지 않는다. 다음 단계는 `$speckit-analyze`다.
+
+2026-09-02 `$speckit-plan`으로 `002-live-activity-coins`의 최신 명확화를 Phase 0·Phase 1 산출물에
+재동기화했다. Live Activity 적격 100회 중 95회·30초 시작 기준과 위치 수신 주체별 30초 기산점,
+동일 iCloud `current` 장부의 로컬 빈 새 설치 잔액·내역 복구, Shield의 5초 fail-closed·late commit
+재조정, 새달 첫 앱·Shield 요청의 월간 무료분 지연 생성을 plan·research·data model·다섯 contract·
+quickstart와 DEC-077에 반영했다. 헌법 사전·사후 게이트와 문서 일관성을 확인하고 있으며 문서
+변경이므로 코드 테스트는 실행하지 않는다. 다음 단계는 `$speckit-tasks`다.
+
 2026-09-01 이미 병합된 `codex/app-store-assets`의 PR #23을 확인하고 최신 `origin/main`에서
 `codex/live-activity-coins-spec` 브랜치를 생성해 002 문서 변경만 분리했다. 문서 검증 후 커밋·PR
 병합을 진행한다.

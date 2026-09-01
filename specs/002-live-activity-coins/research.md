@@ -53,6 +53,10 @@ ActivityKit 업데이트를 만들지 않는다. 남은 거리는 앱이 신뢰 
 앱 실행 때 얻은 마지막 신뢰 거리만 표시하고, 신뢰 기준을 벗어나면 확인 불가로 전환한다. 이동 중
 연속 거리 갱신은 보장하지 않는다.
 
+**결정**: 거리 갱신 30초는 메인 앱이 신뢰 가능한 위치를 전달받아 ActivityKit을 조정할 수 있게 된
+시점부터 측정한다. extension만 위치를 받으면 근거를 공유 저장소에 남기되 수신 시점의 ActivityKit
+갱신을 보장하지 않고, 다음 앱 foreground에서 coordinator가 조정 가능해진 시점부터 측정한다.
+
 **검토한 대안**:
 
 - 초 단위 시간 업데이트는 불필요한 실행·전력 비용 때문에 제외한다.
@@ -132,13 +136,18 @@ mutable 잔액·월간 버킷은 `ifServerRecordUnchanged`로 비교 후 교환�
 [ifServerRecordUnchanged](https://developer.apple.com/documentation/cloudkit/ckmodifyrecordsoperation/recordsavepolicy/ifserverrecordunchanged),
 [CKSyncEngine](https://developer.apple.com/documentation/cloudkit/cksyncengine-5sie5)
 
-## 7. 월간 무료 해제권 식별
+## 7. 월간 무료 해제권 식별·생성 시점
 
 **결정**: `free:{yyyy-MM}` 형태의 결정적 레코드 ID와 CloudKit 서버 생성 시각을 사용해 같은
 계정·월의 중복 지급을 막는다. 월 경계는 `Asia/Seoul` 시간대의 매월 1일 00:00으로 고정한다.
+실제 record는 자정 background 작업으로 만들지 않고 새달 첫 앱 foreground 또는 Shield 해제 요청에서
+지연 생성한다. Shield가 첫 요청이면 quota 2 생성과 무료 1회 reservation을 하나의 원자적·멱등 장부
+명령으로 처리한다.
 
 **근거**: 기기 달력만 사용하면 날짜·시간대 변경으로 미래 월 지급을 반복 요청할 수 있다.
 CloudKit `creationDate`는 서버가 기록한 시각이므로 요청한 연월을 검증하는 보조 근거가 된다.
+`BGTaskRequest.earliestBeginDate`는 지정 시각보다 이른 실행만 막을 뿐 해당 시각 실행을 보장하지
+않으므로 자정 생성을 정책 완료 조건으로 둘 수 없다.
 
 **검토한 대안**:
 
@@ -147,15 +156,17 @@ CloudKit `creationDate`는 서버가 기록한 시각이므로 요청한 연월�
 - `Asia/Seoul`은 한국의 월 경계와 일치하지만 해외 사용자에게 현지 1일이 아니다.
 - `UTC`는 전 세계에서 단일하지만 한국에서는 매월 1일 오전 9시에 갱신된다.
 
-**출처**: [CKRecord.creationDate](https://developer.apple.com/documentation/cloudkit/ckrecord/creationdate)
+**출처**: [CKRecord.creationDate](https://developer.apple.com/documentation/cloudkit/ckrecord/creationdate),
+[BGTaskRequest.earliestBeginDate](https://developer.apple.com/documentation/backgroundtasks/bgtaskrequest/earliestbegindate)
 
 ## 8. 구매 장부의 보안·환불 경계
 
 **결정**: 초기 범위에서는 앱 서버와 App Store Server Notifications를 도입하지 않는다. 검증된
 StoreKit 거래와 CloudKit private database 장부를 사용하고 앱 실행 시 거래 변경을 재조정한다.
-private zone 삭제, iCloud·App Store 계정 불일치, 앱 장기 미실행 동안 환불 반영 지연 등 완전 복원과
-권위 검증의 한계를 구매 전에 고지한다. 실제 유료 판매 규모나 부정 사용 위험이 커지면 서버 도입을
-별도 기능으로 재검토한다.
+private zone 삭제, iCloud와 App Store 계정이 다를 때 향후 거래 재검증·환불 조정의 한계, 앱 장기
+미실행 동안 환불 반영 지연을 구매 전에 고지한다. 동일 App Store 계정은 iCloud 잔액 복구의 gate로
+요구하지 않는다. 실제 유료 판매 규모나 부정 사용 위험이 커지면 서버 도입을 별도 기능으로
+재검토한다.
 
 **근거**: App Store Server API는 소모성 및 환불 거래 내역을 제공하고 Server Notifications는
 환불과 consumption request를 전달한다. CloudKit private database는 앱 서버가 사용자의 private
@@ -186,10 +197,30 @@ ActivityKit 표시 구조, foreground 시작 경계, StoreKit 구매 처리, Clo
 사용한다. 사용자가 Live Activity를 제거해 현재 activity가 없더라도 foreground에서 활성 제한을
 확인하면 다시 생성한다.
 
+`current`는 iCloud 사용 가능, 현재 프로세스 private database 초기 fetch 완료, 주입 가능한 monotonic
+clock 기준 마지막 성공 fetch 이후 5분 이내, mirror·`LedgerEpoch`·`CoinAccount` epoch 일치,
+fetch된 지급·사용·보정 projection 완료, 미해결 release reconciliation 없음이 모두 확인된 상태다.
+구매·해제 직전 최신 record를 다시 조회하며 monotonic 경과 시간이 5분을 넘으면 `stale`로 내린다.
+wall-clock `syncedAt`은 표시·진단에만 사용하고 프로세스 재시작 후 새 fetch 전에는 `current`를
+복원하지 않는다.
+
 CloudKit `userDeletedZone`, 삭제 event 또는 이전 동기화 흔적이 있는 설치에서 zone 부재가 확인되면
 장부를 자동 복원하지 않고 `deletionConfirmed`로 잠근다. 사용자가 사전 고지된 불이익을 확인하고
 새 장부 시작을 명시적으로 선택한 경우 새 ledger epoch를 생성한다. 새 epoch의 구매 잔액은 0이고,
 삭제가 발생한 서울 기준 월의 무료 quota는 0으로 억제하며 다음 월부터 2회를 재개한다.
+
+로컬 코인 데이터가 없는 재설치·새 기기에서는 zone 부재를 최초 설정으로 단정하지 않고 먼저 동일
+iCloud private database를 초기 fetch한다. 기존 zone과 현재 epoch가 `current`로 확인되면 검증된
+StoreKit transaction ID와 연결된 PurchaseGrant, 사용·환불·보정 event로 미사용 구매 잔액과 내역
+projection을 복구한다. 이 동기화는 새 PurchaseGrant를 만들거나 StoreKit의 일반 `구매 복원`을
+수행하지 않으며 `iCloud 잔액 동기화` 또는 `iCloud 잔액 복구`로 안내한다.
+
+초기 fetch가 끝났고 원격 장부와 삭제 증거가 모두 없으면 `setupRequired`로 두고 고지와 활성화 action
+확인 뒤 `CoinLedgerSetupService`가 initial epoch와 당월 무료 2회를 한 번의 atomic modify로 만든다.
+삭제 후 0으로 시작하는 `CoinLedgerResetService`와 분리한다. 기존 장부는 복구하고, 삭제 증거가 있는 경우만
+구매 0·삭제 월 무료 0 reset을 적용하며, 일시적 불확실성은 생성 없이 재시도한다. 서버 없는 새
+설치가 원격 장부와 삭제 증거를 모두 잃은 경우를 최초 사용자와 완전히 구분할 수 없는 한계도
+고지한다.
 
 **근거**: CloudKit commit 가능성을 확인하지 않고 결제를 시작하면 결제 성공과 코인 지급이 분리될
 수 있다. 삭제된 권위 장부를 오래된 로컬 mirror로 복구하면 이미 사용한 코인이 되살아난다. 반대로
@@ -204,8 +235,12 @@ CloudKit `userDeletedZone`, 삭제 event 또는 이전 동기화 흔적이 있�
 - 장부 삭제를 감지하면 자동 0 초기화하는 방식은 데이터 손실을 숨기므로 제외한다.
 - Live Activity 수동 제거를 같은 occurrence 동안 존중하는 방식은 사용자가 활성 제한 중 재생성을
   선택했으므로 제외한다.
+- 동일 App Store 계정까지 복구 전제 조건으로 요구하는 방식은 서버·자체 앱 계정이 없는 현재
+  구조에서 신뢰성 있게 확인할 수 없고, 동일 iCloud 장부 기준이라는 제품 결정과 달라 제외한다.
 
-**출처**: [CKSyncEngine account change](https://developer.apple.com/documentation/cloudkit/cksyncengine-5sie5/event/accountchange),
+**출처**: [Persisting a purchase](https://developer.apple.com/documentation/storekit/persisting-a-purchase),
+[CloudKit Remote Records](https://developer.apple.com/documentation/cloudkit/remote-records),
+[CKSyncEngine account change](https://developer.apple.com/documentation/cloudkit/cksyncengine-5sie5/event/accountchange),
 [CKError.userDeletedZone](https://developer.apple.com/documentation/cloudkit/ckerror/userdeletedzone),
 [Product](https://developer.apple.com/documentation/storekit/product)
 
@@ -218,14 +253,20 @@ CloudKit `userDeletedZone`, 삭제 event 또는 이전 동기화 흔적이 있�
 
 잔액이 실제로 부족하면 App Group의 `PendingAppRoute.coinStore`를 기록하고 앱의 코인 상점으로
 유도한다. iCloud 계정·장부가 unavailable·stale·삭제 확정·재조정 중이면 구매를 유도하지 않고
-해당 복구 route를 기록한다. 네트워크 또는 CloudKit 응답이 Shield extension 실행 시간 안에
-확정되지 않으면 제한을 유지하는 fail-closed 결과로 끝내고 앱에서 상태를 확인하게 한다.
+해당 복구 route를 기록한다. Shield primary action이 release service에 전달된 시점부터 5초 안에
+CloudKit 성공을 확인하지 못하면 제한을 유지하는 fail-closed 결과로 끝내고 앱에서 상태를 확인하게
+한다. 5초는 제품이 정한 내부 상한이며 Apple이 보장하는 extension 실행 시간은 아니다. timeout은
+서버 미반영을 뜻하지 않으므로 같은 command ID를 다음 foreground에서 조회해 늦은 commit을 판별하고,
+제한이 적용되지 않은 reservation은 보상한다.
 
 iOS 26.5 이상에서는 `ShieldActionResponse.openParentalControlsApp`으로 containing parental
 controls app을 여는 공식 경로를 사용한다. 프로젝트 최소 지원 버전인 iOS 26.0~26.4에는 이 case가
 없으므로 Shield 문구로 앱 실행을 안내하고 `.close`를 반환한 뒤 사용자가 GetUp을 직접 열면 저장된
 `PendingAppRoute`를 소비한다. custom URL을 임의로 실행하거나 비공개 extension API를 사용하는
 방식은 채택하지 않는다. 실제 가격·상품·결제 버튼은 Shield가 아니라 앱 안에서만 표시한다.
+
+route는 생성 후 5분 이내이고 연결 occurrence가 활성이고 아직 소비되지 않은 경우에만 repository가
+한 번 반환한 뒤 atomic 삭제한다. 만료·중복·종료 occurrence route는 자동 이동 없이 폐기한다.
 
 **근거**: `ShieldConfiguration`은 primary·secondary button을 구성할 수 있고,
 `ShieldActionDelegate`는 선택된 button action에 비동기 완료 응답을 반환한다. 설치된 iOS 26.5 SDK의
@@ -242,14 +283,45 @@ Swift interface에서 `openParentalControlsApp`은 iOS 26.5부터 사용 가능�
   복구 경로로 분리한다.
 - iOS 26.0~26.4에서 custom URL 또는 `UIApplication`으로 앱을 강제 실행하는 방식은 공개된 Shield
   extension 계약이 아니므로 제외한다.
+- Shield가 종료될 때까지 무제한 대기하는 방식은 extension이 빠르게 완료돼야 하는 실행 경계와
+  사용자의 예측 가능한 실패 처리 요구에 맞지 않아 제외한다.
 
 **출처**: [ShieldConfiguration](https://developer.apple.com/documentation/managedsettingsui/shieldconfiguration),
 [ShieldActionDelegate](https://developer.apple.com/documentation/managedsettings/shieldactiondelegate),
 [ShieldActionResponse](https://developer.apple.com/documentation/managedsettings/shieldactionresponse),
+[ShieldActionResponse.defer](https://developer.apple.com/documentation/managedsettings/shieldactionresponse/defer),
+[CKOperation.Configuration.timeoutIntervalForRequest](https://developer.apple.com/documentation/cloudkit/ckoperation/configuration-swift.class/timeoutintervalforrequest),
 [openParentalControlsApp](https://developer.apple.com/documentation/managedsettings/shieldactionresponse/openparentalcontrolsapp)
+
+## 11. Live Activity 성공 기준의 계측 모집단
+
+**결정**: 시작 성공률은 Live Activity 지원 기기, 권한 허용, 유효한 활성 제한, 앱 foreground를 모두
+만족하는 100회만 모집단으로 삼고, 활성 제한을 확인한 시점부터 30초 안에 95회 이상 표시되는지
+측정한다. 권한 거부와 미지원 기기는 성공률 분모에 섞지 않고 제한 판정·적용·해제가 영향을 받지
+않는 별도 안전 실패 테스트로 검증한다.
+
+거리 갱신은 메인 앱이 신뢰 위치를 받고 ActivityKit coordinator가 조정 가능한 시점을 기준으로
+30초를 측정한다. extension-only 위치는 공유 근거 저장 성공을 검증하고, 다음 foreground에서 같은
+coordinator 기준 시점부터 30초 안에 반영되는지 측정한다. 테스트는 주입 가능한 시계와 adapter
+fixture를 사용하고 실기기 결과와 Simulator 결과를 분리해 기록한다.
+
+남은 시간은 주입 시계로 `max(0, endsAt - now)`를 검증하며 종료 전·경계·종료 후 표시 오차를 60초
+이내로 제한한다. 마감 성능 suite는 전용 계측을 다시 구현하지 않고 이 결과를 집계한다.
+
+**근거**: 시스템 권한 거부·미지원 사례를 시작 성공률에 포함하면 앱이 제어할 수 없는 상태가 구현
+성능을 왜곡한다. 반대로 안전 실패를 제외하면 제한 기능 독립성 요구를 놓치므로 별도 모집단이
+필요하다. 위치 수신 주체별로 ActivityKit 접근 가능 시점이 다르므로 동일한 기산점을 쓰지 않는다.
+
+**검토한 대안**:
+
+- 모든 기기·권한 상태를 하나의 성공률로 계산하는 방식은 플랫폼 비가용성과 구현 실패를 구분하지
+  못해 제외한다.
+- extension 위치 수신 즉시 30초를 측정하는 방식은 extension이 메인 앱의 ActivityKit 조정을 보장할
+  수 없어 제외한다.
 
 ## 최종 Phase 0 결론
 
-명확화된 구매 가능 상태, 고정 상품 catalog, Live Activity 재생성, 장부 삭제 잠금, 명시적 새 장부와
-Shield 단일 무료 우선 해제 흐름까지 결정했다. 공식 앱 진입 API의 iOS 26.5 가용성과 iOS 26.0~26.4
-호환 경로도 task와 검증 항목에 반영했으며 남은 제품 미확정 항목은 없다.
+명확화된 Live Activity 계측 모집단·위치 갱신 기산점, 동일 iCloud `current` 장부의 새 설치 복구,
+Shield 5초 fail-closed·늦은 결과 재조정, 새달 첫 앱·Shield 요청의 무료분 지연 생성까지 결정했다.
+공식 앱 진입 API의 iOS 26.5 가용성과 iOS 26.0~26.4 호환 경로도 검증 항목에 반영했으며 남은 제품
+미확정 항목은 없다.
