@@ -28,6 +28,51 @@ struct ShieldContentProviderTests {
         #expect(content.primaryButtonLabel == "앱 닫기")
     }
 
+    @Test("English shield content localizes the Home preset name")
+    func englishContentLocalizesHomePresetName() throws {
+        let token = try applicationToken(seed: 11)
+        let rule = TestFixtures.makeRule(
+            activitySelection: selection(tokens: [token])
+        )
+        let provider = ShieldContentProvider(
+            snapshotReader: FixedShieldSnapshotReader(
+                snapshot: snapshot(rules: [rule])
+            ),
+            bundle: englishLocalizationBundle
+        )
+
+        let content = provider.content(for: token)
+
+        #expect(content.title == "Step 500m away from Home")
+        #expect(
+            content.subtitle
+                == "You’re currently within the 500m radius of ‘Home’. Move 500m away from the center of Home or wait until 09:00 AM to use the app again automatically."
+        )
+        #expect(content.primaryButtonLabel == "Close App")
+    }
+
+    @Test("English shield content localizes the Work preset name")
+    func englishContentLocalizesWorkPresetName() throws {
+        let token = try applicationToken(seed: 12)
+        let rule = TestFixtures.makeRule(
+            activitySelection: selection(tokens: [token])
+        )
+        let provider = ShieldContentProvider(
+            snapshotReader: FixedShieldSnapshotReader(
+                snapshot: snapshot(rules: [rule], placeName: "회사")
+            ),
+            bundle: englishLocalizationBundle
+        )
+
+        let content = provider.content(for: token)
+
+        #expect(content.title == "Step 500m away from Work")
+        #expect(
+            content.subtitle
+                == "You’re currently within the 500m radius of ‘Work’. Move 500m away from the center of Work or wait until 09:00 AM to use the app again automatically."
+        )
+    }
+
     @Test("Multiple matching active rules use the short accurate summary")
     func multipleRulesUseSummary() throws {
         let token = try applicationToken(seed: 2)
@@ -151,6 +196,11 @@ struct ShieldContentProviderTests {
     private func applicationToken(seed: UInt8) throws -> ApplicationToken {
         let data = try JSONEncoder().encode(["data": Data([seed])])
         return try JSONDecoder().decode(ApplicationToken.self, from: data)
+    }
+
+    private var englishLocalizationBundle: Bundle {
+        let path = Bundle.main.path(forResource: "en", ofType: "lproj")!
+        return Bundle(path: path)!
     }
 }
 

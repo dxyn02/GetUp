@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A10400000000000000000001 /* Resources/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B10400000000000000000001 /* Resources/Assets.xcassets */; };
+		A11000000000000000000001 /* Icon.icon in Resources */ = {isa = PBXBuildFile; fileRef = B11000000000000000000001 /* Icon.icon */; };
 		AA0000000000000000000001 /* GetUpDeviceActivityMonitor.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = BA0000000000000000000002 /* GetUpDeviceActivityMonitor.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AA0000000000000000000002 /* GetUpShieldConfiguration.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = BA0000000000000000000003 /* GetUpShieldConfiguration.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AA0000000000000000000003 /* GetUpShieldAction.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = BA0000000000000000000004 /* GetUpShieldAction.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -16,7 +18,6 @@
 		AA0000000000000000000014 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000014 /* PrivacyInfo.xcprivacy */; };
 		AA0000000000000000000021 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000021 /* Assets.xcassets */; };
 		AA0000000000000000000022 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000022 /* Localizable.xcstrings */; };
-		A11000000000000000000001 /* Icon.icon in Resources */ = {isa = PBXBuildFile; fileRef = B11000000000000000000001 /* Icon.icon */; };
 		AA0000000000000000000031 /* SharedIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000001 /* SharedIdentifiers.swift */; };
 		AA0000000000000000000032 /* SharedIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000001 /* SharedIdentifiers.swift */; };
 		AA0000000000000000000033 /* SharedIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000001 /* SharedIdentifiers.swift */; };
@@ -116,7 +117,6 @@
 		AA0000000000000000000197 /* ShieldActionResponsePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000050 /* ShieldActionResponsePolicy.swift */; };
 		AA0000000000000000000198 /* ShieldActionResponsePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000050 /* ShieldActionResponsePolicy.swift */; };
 		AA0000000000000000000199 /* ShieldActionExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90000000000000000000001 /* ShieldActionExtension.swift */; };
-		A10400000000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B10400000000000000000001 /* Assets.xcassets */; };
 		AA0000000000000000000200 /* RestrictionStatusModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000025 /* RestrictionStatusModelTests.swift */; };
 		AA0000000000000000000201 /* RestrictionStatusModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000051 /* RestrictionStatusModel.swift */; };
 		AA0000000000000000000202 /* RestrictionStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000053 /* RestrictionStatusView.swift */; };
@@ -183,10 +183,11 @@
 /* Begin PBXFileReference section */
 		A134A1A530374EBC007C79FB /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		A234A1A530374EBC007C79FB /* GetUp.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = GetUp.xctestplan; sourceTree = "<group>"; };
-		B11000000000000000000001 /* Icon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = Icon.icon; sourceTree = "<group>"; };
 		B10000000000000000000001 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
 		B10000000000000000000002 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		B10000000000000000000003 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
+		B10400000000000000000001 /* Resources/Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Resources/Assets.xcassets; sourceTree = "<group>"; };
+		B11000000000000000000001 /* Icon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = Icon.icon; sourceTree = "<group>"; };
 		B20000000000000000000001 /* GetUp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GetUp.entitlements; sourceTree = "<group>"; };
 		B20000000000000000000002 /* GetUpDeviceActivityMonitor.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GetUpDeviceActivityMonitor.entitlements; sourceTree = "<group>"; };
 		B20000000000000000000003 /* GetUpShieldConfiguration.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GetUpShieldConfiguration.entitlements; sourceTree = "<group>"; };
@@ -201,7 +202,6 @@
 		B30000000000000000000014 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		B30000000000000000000021 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B30000000000000000000022 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
-		B10400000000000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Resources/Assets.xcassets; sourceTree = "<group>"; };
 		B40000000000000000000001 /* SharedIdentifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedIdentifiers.swift; sourceTree = "<group>"; };
 		B40000000000000000000002 /* RestrictionRuleModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionRuleModels.swift; sourceTree = "<group>"; };
 		B40000000000000000000003 /* RuntimeStateModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuntimeStateModels.swift; sourceTree = "<group>"; };
@@ -665,7 +665,7 @@
 			isa = PBXGroup;
 			children = (
 				B80000000000000000000001 /* ShieldConfigurationExtension.swift */,
-				B10400000000000000000001 /* Assets.xcassets */,
+				B10400000000000000000001 /* Resources/Assets.xcassets */,
 				B20000000000000000000003 /* GetUpShieldConfiguration.entitlements */,
 				B30000000000000000000003 /* Info.plist */,
 				B30000000000000000000013 /* PrivacyInfo.xcprivacy */,
@@ -901,7 +901,7 @@
 			files = (
 				AA0000000000000000000013 /* PrivacyInfo.xcprivacy in Resources */,
 				AA0000000000000000000195 /* Localizable.xcstrings in Resources */,
-				A10400000000000000000001 /* Assets.xcassets in Resources */,
+				A10400000000000000000001 /* Resources/Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

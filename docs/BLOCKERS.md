@@ -1,5 +1,73 @@
 # 차단 사항
 
+## BLK-014 — Live Activity background 시작·거리 갱신·결제 서버·월 경계
+
+**상태**: 해결됨(RESOLVED) — 2026-09-01
+
+`002-live-activity-coins` Phase 0 공식 문서 조사에서 현재 명세와 플랫폼 경계가 충돌하거나 제품
+동작을 바꾸는 네 결정이 확인됐다.
+
+1. 일반 로컬 `Activity.request`는 앱 foreground 시작이 원칙이므로, 앱 비실행 상태에서 자동
+   제한이 시작될 때 Live Activity도 30초 이내 자동 시작하려면 ActivityKit push-to-start와 APNs
+   서버가 필요하다. 서버가 없으면 앱이 제한을 foreground에서 확인한 시점에만 시작할 수 있다.
+2. Live Activity는 위치를 직접 받을 수 없다. 기존 001처럼 region event와 단발 위치 확인만
+   사용하면 이동 중 남은 거리의 연속 갱신을 보장할 수 없으며, 이를 보장하려면 제한 중 지속
+   background location update와 추가 배터리·개인정보 범위를 허용해야 한다.
+3. StoreKit 2와 CloudKit private database만으로는 같은 iCloud 계정의 편의 복구와 일반 중복 방지는
+   가능하지만 App Store Server Notifications 기반 환불·철회와 강한 부정 사용 방지를 완전히
+   보장하지 못한다. 권위 있는 결제 서버를 추가할지 MVP의 한계를 수용할지 결정해야 한다.
+4. 기기 날짜 변경의 월간 무료 지급 악용을 막으려면 서버 시각과 비교할 고정 월 경계 시간대가
+   필요하다. `Asia/Seoul`은 한국의 1일 00:00, `UTC`는 전 세계 단일 기준이지만 한국의 1일 09:00다.
+
+**권장안**:
+
+1. 결제 신뢰를 위한 앱 서버를 도입한다면 같은 서버에서 ActivityKit push-to-start도 제공해
+   `SC-001`을 유지한다. 서버를 도입하지 않으면 foreground 시작으로 명세를 변경한다.
+2. 지속 background location update는 추가하지 않고, 시스템 위치 이벤트 또는 앱 실행 때 얻은
+   마지막 신뢰 거리를 표시하며 stale이면 확인 불가로 전환한다. 제한 해제 판정의 기존 저전력
+   구조와 개인정보 최소화를 유지한다.
+3. 유료 재화와 환불 요구를 유지하므로 거래 ID 기반 권위 장부와 App Store Server Notifications를
+   처리하는 최소 앱 서버를 도입한다. CloudKit은 같은 iCloud 계정의 사용자 mirror와 복구에
+   사용한다.
+4. 현재 주요 사용자를 기준으로 `Asia/Seoul`을 사용한다. 전 세계 출시 정책이면 UTC 또는 사용자
+   지역별 권위 시각 서비스를 별도 설계한다.
+
+**부분 해결**: 지속 background location update는 추가하지 않고 기존 위치 이벤트 또는 앱 실행 때
+얻은 마지막 신뢰 거리만 표시하며, stale이면 확인 불가로 전환한다. 월간 무료 해제권의 경계는
+`Asia/Seoul` 매월 1일 00:00으로 확정했다.
+
+**해결**: 초기 범위에서는 앱 서버를 도입하지 않는다. Live Activity는 앱이 foreground에서 활성
+제한을 확인할 때 시작하며 앱 비실행 자동 시작을 약속하지 않는다. 결제는 StoreKit 검증 거래와
+CloudKit private database 장부를 사용하고 앱 실행 시 거래 변경을 재조정한다. 완전한 소모성 구매
+복원, private zone 삭제, 계정 불일치, 앱 비실행 중 실시간 환불 반영의 한계를 구매 전에 안내한다.
+지속 background location update는 추가하지 않고 월 경계는 `Asia/Seoul`로 사용한다.
+
+**영향**: `002-live-activity-coins`의 Phase 1 설계를 진행할 수 있다. 실제 유료 판매 규모 또는
+부정 사용 위험이 커질 때 push-to-start와 App Store Server Notifications를 포함한 서버 도입을 별도
+기능으로 검토한다.
+
+## BLK-013 — Live Activity·유료 해제 코인의 핵심 범위
+
+**상태**: 해결됨(RESOLVED) — 2026-09-01
+
+`002-live-activity-coins` 명세를 계획하려면 다중 활성 규칙을 Live Activity에 표시하는
+방식, Live Activity에서 코인 해제를 시작·확정할 범위, 재설치·기기 변경 후 미사용
+유료 코인의 복구 범위를 결정해야 한다. 세 결정은 사용자 경험, 유료 잔액의 신뢰성,
+개발·운영 범위를 크게 바꾸므로 임의로 확정하지 않는다.
+
+**해결 조건**:
+
+1. 다중 규칙 Live Activity를 규칙별로 표시할지, 단일 요약으로 표시할지 결정한다.
+2. 코인 해제를 앱 내에서만 확정할지, Live Activity에서 연결 또는 즉시 사용할지 결정한다.
+3. 미사용 유료 코인을 구매자 기준으로 복구할지, 기기 로컬 잔액으로 제한할지 결정한다.
+
+**해결**: Live Activity는 가장 먼저 활성화된 대표 규칙 1개의 남은 거리·시간만 표시하고
+코인 사용 행동을 제공하지 않는다. 코인은 Shield와 앱 내 화면에서만 사용한다. 유료
+코인은 확인된 구매 지급과 사용·보정 내역을 iCloud에 동기화해 같은 iCloud 계정에서
+미사용 잔액을 복구하되, iCloud 데이터만으로 새 구매를 인정하지 않는다.
+
+**영향**: `002-live-activity-coins` 명세는 `$speckit-plan`으로 전환할 수 있다.
+
 ## BLK-012 — extension 위치 권한 오판정으로 시작 제한 누락
 
 **상태**: 해결됨(RESOLVED) — 2026-08-26

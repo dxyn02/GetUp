@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1440, initial-scale=1">
+  <title>AI와 함께 만든 앱, 나에게 남은 판단</title>
+  <style>
+    @page { size: 1440px 2560px; margin: 0; }
+    * { box-sizing: border-box; }
+    html, body { width: 1440px; height: 2560px; margin: 0; overflow: hidden; }
+    body {
+      color: #f1f4f2;
+      background: #0b0d0e;
+      font-family: "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .poster {
+      position: relative;
+      width: 1440px;
+      height: 2560px;
+      padding: 58px 66px 48px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 78% 8%, rgba(82,217,255,.12), transparent 26%),
+        radial-gradient(circle at 6% 82%, rgba(186,255,41,.09), transparent 28%),
+        linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px) 0 0 / 42px 42px,
+        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px) 0 0 / 42px 42px,
+        #0b0d0e;
+    }
+    .poster::before {
+      content: "";
+      position: absolute;
+      inset: 22px;
+      border: 2px solid #3a4144;
+      pointer-events: none;
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 50px;
+      border-bottom: 2px solid #50575a;
+      color: #afb5b7;
+      font: 800 18px/1 "SFMono-Regular", Menlo, monospace;
+      letter-spacing: .14em;
+    }
+    .topbar strong { color: #baff29; }
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr 305px;
+      gap: 44px;
+      padding: 46px 0 38px;
+      border-bottom: 2px solid #50575a;
+    }
+    .overline {
+      margin-bottom: 15px;
+      color: #52d9ff;
+      font: 900 19px/1 "SFMono-Regular", Menlo, monospace;
+      letter-spacing: .12em;
+    }
+    h1 {
+      margin: 0;
+      font-size: 84px;
+      line-height: 1.04;
+      letter-spacing: -.065em;
+      font-weight: 950;
+    }
+    h1 em {
+      color: #0b0d0e;
+      font-style: normal;
+      background: #baff29;
+      box-shadow: 10px 0 0 #baff29, -6px 0 0 #baff29;
+    }
+    .hero-copy {
+      align-self: end;
+      padding: 20px 0 6px 22px;
+      border-left: 3px solid #baff29;
+      color: #b7bdc0;
+      font-size: 23px;
+      line-height: 1.5;
+      font-weight: 650;
+      letter-spacing: -.025em;
+    }
+    .hero-copy b { color: #f1f4f2; }
+    .ownership {
+      display: grid;
+      grid-template-columns: 1fr 74px 1fr;
+      gap: 18px;
+      padding: 30px 0;
+      border-bottom: 2px solid #50575a;
+    }
+    .owner-card {
+      min-height: 185px;
+      padding: 22px 24px;
+      border: 2px solid #50575a;
+      background: rgba(20,23,25,.9);
+    }
+    .owner-card.ai { border-color: #52d9ff; }
+    .owner-card.human { border-color: #baff29; }
+    .owner-label { font: 900 17px/1 "SFMono-Regular", Menlo, monospace; letter-spacing: .1em; }
+    .human .owner-label { color: #baff29; }
+    .ai .owner-label { color: #52d9ff; }
+    .owner-card h2 { margin: 12px 0 14px; font-size: 31px; letter-spacing: -.04em; }
+    .owner-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .owner-list span {
+      padding: 8px 11px;
+      border: 1px solid #50575a;
+      background: #0f1213;
+      font-size: 17px;
+      font-weight: 750;
+    }
+    .multiply { align-self: center; text-align: center; color: #6d7578; font: 900 42px/1 Arial, sans-serif; }
+    .journey-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      padding: 31px 0 18px;
+    }
+    .journey-head h2 { margin: 0; font-size: 38px; letter-spacing: -.045em; }
+    .journey-head span { color: #858d90; font: 800 16px/1 "SFMono-Regular", Menlo, monospace; letter-spacing: .11em; }
+    .journey {
+      position: relative;
+      display: grid;
+      gap: 14px;
+    }
+    .journey::before {
+      content: "";
+      position: absolute;
+      left: 57px;
+      top: 45px;
+      bottom: 45px;
+      width: 3px;
+      background: linear-gradient(#52d9ff, #bd95ff 37%, #ff765f 68%, #baff29);
+    }
+    .phase {
+      position: relative;
+      display: grid;
+      grid-template-columns: 116px 360px 1fr;
+      gap: 22px;
+      min-height: 188px;
+      padding: 24px 25px 22px 0;
+      border: 2px solid #3f4649;
+      background: rgba(20,23,25,.94);
+      overflow: hidden;
+    }
+    .phase-number {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 31px;
+      width: 54px; height: 54px;
+      border-radius: 50%;
+      border: 3px solid #0b0d0e;
+      background: #52d9ff;
+      color: #0b0d0e;
+      font: 950 20px/1 Arial, sans-serif;
+    }
+    .p2 .phase-number { background: #bd95ff; }
+    .p3 .phase-number { background: #ff765f; }
+    .p4 .phase-number { background: #baff29; }
+    .phase-title small {
+      display: block;
+      margin-bottom: 9px;
+      color: #8d9598;
+      font: 850 15px/1 "SFMono-Regular", Menlo, monospace;
+      letter-spacing: .12em;
+    }
+    .phase-title h3 {
+      margin: 0;
+      font-size: 34px;
+      line-height: 1.15;
+      letter-spacing: -.045em;
+    }
+    .phase-title p {
+      margin: 11px 0 0;
+      color: #adb4b7;
+      font-size: 18px;
+      line-height: 1.42;
+      font-weight: 650;
+    }
+    .phase-evidence {
+      align-self: stretch;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .signal {
+      padding: 16px 14px;
+      border-left: 3px solid #596164;
+      background: #0e1112;
+    }
+    .signal strong {
+      display: block;
+      color: #f1f4f2;
+      font: 950 33px/1 "Arial Black", Arial, sans-serif;
+      letter-spacing: -.03em;
+    }
+    .signal span {
+      display: block;
+      margin-top: 7px;
+      color: #8f979a;
+      font-size: 15px;
+      line-height: 1.3;
+      font-weight: 750;
+    }
+    .p2 .signal { border-left-color: #bd95ff; }
+    .p3 .signal { border-left-color: #ff765f; }
+    .p4 .signal { border-left-color: #baff29; }
+    .quote-signal {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      padding: 17px 20px;
+      border: 2px solid #ff765f;
+      color: #ffd1c8;
+      background: rgba(255,118,95,.08);
+      font-size: 24px;
+      font-weight: 850;
+      letter-spacing: -.03em;
+    }
+    .question-signal {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 82px;
+      padding: 14px;
+      border: 2px solid #baff29;
+      color: #eafcc3;
+      text-align: center;
+      font-size: 18px;
+      line-height: 1.25;
+      font-weight: 850;
+    }
+    .learning {
+      margin-top: 28px;
+      padding: 25px 26px 22px;
+      border: 2px solid #baff29;
+      background: rgba(186,255,41,.065);
+    }
+    .learning-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    .learning-head h2 { margin: 0; font-size: 34px; letter-spacing: -.04em; }
+    .learning-head span { color: #baff29; font: 850 15px/1 "SFMono-Regular", Menlo, monospace; letter-spacing: .11em; }
+    .rules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .rule {
+      min-height: 142px;
+      padding: 17px 18px;
+      border-top: 3px solid #baff29;
+      background: #121617;
+    }
+    .rule small { color: #7d8689; font: 800 14px/1 "SFMono-Regular", Menlo, monospace; letter-spacing: .1em; }
+    .rule h3 { margin: 11px 0 7px; font-size: 22px; letter-spacing: -.035em; }
+    .rule p { margin: 0; color: #9fa7aa; font-size: 16px; line-height: 1.4; font-weight: 620; }
+    .snapshot {
+      display: grid;
+      grid-template-columns: 310px 1fr;
+      gap: 0;
+      min-height: 344px;
+      margin-top: 24px;
+      border: 2px solid #52d9ff;
+      background: rgba(20,23,25,.94);
+    }
+    .snapshot-art {
+      display: grid;
+      grid-template-columns: 126px 1fr;
+      align-items: center;
+      gap: 18px;
+      padding: 20px;
+      border-right: 2px solid #3f4649;
+      background: #0d1011;
+    }
+    .mini-phone {
+      width: 126px;
+      height: 276px;
+      overflow: hidden;
+      border: 2px solid #baff29;
+      border-radius: 22px;
+      background: #08090b;
+    }
+    .mini-phone img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+    .snapshot-caption small { color: #52d9ff; font: 850 13px/1.2 "SFMono-Regular", Menlo, monospace; letter-spacing: .08em; }
+    .snapshot-caption b { display: block; margin-top: 12px; font-size: 23px; line-height: 1.23; letter-spacing: -.035em; }
+    .snapshot-caption span { display: block; margin-top: 10px; color: #858d90; font-size: 15px; line-height: 1.4; font-weight: 650; }
+    .snapshot-body { padding: 23px 25px; }
+    .snapshot-body h2 { margin: 0; font-size: 32px; letter-spacing: -.04em; }
+    .snapshot-body > p { margin: 7px 0 18px; color: #8f979a; font-size: 16px; font-weight: 650; }
+    .concept-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .concept {
+      min-height: 216px;
+      padding: 17px 16px;
+      border-top: 4px solid #52d9ff;
+      background: #0d1011;
+    }
+    .concept.amplified { border-top-color: #baff29; }
+    .concept.bypassed { border-top-color: #ff765f; }
+    .concept small { color: #7d8689; font: 850 13px/1 "SFMono-Regular", Menlo, monospace; letter-spacing: .08em; }
+    .concept strong { display: block; margin-top: 13px; font-size: 25px; line-height: 1.2; letter-spacing: -.04em; }
+    .concept p { margin: 12px 0 0; color: #9ca4a7; font-size: 15px; line-height: 1.4; font-weight: 620; }
+    .concept .result { display: block; margin-top: 14px; color: #f1f4f2; font-size: 15px; font-weight: 800; }
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      margin-top: 28px;
+      padding-top: 18px;
+      border-top: 2px solid #50575a;
+    }
+    .final-line { font-size: 28px; font-weight: 850; letter-spacing: -.035em; }
+    .final-line em { color: #baff29; font-style: normal; }
+    .meta { color: #80888b; text-align: right; font: 800 14px/1.5 "SFMono-Regular", Menlo, monospace; letter-spacing: .08em; }
+  </style>
+</head>
+<body>
+  <main class="poster">
+    <div class="topbar"><span><strong>NASEO</strong> / AI COLLABORATION LOG</span><span>COGNITIVE WORK MAP · 02</span></div>
+
+    <section class="hero">
+      <div>
+        <div class="overline">WHAT DID I REALLY DELEGATE?</div>
+        <h1>내가 AI에게 맡긴 것은<br>일이 아니라 <em>생각의 무게</em>였다.</h1>
+      </div>
+      <div class="hero-copy">‘나서’를 만드는 동안<br><b>Offload → Amplify → Bypass</b>가<br>어디에서 일어났는지 추적했다.</div>
+    </section>
+
+    <section class="ownership">
+      <div class="owner-card human">
+        <div class="owner-label">HUMAN HOLDS / 놓지 않을 것</div>
+        <h2>제품의 행동을 바꾸는 판단</h2>
+        <div class="owner-list"><span>문제 정의</span><span>우선순위</span><span>예외 승인</span><span>실기기 확인</span></div>
+      </div>
+      <div class="multiply">×</div>
+      <div class="owner-card ai">
+        <div class="owner-label">AI CARRIES / 내려놓을 것</div>
+        <h2>기억·반복·탐색의 부하</h2>
+        <div class="owner-list"><span>맥락 복원</span><span>구현 반복</span><span>회귀 확장</span><span>상태 기록</span></div>
+      </div>
+    </section>
+
+    <div class="journey-head"><h2>주도권이 이동한 네 번의 순간</h2><span>PROCESS TRACE / 01—04</span></div>
+    <section class="journey">
+      <article class="phase p1">
+        <div class="phase-number">01</div>
+        <div class="phase-title"><small>DELEGATE / 처음의 목표</small><h3>“코딩은 맡기고,<br>나는 새 기술을 배우자.”</h3><p>반복 구현은 AI에 맡기고 App Intents·Live Activity 같은 관심 영역에 집중하려 했다.</p></div>
+        <div class="phase-evidence">
+          <div class="signal"><strong>↓</strong><span>구현 부담</span></div>
+          <div class="signal"><strong>↑</strong><span>학습 시간</span></div>
+          <div class="signal"><strong>AI</strong><span>부가 역할로 시작</span></div>
+        </div>
+      </article>
+
+      <article class="phase p2">
+        <div class="phase-number">02</div>
+        <div class="phase-title"><small>SYSTEMIZE / Cognitive Offloading</small><h3>SPEC이<br>두 번째 기억이 됐다.</h3><p>요구·결정·상태를 외부 시스템에 고정해 긴 프로젝트의 맥락 손실을 줄였다.</p></div>
+        <div class="phase-evidence">
+          <div class="signal"><strong>128</strong><span>정의된 task</span></div>
+          <div class="signal"><strong>70</strong><span>결정 기록</span></div>
+          <div class="signal"><strong>12</strong><span>blocker 추적</span></div>
+        </div>
+      </article>
+
+      <article class="phase p3">
+        <div class="phase-number">03</div>
+        <div class="phase-title"><small>DRIFT / Bypass</small><h3>완료 체크가<br>이해를 대신했다.</h3><p>AI가 맥락을 더 잘 기억할수록 나는 결과만 승인했고, 설계 이유는 점점 내 것이 아니게 됐다.</p></div>
+        <div class="phase-evidence"><div class="quote-signal">“다음 작업 진행해줘.” → 빠른 완료, 느려진 이해</div></div>
+      </article>
+
+      <article class="phase p4">
+        <div class="phase-number">04</div>
+        <div class="phase-title"><small>RECLAIM / Amplification</small><h3>AI의 답보다<br>내 질문을 먼저 설계한다.</h3><p>구현을 넘겨도 판단은 넘기지 않는다. 이유·실패 조건·검증 증거를 확인해 이해의 루프를 닫는다.</p></div>
+        <div class="phase-evidence">
+          <div class="question-signal">왜 이 구조인가?</div>
+          <div class="question-signal">어디서 깨지는가?</div>
+          <div class="question-signal">무엇으로 증명할까?</div>
+        </div>
+      </article>
+    </section>
+
+    <section class="learning">
+      <div class="learning-head"><h2>그래서 바꾼 나의 AI 사용 규칙</h2><span>NEW OPERATING SYSTEM</span></div>
+      <div class="rules">
+        <article class="rule"><small>01 / OFFLOAD</small><h3>기억과 정리는 적극적으로 맡긴다</h3><p>spec·task·상태·테스트 결과처럼 다시 찾아야 하는 정보를 외부화한다.</p></article>
+        <article class="rule"><small>02 / READ</small><h3>긴 맥락은 직접 들어가 본다</h3><p>요약만 승인하지 않고 코드·자료의 관계를 직접 탐색해 판단 기반을 만든다.</p></article>
+        <article class="rule"><small>03 / PROVE</small><h3>완료보다 증거를 요구한다</h3><p>자동 테스트와 실기기 결과를 분리하고, 설명할 수 없는 결과는 다시 질문한다.</p></article>
+      </div>
+    </section>
+
+    <section class="snapshot">
+      <div class="snapshot-art">
+        <div class="mini-phone"><img src="/Users/andy/Documents/Apple Developer Academy/Challenge 5/GetUp/AppStore/screenshots/ko/01-home-rules.png" alt="나서 앱 홈 화면"></div>
+        <div class="snapshot-caption"><small>THE ARTIFACT</small><b>결과물은<br>선명했다.</b><span>그래서 과정 속 내 판단도 선명한지 따로 확인했다.</span></div>
+      </div>
+      <div class="snapshot-body">
+        <h2>같은 결과를 세 가지 관점으로 다시 읽기</h2>
+        <p>AI가 만든 양보다, 내가 어떤 인지 활동을 남기고 확장했는지 묻는다.</p>
+        <div class="concept-grid">
+          <article class="concept"><small>OFFLOAD</small><strong>맥락을<br>문서에 저장</strong><p>기억 비용을 줄여 제품 판단에 쓸 여유를 확보했다.</p><span class="result">128 tasks · 70 decisions</span></article>
+          <article class="concept amplified"><small>AMPLIFY</small><strong>판단을<br>회귀로 확장</strong><p>내가 한 번 생각한 예외를 반복 가능한 검증으로 만들었다.</p><span class="result">231 tests · 265 runs</span></article>
+          <article class="concept bypassed"><small>BYPASS</small><strong>완료를<br>이해로 착각</strong><p>설명할 수 없는 체크표시는 인지적 부채로 남았다.</p><span class="result">완료 ≠ 학습</span></article>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="final-line">AI는 나를 대신해 생각한 것이 아니라,<br><em>내가 더 멀리 생각하도록 증폭했다.</em></div>
+      <div class="meta">ANDY · 2026<br>GETUP / NASEO<br>APPLE DEVELOPER ACADEMY</div>
+    </footer>
+  </main>
+</body>
+</html>

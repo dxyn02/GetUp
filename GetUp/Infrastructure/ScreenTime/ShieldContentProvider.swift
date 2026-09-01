@@ -190,6 +190,7 @@ struct ShieldContentProvider {
     ) -> ShieldContent {
         let radius = radiusLabel(rule.radius)
         let endTime = timeLabel(rule.endTime)
+        let placeName = localizedPresetPlaceName(place.name)
         let titleFormat = localized(
             "shield.title.outside_radius",
             value: "%@에서 %@ 밖으로 나서세요"
@@ -200,12 +201,12 @@ struct ShieldContentProvider {
         )
 
         return ShieldContent(
-            title: String(format: titleFormat, place.name, radius),
+            title: String(format: titleFormat, placeName, radius),
             subtitle: String(
                 format: subtitleFormat,
-                place.name,
+                placeName,
                 radius,
-                place.name,
+                placeName,
                 radius,
                 endTime
             ),
@@ -248,6 +249,15 @@ struct ShieldContentProvider {
 
     private func localized(_ key: String, value: String) -> String {
         NSLocalizedString(key, bundle: bundle, value: value, comment: "")
+    }
+
+    private func localizedPresetPlaceName(_ storedName: String) -> String {
+        switch storedName {
+        case "집", "회사":
+            localized(storedName, value: storedName)
+        default:
+            storedName
+        }
     }
 
     private func radiusLabel(_ radius: RadiusOption) -> String {

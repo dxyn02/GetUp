@@ -1,35 +1,93 @@
 # 프로젝트 상태
 
 ## 현재 기능
-001-location-app-restriction
+001-location-app-restriction, 002-live-activity-coins
 
 ## 현재 단계
-Phase 7 마무리 및 교차 관심사 진행 중
+001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 1 재동기화 완료·task 생성 준비 상태
 
 ## 진행 중
-T083·T085 — 시간 시작 callback의 앱 비실행 실기기 적용은 T120에서 확인했으며, T116 위치 이탈의
-background·시스템 종료 상태와 100회 실기기 latency를 후속 확인할 예정
+002-live-activity-coins의 명확화 내용을 Phase 0 조사와 Phase 1 설계 산출물에 재동기화함.
+001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T128 — App Store Connect 제출용 iPhone 14 Plus 6.5인치 한국어·영어 스크린샷과 메타데이터 초안을
-작성하고, 홈 설명 두 줄 압축과 영어 단수 app/apps 문구를 보정함
+T129 — 영어 위치 권한 목업의 `정확한 위치: 켬`과 Shield의 `집`·`회사` 프리셋 이름이
+각각 `Precise Location: On`, `Home`·`Work`로 표시되도록 현지화 경계를 보정함
 
 ## 다음 작업
-T083·T085 — 설치된 수정 빌드에서 다음 설정 시간 시작 callback 뒤 제한 자동 적용, 앱을 강제
-종료하지 않은 suspended·background 상태와 시스템에 의한 종료 상태의 위치 이탈 자동 해제를
-재검증. 저장소에서 바로 진행 가능한 후속은 T086 구현·하이파이 편차 대조
+`002-live-activity-coins`는 `$speckit-tasks`로 구현 작업을 생성. 001은 T083·T085 실기기 재검증과 T086
+구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
-BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록과
+BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록과
 `group.com.dxyn02.GetUp` 할당, Family Controls Distribution `Assigned`와 갱신 profile을 사용한
 실기기 설치·실행은 사용자 확인됐으며, extension별 서명 entitlement와 archive 증적이 추가로 필요함.
 
 ## 계획 갱신 필요
-없음. Apple의 `intervalDidStart`·`intervalDidEnd` 전달은 물리적 시작·종료 정각이 아니라 해당 구간에서
+없음. `002-live-activity-coins`의 Phase 0·Phase 1 산출물에 FR-037~FR-040과 DEC-075를
+재동기화했다. 001의 Apple
+`intervalDidStart`·`intervalDidEnd` 전달은 물리적 시작·종료 정각이 아니라 해당 구간에서
 기기를 사용할 때일 수 있다. callback 전달 이후 시작 적용은 T118, 마지막 활성 규칙 해제는 T114에서
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-01 `$speckit-plan`을 재실행해 FR-037~FR-040과 DEC-075를 `research.md`, `plan.md`,
+`data-model.md`, Live Activity·CloudKit 장부·StoreKit 구매·규칙 해제·Shield 코인 UI의 다섯
+contract, `quickstart.md`에 반영했다. 최신 장부에서만 구매 시작, 1개·3개·5개 고정 상품,
+Live Activity 수동 제거 후 foreground 재생성, 장부 삭제 확정 시 잠금과 명시적 새 장부의 구매 0·
+당월 무료 0·다음 달 무료 2 정책을 설계와 검증 계약으로 고정했다. 헌법 게이트와 문서 일관성,
+`git diff --check`를 확인했으며 계획 문서 작업이므로 코드 테스트는 실행하지 않았다. 다음 단계는
+`$speckit-tasks`다.
+
+2026-09-01 `$speckit-clarify`에서 네 질문을 확정했다. iCloud 장부가 최신이 아니면 구매를 시작하지
+않고, 제거한 Live Activity는 활성 제한 중 다음 foreground에서 재생성하며, 초기 상품은 1개·3개·
+5개 묶음으로 구성한다. CloudKit 개인 장부 삭제 시 사전 고지, 코인 기능 잠금, 사용자 확인 후
+구매 코인 0개·현재 월 무료분 0회로 새 장부 시작과 다음 달 무료 지급 재개를 명세와 DEC-075에
+반영했다. 명세 품질 체크리스트 14/14 항목은 그대로 통과했고 `git diff --check`를 검증했다. 문서
+작업이므로 코드 테스트는 실행하지 않았다.
+
+2026-09-01 `002-live-activity-coins`의 `plan.md`, `data-model.md`, Live Activity·CloudKit 장부·
+StoreKit 구매·규칙 해제·Shield 코인 UI의 다섯 contract와 `quickstart.md`를 한국어로 작성했다.
+헌법 사전·사후 게이트를 통과했고 모든 Phase 0 미확정 항목과 `[NEEDS CLARIFICATION]`이 제거됐다.
+문서 링크·요구사항 경계와 `git diff --check`를 검증했으며 계획 작업이므로 코드 테스트는 실행하지
+않았다. 다음 단계는 `$speckit-tasks`다.
+
+2026-09-01 BLK-014의 마지막 결정으로 초기 앱 서버를 도입하지 않기로 확정했다. Live Activity는
+foreground 활성 제한 확인 시 시작하고, 구매·환불은 검증된 StoreKit 거래와 CloudKit private
+database 장부를 앱 실행 시 재조정한다. 서버 없는 복구·환불 한계와 구매 전 고지를 `spec.md`,
+`research.md`, DEC-074에 반영했다. 문서 변경이므로 코드 테스트는 실행하지 않았다.
+
+2026-09-01 BLK-014 중 거리 갱신은 기존 위치 이벤트와 앱 실행 시점의 신뢰 가능한 값만 사용하고
+stale이면 확인 불가로 전환하는 저전력 방식을 선택했다. 월간 무료 해제권은 `Asia/Seoul` 매월 1일
+00:00 경계로 확정해 `spec.md`, `research.md`, DEC-073에 반영했다. 서버 도입 여부는 비용·운영 범위
+설명 후 사용자 결정을 기다린다. 문서 변경이므로 코드 테스트는 실행하지 않았다.
+
+2026-09-01 `002-live-activity-coins` Phase 0에서 Apple 공식 문서를 기준으로 ActivityKit,
+StoreKit 2, CloudKit private database와 CKSyncEngine을 조사해 `research.md`를 작성했다. 앱 비실행
+Live Activity 자동 시작, 이동 중 거리 갱신, 권위 있는 결제·환불 서버, 월간 무료 지급 시간대가
+제품 또는 외부 인프라 결정임을 BLK-014로 기록했다. 결정 전 Phase 1 산출물은 생성하지 않았으며,
+문서 변경이므로 코드 테스트는 실행하지 않았다.
+
+2026-09-01 `002-live-activity-coins`에 같은 iCloud 계정 기준 매월 무료 해제권 2회 충전,
+미사용 무료분 비이월, 무료분 우선 사용, 구매 코인과 별도 표시·장부, 구매 코인 비만료 정책을
+반영했다. 월 중간 신규 사용자 지급, 여러 기기·재실행·기기 날짜 변경의 계정·월별 중복 방지,
+iCloud 상태 미확인 시 안전한 재시도 요구사항과 성공 기준도 추가했다. 명세 품질 체크리스트와
+`[NEEDS CLARIFICATION]` 부재를 재검증했으며 문서 변경이므로 코드 테스트는 실행하지 않았다.
+
+2026-09-01 `002-live-activity-coins` 명세의 3개 명확화를 반영했다. Live Activity는 대표 규칙
+1개의 남은 거리·시간만 표시하고, 코인 사용은 Shield·앱 내로 한정했다. 확인된
+구매 지급과 사용·보정 장부를 같은 iCloud 계정에 동기화해 잔액을 복구하는 정책을
+명세했다. 명세의 모든 `[NEEDS CLARIFICATION]` 표시를 제거했고 품질 체크리스트의 모든
+항목과 `git diff --check`를 검증했다. 이 세션은 명세 작성이므로 코드 테스트는 실행하지 않았다.
+
+2026-09-01 T129에서 위치 권한 목업 이미지에 픽셀로 포함된 `정확한 위치: 켬`을 동일한 캡슐 형태의
+현지화 SwiftUI 텍스트로 덮어 영어에서 `Precise Location: On`을 표시했다. Shield는 저장된
+프리셋 값 `집`·`회사`를 변경하지 않고 상세 문구를 만들 때 extension bundle에서만 `Home`·`Work`로
+지역화했다. `ShieldContentProviderTests`의 한국어 기존 회귀와 영어 Home·Work 회귀, US4 영어
+위치 권한 UI 회귀가 iPhone 17 Pro iOS 26.5 Simulator에서 통과했다. 영어 시뮬레이터 스크린샷으로
+목업 내 한글이 완전히 가려진 것을 확인했고, Shield Configuration extension 산출물의 `en.lproj` 안에
+`Home`·`Work`·영어 Shield format이 포함된 것과 String Catalog JSON, `git diff --check`를 검증했다.
+
 2026-08-27 T128에서 iPhone 14 Plus iOS 26.5 Simulator의 상태 막대를 9:41·배터리 100%로 고정하고
 한국어 6장, 영어 5장의 1284×2778 원본 PNG와 알파 채널이 없는 JPEG 제출본을 생성했다. 한국어·영어
 Promotional Text·Description·Keywords와 공통 Copyright 초안을 `AppStore/metadata`에 기록하고,
