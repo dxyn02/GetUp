@@ -17,12 +17,19 @@
 - occurrence가 현재 시각에 활성이고 아직 release exception이 없어야 한다.
 - 규칙 revision과 현재 저장 규칙이 일치해야 한다.
 - iCloud 계정과 최신 CloudKit 장부가 `current` 상태이며 요청 epoch가 현재 epoch와 일치해야 한다.
+  `current`는 현재 프로세스 monotonic clock 기준 5분 이내 성공 fetch, 완료된 projection, 미해결
+  reconciliation 없음까지 포함하며 해제 직전 최신 occurrence·account·allowance record를 다시
+  fetch한다. 프로세스 재시작 후 persisted wall-clock 시각만으로 `current`를 복원하지 않는다.
 - 현재 월 무료분 또는 사용 가능한 구매 코인이 1 이상이어야 한다.
 - 같은 occurrence의 진행·완료 command가 없어야 한다.
 
 조건이 하나라도 실패하면 잔액·App Group 예외·Shield를 변경하지 않는다.
 `deletionConfirmed` 또는 `resetRequired`를 포함한 비가용 상태에서는 local mirror의 잔액이 양수여도
 항상 실패한다.
+
+Shield 요청은 primary action이 release service에 전달된 시점부터 주입 가능한 monotonic clock으로
+5초 deadline을 적용한다. 5초 안에 CloudKit 성공을 확인하지 못하면 이후 로컬 예외와 제한 변경을
+진행하지 않는다.
 
 ## 처리 순서
 
@@ -45,6 +52,7 @@
 | reservation 성공, 예외 저장 실패 | reservation 보상; 보상 결과 불명이면 reconciliationRequired |
 | 예외 저장 성공, Shield write 실패 | 예외를 제거하고 reservation 보상; 둘 중 결과 불명이면 reconciliationRequired |
 | Shield 성공, commit 결과 불명 | 예외를 유지하고 command를 조회해 committed 또는 보상 여부를 재조정 |
+| Shield 요청 후 5초까지 성공 미확인 | 제한과 기존 예외를 변경하지 않고 reconciliation route를 기록한다. 같은 command ID를 조회해 늦은 reservation은 보상하고 해제되지 않은 차감을 남기지 않는다. |
 | 앱/extension 종료 | 같은 command ID와 App Group 예외·CloudKit 상태를 다음 실행에서 재조정 |
 
 `reconciliationRequired` reservation은 consumed로 표시하지 않고 `처리 확인 중`으로 표시한다. 새
@@ -75,4 +83,6 @@
 - 제한·Live Activity·장부 내역의 최종 일치
 - 장부 비가용·삭제 확정·epoch 불일치에서 무변경 실패
 - Shield의 새달 첫 요청에서 allowance 생성과 무료 1회 reservation이 하나의 명령으로 처리됨
+- 주입한 monotonic clock의 4.9초 성공, 5초 성공 미확인과 초과·late commit에서 fail-closed 및 최종
+  미적용 차감 0
 - 앱 내 해제 뒤 Live Activity 대표 교체·종료와 ActivityKit 실패의 비치명적 격리

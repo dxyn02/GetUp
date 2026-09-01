@@ -41,6 +41,11 @@ xcodebuild test \
 - 기존 위치 평가가 `.inside`이고 5분 이내일 때만 남은 거리를 항상 미터·10m 단위 half-up으로
   표시하며 5m 반올림 경계, 0 clamp, stale·unavailable 전환이 일치한다.
 - 앱 비실행 제한 시작에는 Live Activity를 만들지 않고 다음 foreground 확인에서 한 개만 시작한다.
+- 지원 기기·권한 허용·유효한 활성 제한·foreground 100회 중 95회 이상에서 활성 제한 확인 후
+  30초 안에 Live Activity를 표시한다. 권한 거부·미지원은 별도 안전 실패로 검증한다.
+- 메인 앱이 신뢰 위치를 받고 ActivityKit 조정이 가능해진 뒤 30초 안에 거리를 반영한다.
+  extension-only 위치는 저장하고 다음 foreground 기산점부터 30초 안에 반영한다.
+- 주입 시계의 종료 전·경계·종료 후 사례에서 남은 시간 오차가 60초 이내이고 종료 후 0으로 clamp된다.
 - 사용자가 Live Activity를 직접 제거해도 제한이 활성인 다음 foreground에서 다시 한 개를 만든다.
 - 무료분 2회가 서울 기준 월에만 유효하고 다음 달로 이월되지 않는다.
 - 무료분을 먼저 예약하며 같은 occurrence 동시 요청 100회에서 최대 한 번만 소모한다.
@@ -48,9 +53,16 @@ xcodebuild test \
 - StoreKit verified 거래만 지급하고 같은 transaction 100회에서 한 번만 지급한다.
 - 최신 CloudKit 장부가 `current`일 때만 1개·3개·5개 상품 구매를 시작하며 그 밖의 상태에서는 구매
   API를 호출하지 않는다.
+- `current`는 현재 프로세스의 monotonic clock 기준 5분 이내 성공 fetch, epoch·projection 일치,
+  미해결 reconciliation 없음까지 만족하고 구매·해제 직전 서버 record를 다시 확인한다. 기기 wall
+  clock 변경은 freshness를 늘리지 않으며 프로세스 재시작 후 새 fetch 전에는 `current`가 아니다.
 - CloudKit conflict·timeout·부분 실패가 보상 또는 reconciliation 상태로 끝난다.
 - 장부 삭제 확정 뒤 구매·사용·무료 지급이 잠기고, 명시적 새 장부는 구매 0·당월 무료 0으로
   시작하며 다음 서울 기준 월에 무료 2회를 지급한다.
+- 로컬 데이터가 없는 동일 iCloud 새 설치는 기존 `current` 장부의 정확한 미사용 잔액·내역을
+  복구하고 새 PurchaseGrant를 만들지 않는다.
+- Shield는 4.9초 안에 확인된 성공만 적용하며 5초 안에 성공을 확인하지 못하면 제한을 유지하고
+  늦은 결과를 재조정해 미적용 차감을 0으로 만든다.
 - 환불 조정은 구매 잔액을 0 미만으로 만들지 않는다.
 
 ## Preview와 지역화
@@ -108,6 +120,15 @@ xcodebuild test \
 8. 삭제 확정 상태에서 구매·사용·무료 지급이 잠기고 local mirror가 자동 업로드되지 않는지 확인한다.
 9. 삭제 불이익 고지에 동의해 새 장부를 시작하고 구매 잔액·현재 월 무료분을 확인한다.
 10. 서울 기준 다음 월 경계를 통과해 무료분을 확인한다.
+11. 기존 `current` 장부와 구매·사용·보정 내역이 있는 동일 iCloud 계정으로 로컬 데이터가 없는 새
+    설치를 시작해 초기 sync를 완료한다.
+12. 별도 fixture에서 원격 zone 부재·삭제·schema 불일치·초기 fetch 미완료를 각각 재현한다.
+13. 월 경계에서 앱과 Shield를 모두 실행하지 않은 채 자정을 지난 뒤 record 생성 여부를 확인하고,
+    첫 앱 foreground와 별도 첫 Shield 요청 경로를 각각 실행한다.
+14. 원격 장부·삭제 증거가 모두 없는 최초 활성화, 기존 `current` 장부 복구, 삭제 증거가 있는 zone
+    부재를 별도 fixture로 실행한다.
+15. 최초 활성화 고지에서 취소해 장부가 생기지 않음을 확인한 뒤 동의 action을 실행하고 initial
+    epoch와 당월 quota 2가 같은 atomic 결과로 생성되는지 확인한다.
 
 기대 결과:
 
@@ -120,6 +141,13 @@ xcodebuild test \
 - 계정 전환 시 이전 계정 잔액을 표시하거나 사용하지 않는다.
 - 삭제 확정 뒤 자동 복원·자동 reset은 없고, 명시적 새 장부는 구매 잔액 0·당월 무료분 0으로
   시작하며 다음 서울 기준 월부터 무료 2회를 지급한다.
+- 동일 iCloud의 기존 `current` 장부가 있으면 잔액·내역 projection이 정확히 복구되고 새 grant는
+  0개다. 부재·삭제·불확실 장부는 자동 복구하지 않는다.
+- 원격 장부·삭제 증거가 모두 없는 최초 활성화는 고지 확인 뒤 initial ledger와 당월 무료 2회를
+  하나의 setup action으로 받고, 동의 전에는 장부가 생기지 않는다. 삭제가 확인된 reset은 별도
+  entry point에서 구매 0·당월 무료 0을 받는다.
+- 자정에는 background 생성을 요구하지 않고 첫 앱 foreground에서 quota 2를 생성한다. 별도 첫 Shield
+  요청은 quota 2 생성과 무료 1회 사용을 한 command로 확정해 freeAvailable 1이 된다.
 
 ## Live Activity end-to-end
 
@@ -132,6 +160,10 @@ xcodebuild test \
 7. 앱을 종료한 상태에서 새 제한을 시작한 뒤 앱을 foreground로 연다.
 8. 활성 제한 중 Live Activity를 직접 제거하고 같은 occurrence가 끝나기 전에 앱을 foreground로
    연다.
+9. 지원·권한·활성 제한·foreground fixture 100회에서 활성 제한 확인과 실제 표시 시각을 기록한다.
+10. 메인 앱 신뢰 위치 수신과 ActivityKit 조정 가능 시각을 기록해 거리 반영을 확인한다.
+11. extension에만 위치를 전달해 즉시 갱신되지 않음을 확인한 뒤 앱을 foreground로 열고 반영 시각을
+    기록한다.
 
 기대 결과:
 
@@ -141,8 +173,21 @@ xcodebuild test \
 - 오래된 거리는 숫자로 남지 않고 확인 불가가 된다.
 - 대표 교체는 새 활동을 중복 생성하지 않고 모든 제한 종료 때 즉시 끝난다.
 - 수동 제거한 활동은 같은 occurrence가 활성인 다음 foreground에서 다시 한 개만 생성된다.
+- 적격 100회 중 95회 이상이 활성 제한 확인 후 30초 안에 표시되고, 권한 거부·미지원에서는 제한
+  동작만 안전하게 유지된다.
+- 메인 앱 위치는 조정 가능 시점부터 30초 안에, extension-only 위치는 다음 foreground 조정 가능
+  시점부터 30초 안에 반영된다.
 
 ## Shield·앱 내 해제
+
+### 선행 실기기 게이트
+
+1. T011·T032·T033으로 공유 attributes·system adapter·coordinator를 준비한 뒤 Shield Action
+   extension에서 메인 앱이 시작한 ActivityKit 활동을 조회·갱신·종료하는 최소 probe를 지원 OS
+   실기기에서 실행한다.
+2. 성공·미지원·실패·timeout 결과와 OS 버전을 기록한다.
+3. 성공이 재현된 환경만 직접 조정 경로를 활성화하고, 그 밖에는 앱 진입 또는 다음 foreground
+   재조정을 기본 경로로 선택한다.
 
 ### 무료분
 
@@ -164,6 +209,10 @@ xcodebuild test \
 3. 무료분과 구매 코인이 모두 0인 `current` 장부에서 Shield 버튼을 누른다.
 4. iCloud unavailable·장부 삭제 확정·재조정 중인 상태에서 같은 버튼을 누른다.
 5. iOS 26.5 이상과 iOS 26.0~26.4 기기에서 잔액 부족·복구 route를 각각 실행한다.
+6. 주입 시계와 CloudKit fake로 4.9초 성공, 정확히 5초까지 성공 미확인, 5초 초과 뒤 late commit을
+   각각 실행한다.
+7. `PendingAppRoute`를 생성 직후, 정확히 5분 경계, 5분 초과, 중복 소비, occurrence 종료 뒤 각각
+   앱에서 소비한다.
 
 기대 결과:
 
@@ -173,10 +222,15 @@ xcodebuild test \
 - 같은 occurrence는 최대 한 번만 해제·소모된다.
 - 다른 규칙이 같은 앱을 제한하면 안내대로 Shield가 남는다.
 - 실패한 해제는 확정 차감으로 남지 않고 보상되거나 `처리 확인 중`에서 재조정된다.
+- 4.9초 안에 확인된 성공은 적용할 수 있지만 5초 안에 성공을 확인하지 못한 요청은 Shield를
+  유지하고 상태 확인 route로 이동한다. 늦은 commit은 같은 command ID로 재조정돼 제한이 해제되지
+  않았다면 최종 차감 0으로 수렴한다.
 - `current` 장부의 잔액 부족만 coin store로 이동하며 iCloud·장부 불확실 상태는 결제를 시작하지
   않고 해당 복구 화면으로 이동한다.
 - iOS 26.5 이상은 공식 응답으로 앱을 직접 열고, iOS 26.0~26.4는 Shield를 닫은 뒤 표시된 안내에
   따라 사용자가 앱을 열면 저장된 route가 소비된다.
+- route는 생성 후 5분 이내의 활성 occurrence에서 한 번만 소비되고 만료·중복·종료 route는 이동 없이
+  삭제된다.
 - 해제 성공 직후 대표 Live Activity가 갱신되거나 모든 제한 종료 시 즉시 끝나며, ActivityKit 실패는
   이미 성공한 해제와 차감을 되돌리지 않는다.
 - 재실행·재부팅 후 현재 occurrence 예외는 유지되고 다음 occurrence는 정상 제한된다.
@@ -195,10 +249,10 @@ xcodebuild test \
 | 영역 | 필수 증적 |
 |------|-----------|
 | 자동 테스트 | 전체 관련 test 통과, 실패·skip 0 또는 명시된 사유 |
-| Live Activity | foreground 시작, 거리 갱신, 대표 교체, 즉시 종료 실기기 기록 |
-| Shield 해제 | 무료·구매·다중 규칙·중복 tap·실패 보상 기록 |
+| Live Activity | 적격 100회 시작 성공률 원시 결과, 위치 수신 주체별 기산·반영 시각, 남은 시간 60초 정확도·0 clamp, 대표 교체·즉시 종료 실기기 기록 |
+| Shield 해제 | 선행 ActivityKit 실기기 probe, 무료·구매·다중 규칙·중복 tap, route 5분·일회 소비, 4.9초·5초·late commit과 실패 보상 기록 |
 | StoreKit | local configuration 및 sandbox 거래 ID를 비식별화한 결과 |
-| CloudKit | 같은 계정 두 기기 충돌, 월 경계, account switch 결과 |
+| CloudKit | 같은 계정 두 기기 충돌, 로컬 빈 새 설치 복구, 월간 첫 앱·Shield 지연 생성, account switch 결과 |
 | 지역화·접근성 | 한국어·영어, VoiceOver, Dynamic Type, Light/Dark 결과 |
 | 한계 고지 | 최초 활성화·매 구매 전 iCloud 삭제 불이익과 서버 없는 복구/환불 문구 캡처 |
 

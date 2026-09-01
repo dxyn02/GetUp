@@ -32,10 +32,17 @@ Shield Configuration은 App Group의 활성 occurrence와 confirmed balance mirr
 - 다른 규칙 제한이 남거나 실패하면 Shield를 유지하고 configuration snapshot을 갱신한다.
 - 최신 장부가 `current`이고 잔액만 부족하면 `PendingAppRoute.coinStore`, iCloud·장부 불가이면 해당
   복구 route를 App Group에 기록한다. iOS 26.5 이상은 `.openParentalControlsApp`을 반환한다.
+- 메인 앱은 route 생성 후 5분 이내, 미소비, 연결 occurrence 활성 조건을 모두 만족할 때만 route를
+  한 번 소비한다. 성공한 소비와 삭제는 atomic하며 만료·중복·종료 occurrence route는 이동 없이
+  삭제한다.
 - iOS 26.0~26.4는 공식 앱 열기 응답이 없으므로 안내 상태를 기록한 뒤 `.close`를 반환한다. custom
   URL, `UIApplication`, 임의 `NSExtensionContext` 우회는 사용하지 않는다.
 - secondary action은 `.close`다.
-- timeout은 실패 닫힘으로 처리하고 잔액을 확정 소모하지 않는다.
+- primary action이 release service에 전달된 시점부터 최대 5초 동안 CloudKit 성공을 기다린다.
+  5초 안에 성공을 확인하지 못하면 실패 닫힘으로 Shield를 유지하고 `PendingAppRoute.reconciliation`을
+  기록한다. 이는 coin store route가 아니다.
+- 5초 뒤 늦은 성공 응답이 도착해도 해당 Shield action에서 자동 해제하지 않는다. 같은 command ID를
+  다음 앱 foreground에서 재조정하고, 제한이 적용되지 않은 reservation은 보상한다.
 
 ## 앱 내 표면
 
@@ -59,7 +66,10 @@ Shield Configuration은 App Group의 활성 occurrence와 confirmed balance mirr
 - deletionConfirmed/resetRequired에서 해제·구매·reset 행동이 없고 앱 안내만 표시됨
 - 단일 규칙과 같은 앱의 다중 규칙 경고
 - primary 성공·실패·timeout·중복 tap, secondary close
+- 주입 가능한 monotonic clock 기준 4.9초 성공, 5초 성공 미확인, 5초 초과 late commit의 Shield 유지·
+  reconciliation route·최종 미적용 차감 0
 - 해제 성공 후 Shield 제거 또는 다른 규칙 Shield 유지
 - 새달 최초 Shield action의 무료분 생성·우선 차감, 잔액 부족·장부 불가 route 분기
 - iOS 26.5 앱 직접 열기와 iOS 26.0~26.4 `.close` fallback
+- PendingAppRoute의 5분 경계, 일회 소비, 중복 소비 거부, 종료 occurrence route 폐기
 - 한국어·영어, VoiceOver, Dynamic Type, Light/Dark

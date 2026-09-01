@@ -1480,3 +1480,76 @@ source를 미리 단정하지 않는다. 장부 불확실 상태와 실제 잔�
 **영향 범위**: `specs/002-live-activity-coins`의 `spec.md`, `plan.md`, `research.md`,
 `data-model.md`, Live Activity·규칙 해제·Shield UI contract, `quickstart.md`, `tasks.md`의 거리 정책,
 해제 state machine, 앱 route와 OS 버전별 실기기 검증에 적용한다.
+
+## DEC-077 — Live Activity 계측·iCloud 잔액 복구·Shield 5초·월간 지연 생성
+
+**날짜**: 2026-09-02
+
+**결정**: Live Activity 시작 성공률은 지원 기기, 권한 허용, 유효한 활성 제한, 앱 foreground를 모두
+만족하는 100회만 모집단으로 삼고 활성 제한 확인부터 30초 안에 95회 이상 표시되는지 측정한다.
+권한 거부·미지원은 제한 기능 독립성을 확인하는 별도 안전 실패 테스트로 다룬다. 거리 갱신은 메인
+앱이 신뢰 위치를 받고 ActivityKit 조정이 가능해진 시점부터 30초를 측정하며, extension-only 위치는
+저장 후 다음 foreground의 조정 가능 시점부터 측정한다.
+
+로컬 코인 데이터가 없는 재설치·새 기기는 동일 iCloud의 기존 CloudKit 장부를 먼저 fetch한다.
+현재 epoch와 검증된 StoreKit transaction에 연결된 지급·사용·보정 projection이 `current`이면
+미사용 잔액과 내역을 복구한다. 이는 StoreKit `구매 복원`이나 새 지급이 아니며 `iCloud 잔액 동기화`
+또는 `iCloud 잔액 복구`로 안내한다. 장부 부재·삭제·불확실 상태에서는 자동 복구하지 않는다.
+
+Shield 해제 요청은 primary action이 service에 전달된 때부터 최대 5초 안에 CloudKit 성공을 확인한
+경우에만 제한을 해제한다. 5초 안에 성공을 확인하지 못하면 Shield를 유지하고, 같은 command ID의
+늦은 결과를 다음 앱 foreground에서 재조정해 제한이 해제되지 않은 차감을 보상한다. 5초는 Apple의
+공식 보장값이 아닌 제품 내부 상한이므로 네트워크·저전력·iCloud 오류를 포함한 실기기 검증을
+완료 조건으로 둔다.
+
+월간 무료 해제권은 `Asia/Seoul` 자정을 정책 경계로 사용하되 정확한 자정 background 실행을
+요구하지 않는다. 새달 첫 앱 foreground 또는 Shield 해제 요청에서 지연 생성하며, Shield가 첫
+요청이면 quota 2 생성과 무료 1회 reservation을 하나의 원자적 장부 명령으로 처리한다.
+
+**근거**: Apple은 소모성 구매의 내부 상태를 앱이 영속화하고 iCloud로 기기 간 동기화할 수 있다고
+안내하지만, 완료된 소모성 구매의 잔량은 일반 구매 복원만으로 재구성할 수 없다. 또한 background
+task는 지정 시각 실행이 보장되지 않고 Shield extension의 정확한 실행 시간도 공개 보장되지 않는다.
+따라서 사용자 상호작용을 신뢰 가능한 지급 트리거로 사용하고, 짧은 timeout·fail-closed·멱등
+재조정으로 제한과 유료 재화의 일관성을 보존한다.
+
+**영향 범위**: `specs/002-live-activity-coins`의 `plan.md`, `research.md`, `data-model.md`, 다섯
+contract와 `quickstart.md`, `tasks.md`에 적용한다.
+
+## DEC-078 — 장부 current 증명·최초 활성화 구분·분석 보완 게이트
+
+**날짜**: 2026-09-02
+
+**결정**: 코인 장부의 `current`는 iCloud 계정 사용 가능, 현재 프로세스 private database 초기 fetch
+완료, 주입 가능한 monotonic clock 기준 마지막 성공 fetch 이후 5분 이내, 로컬 mirror·`LedgerEpoch`·
+`CoinAccount` epoch 일치, fetch된 구매 지급·사용·보정 projection 완료, 결과 불명 release command와
+pending reconciliation 없음이 모두 성립할 때만 부여한다. 구매와 해제 직전 최신 서버 record를 다시
+확인하고 monotonic 경과 시간이 5분을 넘으면 `stale`로 전환한다. persisted wall-clock `syncedAt`은
+표시·진단 전용이며 프로세스 재시작 뒤 새 fetch 전에는 `current`를 복원하지 않는다.
+
+로컬 데이터가 없는 설치는 세 상태로 나눈다. 기존 동일 iCloud 장부가 `current`이면 잔액·내역만
+복구한다. 초기 fetch 뒤 원격 장부와 삭제 증거가 모두 없으면 `setupRequired`로 두고 최초 활성화
+고지 확인 뒤 initial epoch와 현재 월 무료 2회를 한 번 생성한다. `userDeletedZone` 또는 기존 장부
+보유 증거 뒤 zone 부재로 삭제가 확인되면 `deletionConfirmed`로 잠그고 사용자 reset 뒤 구매 0·삭제
+월 무료 0으로 시작한다. `setupRequired`는 고지와 명시적 activation action 뒤 initial epoch+당월
+무료 2회를 만드는 `CoinLedgerSetupService`, 삭제 확인은 구매 0+당월 무료 0을 만드는
+`CoinLedgerResetService`의 서로 다른 허용 상태와 entry point를 사용한다. 일시적 불확실성은 자동
+생성·복구하지 않는다. 별도 서버가 없어 새 설치에서
+원격 장부와 삭제 증거를 모두 잃은 사례는 최초 사용자와 완전히 구분할 수 없으며 이를 최초 활성화와
+구매 전에 고지한다.
+
+월 계산·quota 2·비이월, 지연 생성과 Shield의 allowance 생성+무료 1회 reservation 원자성은 US2보다
+앞선 공통 기반에서 구현한다. Shield Action의 직접 ActivityKit 갱신·종료는 US1의 공유 attributes·
+system adapter·coordinator(T011·T032·T033) 뒤 지원 OS 실기기 probe를 완료하고 성공이 재현된 경로만
+T055에 연결한다. US2 해제 core와 fallback은 이 probe와 병렬 진행할 수 있다. `PendingAppRoute`는 생성 후 5분 이내,
+활성 occurrence, 미소비 조건을 모두 만족할 때 atomic하게 한 번 소비하며 stale·중복·종료 route는
+폐기한다. Live Activity 남은 시간은 주입 시계에서 오차 60초 이내와 종료 후 0 clamp를 자동
+검증한다. 마감 계측은 전용 테스트 결과를 집계하며 같은 계측 로직을 중복 구현하지 않는다.
+
+**근거**: `current`의 객관적 증명 조건이 없으면 stale mirror로 유료 재화를 구매·사용할 수 있고,
+최초 활성화와 삭제 reset을 같은 부재 상태로 처리하면 신규 사용자 무료 2회와 삭제 월 무료 0 정책이
+충돌한다. 월간 원자 예약은 Shield 무료 우선 해제의 선행 의존성이다. ActivityKit extension 접근은
+Simulator 가정만으로 제품 경로를 결정할 수 없고, route·남은 시간 경계는 헌법상 핵심 실패·경계
+자동 테스트가 필요하다.
+
+**영향 범위**: `specs/002-live-activity-coins`의 전체 설계 산출물과 T007~T021, T024, T039~T040,
+T055, T057, T064, T073, T076, T078~T085, T092, T096, T098에 적용한다.

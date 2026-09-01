@@ -11,8 +11,12 @@
 ## 구매 결과
 
 구매 버튼과 `Product.purchase()` 호출의 사전 조건은 iCloud 계정과 최신 CloudKit 장부가 확인된
-`current` 상태다. `syncing`, `stale`, `unavailable`, `deletionConfirmed`, `resetRequired`에서는 버튼을
-비활성화하고 구매 API를 호출하지 않는다. 이미 시작되어 전달된 unfinished transaction은 별도
+`current` 상태다. `current`는 현재 프로세스 monotonic clock 기준 5분 이내 성공 fetch, 일치하는
+epoch·완료된 projection, 미해결 reconciliation 없음까지 확인하고 구매 직전 최신 record를 다시
+fetch한 상태여야 한다. 프로세스 재시작 후 새 fetch 전에는 `current`가 아니다. `syncing`,
+`stale`, `unavailable`, `deletionConfirmed`, `resetRequired`에서는 버튼을
+비활성화하고 구매 API를 호출하지 않는다. 원격 장부가 없는 `setupRequired`도 사용자가 최초 활성화
+고지를 확인하고 initial epoch를 만들기 전에는 같은 방식으로 비활성화한다. 이미 시작되어 전달된 unfinished transaction은 별도
 재조정 경로에서 보존한다.
 
 | StoreKit 결과 | 동작 |
@@ -38,6 +42,18 @@
 - unfinished 거래를 조회해 미완료 지급·finish를 재조정한다.
 - 소모성 구매를 `currentEntitlements` 복원 대상으로 취급하지 않는다.
 - 초기 범위는 App Store Server API·Server Notifications를 사용하지 않는다.
+
+## iCloud 잔액 동기화
+
+- 로컬 코인 데이터가 없는 재설치·새 기기에서는 동일 iCloud의 `current` CloudKit 장부에 있는 기존
+  PurchaseGrant와 사용·보정 event를 읽어 미사용 잔액과 내역 projection을 복구한다.
+- 이 흐름은 `Product.purchase()`를 호출하거나 `currentEntitlements`에서 소모성 상품을 복원하거나
+  새 PurchaseGrant를 만드는 StoreKit `구매 복원`이 아니다.
+- 각 복구 지급은 기존의 검증된 transaction ID와 연결돼야 하며, 기존 장부가 없거나 삭제됐거나
+  `current`가 아니면 자동 복구하지 않는다. 초기 fetch 뒤 원격 장부·삭제 증거가 모두 없는 경우는
+  잔액 복구가 아닌 `setupRequired` 최초 활성화로만 진행한다.
+- 동일 App Store 계정은 복구 gate로 요구하지 않지만 계정 불일치 시 향후 환불·거래 재검증 한계가
+  있음을 구매 전에 고지한다.
 
 ## 환불·철회
 
@@ -74,3 +90,4 @@
 - 앱 재실행 pending 승인
 - 환불·환불 취소·미사용 수량 부족과 0 clamp
 - 최초 코인 활성화 및 매 구매의 한국어·영어 삭제 불이익 고지와 가격·수량 정확성
+- 동일 iCloud `current` 장부의 새 설치 잔액·내역 복구, 새 grant 0개와 `iCloud 잔액 복구` 문구
