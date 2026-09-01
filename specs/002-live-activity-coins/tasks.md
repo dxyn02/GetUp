@@ -27,7 +27,7 @@ Phase 2에 둔다. US4에는 잔액 UI·지역화·월 경계 인수 검증만 �
 
 **목적**: Live Activity, CloudKit, StoreKit을 빌드할 수 있는 프로젝트·capability 기반을 만든다.
 
-- [ ] T001 `GetUpLiveActivity/` Widget Extension target과 앱 embed dependency를 `GetUp.xcodeproj/project.pbxproj`에 추가한다.
+- [X] T001 `GetUpLiveActivity/` Widget Extension target과 앱 embed dependency를 `GetUp.xcodeproj/project.pbxproj`에 추가한다.
 - [ ] T002 [P] Live Activities 지원과 App Group을 `GetUp/Resources/Info.plist`, `GetUp/GetUp.entitlements`, `GetUpLiveActivity/Info.plist`, `GetUpLiveActivity/GetUpLiveActivity.entitlements`에 구성한다.
 - [ ] T003 CloudKit container와 iCloud capability를 `GetUp/GetUp.entitlements`, `GetUpShieldAction/GetUpShieldAction.entitlements`, `Configuration/Base.xcconfig`에 구성한다.
 - [ ] T004 코인 1개·3개·5개 상품의 build setting key와 허용 catalog 설정을 `Configuration/Base.xcconfig`, `GetUp/Resources/Info.plist`에 추가한다.

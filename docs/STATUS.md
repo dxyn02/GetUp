@@ -4,21 +4,20 @@
 001-location-app-restriction, 002-live-activity-coins
 
 ## 현재 단계
-001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 교차 산출물 분석 권장 조치 반영 완료
+001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 1 설정 및 타깃 구성 구현 중
 
 ## 진행 중
-002-live-activity-coins의 최초 분석 발견과 재분석 잔여 I1·C1·A1을 spec·plan·research·data model·
-다섯 contract·quickstart·98개 실행 task와 DEC-078에 반영하고 최종 형식 검증을 완료함.
+`codex/live-activity-coins-setup`에서 002-live-activity-coins Phase 1을 진행 중이다. T001로
+`GetUpLiveActivity` Widget Extension target, 빈 build phase, 앱 embed와 target dependency를 추가했다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T129 — 영어 위치 권한 목업의 `정확한 위치: 켬`과 Shield의 `집`·`회사` 프리셋 이름이
-각각 `Precise Location: On`, `Home`·`Work`로 표시되도록 현지화 경계를 보정함
+T001 — `GetUpLiveActivity` Widget Extension target과 앱 embed dependency를
+`GetUp.xcodeproj/project.pbxproj`에 추가함
 
 ## 다음 작업
-`002-live-activity-coins` 산출물의 형식·추적성을 재검증한다. 검증 후 문서 브랜치를 병합하고 최신
-`main`에서 구현 브랜치를 만든다. 001은
-T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
+T002 — Live Activities 지원과 App Group을 앱 및 `GetUpLiveActivity`의 Info.plist·entitlements에
+구성한다. 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
 BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록과
@@ -33,6 +32,11 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-02 002 구현 T001을 완료했다. `plutil -lint GetUp.xcodeproj/project.pbxproj`가 통과했고,
+`xcodebuild -list -project GetUp.xcodeproj`에서 `GetUpLiveActivity` target과 scheme을 확인했다.
+시뮬레이터 서비스·로컬 provisioning profile 경고는 출력됐지만 명령은 성공했다. 확장의 Info.plist와
+entitlements는 T002 범위이므로 전체 build와 테스트는 T002·T006 구성 후 실행한다.
+
 2026-09-02 `002-live-activity-coins` 재분석의 잔여 권장 조치 3건을 반영했다. T039는 US1의 T011·
 T032·T033 뒤 실행하고 T055의 직접 ActivityKit 연결만 차단하도록 의존성 그래프를 고쳤다.
 `setupRequired` 최초 활성화는 initial epoch+당월 무료 2회의 `CoinLedgerSetupService`, 삭제 확인은

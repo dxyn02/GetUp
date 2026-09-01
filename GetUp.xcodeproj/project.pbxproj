@@ -12,6 +12,7 @@
 		AA0000000000000000000001 /* GetUpDeviceActivityMonitor.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = BA0000000000000000000002 /* GetUpDeviceActivityMonitor.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AA0000000000000000000002 /* GetUpShieldConfiguration.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = BA0000000000000000000003 /* GetUpShieldConfiguration.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AA0000000000000000000003 /* GetUpShieldAction.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = BA0000000000000000000004 /* GetUpShieldAction.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		DA0000000000000000000001 /* GetUpLiveActivity.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = DC0000000000000000000001 /* GetUpLiveActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AA0000000000000000000011 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000011 /* PrivacyInfo.xcprivacy */; };
 		AA0000000000000000000012 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000012 /* PrivacyInfo.xcprivacy */; };
 		AA0000000000000000000013 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000013 /* PrivacyInfo.xcprivacy */; };
@@ -162,6 +163,13 @@
 			remoteGlobalIDString = D00000000000000000000001;
 			remoteInfo = GetUp;
 		};
+		DB0000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DE0000000000000000000001;
+			remoteInfo = GetUpLiveActivity;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -174,6 +182,7 @@
 				AA0000000000000000000001 /* GetUpDeviceActivityMonitor.appex in Embed App Extensions */,
 				AA0000000000000000000002 /* GetUpShieldConfiguration.appex in Embed App Extensions */,
 				AA0000000000000000000003 /* GetUpShieldAction.appex in Embed App Extensions */,
+				DA0000000000000000000001 /* GetUpLiveActivity.appex in Embed App Extensions */,
 			);
 			name = "Embed App Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -278,6 +287,7 @@
 		BA0000000000000000000004 /* GetUpShieldAction.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpShieldAction.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000005 /* GetUpTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GetUpTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000006 /* GetUpUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GetUpUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		DC0000000000000000000001 /* GetUpLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -317,6 +327,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C10000000000000000000006 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DF0000000000000000000002 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -618,6 +635,7 @@
 				BB0000000000000000000011 /* GetUpDeviceActivityMonitor */,
 				BB0000000000000000000012 /* GetUpShieldConfiguration */,
 				BB0000000000000000000013 /* GetUpShieldAction */,
+				DD0000000000000000000001 /* GetUpLiveActivity */,
 				BB0000000000000000000014 /* GetUpTests */,
 				BB0000000000000000000015 /* GetUpUITests */,
 				BB0000000000000000000002 /* Products */,
@@ -633,6 +651,7 @@
 				BA0000000000000000000004 /* GetUpShieldAction.appex */,
 				BA0000000000000000000005 /* GetUpTests.xctest */,
 				BA0000000000000000000006 /* GetUpUITests.xctest */,
+				DC0000000000000000000001 /* GetUpLiveActivity.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -684,6 +703,13 @@
 			path = GetUpShieldAction;
 			sourceTree = "<group>";
 		};
+		DD0000000000000000000001 /* GetUpLiveActivity */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = GetUpLiveActivity;
+			sourceTree = "<group>";
+		};
 		BB0000000000000000000014 /* GetUpTests */ = {
 			isa = PBXGroup;
 			children = (
@@ -727,6 +753,7 @@
 				AC0000000000000000000001 /* PBXTargetDependency */,
 				AC0000000000000000000002 /* PBXTargetDependency */,
 				AC0000000000000000000003 /* PBXTargetDependency */,
+				DG0000000000000000000001 /* PBXTargetDependency */,
 			);
 			name = GetUp;
 			productName = GetUp;
@@ -819,6 +846,23 @@
 			productReference = BA0000000000000000000006 /* GetUpUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		DE0000000000000000000001 /* GetUpLiveActivity */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DI0000000000000000000001 /* Build configuration list for PBXNativeTarget "GetUpLiveActivity" */;
+			buildPhases = (
+				DF0000000000000000000001 /* Sources */,
+				DF0000000000000000000002 /* Frameworks */,
+				DF0000000000000000000003 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = GetUpLiveActivity;
+			productName = GetUpLiveActivity;
+			productReference = DC0000000000000000000001 /* GetUpLiveActivity.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -849,6 +893,9 @@
 						CreatedOnToolsVersion = 26.6;
 						TestTargetID = D00000000000000000000001;
 					};
+					DE0000000000000000000001 = {
+						CreatedOnToolsVersion = 26.6;
+					};
 				};
 			};
 			buildConfigurationList = F00000000000000000000000 /* Build configuration list for PBXProject "GetUp" */;
@@ -871,6 +918,7 @@
 				D00000000000000000000004 /* GetUpShieldAction */,
 				D00000000000000000000005 /* GetUpTests */,
 				D00000000000000000000006 /* GetUpUITests */,
+				DE0000000000000000000001 /* GetUpLiveActivity */,
 			);
 		};
 /* End PBXProject section */
@@ -921,6 +969,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C30000000000000000000006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DF0000000000000000000003 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -1084,6 +1139,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DF0000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -1106,6 +1168,11 @@
 			isa = PBXTargetDependency;
 			target = D00000000000000000000001 /* GetUp */;
 			targetProxy = AB0000000000000000000004 /* PBXContainerItemProxy */;
+		};
+		DG0000000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DE0000000000000000000001 /* GetUpLiveActivity */;
+			targetProxy = DB0000000000000000000001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -1342,6 +1409,42 @@
 			};
 			name = Release;
 		};
+		DH0000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = B10000000000000000000002 /* Debug.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 53H2JY443C;
+				GENERATE_INFOPLIST_FILE = NO;
+				GETUP_BUNDLE_IDENTIFIER_SUFFIX = .LiveActivity;
+				INFOPLIST_FILE = GetUpLiveActivity/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dxyn02.GetUp.LiveActivity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		DH0000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = B10000000000000000000003 /* Release.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 53H2JY443C;
+				GENERATE_INFOPLIST_FILE = NO;
+				GETUP_BUNDLE_IDENTIFIER_SUFFIX = .LiveActivity;
+				INFOPLIST_FILE = GetUpLiveActivity/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dxyn02.GetUp.LiveActivity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1404,6 +1507,15 @@
 			buildConfigurations = (
 				E00000000000000000000060 /* Debug */,
 				E00000000000000000000061 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		DI0000000000000000000001 /* Build configuration list for PBXNativeTarget "GetUpLiveActivity" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DH0000000000000000000001 /* Debug */,
+				DH0000000000000000000002 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
