@@ -26,14 +26,16 @@
 
 ## 처리 순서
 
-1. 최신 CoinAccount, MonthlyAllowance와 occurrence command를 fetch한다.
-2. 무료분이 있으면 무료 1회를, 없으면 구매 코인 1개를 atomic reservation한다.
+1. 최신 CoinAccount, 현재 서울 기준 MonthlyAllowance와 occurrence command를 fetch한다. 현재 월
+   allowance가 없고 장부가 `current`이면 quota 2 생성을 같은 atomic command에 포함한다.
+2. 생성·조회한 무료분이 있으면 무료 1회를, 없으면 구매 코인 1개를 atomic reservation한다.
 3. App Group에 ReleaseException을 atomic write한다.
 4. 모든 규칙을 다시 평가해 예외 occurrence를 제외한 token 합집합을 Managed Settings에 적용하고
    read-back으로 확인한다.
-5. Live Activity가 foreground 조정 가능한 상태면 대표 교체 또는 종료를 수행한다.
-6. CloudKit command를 committed로 전환하고 reservation을 used로 확정한다.
-7. confirmed balance mirror와 사용자 내역을 갱신한다.
+5. CloudKit command를 committed로 전환하고 reservation을 used로 확정한다.
+6. confirmed balance mirror와 사용자 내역을 갱신한다.
+7. Live Activity가 foreground 조정 가능한 상태면 대표 교체 또는 종료를 수행한다. ActivityKit 실패는
+   기록하되 이미 확정한 해제와 장부 commit을 취소하지 않는다.
 
 ## 실패·재조정
 
@@ -72,3 +74,5 @@
 - 재실행·재부팅 후 exception 유지와 다음 occurrence 정상 제한
 - 제한·Live Activity·장부 내역의 최종 일치
 - 장부 비가용·삭제 확정·epoch 불일치에서 무변경 실패
+- Shield의 새달 첫 요청에서 allowance 생성과 무료 1회 reservation이 하나의 명령으로 처리됨
+- 앱 내 해제 뒤 Live Activity 대표 교체·종료와 ActivityKit 실패의 비치명적 격리

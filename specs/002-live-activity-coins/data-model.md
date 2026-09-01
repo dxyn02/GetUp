@@ -205,7 +205,7 @@ App Group에 저장하는 읽기 전용 로컬 mirror다. Shield Configuration�
 | `purchasedAvailable` | 0 이상 정수 | CloudKit confirmed 값이다. |
 | `currentMonthID` | 문자열 | 서울 기준 현재 월이다. |
 | `freeAvailable` | 0...2 | 현재 월의 confirmed 값이다. |
-| `syncState` | `current`, `syncing`, `stale`, `unavailable`, `deletionConfirmed`, `resetRequired` | `current`일 때만 구매·Shield 사용 버튼을 제공한다. |
+| `syncState` | `current`, `syncing`, `stale`, `unavailable`, `deletionConfirmed`, `resetRequired` | `current`일 때만 구매 또는 Shield 차감을 허용한다. Shield 버튼은 비가용 상태에서 복구 route로 사용할 수 있다. |
 | `syncedAt` | Date | stale 판정 근거다. |
 | `ledgerEpochID` | UUID? | 현재 CloudKit LedgerEpoch와 일치해야 한다. |
 | `hadConfirmedLedger` | Bool | 이전 동기화 후 zone 부재를 삭제로 판단하는 로컬 근거다. |
@@ -213,12 +213,28 @@ App Group에 저장하는 읽기 전용 로컬 mirror다. Shield Configuration�
 로컬 mirror는 표시·진입 가능성 판단용이며 실제 사용 권한은 CloudKit의 최신 비교 후 교환 결과가
 결정한다.
 
+### PendingAppRoute
+
+Shield Action이 메인 앱을 열기 전에 App Group에 기록하는 일회성 진입 목적이다.
+
+| 필드 | 형식 | 규칙 |
+|------|------|------|
+| `routeID` | UUID | 같은 Shield action의 중복 처리를 막는다. |
+| `destination` | `coinStore` / `iCloudRecovery` / `ledgerReset` / `reconciliation` | 최신 실패 원인으로 결정한다. |
+| `createdAt` | Date | 앱이 소비한 뒤 삭제하며 오래된 route는 무시한다. |
+| `occurrenceID` | 문자열? | 사용자에게 돌아갈 활성 제한 맥락이 있을 때만 기록한다. |
+
+잔액 부족이면서 장부가 `current`일 때만 `coinStore`를 사용한다. iCloud·장부 불가, 삭제 확정,
+재조정 상태를 구매 화면으로 보내지 않는다. iOS 26.0~26.4 fallback에서도 route를 남겨 사용자가 앱을
+직접 열면 같은 목적지로 이동하게 한다.
+
 ## 관계
 
 ```text
 RestrictionRuleSnapshot 1 ── * RestrictionOccurrence
 RestrictionOccurrence 1 ── 0..1 ReleaseException
 ReleaseCommand 1 ── 0..1 ReleaseException
+ReleaseCommand 1 ── 0..1 PendingAppRoute
 ReleaseCommand 1 ── * CoinLedgerEvent
 PurchaseGrant 1 ── 1..* CoinLedgerEvent
 CoinAccount 1 ── * purchased CoinLedgerEvent
@@ -252,6 +268,7 @@ ActiveRestrictionSnapshot 1 ── 0..1 RestrictionLiveActivityAttributes.Conten
 | LedgerEpoch·CoinAccount·MonthlyAllowance·이벤트·명령 | 앱 또는 Shield Action의 coin service | 같은 iCloud 계정의 앱·Shield Action | CloudKit private custom zone |
 | ReleaseException | 성공한 release coordinator | 앱·Device Activity·Shield 확장 | App Group atomic JSON |
 | CoinBalanceSnapshot | CKSyncEngine mirror writer | 앱·Shield 확장 | App Group atomic JSON |
+| PendingAppRoute | Shield Action | 메인 앱 | App Group atomic JSON |
 | StoreKit 거래 | App Store | 앱 StoreKit adapter | StoreKit |
 
 ## 마이그레이션

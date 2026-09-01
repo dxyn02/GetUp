@@ -4,7 +4,7 @@
 
 **입력**: `/specs/002-live-activity-coins/spec.md`의 승인된 기능 명세
 
-**상태**: Phase 0 조사와 Phase 1 설계 완료; `$speckit-tasks` 준비됨
+**상태**: Phase 0·Phase 1 설계와 task 생성·분석 보완 완료
 
 ## 요약
 
@@ -35,7 +35,8 @@ CloudKit private database의 `CoinLedgerZone`; CKSyncEngine 로컬 mirror; Store
 StoreKit Configuration과 StoreKit Test, CloudKit adapter fake·sandbox, ActivityKit preview·Simulator,
 실기기 Shield·Live Activity·위치·다기기 iCloud 인수 테스트
 
-**대상 플랫폼**: iPhone, iOS 26 이상; 실제 Screen Time, Live Activity, StoreKit sandbox,
+**대상 플랫폼**: iPhone, iOS 26 이상; Shield에서 앱을 직접 여는 공식 응답은 iOS 26.5 이상;
+실제 Screen Time, Live Activity, StoreKit sandbox,
 iCloud 다기기 및 background 위치 이벤트 검증에는 물리 기기 필요
 
 **프로젝트 유형**: SwiftUI iOS 앱 + 기존 Device Activity Monitor·Shield Configuration·Shield
@@ -62,7 +63,7 @@ Activity 1개, 월간 무료 해제권 2회, 코인 1개·3개·5개의 consumab
 
 | 원칙 | 사전 점검 | 설계 근거 및 필수 조치 |
 |------|-----------|------------------------|
-| I. 명세 기반 구현 | PASS | BLK-013·BLK-014와 DEC-071~DEC-075로 대표 규칙, 사용 표면, iCloud 복구·삭제, 월 정책, 상품 catalog와 서버 없는 경계를 명세에 반영했다. 모든 계약은 FR·SC를 역추적한다. |
+| I. 명세 기반 구현 | PASS | BLK-013·BLK-014와 DEC-071~DEC-076으로 대표 규칙, 사용 표면, iCloud 복구·삭제, 월 정책, 상품 catalog, Shield 해제·앱 진입과 서버 없는 경계를 명세에 반영했다. 모든 계약은 FR·SC를 역추적한다. |
 | II. 핵심 비즈니스 로직 테스트 | PASS | 대표 규칙 선택, 거리 상태, 무료 우선 차감, 월 경계, 구매·사용 멱등성, CloudKit 충돌, 해제 보상 전이를 순수 로직과 adapter fake로 검증한다. |
 | III. 구조 변경 문서화 | PASS | 새 Widget Extension, ActivityKit coordinator, StoreKit adapter, CloudKit zone·장부, App Group 해제 예외의 책임과 흐름을 `research.md`, `data-model.md`, `contracts/`에 기록한다. |
 | IV. 완료 전 테스트 게이트 | PASS | 자동 테스트, StoreKit sandbox, CloudKit 다기기, Simulator preview, 실기기 Shield·Live Activity 인수 결과가 모두 기록되기 전에는 기능 완료로 표시하지 않는다. |
@@ -165,6 +166,7 @@ mirror·해제 예외를 보관한다. 별도 서버와 외부 패키지는 도�
 - foreground 제한 조정 coordinator가 가장 먼저 활성화된 규칙을 대표로 선택하고 활동 1개를
   request/update/end한다.
 - 종료 예정 시각은 동적 카운트다운으로 렌더링하고 거리 stale은 `확인 불가`로 표시한다.
+- 남은 거리는 기존 위치 판정이 `.inside`인 5분 이내 근거만 사용해 10m 단위·미터로 표시한다.
 - 앱 복귀 때 `Activity.activities`와 공유 제한 snapshot을 멱등 조정한다. 사용자가 활동을 제거해
   activity가 없더라도 활성 제한이 남아 있으면 같은 occurrence에서 다시 request한다.
 
@@ -196,11 +198,20 @@ mirror·해제 예외를 보관한다. 별도 서버와 외부 패키지는 도�
 ### 5. 규칙 1회 해제와 Shield
 
 - Shield와 앱의 해제 요청을 동일한 command service에 전달한다.
+- Shield에는 기존 제한 정보·닫기 행동과 `해제권 1회 사용` 버튼을 제공한다. 이 버튼은 최신 장부에서
+  현재 월 무료분을 확인·생성한 뒤 무료분을 우선 사용하고, 없을 때 구매 코인 1개를 사용하는 데 대한
+  명시적 확정이다.
 - CloudKit reservation이 성공한 뒤 App Group에 규칙 구간 예외를 기록하고 현재 활성 규칙 합집합을
   다시 계산한다. 실패 시 보상 이벤트 또는 pending reconciliation으로 잔액 유실을 막는다.
-- Shield는 가장 먼저 활성화된 대표 규칙, 사용할 무료분 또는 구매 코인, 구간 종료 시각과 겹친
-  규칙으로 남는 제한을 버튼 전에 표시한다. 버튼 label 자체를 명시적 확정으로 사용한다.
+- 제한 read-back 성공 뒤 앱이 foreground이면 Live Activity 대표를 교체하거나 종료한다. ActivityKit
+  실패는 해제·장부 commit을 취소하지 않는 비치명적 실패로 기록한다.
+- Shield는 가장 먼저 활성화된 대표 규칙, 무료 우선·없으면 구매 코인 1개라는 비용 순서, 구간 종료
+  시각과 겹친 규칙으로 남는 제한을 버튼 전에 표시한다. 실제 funding source는 tap 뒤 최신 장부에서
+  결정하고 버튼 label 자체를 명시적 확정으로 사용한다.
 - 해제 예외는 다음 반복 구간에 적용하지 않으며 종료 후 정리한다.
+- 최신 장부가 정상이고 잔액만 부족하면 App Group에 구매 화면 route를 기록한 뒤 iOS 26.5 이상에서
+  `openParentalControlsApp`으로 앱을 연다. 장부 불가 상태는 복구 route로 분리한다. iOS 26.0~26.4는
+  안내 후 차단 앱을 닫는 공식 fallback을 사용하고 비공개 URL 우회는 사용하지 않는다.
 
 ### 6. 검증과 출시 준비
 
@@ -208,6 +219,8 @@ mirror·해제 예외를 보관한다. 별도 서버와 외부 패키지는 도�
   preview를 검증한다.
 - StoreKit Configuration과 sandbox 구매, CloudKit development 환경·다기기 충돌, iCloud sign-out,
   장부 삭제·명시적 0 초기화·다음 달 무료 지급 재개, Shield extension 제한 시간을 검증한다.
+- iOS 26.5의 `openParentalControlsApp` 구매·복구 route와 iOS 26.0~26.4 fallback을 각각 실기기에서
+  검증한다.
 - 실제 유료 판매 전 App Store Connect 상품·세금·계약·가격, iCloud container production schema,
   privacy disclosure와 서버 없는 한계 문구를 검토한다.
 

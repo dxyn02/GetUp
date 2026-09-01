@@ -4,10 +4,11 @@
 001-location-app-restriction, 002-live-activity-coins
 
 ## 현재 단계
-001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 1 재동기화 완료·task 생성 준비 상태
+001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 분석 권장 수정 반영·문서 병합 준비 상태
 
 ## 진행 중
-002-live-activity-coins의 명확화 내용을 Phase 0 조사와 Phase 1 설계 산출물에 재동기화함.
+002-live-activity-coins의 교차 산출물 분석 권장안 중 1·2·3·4·6을 채택하고, 5는 Shield 단일
+해제 버튼 흐름으로 대체해 명세·계획·계약·task에 반영함.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
@@ -15,8 +16,9 @@ T129 — 영어 위치 권한 목업의 `정확한 위치: 켬`과 Shield의 `�
 각각 `Precise Location: On`, `Home`·`Work`로 표시되도록 현지화 경계를 보정함
 
 ## 다음 작업
-`002-live-activity-coins`는 `$speckit-tasks`로 구현 작업을 생성. 001은 T083·T085 실기기 재검증과 T086
-구현·하이파이 편차 대조가 남아 있음
+`002-live-activity-coins` 문서를 `codex/live-activity-coins-spec`에서 병합한 뒤 최신 `main`에서
+구현 브랜치를 만들고 `$speckit-analyze` 재검증 후 `$speckit-implement`를 진행한다. 001은
+T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
 BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록과
@@ -24,13 +26,33 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 실기기 설치·실행은 사용자 확인됐으며, extension별 서명 entitlement와 archive 증적이 추가로 필요함.
 
 ## 계획 갱신 필요
-없음. `002-live-activity-coins`의 Phase 0·Phase 1 산출물에 FR-037~FR-040과 DEC-075를
-재동기화했다. 001의 Apple
+없음. `002-live-activity-coins`의 Phase 0·Phase 1 산출물에 FR-037~FR-041과 DEC-075·DEC-076을
+재동기화하고 최신 `origin/main` 기반 `codex/live-activity-coins-spec` 브랜치로 분리했다. 001의 Apple
 `intervalDidStart`·`intervalDidEnd` 전달은 물리적 시작·종료 정각이 아니라 해당 구간에서
 기기를 사용할 때일 수 있다. callback 전달 이후 시작 적용은 T118, 마지막 활성 규칙 해제는 T114에서
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-01 이미 병합된 `codex/app-store-assets`의 PR #23을 확인하고 최신 `origin/main`에서
+`codex/live-activity-coins-spec` 브랜치를 생성해 002 문서 변경만 분리했다. 문서 검증 후 커밋·PR
+병합을 진행한다.
+
+2026-09-01 `002-live-activity-coins` 분석 권장 수정 1·2·3·4·6과 사용자 확정 Shield 단일 버튼
+흐름을 산출물에 반영했다. Live Activity payload를 4KB 미만으로 정정하고, foreground 시작 서술,
+`.inside`·5분 유효기간·항상 미터·10m half-up 거리 정책, 코인 해제 뒤 Live Activity 조정의 비치명
+경계를 명시했다. Shield는 기존 내용과 `해제권 1회 사용`·`앱 닫기`로 구성하며, tap 뒤 최신 장부에서
+무료 우선·구매 fallback을 결정한다. `current` 잔액 부족은 coin store, 장부 불확실은 복구 route로
+분리했다. Apple 공식 문서와 설치된 iOS 26.5 SDK interface에서
+`ShieldActionResponse.openParentalControlsApp`이 iOS 26.5부터 가능함을 확인해 iOS 26.0~26.4에는
+안내·`.close` 호환 경로를 설계했다. FR 41개·SC 12개·연속 task 91개와 task 형식,
+`git diff --check`를 검증했다. 문서 변경이므로 코드 테스트는 실행하지 않았다.
+
+2026-09-01 `$speckit-tasks`로 `002-live-activity-coins`의 구현 작업 91개를 생성했다. 공통 설정·
+기반 21개, US1 14개, US2 18개, US3 17개, US4 12개, 마감 9개로 구성하고 각 스토리에 선행 실패
+테스트, 독립 검증 기준, 의존성 그래프와 병렬 실행 예시를 포함했다. 모든 task의 체크박스·연속 ID·
+스토리 label·구체 파일 경로 형식과 `git diff --check`를 검증했다. 문서 작업이므로 코드 테스트는
+실행하지 않았다. 다음 권장 단계는 `$speckit-analyze`다.
+
 2026-09-01 `$speckit-plan`을 재실행해 FR-037~FR-040과 DEC-075를 `research.md`, `plan.md`,
 `data-model.md`, Live Activity·CloudKit 장부·StoreKit 구매·규칙 해제·Shield 코인 UI의 다섯
 contract, `quickstart.md`에 반영했다. 최신 장부에서만 구매 시작, 1개·3개·5개 고정 상품,

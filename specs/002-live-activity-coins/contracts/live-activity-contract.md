@@ -28,7 +28,7 @@
 
 | 상태 | 필수 표시 |
 |------|-----------|
-| 거리 known | 규칙 표시명, `max(0, radius - centerDistance)`의 반올림 거리, 종료까지 카운트다운 |
+| 거리 known | 규칙 표시명, `max(0, radius - centerDistance)`를 가장 가까운 10m로 반올림한 미터 거리, 종료까지 카운트다운 |
 | 거리 unavailable/stale | 규칙 표시명, `거리 확인 불가`, 종료까지 카운트다운 |
 | 다른 규칙 존재 | 핵심 정보와 함께 다른 제한이 있음을 짧게 표시 |
 
@@ -42,7 +42,8 @@
 ## 갱신과 stale
 
 - 신뢰 가능한 위치 근거가 바뀌고 표시 거리의 반올림 결과 또는 availability가 달라질 때 갱신한다.
-- stale 기준을 넘은 거리는 이전 숫자를 유지하지 않고 `unavailable`로 갱신한다.
+- 기존 `LocationEvidenceEvaluator`가 `.inside`로 확정한 근거만 known으로 사용한다.
+- 위치 확인 시점부터 5분을 초과한 거리는 이전 숫자를 유지하지 않고 `unavailable`로 갱신한다.
 - 시간 종료는 위치 availability와 무관하게 활동 종료 대상이다.
 - ActivityKit update 오류는 개인정보 없는 코드로 기록하고 다음 foreground 조정에서 재시도한다.
 
@@ -57,7 +58,7 @@
 ## 필수 테스트
 
 - 단일·다중 occurrence 대표 선택과 대표 교체
-- known 거리 공식, 0 clamp, 단위 반올림, unavailable·stale
+- known 거리 공식, 0 clamp, 5m half-up을 포함한 10m 반올림, 5분 stale 경계, unavailable
 - foreground start, background 제한 시작 시 미시작, 다음 foreground에서 시작
 - 사용자가 활동을 제거한 뒤 같은 occurrence가 활성인 상태로 foreground 진입 시 재생성
 - request/update/end 실패가 Shield에 영향을 주지 않음
