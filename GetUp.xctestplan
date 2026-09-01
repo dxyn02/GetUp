@@ -27,7 +27,6 @@
       }
     },
     {
-      "parallelizable" : false,
       "target" : {
         "containerPath" : "container:GetUp.xcodeproj",
         "identifier" : "D00000000000000000000006",

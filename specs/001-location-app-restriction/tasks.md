@@ -259,6 +259,7 @@ interval 시작, 대상·비대상 앱 shield를 검증한다.
 - [x] T126 [P] `Localizable.xcstrings`의 모든 사용자 노출 문자열에 자연스러운 영어 번역을 추가하고, 동적 `String`·프리셋 장소 이름을 명시적 localization lookup에 연결하며 번역 상태·format placeholder·전체 target compile과 영어 Simulator 주요 화면을 검증한다
 - [x] T127 [US1] 저장된 `집`·`회사`·직접 입력 장소를 선택한 뒤 지도 또는 현재 위치로 핀을 이동해도 선택을 유지하고, 적용·규칙 저장 시 기존 장소 ID를 보존한 좌표 갱신이 모든 참조 규칙과 runtime 복구에 반영되도록 모델·저장소·앱·UI 회귀와 명세·운영 문서를 갱신한다
 - [x] T128 [P] App Store Connect 제출용 iPhone 14 Plus 6.5인치 한국어·영어 스크린샷과 Promotional Text·Description·Keywords·Copyright 초안을 작성하고, 홈 설명 두 줄 압축과 영어 단수 app/apps 문구를 보정해 규격·빌드·회귀를 검증한다
+- [x] T129 [P] [US2] [US4] 영어 위치 권한 안내 목업의 이미지 내 한글 `정확한 위치: 켬`을 현지화 텍스트 오버레이로 대체하고, Shield 상세 문구의 영속 프리셋 `집`·`회사`를 표시 시 `Home`·`Work`로 변환하며 영어 UI·Shield 회귀와 extension 번역 산출물을 검증한다
 
 **Checkpoint**: 자동 테스트, 필수 실기기 검증, entitlement 승인 및 SC-001·SC-007 사용성 평가가
 모두 기록된 경우에만 feature 완료로 표시한다.

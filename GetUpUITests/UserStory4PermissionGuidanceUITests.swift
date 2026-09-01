@@ -159,6 +159,21 @@ final class UserStory4PermissionGuidanceUITests: XCTestCase {
     }
 
     @MainActor
+    func testEnglishLocationPromptLocalizesPreciseLocationStatus() {
+        let app = launchApp(
+            scenario: "permission-location-undetermined",
+            language: "en",
+            locale: "en_US"
+        )
+
+        let status = app.staticTexts[
+            "permissionGuide.mockup.preciseLocationStatus"
+        ]
+        XCTAssertTrue(status.waitForExistence(timeout: 2))
+        XCTAssertEqual(status.label, "Precise Location: On")
+    }
+
+    @MainActor
     func testWhenInUseLocationShowsExplicitAlwaysUpgradeTap() {
         let app = launchApp(scenario: "permission-location-when-in-use")
 
@@ -308,7 +323,9 @@ final class UserStory4PermissionGuidanceUITests: XCTestCase {
         scenario: String,
         locationRetryResult: String? = nil,
         storeID: String = #function,
-        resetsStore: Bool = true
+        resetsStore: Bool = true,
+        language: String? = nil,
+        locale: String? = nil
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [
@@ -323,6 +340,12 @@ final class UserStory4PermissionGuidanceUITests: XCTestCase {
             app.launchArguments += [
                 "--ui-test-location-retry-result", locationRetryResult,
             ]
+        }
+        if let language {
+            app.launchArguments += ["-AppleLanguages", "(\(language))"]
+        }
+        if let locale {
+            app.launchArguments += ["-AppleLocale", locale]
         }
         app.launch()
         return app

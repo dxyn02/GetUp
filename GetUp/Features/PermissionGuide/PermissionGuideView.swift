@@ -220,11 +220,25 @@ struct PermissionGuideView: View {
                     title: AppLocalizedCopy.string("“나서”가 사용자의\n위치를 사용하도록 허용할까요?")
                 )
 
-                Image("LocationWhenInUsePreview")
-                    .resizable()
-                    .interpolation(.high)
-                    .frame(width: 273, height: 167)
-                    .clipShape(.rect(cornerRadius: 17))
+                ZStack(alignment: .topLeading) {
+                    Image("LocationWhenInUsePreview")
+                        .resizable()
+                        .interpolation(.high)
+
+                    Text(AppLocalizedCopy.string("정확한 위치: 켬"))
+                        .font(.system(size: 16, weight: .regular))
+                        .foregroundStyle(Color(red: 0, green: 0.48, blue: 1))
+                        .padding(.horizontal, 16)
+                        .frame(height: 26)
+                        .background(.white, in: .capsule)
+                        .padding(.leading, 9)
+                        .padding(.top, 9)
+                        .accessibilityIdentifier(
+                            "permissionGuide.mockup.preciseLocationStatus"
+                        )
+                }
+                .frame(width: 273, height: 167)
+                .clipShape(.rect(cornerRadius: 17))
 
                 VStack(spacing: 1) {
                     permissionPreviewAction(

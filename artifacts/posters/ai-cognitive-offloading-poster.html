@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1440, initial-scale=1">
+  <title>나서 — AI와 함께 만든 방식</title>
+  <style>
+    @page { size: 1440px 2560px; margin: 0; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 1440px; height: 2560px; overflow: hidden; }
+    body {
+      background: #f2efe8;
+      color: #101113;
+      font-family: "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .poster {
+      position: relative;
+      width: 1440px;
+      height: 2560px;
+      padding: 60px 76px 48px;
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, rgba(16,17,19,.045) 1px, transparent 1px) 0 0 / 48px 48px,
+        linear-gradient(rgba(16,17,19,.045) 1px, transparent 1px) 0 0 / 48px 48px,
+        #f2efe8;
+    }
+    .poster::after {
+      content: "";
+      position: absolute;
+      left: 22px; right: 22px; top: 22px; bottom: 22px;
+      border: 4px solid #101113;
+      pointer-events: none;
+      z-index: 20;
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 4px solid #101113;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: .1em;
+    }
+    .brand { display: flex; align-items: center; gap: 15px; }
+    .brand-mark {
+      width: 28px; height: 28px;
+      border: 6px solid #101113;
+      border-right-color: #f4d600;
+      transform: rotate(45deg);
+    }
+    .issue { color: #55575b; }
+    header { position: relative; padding: 38px 0 30px; }
+    .eyebrow {
+      display: inline-block;
+      padding: 10px 15px 8px;
+      background: #101113;
+      color: #f4d600;
+      font-size: 21px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      transform: rotate(-1deg);
+    }
+    h1 {
+      margin: 22px 0 18px;
+      max-width: 1160px;
+      font-size: 86px;
+      line-height: 1.04;
+      letter-spacing: -.065em;
+      font-weight: 950;
+    }
+    h1 .yellow { position: relative; white-space: nowrap; }
+    h1 .yellow::before {
+      content: "";
+      position: absolute;
+      left: -8px; right: -8px; bottom: 4px;
+      height: 27px;
+      background: #f4d600;
+      z-index: -1;
+      transform: rotate(-1.2deg);
+    }
+    .subhead {
+      max-width: 930px;
+      margin: 0;
+      font-size: 31px;
+      line-height: 1.48;
+      letter-spacing: -.03em;
+      color: #4b4c50;
+      font-weight: 650;
+    }
+    .loop {
+      display: grid;
+      grid-template-columns: 1fr 48px 1fr 48px 1fr 48px 1fr;
+      align-items: center;
+      gap: 8px;
+      margin-top: 25px;
+      padding: 16px 22px;
+      border: 3px solid #101113;
+      background: rgba(255,255,255,.58);
+      box-shadow: 10px 10px 0 #101113;
+    }
+    .loop-step { text-align: center; }
+    .loop-step b { display: block; font-size: 23px; }
+    .loop-step span { display: block; margin-top: 4px; color: #686a70; font-size: 18px; font-weight: 700; }
+    .loop-arrow { font-size: 35px; font-weight: 900; text-align: center; color: #c4aa00; }
+    .main {
+      display: grid;
+      grid-template-columns: 1fr 364px;
+      gap: 36px;
+      align-items: stretch;
+    }
+    .sections { display: grid; gap: 20px; }
+    .section {
+      position: relative;
+      min-height: 356px;
+      padding: 31px 36px 28px;
+      border: 4px solid #101113;
+      overflow: hidden;
+    }
+    .section.offload { background: #dcece7; }
+    .section.amplify { background: #f4d600; }
+    .section.bypass { background: #f2b4a7; }
+    .section-index {
+      position: absolute;
+      top: 24px; right: 26px;
+      font-family: "Arial Black", sans-serif;
+      font-size: 63px;
+      line-height: 1;
+      opacity: .16;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 950;
+      letter-spacing: .12em;
+    }
+    .tag::before { content: ""; width: 28px; height: 7px; background: #101113; }
+    .section h2 {
+      margin: 13px 0 8px;
+      font-size: 44px;
+      line-height: 1.1;
+      letter-spacing: -.05em;
+    }
+    .section .claim {
+      margin: 0 0 17px;
+      font-size: 22px;
+      line-height: 1.42;
+      font-weight: 680;
+      color: #3b3d40;
+    }
+    .metric-row { display: flex; gap: 13px; }
+    .metric {
+      flex: 1;
+      padding: 14px 15px 12px;
+      border-top: 3px solid #101113;
+      background: rgba(255,255,255,.35);
+    }
+    .metric strong {
+      display: block;
+      font-family: "Arial Black", "Apple SD Gothic Neo", sans-serif;
+      font-size: 40px;
+      line-height: 1;
+      letter-spacing: -.04em;
+    }
+    .metric span { display: block; margin-top: 7px; font-size: 17px; line-height: 1.25; font-weight: 800; }
+    .evidence {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 13px;
+    }
+    .evidence span {
+      padding: 7px 11px 6px;
+      border: 2px solid #101113;
+      border-radius: 999px;
+      background: #f8f6f0;
+      font: 800 15px/1 "SFMono-Regular", Menlo, monospace;
+    }
+    .bypass-line {
+      display: grid;
+      grid-template-columns: 1fr 54px 1fr;
+      gap: 12px;
+      align-items: center;
+      margin-top: 15px;
+    }
+    .bypass-box {
+      min-height: 80px;
+      padding: 14px 15px;
+      border: 3px solid #101113;
+      background: rgba(255,255,255,.48);
+      font-size: 18px;
+      line-height: 1.32;
+      font-weight: 850;
+    }
+    .bypass-arrow { text-align: center; font-size: 38px; font-weight: 950; }
+    .rail {
+      display: flex;
+      flex-direction: column;
+      border: 4px solid #101113;
+      background: #101113;
+      box-shadow: 12px 12px 0 rgba(16,17,19,.18);
+    }
+    .phone-label {
+      padding: 20px 22px 17px;
+      color: #f4d600;
+      font-size: 19px;
+      font-weight: 900;
+      letter-spacing: .08em;
+    }
+    .phone-window {
+      margin: 0 18px;
+      height: 650px;
+      overflow: hidden;
+      border: 3px solid #f4d600;
+      border-radius: 45px;
+      background: #08090b;
+    }
+    .phone-window img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      object-position: top;
+      display: block;
+    }
+    .artifact-caption {
+      padding: 17px 22px 22px;
+      color: #f5f5f7;
+      font-size: 20px;
+      line-height: 1.42;
+      font-weight: 700;
+    }
+    .artifact-caption strong { color: #f4d600; }
+    .rail-rule { height: 3px; margin: 0 22px; background: #35373b; }
+    .side-note { padding: 23px 22px 0; color: #f5f5f7; }
+    .side-note .side-num {
+      display: block;
+      font-family: "Arial Black", sans-serif;
+      font-size: 68px;
+      line-height: 1;
+      color: #f4d600;
+    }
+    .side-note b { display: block; margin-top: 8px; font-size: 20px; }
+    .side-note p { margin: 7px 0 0; font-size: 16px; line-height: 1.45; color: #b9bbc0; font-weight: 650; }
+    .reset {
+      margin-top: 22px;
+      padding: 26px 32px 24px;
+      border: 4px solid #101113;
+      background: #f8f6f0;
+      box-shadow: 14px 14px 0 #101113;
+    }
+    .reset-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 30px;
+    }
+    .reset-kicker { font: 900 17px/1 "SFMono-Regular", Menlo, monospace; letter-spacing: .08em; }
+    .reset h2 { margin: 8px 0 0; font-size: 45px; letter-spacing: -.05em; }
+    .reset-summary { max-width: 510px; text-align: right; font-size: 21px; line-height: 1.4; font-weight: 750; color: #55575b; }
+    .questions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 18px; }
+    .question {
+      min-height: 100px;
+      padding: 14px 16px 12px;
+      border: 3px solid #101113;
+      background: #f2efe8;
+    }
+    .question span {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px;
+      background: #101113; color: #f4d600;
+      border-radius: 50%;
+      font: 900 16px/1 Arial, sans-serif;
+    }
+    .question b { display: block; margin-top: 12px; font-size: 21px; line-height: 1.25; }
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 4px solid #101113;
+    }
+    .footer-quote { max-width: 965px; font-size: 25px; line-height: 1.3; font-weight: 900; letter-spacing: -.025em; }
+    .footer-quote em { font-style: normal; color: #b59c00; }
+    .footer-meta { text-align: right; font: 800 15px/1.5 "SFMono-Regular", Menlo, monospace; color: #56585d; }
+  </style>
+</head>
+<body>
+  <div class="poster">
+    <div class="topbar">
+      <div class="brand"><span class="brand-mark"></span><span>NASEO × AI / BUILD REFLECTION</span></div>
+      <div class="issue">COGNITIVE WORK · 2026</div>
+    </div>
+
+    <header>
+      <div class="eyebrow">AI-NATIVE DEVELOPMENT, HUMAN-OWNED DECISIONS</div>
+      <h1>AI에게 생각을 맡기지 않고,<br><span class="yellow">생각의 구조를 맡겼다.</span></h1>
+      <p class="subhead">시간·위치 기반 앱 제한 iOS 앱 ‘나서’를 만들며, 기억과 반복은 AI에 내려놓고 판단과 검증은 사람이 다시 쥐는 과정.</p>
+      <div class="loop" aria-label="사람과 AI의 반복 개발 흐름">
+        <div class="loop-step"><b>사람의 의도</b><span>문제·원칙·우선순위</span></div><div class="loop-arrow">→</div>
+        <div class="loop-step"><b>문서화</b><span>SPEC · PLAN · TASKS</span></div><div class="loop-arrow">→</div>
+        <div class="loop-step"><b>AI 실행</b><span>구현 · 테스트 · 기록</span></div><div class="loop-arrow">→</div>
+        <div class="loop-step"><b>사람의 검증</b><span>왜? 실제로? 다시?</span></div>
+      </div>
+    </header>
+
+    <div class="main">
+      <div class="sections">
+        <section class="section offload">
+          <div class="section-index">01</div>
+          <div class="tag">COGNITIVE OFFLOADING</div>
+          <h2>기억·정리·추적을<br>머리 밖의 시스템으로</h2>
+          <p class="claim">복잡한 요구사항을 문서와 task로 고정했다. AI는 맥락을 계속 복원했고, 나는 “무엇을 만들 것인가”에 더 오래 머물 수 있었다.</p>
+          <div class="metric-row">
+            <div class="metric"><strong>128</strong><span>구현 task로 분해</span></div>
+            <div class="metric"><strong>70</strong><span>결정과 근거 기록</span></div>
+            <div class="metric"><strong>12</strong><span>blocker를 기록·추적</span></div>
+          </div>
+          <div class="evidence"><span>spec.md</span><span>plan.md</span><span>tasks.md</span><span>STATUS.md</span><span>DECISIONS.md</span></div>
+        </section>
+
+        <section class="section amplify">
+          <div class="section-index">02</div>
+          <div class="tag">AMPLIFICATION</div>
+          <h2>한 번의 판단을<br>수백 번의 검증으로</h2>
+          <p class="claim">AI가 구현 속도만 높인 것이 아니다. 회귀 테스트, edge case, 다중 규칙 합집합, 권한·백그라운드 실패까지 내 판단의 도달 범위를 넓혔다.</p>
+          <div class="metric-row">
+            <div class="metric"><strong>231</strong><span>마지막 전체 단위·통합 테스트</span></div>
+            <div class="metric"><strong>265×</strong><span>동적 실행 포함 통과</span></div>
+            <div class="metric"><strong>4</strong><span>앱 + Screen Time 확장 target</span></div>
+          </div>
+          <div class="evidence"><span>Swift Testing</span><span>XCTest</span><span>Simulator</span><span>실기기 callback</span></div>
+        </section>
+
+        <section class="section bypass">
+          <div class="section-index">03</div>
+          <div class="tag">BYPASS — THE COST</div>
+          <h2>앱은 앞으로 갔지만,<br>내 이해는 멈춘 순간</h2>
+          <p class="claim">“다음 작업 진행해줘”가 반복될수록 작업은 완료됐지만 설계의 이유와 코드의 관계는 내 것이 아니었다. 빠른 승인도 하나의 인지적 부채가 됐다.</p>
+          <div class="bypass-line">
+            <div class="bypass-box">AI가 제시한<br>다음 task를 바로 승인</div>
+            <div class="bypass-arrow">→</div>
+            <div class="bypass-box">결과는 남고<br>판단 근거는 희미해짐</div>
+          </div>
+          <div class="evidence"><span>자동 수락</span><span>맥락 압축</span><span>실기기 검증 지연</span><span>“왜?”의 생략</span></div>
+        </section>
+      </div>
+
+      <aside class="rail">
+        <div class="phone-label">THE ARTIFACT / 실제 앱</div>
+        <div class="phone-window">
+          <img src="/Users/andy/Documents/Apple Developer Academy/Challenge 5/GetUp/AppStore/screenshots/ko/01-home-rules.png" alt="나서 앱의 규칙 홈 화면">
+        </div>
+        <div class="artifact-caption"><strong>결과물은 선명했다.</strong><br>그래서 과정 속 내 판단도 선명한지 따로 확인해야 했다.</div>
+        <div class="rail-rule"></div>
+        <div class="side-note"><span class="side-num">122</span><b>완료 표시된 task</b><p>완료는 학습의 증거가 아니다. 직접 설명하고 검증할 수 있을 때 비로소 내 것이 된다.</p></div>
+        <div class="side-note"><span class="side-num">30s</span><b>상태 반영 목표</b><p>플랫폼이 확인한 조건 변화부터 측정한다는 경계도 문서로 명시했다.</p></div>
+        <div class="side-note"><span class="side-num">1</span><b>사람이 지켜야 할 자리</b><p>제품 행동을 바꾸는 결정의 최종 승인자.</p></div>
+      </aside>
+    </div>
+
+    <section class="reset">
+      <div class="reset-head">
+        <div><div class="reset-kicker">RESET THE LOOP / 주도권 되찾기</div><h2>승인 전에 세 번 멈춘다.</h2></div>
+        <div class="reset-summary">AI에게 답을 시키되,<br>결정은 기록하고 결과는 직접 확인한다.</div>
+      </div>
+      <div class="questions">
+        <div class="question"><span>1</span><b>왜 이 구조가 필요한가?</b></div>
+        <div class="question"><span>2</span><b>어떤 조건에서 깨지는가?</b></div>
+        <div class="question"><span>3</span><b>내가 직접 무엇으로 검증할까?</b></div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="footer-quote">좋은 Cognitive Offloading은 생각을 없애는 일이 아니라,<br><em>더 중요한 생각을 위해 자리를 비우는 일</em>이었다.</div>
+      <div class="footer-meta">ANDY<br>GETUP / NASEO<br>APPLE DEVELOPER ACADEMY</div>
+    </footer>
+  </div>
+</body>
+</html>
