@@ -7,18 +7,18 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 2 공통 기반 진행 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T007·T008의 도메인·월간 무료분·공유
-snapshot·`PendingAppRoute` RED 테스트를 작성했다. 후속 T010~T013·T015~T016·T019·T021 타입과
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T007~T009의 도메인·월간 무료분·공유
+snapshot·`PendingAppRoute`·CloudKit 장부 RED 테스트를 작성했다. 후속 T010~T019·T021 타입과
 정책이 아직 없으므로 실제 test target은 의도한 compile 실패 상태이며, 관련 구현이 통과할 때까지
-T007·T008은 완료 처리하지 않는다.
+T007~T009는 완료 처리하지 않는다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
 T006 — Live Activity extension과 StoreKit configuration을 공용 scheme·test plan에 연결하고 Phase 1 빌드를 검증함
 
 ## 다음 작업
-T009 — CloudKit record 매핑·충돌·원자 modify·결과 불명 및 월간 생성+예약의 RED 테스트를 작성한다.
-T007·T008은 관련 기반 구현 후 green 전환과 함께 완료 처리한다. 001은 T083·T085 실기기 재검증과
+T010 — `RestrictionOccurrence`와 `ActiveRestrictionSnapshot` 모델 및 결정적 occurrence ID를 구현한다.
+T007~T009는 관련 기반 구현 후 green 전환과 함께 완료 처리한다. 001은 T083·T085 실기기 재검증과
 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -34,6 +34,17 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-02 002 구현 T009의 CloudKit 장부 RED 테스트 12개를 두 파일에 작성했다. 모든
+장부 entity의 record round-trip·schema 거부·위치와 Family Controls token 비포함·결정적 record
+ID를 검증한다. Repository는 `ifServerRecordUnchanged` 단일 atomic modify, change-tag 충돌 후
+동일 ID 재시도, timeout 결과 불명 후 동일 command 재조회와 reconciliation 전환을 검증한다.
+첫 Shield 요청의 allowance·free grant·reservation·command 단일 atomic modify와 다기기 생성 충돌,
+무료분 이중 예약 방지도 포함했다. 두 source의 Swift 구문, `project.pbxproj` plist·target membership,
+`git diff --check`가 통과했고 코드 서명을 끈 generic iOS Simulator 제품 빌드도 앱과 네 extension을
+포함해 통과했다. 실제 `GetUpTests` build는 계획대로 T012~T018의 record mapper·database
+boundary·repository·월간 reservation 타입이 없어 RED가 확인됐다. 실패한 관련 테스트가 있으므로
+T009는 체크하지 않고 T017·T018 구현과 green 전환 때 완료 처리한다.
+
 2026-09-02 002 구현 T008의 RED 테스트를 두 파일에 작성했다. 활성 occurrence·confirmed balance
 mirror·해제 예외의 독립 round-trip, 기존 001 규칙·위치 파일 비파괴 migration, 새 파일 부재의 안전한
 빈 상태, 파일별 손상 JSON·지원하지 않는 schema와 atomic write 실패 시 이전 값 보존을 검증한다.
