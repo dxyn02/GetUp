@@ -7,19 +7,19 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 2 공통 기반 진행 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T010~T017 occurrence·Live Activity·코인 장부·해제 모델과
-framework·repository 계약·공용 식별자·공유 snapshot 저장소·CloudKit record codec을 구현했다. T008은 green으로 완료했고,
-T007·T009의 RED 테스트는 후속 T018~T019·T021 타입과 정책이 아직 없어
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T010~T019 occurrence·Live Activity·코인 장부·해제 모델과
+framework·repository 계약·공용 식별자·공유 snapshot 저장소·CloudKit record codec·원자 장부 repository·동기화 adapter를 구현했다.
+T008·T009는 green으로 완료했고, T007의 RED 테스트는 후속 T021 정책과 서비스가 아직 없어
 전체 test target이 의도한 compile 실패 상태이며, 관련 구현이 통과할 때까지
-T007·T009는 완료 처리하지 않는다.
+T007은 완료 처리하지 않는다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T017 — 여섯 CloudKit 장부 entity의 record codec·결정적 ID 검증과 개인정보 필드 차단을 구현함
+T019 — 계정 전환 격리, 원격 장부 복구 상태 분류와 비영속 monotonic current gate를 구현함
 
 ## 다음 작업
-T018 — CloudKit 원자 장부 repository와 월간 무료분 다기기 충돌 처리를 구현한다.
-T007·T009는 관련 기반 구현 후 green 전환과 함께 완료 처리한다. 001은 T083·T085 실기기 재검증과
+T020 — monotonic clock 경과·wall clock 변경·프로세스 재시작과 CloudKit·ActivityKit·StoreKit·release 실패를 결정적으로 주입하는 test fake와 fixture를 구현한다.
+T007은 T019·T021 기반 구현 후 green 전환과 함께 완료 처리한다. 001은 T083·T085 실기기 재검증과
 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -35,6 +35,32 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-02 002 구현 T019를 완료했다. `CoinLedgerSyncSession`은 Codable이나 wall-clock 시각을 갖지
+않는 현재 프로세스 전용 상태로 두고, 성공한 초기 fetch의 `ContinuousClock.Instant`부터 정확히
+300초까지인 경우에만 `current`를 허용한다. iCloud 가용성, confirmed mirror, 장부·계정 epoch 일치,
+완료된 projection과 pending reconciliation 부재를 함께 검사하며, 새 프로세스는 성공 fetch 전까지
+wall-clock `syncedAt`만으로 `current`를 복원할 수 없다. 로컬 빈 설치에서는 원격 projection을 우선해
+잔액을 복구하고, 확인된 장부 부재는 삭제 증거에 따라 `setupRequired` 또는 `deletionConfirmed`로
+분류한다. 일시 장애는 `unavailable`로 유지하며 삭제로 간주하지 않는다. 계정 전환은 이전 mirror·
+freshness·pending change를 즉시 폐기하고, 호출자가 이전 mirror를 넘겨도 새 계정 잔액으로 노출하지
+않는다. 모델·gate·adapter Swift Testing 28개가 실패·skip 없이 통과했고 project
+plist, `git diff --check`, 코드 서명을 끈 generic iOS Simulator의 앱·네 extension 제품 빌드가
+통과했다. T007의 current gate 범위는 green이며, 전체 T007은 T021 월 정책·서비스 구현 뒤 완료한다.
+
+2026-09-02 002 구현 T018과 선행 RED 테스트 T009의 green 전환을 완료했다.
+`CloudKitCoinLedgerRepository`는 mutable account·allowance·command의 change tag를 보존하고
+`ifServerRecordUnchanged` 단일 atomic modify에서 balance·결정적 audit event·command를 함께
+저장한다. `serverRecordChanged`는 최신 서버 record를 다시 읽어 제한 횟수 안에서 같은 command·event
+ID로 재평가하며, `resultUnknown`은 새 명령을 만들지 않고 기존 command 또는 purchase grant를 먼저
+조회한다. 현재 월 allowance가 없는 첫 Shield 요청은 quota 2 allowance·free grant·무료 1회
+reservation·reserved command를 한 번에 저장하고, 다기기 생성 충돌 뒤에는 서버 grant를 재사용해
+무료분을 2회 넘게 예약하지 않는다. 구매 잔액 reservation·검증 거래 grant, command applied·commit·
+compensation도 같은 CAS 경계로 구현했다. 기존 mapper·repository·월간 충돌 Swift Testing 12개가
+실패·skip 없이 통과했고 Swift strict typecheck, project plist, `git diff --check`, 코드 서명을 끈
+generic iOS Simulator의 앱·네 extension 제품 빌드가 통과했다. Simulator test runner 추가 접근은
+계정 사용 한도로 허가되지 않아 같은 두 test source를 임시 Swift Package로 그대로 컴파일·실행한
+뒤 manifest를 제거했다. 전체 test target은 T019·T021의 계획된 RED 타입 구현 뒤 실행한다.
+
 2026-09-02 002 구현 T017을 완료했다. `LedgerEpoch`, `CoinAccount`, `MonthlyAllowance`,
 `PurchaseGrant`, `CoinLedgerEvent`, `ReleaseCommand`를 schema version 1의 명시적 필드 whitelist로
 CloudKit record snapshot과 왕복 변환한다. singleton·월·거래·event·command별 결정적 record ID를

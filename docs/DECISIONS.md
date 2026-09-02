@@ -1634,3 +1634,49 @@ codec을 제공한다.
 
 **영향 범위**: `CoinLedgerRecordMapper`, 후속 CloudKit database adapter·repository와 record schema
 migration에 적용한다.
+
+## DEC-083 — 코인 장부 변경의 단일 CAS 조정 경계
+
+**날짜**: 2026-09-02
+
+**결정**: 코인 잔액 또는 월간 무료분을 바꾸는 모든 repository 명령은 mutable record의 최신
+change tag와 `ifServerRecordUnchanged`를 사용하고, 대응하는 결정적 audit event와 `ReleaseCommand`를
+하나의 atomic modify에 포함한다. 충돌은 서버 상태를 다시 읽어 같은 command·event ID로 재평가하고,
+결과 불명은 새 쓰기 전에 해당 command 또는 purchase grant의 존재를 조회한다. 재조회에도 결과를
+확정할 record가 없으면 차감을 성공으로 추정하지 않고 `reconciliationRequired`로 닫는다.
+
+현재 월 allowance가 없는 Shield 무료 예약은 quota 2 allowance, `free:{monthID}` 지급 event,
+`reserve:{commandID}` 예약 event와 release command를 같은 modify에 포함한다. 동시 생성에서 진 기기는
+서버 allowance와 free grant를 다시 읽고 지급 event를 중복 생성하지 않는다.
+
+**근거**: mutable balance만 저장하거나 retry마다 새 event ID를 만들면 다기기 충돌에서 초과 사용과
+중복 감사 기록이 생긴다. timeout을 실패로 단정해 즉시 재시도하면 이미 성공한 차감을 다시 적용할
+수 있으므로, 동일 ID의 서버 결과를 먼저 확인하는 fail-closed 경계가 필요하다.
+
+**영향 범위**: `CloudKitCoinLedgerRepository`, `CoinLedgerCloudDatabase` adapter와 후속
+`RuleReleaseService`, StoreKit 지급·재조정 흐름에 적용한다.
+
+## DEC-084 — 코인 장부 current의 비영속 monotonic 세션과 계정 격리
+
+**날짜**: 2026-09-02
+
+**결정**: 코인 장부의 `current` 권한은 현재 프로세스에서 성공한 초기 fetch 시각을
+`ContinuousClock.Instant`로만 보관하는 `CoinLedgerSyncSession`으로 판정한다. 성공 fetch 이후 정확히
+300초까지 허용하고 300초를 넘거나 프로세스가 재시작되면 새 fetch 전까지 허용하지 않는다.
+wall-clock `CoinBalanceSnapshot.syncedAt`은 표시·진단에만 사용한다. iCloud 계정 가용성, confirmed
+mirror, `LedgerEpoch`와 계정 epoch 일치, 완료된 projection, pending reconciliation 부재도 모두
+동시에 만족해야 한다.
+
+계정 session ID가 바뀌면 이전 mirror·freshness·pending local change를 즉시 폐기한다. 새 계정의
+초기 fetch 호출에 이전 계정 local mirror가 전달되더라도 참고 잔액으로 사용하지 않는다. 성공한
+원격 fetch에서 장부가 있으면 로컬 빈 설치보다 원격 projection을 우선하고, 장부가 없으면 삭제 증거가
+없는 경우 `setupRequired`, 삭제가 확인된 경우에만 `deletionConfirmed`로 분류한다. network·계정
+불확실성은 `unavailable`이며 삭제 증거로 승격하지 않는다.
+
+**근거**: 영속 wall-clock 시각은 기기 시간 변경과 프로세스 재시작 뒤에도 오래된 잔액에 권한을
+부여할 수 있다. 계정 전환 중 이전 mirror를 재사용하면 다른 iCloud 계정의 유료 잔액이 노출되거나
+사용될 수 있다. 원격 부재와 통신 실패를 분리해야 삭제된 장부를 자동 복원하거나 최초 사용자에게
+잘못된 reset을 요구하는 일을 막을 수 있다.
+
+**영향 범위**: `CoinLedgerSyncAdapter`, `CoinLedgerCurrentGate`, 후속 구매·해제 승인 gate와 T071의
+CloudKit zone 삭제 증거 분류에 적용한다.

@@ -565,6 +565,151 @@ struct CoinLedgerCurrentGateTests {
     fileprivate static let epochID = UUID(uuidString: "00000000-0000-4000-8000-000000000201")!
 }
 
+@Suite("Coin ledger sync adapter")
+struct CoinLedgerSyncAdapterTests {
+    @Test("A remote ledger wins over an empty install and becomes current")
+    func remoteLedgerRecovery() async throws {
+        let clock = ContinuousClock()
+        let fetchedAt = clock.now
+        let adapter = CoinLedgerSyncAdapter(accountSessionID: "icloud-account-a")
+        let projection = makeProjection()
+
+        let outcome = try await adapter.applyInitialFetch(
+            .ledger(projection),
+            accountSessionID: "icloud-account-a",
+            localMirror: nil,
+            currentMonthID: "2026-09",
+            fetchedAt: fetchedAt,
+            syncedAt: Self.syncedAt
+        )
+
+        #expect(outcome.recoveredFromRemote)
+        #expect(outcome.mirror.syncState == .current)
+        #expect(outcome.mirror.purchasedAvailable == 4)
+        let context = try #require(await adapter.currentContext(
+            iCloudAccountAvailable: true,
+            projection: projection
+        ))
+        #expect(CoinLedgerCurrentGate.isCurrent(
+            session: await adapter.session,
+            now: fetchedAt.advanced(by: .seconds(300)),
+            context: context
+        ))
+    }
+
+    @Test("A confirmed empty fetch distinguishes setup from deletion")
+    func emptyLedgerClassification() async throws {
+        let clock = ContinuousClock()
+        let setupAdapter = CoinLedgerSyncAdapter(accountSessionID: "icloud-account-a")
+        let setup = try await setupAdapter.applyInitialFetch(
+            .noLedger(deletionConfirmed: false),
+            accountSessionID: "icloud-account-a",
+            localMirror: nil,
+            currentMonthID: "2026-09",
+            fetchedAt: clock.now,
+            syncedAt: Self.syncedAt
+        )
+        #expect(setup.mirror.syncState == .setupRequired)
+
+        let deletedAdapter = CoinLedgerSyncAdapter(accountSessionID: "icloud-account-a")
+        let deleted = try await deletedAdapter.applyInitialFetch(
+            .noLedger(deletionConfirmed: true),
+            accountSessionID: "icloud-account-a",
+            localMirror: nil,
+            currentMonthID: "2026-09",
+            fetchedAt: clock.now,
+            syncedAt: Self.syncedAt
+        )
+        #expect(deleted.mirror.syncState == .deletionConfirmed)
+    }
+
+    @Test("Switching accounts discards the previous mirror, freshness, and pending changes")
+    func accountSwitchIsolation() async throws {
+        let clock = ContinuousClock()
+        let adapter = CoinLedgerSyncAdapter(accountSessionID: "icloud-account-a")
+        _ = try await adapter.applyInitialFetch(
+            .ledger(makeProjection()),
+            accountSessionID: "icloud-account-a",
+            localMirror: nil,
+            currentMonthID: "2026-09",
+            fetchedAt: clock.now,
+            syncedAt: Self.syncedAt
+        )
+        await adapter.markPendingLocalChanges()
+
+        let outcome = try await adapter.applyInitialFetch(
+            .unavailable,
+            accountSessionID: "icloud-account-b",
+            localMirror: CoinBalanceSnapshot.fixture(),
+            currentMonthID: "2026-09",
+            fetchedAt: clock.now,
+            syncedAt: Self.syncedAt
+        )
+
+        #expect(outcome.mirror.purchasedAvailable == 0)
+        #expect(await adapter.mirror == outcome.mirror)
+        #expect(!(await adapter.session.initialFetchCompleted))
+        #expect(await adapter.session.accountSessionID == "icloud-account-b")
+        #expect(!(await adapter.hasPendingLocalChanges))
+    }
+
+    @Test("An unavailable fetch never implies deletion and only exposes a reference mirror")
+    func unavailableDoesNotConfirmDeletion() async throws {
+        let adapter = CoinLedgerSyncAdapter(accountSessionID: "icloud-account-a")
+        let local = CoinBalanceSnapshot.fixture()
+        await adapter.markPendingLocalChanges()
+
+        let outcome = try await adapter.applyInitialFetch(
+            .unavailable,
+            accountSessionID: "icloud-account-a",
+            localMirror: local,
+            currentMonthID: "2026-09",
+            fetchedAt: ContinuousClock().now,
+            syncedAt: Self.syncedAt
+        )
+
+        #expect(outcome.mirror.syncState == .unavailable)
+        #expect(outcome.mirror.purchasedAvailable == local.purchasedAvailable)
+        #expect(!(await adapter.session.initialFetchCompleted))
+        #expect(await adapter.hasPendingLocalChanges)
+    }
+
+    @Test("Signing out invalidates every account-scoped authorization state")
+    func signOutIsolation() async throws {
+        let adapter = CoinLedgerSyncAdapter(accountSessionID: "icloud-account-a")
+        _ = try await adapter.applyInitialFetch(
+            .ledger(makeProjection()),
+            accountSessionID: "icloud-account-a",
+            localMirror: nil,
+            currentMonthID: "2026-09",
+            fetchedAt: ContinuousClock().now,
+            syncedAt: Self.syncedAt
+        )
+        await adapter.markPendingLocalChanges()
+
+        await adapter.invalidateAccount()
+
+        #expect(await adapter.mirror == nil)
+        #expect(!(await adapter.session.initialFetchCompleted))
+        #expect(!(await adapter.hasPendingLocalChanges))
+    }
+
+    private func makeProjection() -> CoinLedgerRemoteProjection {
+        CoinLedgerRemoteProjection(
+            ledgerEpochID: Self.epochID,
+            accountEpochID: Self.epochID,
+            purchasedAvailable: 4,
+            currentMonthID: "2026-09",
+            freeAvailable: 2,
+            projectionCompleted: true,
+            hasPendingReconciliation: false
+        )
+    }
+
+    private static let epochID = UUID(uuidString: "00000000-0000-4000-8000-000000000301")!
+    private static let syncedAt = Date(timeIntervalSince1970: 1_788_192_000)
+}
+
 private extension LiveActivityCoinModelTests {
     static let ruleID = UUID(uuidString: "00000000-0000-4000-8000-000000000101")!
     static let commandID = UUID(uuidString: "00000000-0000-4000-8000-000000000102")!

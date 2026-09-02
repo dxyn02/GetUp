@@ -48,7 +48,7 @@ Phase 2에 둔다. US4에는 잔액 UI·지역화·월 경계 인수 검증만 �
 
 - [ ] T007 [P] occurrence·Live Activity·코인·해제 모델의 Codable, 불변 조건과 `current`의 monotonic 5분 freshness·프로세스 재시작·wall clock 변경 무관성·epoch/projection 일치·pending reconciliation 차단 및 월 ID·quota 2·비이월·첫 앱 지연 생성 실패 테스트를 `GetUpTests/Core/LiveActivityCoinModelTests.swift`, `GetUpTests/Core/MonthlyAllowancePolicyTests.swift`, `GetUpTests/Core/MonthlyAllowanceServiceTests.swift`에 작성한다.
 - [X] T008 [P] 활성 occurrence·잔액 mirror·해제 예외의 file migration·atomic write·손상 schema와 `PendingAppRoute`의 생성 직후·정확히 5분·5분 초과·일회 소비·중복·종료 occurrence 폐기 테스트를 `GetUpTests/Persistence/LiveActivityCoinSnapshotRepositoryTests.swift`, `GetUpTests/Persistence/PendingAppRouteRepositoryTests.swift`에 작성한다.
-- [ ] T009 [P] CloudKit record 매핑, change-tag 충돌, atomic modify, timeout 결과 불명·결정적 ID와 allowance 생성+무료 1회 reservation의 단일 atomic modify·다기기 충돌 테스트를 `GetUpTests/Integration/CloudKitCoinLedgerRepositoryTests.swift`, `GetUpTests/Integration/CloudKitMonthlyAllowanceTests.swift`에 작성한다.
+- [X] T009 [P] CloudKit record 매핑, change-tag 충돌, atomic modify, timeout 결과 불명·결정적 ID와 allowance 생성+무료 1회 reservation의 단일 atomic modify·다기기 충돌 테스트를 `GetUpTests/Integration/CloudKitCoinLedgerRepositoryTests.swift`, `GetUpTests/Integration/CloudKitMonthlyAllowanceTests.swift`에 작성한다.
 
 ### 기반 구현
 
@@ -60,8 +60,8 @@ Phase 2에 둔다. US4에는 잔액 UI·지역화·월 경계 인수 검증만 �
 - [X] T015 [P] App Group 파일명, CloudKit zone·record ID, 상품 catalog key를 `GetUp/Core/Configuration/SharedIdentifiers.swift`에 추가한다.
 - [X] T016 활성 occurrence·잔액 mirror·해제 예외 repository, 기존 001 snapshot 비파괴 migration과 유효기간·활성 occurrence·미소비를 한 번에 검사해 성공 소비 또는 stale route 폐기를 atomic 수행하는 `PendingAppRouteRepository`를 `GetUp/Infrastructure/Persistence/SharedSnapshotRepository.swift`에 구현한다.
 - [X] T017 [P] CloudKit record codec과 위치·Family Controls token 차단 검증을 `GetUp/Infrastructure/CloudKit/CoinLedgerRecordMapper.swift`에 구현한다.
-- [ ] T018 `ifServerRecordUnchanged` atomic modify, 결정적 event ID, 충돌·결과 불명 재조회와 allowance+freeGrant+무료 1회 reservation+ReleaseCommand 단일 저장이 포함된 장부 repository를 `GetUp/Infrastructure/CloudKit/CloudKitCoinLedgerRepository.swift`에 구현한다.
-- [ ] T019 account switch 격리, 로컬 빈 설치의 원격 장부 우선 fetch와 최초 `setupRequired`·기존 `current`·삭제 `deletionConfirmed` 구분, 비영속 `CoinLedgerSyncSession`의 monotonic 5분 freshness·프로세스 재시작·epoch/projection·reconciliation gate를 관리하는 동기화 adapter를 `GetUp/Infrastructure/CloudKit/CoinLedgerSyncAdapter.swift`에 구현한다.
+- [X] T018 `ifServerRecordUnchanged` atomic modify, 결정적 event ID, 충돌·결과 불명 재조회와 allowance+freeGrant+무료 1회 reservation+ReleaseCommand 단일 저장이 포함된 장부 repository를 `GetUp/Infrastructure/CloudKit/CloudKitCoinLedgerRepository.swift`에 구현한다.
+- [X] T019 account switch 격리, 로컬 빈 설치의 원격 장부 우선 fetch와 최초 `setupRequired`·기존 `current`·삭제 `deletionConfirmed` 구분, 비영속 `CoinLedgerSyncSession`의 monotonic 5분 freshness·프로세스 재시작·epoch/projection·reconciliation gate를 관리하는 동기화 adapter를 `GetUp/Infrastructure/CloudKit/CoinLedgerSyncAdapter.swift`에 구현한다.
 - [ ] T020 [P] ActivityKit·CloudKit·StoreKit·release 실패, current freshness의 monotonic 경과·wall clock 변경·프로세스 재시작과 Shield 4.9초·5초·late commit을 결정적으로 주입하는 clock fake와 fixture를 `GetUpTests/Support/LiveActivityCoinFixtures.swift`에 구현한다.
 - [ ] T021 서울 기준 monthID·quota 2·비이월·삭제 월 quota 0의 `MonthlyAllowancePolicy`와 기존 initial ledger의 새달 지연 생성·Shield 생성+예약 원자 명령을 담당하는 `MonthlyAllowanceService`를 `GetUp/Core/Evaluation/MonthlyAllowancePolicy.swift`, `GetUp/Core/StateMachine/MonthlyAllowanceService.swift`에 구현하고 첫 app foreground trigger와 공통 service·repository를 `GetUp/App/AppLifecycleCoordinator.swift`, `GetUp/App/DependencyContainer.swift`, `GetUp.xcodeproj/project.pbxproj`에 조립한 뒤 기반 테스트를 통과시킨다. `setupRequired` initial ledger 생성은 T072의 별도 setup service에 위임한다.
 
