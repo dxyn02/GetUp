@@ -7,17 +7,17 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 2 공통 기반 진행 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T010~T013 occurrence·Live Activity·코인 장부·해제 모델을
-구현했다. T007~T009의 RED 테스트는 후속 T014~T019·T021 타입과 정책이 아직 없어
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T010~T014 occurrence·Live Activity·코인 장부·해제 모델과
+framework·repository 계약을 구현했다. T007~T009의 RED 테스트는 후속 T015~T019·T021 타입과 정책이 아직 없어
 전체 test target이 의도한 compile 실패 상태이며, 관련 구현이 통과할 때까지
 T007~T009는 완료 처리하지 않는다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T013 — 해제 명령 상태 머신·구간 예외·일회성 앱 route 모델을 구현함
+T014 — ActivityKit·CloudKit·StoreKit·장부·해제 예외의 Sendable 계약과 안정 오류 코드를 구현함
 
 ## 다음 작업
-T014 — ActivityKit·CloudKit·StoreKit·장부·해제 예외의 Sendable 계약과 안정 오류 코드를 정의한다.
+T015 — App Group 파일명, CloudKit zone·record ID, 상품 catalog key를 공용 식별자에 추가한다.
 T007~T009는 관련 기반 구현 후 green 전환과 함께 완료 처리한다. 001은 T083·T085 실기기 재검증과
 T086 구현·하이파이 편차 대조가 남아 있음
 
@@ -34,6 +34,18 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-02 002 구현 T014를 완료했다. ActivityKit 활동 목록·생성·갱신·종료, CloudKit fetch·
+원자 modify, StoreKit 상품·구매·unfinished·transaction update·finish, 월간 allowance·무료 및 구매
+reservation·구매 지급·명령 확정/보상, 활성 occurrence·잔액 mirror·해제 예외·pending route 저장소를
+framework 독립 `Sendable` 계약으로 정의했다. CloudKit record 값과 change tag·save policy를
+도메인 snapshot으로 제한하고, adapter 오류는 좌표·token·시스템 상세를 포함하지 않는 고정
+`LiveActivityCoinErrorCode`로 변환하도록 했다. 이 계약을 앱과 세 Screen Time extension에 연결하고
+공유 Live Activity 모델도 필요한 extension source에 포함했다. Swift strict concurrency typecheck,
+project plist, `git diff --check`, iPhone 17 Pro iOS 26.5 Simulator의 앱·네 extension 제품 빌드가
+통과했다. 전체 `GetUpTests` build는 계획된 RED 상태이며 첫 compile 오류는 T017의
+`CoinLedgerRecordEntity`·`CoinLedgerRecordMapper`와 T019의 `CoinLedgerCurrentContext` 미구현이다.
+후속 T015~T019·T021 구현 전에는 관련 RED 테스트를 완료 처리하지 않는다.
+
 2026-09-02 002 구현 T013을 완료했다. `ReleaseCommand`에 `requested`·`reserved`·`applied`·
 `committed`, 거절·보상, 5초 성공 미확인 뒤 `reconciliationRequired`에서 `committed` 또는
 `compensated`로 수렴하는 선언적 상태 전이를 구현했다. reservation에서 확정한 무료분·구매 코인

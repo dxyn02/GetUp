@@ -56,7 +56,7 @@ Phase 2에 둔다. US4에는 잔액 UI·지역화·월 경계 인수 검증만 �
 - [X] T011 [P] 4KB 미만 payload의 `RestrictionLiveActivityAttributes`와 거리 표시 상태를 `GetUp/Core/Models/RestrictionLiveActivityModels.swift`에 구현한다.
 - [X] T012 [P] `LedgerEpoch`, `CoinAccount`, `MonthlyAllowance`, `PurchaseGrant`, `CoinLedgerEvent`와 `setupRequired`를 포함한 `CoinBalanceSnapshot` 상태를 `GetUp/Core/Models/CoinLedgerModels.swift`에 구현한다.
 - [X] T013 [P] `ReleaseCommand`, funding source·5초 timeout 후 재조정 상태 전이, `ReleaseException`, `PendingAppRoute`를 `GetUp/Core/Models/RuleReleaseModels.swift`에 구현한다.
-- [ ] T014 ActivityKit·CloudKit·StoreKit·장부·해제 예외의 Sendable protocol과 안정 오류 코드를 `GetUp/Core/Contracts/LiveActivityCoinContracts.swift`에 정의한다.
+- [X] T014 ActivityKit·CloudKit·StoreKit·장부·해제 예외의 Sendable protocol과 안정 오류 코드를 `GetUp/Core/Contracts/LiveActivityCoinContracts.swift`에 정의한다.
 - [ ] T015 [P] App Group 파일명, CloudKit zone·record ID, 상품 catalog key를 `GetUp/Core/Configuration/SharedIdentifiers.swift`에 추가한다.
 - [ ] T016 활성 occurrence·잔액 mirror·해제 예외 repository, 기존 001 snapshot 비파괴 migration과 유효기간·활성 occurrence·미소비를 한 번에 검사해 성공 소비 또는 stale route 폐기를 atomic 수행하는 `PendingAppRouteRepository`를 `GetUp/Infrastructure/Persistence/SharedSnapshotRepository.swift`에 구현한다.
 - [ ] T017 [P] CloudKit record codec과 위치·Family Controls token 차단 검증을 `GetUp/Infrastructure/CloudKit/CoinLedgerRecordMapper.swift`에 구현한다.

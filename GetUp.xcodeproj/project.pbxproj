@@ -155,6 +155,13 @@
 		AA0000000000000000000239 /* RuleReleaseModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000000000000000000005A /* RuleReleaseModels.swift */; };
 		AA0000000000000000000240 /* RuleReleaseModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000000000000000000005A /* RuleReleaseModels.swift */; };
 		AA0000000000000000000241 /* RuleReleaseModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000000000000000000005A /* RuleReleaseModels.swift */; };
+		AA0000000000000000000242 /* LiveActivityCoinContracts.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000000000000000000005B /* LiveActivityCoinContracts.swift */; };
+		AA0000000000000000000243 /* LiveActivityCoinContracts.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000000000000000000005B /* LiveActivityCoinContracts.swift */; };
+		AA0000000000000000000244 /* LiveActivityCoinContracts.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000000000000000000005B /* LiveActivityCoinContracts.swift */; };
+		AA0000000000000000000245 /* LiveActivityCoinContracts.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000000000000000000005B /* LiveActivityCoinContracts.swift */; };
+		AA0000000000000000000246 /* RestrictionLiveActivityModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000058 /* RestrictionLiveActivityModels.swift */; };
+		AA0000000000000000000247 /* RestrictionLiveActivityModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000058 /* RestrictionLiveActivityModels.swift */; };
+		AA0000000000000000000248 /* RestrictionLiveActivityModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000058 /* RestrictionLiveActivityModels.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -275,6 +282,7 @@
 		B40000000000000000000058 /* RestrictionLiveActivityModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionLiveActivityModels.swift; sourceTree = "<group>"; };
 		B40000000000000000000059 /* CoinLedgerModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinLedgerModels.swift; sourceTree = "<group>"; };
 		B4000000000000000000005A /* RuleReleaseModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleReleaseModels.swift; sourceTree = "<group>"; };
+		B4000000000000000000005B /* LiveActivityCoinContracts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityCoinContracts.swift; sourceTree = "<group>"; };
 		B50000000000000000000001 /* TestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFixtures.swift; sourceTree = "<group>"; };
 		B50000000000000000000002 /* RestrictionStateMachineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStateMachineTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSnapshotRepositoryTests.swift; sourceTree = "<group>"; };
@@ -439,6 +447,7 @@
 		B40000000000000000000013 /* Contracts */ = {
 			isa = PBXGroup;
 			children = (
+				B4000000000000000000005B /* LiveActivityCoinContracts.swift */,
 				B40000000000000000000004 /* PlatformContracts.swift */,
 			);
 			path = Contracts;
@@ -1042,6 +1051,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000242 /* LiveActivityCoinContracts.swift in Sources */,
 				AA0000000000000000000227 /* RestrictionOccurrenceModels.swift in Sources */,
 				AA0000000000000000000232 /* RestrictionLiveActivityModels.swift in Sources */,
 				AA0000000000000000000234 /* CoinLedgerModels.swift in Sources */,
@@ -1089,6 +1099,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000243 /* LiveActivityCoinContracts.swift in Sources */,
+				AA0000000000000000000246 /* RestrictionLiveActivityModels.swift in Sources */,
 				AA0000000000000000000228 /* RestrictionOccurrenceModels.swift in Sources */,
 				AA0000000000000000000235 /* CoinLedgerModels.swift in Sources */,
 				AA0000000000000000000239 /* RuleReleaseModels.swift in Sources */,
@@ -1118,6 +1130,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000244 /* LiveActivityCoinContracts.swift in Sources */,
+				AA0000000000000000000247 /* RestrictionLiveActivityModels.swift in Sources */,
 				AA0000000000000000000229 /* RestrictionOccurrenceModels.swift in Sources */,
 				AA0000000000000000000236 /* CoinLedgerModels.swift in Sources */,
 				AA0000000000000000000240 /* RuleReleaseModels.swift in Sources */,
@@ -1141,6 +1155,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000245 /* LiveActivityCoinContracts.swift in Sources */,
+				AA0000000000000000000248 /* RestrictionLiveActivityModels.swift in Sources */,
 				AA0000000000000000000230 /* RestrictionOccurrenceModels.swift in Sources */,
 				AA0000000000000000000237 /* CoinLedgerModels.swift in Sources */,
 				AA0000000000000000000241 /* RuleReleaseModels.swift in Sources */,
