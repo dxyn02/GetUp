@@ -6,7 +6,7 @@ import Testing
 struct MonthlyAllowanceServiceTests {
     @Test("First foreground in a new month lazily creates quota two")
     func firstForegroundCreatesCurrentMonthAllowance() async throws {
-        let repository = MonthlyAllowanceRepositorySpy(result: .success(.septemberFixture()))
+        let repository = MonthlyAllowanceRepositorySpy(result: .success(try .septemberFixture()))
         let service = MonthlyAllowanceService(repository: repository)
 
         let allowance = try await service.ensureAllowanceForAppForeground(
@@ -28,7 +28,7 @@ struct MonthlyAllowanceServiceTests {
     @Test("An existing current-month allowance is returned without another write")
     func existingAllowanceIsIdempotent() async throws {
         let existing = try MonthlyAllowance.septemberFixture(used: 1)
-        let repository = MonthlyAllowanceRepositorySpy(result: .failure(TestFailure.unexpectedWrite))
+        let repository = MonthlyAllowanceRepositorySpy(result: .failure(.unexpectedWrite))
         let service = MonthlyAllowanceService(repository: repository)
 
         let allowance = try await service.ensureAllowanceForAppForeground(
@@ -43,7 +43,7 @@ struct MonthlyAllowanceServiceTests {
 
     @Test("A failed lazy creation leaves no confirmed allowance")
     func failedLazyCreationDoesNotGrantFreeUses() async {
-        let repository = MonthlyAllowanceRepositorySpy(result: .failure(TestFailure.serverUnavailable))
+        let repository = MonthlyAllowanceRepositorySpy(result: .failure(.serverUnavailable))
         let service = MonthlyAllowanceService(repository: repository)
 
         await #expect(throws: TestFailure.serverUnavailable) {
@@ -59,7 +59,7 @@ struct MonthlyAllowanceServiceTests {
 
     @Test("A non-current ledger cannot create a monthly allowance")
     func unavailableLedgerDoesNotCreateAllowance() async {
-        let repository = MonthlyAllowanceRepositorySpy(result: .failure(TestFailure.unexpectedWrite))
+        let repository = MonthlyAllowanceRepositorySpy(result: .failure(.unexpectedWrite))
         let service = MonthlyAllowanceService(repository: repository)
 
         await #expect(throws: MonthlyAllowanceServiceError.ledgerNotCurrent) {
@@ -74,11 +74,11 @@ struct MonthlyAllowanceServiceTests {
 }
 
 private actor MonthlyAllowanceRepositorySpy: MonthlyAllowanceRepository {
-    private let result: Result<MonthlyAllowance, any Error>
+    private let result: Result<MonthlyAllowance, TestFailure>
     private(set) var creationRequests: [MonthlyAllowanceCreationRequest] = []
     private(set) var confirmedAllowances: [MonthlyAllowance] = []
 
-    init(result: Result<MonthlyAllowance, any Error>) {
+    init(result: Result<MonthlyAllowance, TestFailure>) {
         self.result = result
     }
 
@@ -105,7 +105,7 @@ private extension MonthlyAllowance {
     }
 }
 
-private enum TestFailure: Error {
+private enum TestFailure: Error, Sendable {
     case serverUnavailable
     case unexpectedWrite
 }

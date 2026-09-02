@@ -7,18 +7,19 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 2 공통 기반 진행 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T007의 도메인·월간 무료분 RED 테스트를
-작성했다. 후속 T010~T013·T019·T021 타입과 정책이 아직 없으므로 실제 test target은 의도한 compile
-실패 상태이며, 관련 구현이 통과할 때까지 T007은 완료 처리하지 않는다.
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T007·T008의 도메인·월간 무료분·공유
+snapshot·`PendingAppRoute` RED 테스트를 작성했다. 후속 T010~T013·T015~T016·T019·T021 타입과
+정책이 아직 없으므로 실제 test target은 의도한 compile 실패 상태이며, 관련 구현이 통과할 때까지
+T007·T008은 완료 처리하지 않는다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
 T006 — Live Activity extension과 StoreKit configuration을 공용 scheme·test plan에 연결하고 Phase 1 빌드를 검증함
 
 ## 다음 작업
-T008 — 활성 occurrence·잔액 mirror·해제 예외 저장과 `PendingAppRoute` 일회 소비의 RED 테스트를
-작성한다. T007은 T010~T013·T019·T021 구현 후 green 전환과 함께 완료 처리한다. 001은 T083·T085
-실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
+T009 — CloudKit record 매핑·충돌·원자 modify·결과 불명 및 월간 생성+예약의 RED 테스트를 작성한다.
+T007·T008은 관련 기반 구현 후 green 전환과 함께 완료 처리한다. 001은 T083·T085 실기기 재검증과
+T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
 BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록과
@@ -33,6 +34,19 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-02 002 구현 T008의 RED 테스트를 두 파일에 작성했다. 활성 occurrence·confirmed balance
+mirror·해제 예외의 독립 round-trip, 기존 001 규칙·위치 파일 비파괴 migration, 새 파일 부재의 안전한
+빈 상태, 파일별 손상 JSON·지원하지 않는 schema와 atomic write 실패 시 이전 값 보존을 검증한다.
+`PendingAppRoute`는 생성 직후 소비와 atomic 삭제, 정확히 5분·5분 초과·미래 시각 만료, 종료
+occurrence·이미 소비된 route 폐기, occurrence 없는 복구 route, 같은 route ID 중복 저장·소비 거부,
+손상 JSON과 write 실패를 포함한다. T007 테스트에서 후속 구현 시 드러날 fixture 접근 수준과 actor
+저장 대역의 Sendable 타입도 함께 보정했다. 새 source의 Swift 구문 검사, `project.pbxproj` plist와
+target membership, `git diff --check`가 통과했고 코드 서명을 끈 generic iOS Simulator 제품 빌드도
+앱과 네 extension을 포함해 통과했다. 실제 `GetUpTests` build는 계획대로 T010~T013·T015~T016의
+`ActiveRestrictionSnapshot`, `CoinBalanceSnapshot`, `PendingAppRouteRepository`, 새 파일 식별자 등
+미구현 symbol에서 RED가 확인됐다. 실패한 관련 테스트가 있으므로 T008은 체크하지 않고 T016 구현과
+green 전환 때 완료 처리한다.
+
 2026-09-02 002 구현 T007의 RED 테스트 23개를 세 파일에 작성했다. occurrence 결정적 ID·Codable·
 구간과 중복 불변 조건, Live Activity 거리 payload, 구매·예약 잔액과 해제 명령·예외, 비영속
 `CoinLedgerSyncSession`의 monotonic 정확히 5분 경계·wall clock 무관성·프로세스 재시작·epoch·

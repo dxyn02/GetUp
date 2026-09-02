@@ -136,6 +136,8 @@
 		AA0000000000000000000220 /* LiveActivityCoinModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000033 /* LiveActivityCoinModelTests.swift */; };
 		AA0000000000000000000221 /* MonthlyAllowancePolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000034 /* MonthlyAllowancePolicyTests.swift */; };
 		AA0000000000000000000222 /* MonthlyAllowanceServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000035 /* MonthlyAllowanceServiceTests.swift */; };
+		AA0000000000000000000223 /* LiveActivityCoinSnapshotRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000036 /* LiveActivityCoinSnapshotRepositoryTests.swift */; };
+		AA0000000000000000000224 /* PendingAppRouteRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000037 /* PendingAppRouteRepositoryTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -281,6 +283,8 @@
 		B50000000000000000000033 /* LiveActivityCoinModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityCoinModelTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000034 /* MonthlyAllowancePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyAllowancePolicyTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000035 /* MonthlyAllowanceServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyAllowanceServiceTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000036 /* LiveActivityCoinSnapshotRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityCoinSnapshotRepositoryTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000037 /* PendingAppRouteRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingAppRouteRepositoryTests.swift; sourceTree = "<group>"; };
 		B60000000000000000000001 /* UserStory1RuleConfigurationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory1RuleConfigurationUITests.swift; sourceTree = "<group>"; };
 		B60000000000000000000002 /* UserStory2RestrictionActivationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory2RestrictionActivationUITests.swift; sourceTree = "<group>"; };
 		B60000000000000000000003 /* UserStory3AutoReleaseUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory3AutoReleaseUITests.swift; sourceTree = "<group>"; };
@@ -600,6 +604,8 @@
 		B50000000000000000000012 /* Persistence */ = {
 			isa = PBXGroup;
 			children = (
+				B50000000000000000000036 /* LiveActivityCoinSnapshotRepositoryTests.swift */,
+				B50000000000000000000037 /* PendingAppRouteRepositoryTests.swift */,
 				B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */,
 			);
 			path = Persistence;
@@ -1116,6 +1122,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000223 /* LiveActivityCoinSnapshotRepositoryTests.swift in Sources */,
+				AA0000000000000000000224 /* PendingAppRouteRepositoryTests.swift in Sources */,
 				AA0000000000000000000220 /* LiveActivityCoinModelTests.swift in Sources */,
 				AA0000000000000000000221 /* MonthlyAllowancePolicyTests.swift in Sources */,
 				AA0000000000000000000222 /* MonthlyAllowanceServiceTests.swift in Sources */,

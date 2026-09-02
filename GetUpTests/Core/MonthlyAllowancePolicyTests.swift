@@ -104,7 +104,7 @@ struct MonthlyAllowancePolicyTests {
 }
 
 extension LedgerEpoch {
-    fileprivate static func fixture(
+    static func fixture(
         reason: LedgerEpochReason = .initialSetup,
         suppressedFreeMonthID: String? = nil
     ) -> LedgerEpoch {

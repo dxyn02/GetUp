@@ -294,7 +294,7 @@ struct CoinLedgerCurrentGateTests {
         )
     }
 
-    private static let epochID = UUID(uuidString: "00000000-0000-4000-8000-000000000201")!
+    fileprivate static let epochID = UUID(uuidString: "00000000-0000-4000-8000-000000000201")!
 }
 
 private extension LiveActivityCoinModelTests {
