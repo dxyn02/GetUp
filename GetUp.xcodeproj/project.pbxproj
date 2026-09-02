@@ -288,6 +288,8 @@
 		BA0000000000000000000005 /* GetUpTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GetUpTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000006 /* GetUpUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GetUpUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		DC0000000000000000000001 /* GetUpLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		DJ0000000000000000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		DJ0000000000000000000002 /* GetUpLiveActivity.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GetUpLiveActivity.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -706,6 +708,8 @@
 		DD0000000000000000000001 /* GetUpLiveActivity */ = {
 			isa = PBXGroup;
 			children = (
+				DJ0000000000000000000001 /* Info.plist */,
+				DJ0000000000000000000002 /* GetUpLiveActivity.entitlements */,
 			);
 			path = GetUpLiveActivity;
 			sourceTree = "<group>";
@@ -1414,6 +1418,7 @@
 			baseConfigurationReference = B10000000000000000000002 /* Debug.xcconfig */;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = GetUpLiveActivity/GetUpLiveActivity.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 53H2JY443C;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -1432,6 +1437,7 @@
 			baseConfigurationReference = B10000000000000000000003 /* Release.xcconfig */;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = GetUpLiveActivity/GetUpLiveActivity.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 53H2JY443C;
 				GENERATE_INFOPLIST_FILE = NO;

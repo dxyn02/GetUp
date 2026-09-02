@@ -7,17 +7,16 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 1 설정 및 타깃 구성 구현 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins Phase 1을 진행 중이다. T001로
-`GetUpLiveActivity` Widget Extension target, 빈 build phase, 앱 embed와 target dependency를 추가했다.
+`codex/live-activity-coins-setup`에서 002-live-activity-coins Phase 1을 진행 중이다. T002로 앱의
+Live Activity 지원 키와 새 Widget Extension의 Info.plist·App Group entitlement를 구성했다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T001 — `GetUpLiveActivity` Widget Extension target과 앱 embed dependency를
-`GetUp.xcodeproj/project.pbxproj`에 추가함
+T002 — 앱과 `GetUpLiveActivity`에 Live Activities 지원 및 공통 App Group을 구성함
 
 ## 다음 작업
-T002 — Live Activities 지원과 App Group을 앱 및 `GetUpLiveActivity`의 Info.plist·entitlements에
-구성한다. 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
+T003 — CloudKit container와 iCloud capability를 앱·Shield Action entitlement 및 공통 build
+setting에 구성한다. 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
 BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록과
@@ -32,6 +31,12 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-02 002 구현 T002를 완료했다. 앱·확장 Info.plist와 entitlement, `project.pbxproj`의 plist
+문법 검사가 모두 통과했다. 앱의 `NSSupportsLiveActivities = true`, 확장의
+`com.apple.widgetkit-extension`, 양쪽의 `group.com.dxyn02.GetUp`을 확인했다. 확장 Debug build
+settings에서 `CODE_SIGN_ENTITLEMENTS`, `GETUP_APP_GROUP_IDENTIFIER`, `INFOPLIST_FILE`, bundle ID와
+app-extension-only 설정이 기대값으로 해석됐다. 전체 Simulator build는 T006 체크포인트에서 실행한다.
+
 2026-09-02 002 구현 T001을 완료했다. `plutil -lint GetUp.xcodeproj/project.pbxproj`가 통과했고,
 `xcodebuild -list -project GetUp.xcodeproj`에서 `GetUpLiveActivity` target과 scheme을 확인했다.
 시뮬레이터 서비스·로컬 provisioning profile 경고는 출력됐지만 명령은 성공했다. 확장의 Info.plist와
