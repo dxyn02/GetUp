@@ -7,17 +7,17 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 2 공통 기반 진행 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T010~T014 occurrence·Live Activity·코인 장부·해제 모델과
-framework·repository 계약을 구현했다. T007~T009의 RED 테스트는 후속 T015~T019·T021 타입과 정책이 아직 없어
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T010~T015 occurrence·Live Activity·코인 장부·해제 모델과
+framework·repository 계약·공용 식별자를 구현했다. T007~T009의 RED 테스트는 후속 T016~T019·T021 타입과 정책이 아직 없어
 전체 test target이 의도한 compile 실패 상태이며, 관련 구현이 통과할 때까지
 T007~T009는 완료 처리하지 않는다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T014 — ActivityKit·CloudKit·StoreKit·장부·해제 예외의 Sendable 계약과 안정 오류 코드를 구현함
+T015 — App Group snapshot 파일명, CloudKit zone·record ID, 상품 catalog key를 공용 식별자에 추가함
 
 ## 다음 작업
-T015 — App Group 파일명, CloudKit zone·record ID, 상품 catalog key를 공용 식별자에 추가한다.
+T016 — 공유 snapshot repository에 활성 occurrence·잔액 mirror·해제 예외·pending route 저장을 구현한다.
 T007~T009는 관련 기반 구현 후 green 전환과 함께 완료 처리한다. 001은 T083·T085 실기기 재검증과
 T086 구현·하이파이 편차 대조가 남아 있음
 
@@ -34,6 +34,15 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-02 002 구현 T015를 완료했다. 활성 제한·코인 잔액·해제 예외·앱 진입 route의 App Group
+snapshot 파일명과 `CoinLedgerZone`, 여섯 CloudKit record type, 고정·결정적 record ID를 공용
+식별자로 정의했다. 상품 catalog의 Info.plist·상품 ID·수량 key도 T004 설정과 같은 문자열로
+중앙화했다. 구매 지급 record와 구매 event, 해제 명령 record와 예약 event는 같은 custom zone에서
+이름이 충돌하지 않도록 서로 다른 접두사를 사용한다. Swift typecheck, project plist,
+`git diff --check`, 코드 서명을 끈 generic iOS Simulator의 앱·네 extension 제품 빌드가 통과했다.
+전체 `GetUpTests`는 T017의 mapper·repository와 T019의 sync context 등 계획된 RED 구현이 남아 있어
+아직 완료 상태로 실행하지 않으며 T007~T009도 미완료로 유지한다.
+
 2026-09-02 002 구현 T014를 완료했다. ActivityKit 활동 목록·생성·갱신·종료, CloudKit fetch·
 원자 modify, StoreKit 상품·구매·unfinished·transaction update·finish, 월간 allowance·무료 및 구매
 reservation·구매 지급·명령 확정/보상, 활성 occurrence·잔액 mirror·해제 예외·pending route 저장소를
