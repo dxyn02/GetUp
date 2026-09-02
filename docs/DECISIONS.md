@@ -1572,3 +1572,22 @@ entitlement에는 `com.apple.developer.icloud-container-identifiers`와
 `GetUpShieldAction/GetUpShieldAction.entitlements`와 후속 CloudKit adapter에 적용한다. 실제 배포 전
 Apple Developer에서 container 등록, 두 App ID 할당, production schema와 서명 entitlement를
 T097에서 확인한다.
+
+## DEC-080 — 초기 코인 상품 식별자와 번들 허용 catalog
+
+**날짜**: 2026-09-02
+
+**결정**: 초기 consumable 상품 ID는 각각 `com.dxyn02.GetUp.coin.1`,
+`com.dxyn02.GetUp.coin.3`, `com.dxyn02.GetUp.coin.5`를 사용한다. 세 식별자는
+`GETUP_COIN_PRODUCT_1_IDENTIFIER`, `GETUP_COIN_PRODUCT_3_IDENTIFIER`,
+`GETUP_COIN_PRODUCT_5_IDENTIFIER` build setting으로 관리한다. 앱 Info.plist의
+`GetUpCoinProductCatalog`는 각 식별자를 지급 수량 1·3·5와 명시적으로 매핑하며 이 목록 밖의 상품은
+지급 대상으로 인정하지 않는다. 완료된 소모성 거래의 후속 검증을 위해
+`SKIncludeConsumableInAppPurchaseHistory`를 활성화한다.
+
+**근거**: StoreKit에서 전달된 product ID만으로 지급 수량을 추측하지 않고 배포 설정의 고정 허용
+목록과 대조해야 잘못된 상품·수량 지급을 막을 수 있다. 동일 ID를 StoreKit Configuration과 App Store
+Connect에서 사용하면 로컬·sandbox·production 검증의 계약이 일치한다.
+
+**영향 범위**: `Configuration/Base.xcconfig`, `GetUp/Resources/Info.plist`, 후속
+`CoinProductCatalog`, StoreKit Configuration 및 App Store Connect 상품 등록에 적용한다.
