@@ -4,19 +4,21 @@
 001-location-app-restriction, 002-live-activity-coins
 
 ## 현재 단계
-001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 1 설정 및 타깃 구성 완료
+001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 2 공통 기반 진행 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins Phase 1의 T001~T006을 완료했다.
-공용 scheme·test plan에서 Live Activity extension과 로컬 StoreKit 환경을 빌드·테스트할 수 있다.
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T007의 도메인·월간 무료분 RED 테스트를
+작성했다. 후속 T010~T013·T019·T021 타입과 정책이 아직 없으므로 실제 test target은 의도한 compile
+실패 상태이며, 관련 구현이 통과할 때까지 T007은 완료 처리하지 않는다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
 T006 — Live Activity extension과 StoreKit configuration을 공용 scheme·test plan에 연결하고 Phase 1 빌드를 검증함
 
 ## 다음 작업
-T007 — occurrence·Live Activity·코인·월간 무료분 모델의 불변 조건과 freshness·최초 지급 실패 테스트를
-먼저 작성한다. 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
+T008 — 활성 occurrence·잔액 mirror·해제 예외 저장과 `PendingAppRoute` 일회 소비의 RED 테스트를
+작성한다. T007은 T010~T013·T019·T021 구현 후 green 전환과 함께 완료 처리한다. 001은 T083·T085
+실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
 BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록과
@@ -31,6 +33,18 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-02 002 구현 T007의 RED 테스트 23개를 세 파일에 작성했다. occurrence 결정적 ID·Codable·
+구간과 중복 불변 조건, Live Activity 거리 payload, 구매·예약 잔액과 해제 명령·예외, 비영속
+`CoinLedgerSyncSession`의 monotonic 정확히 5분 경계·wall clock 무관성·프로세스 재시작·epoch·
+projection·pending reconciliation gate를 검증한다. 서울 월 경계, quota 2, 비이월, 삭제 월 quota 0,
+서버 생성 월 검증과 첫 앱 foreground 지연 생성의 성공·멱등·실패·비가용 장부 무변경도 포함했다.
+세 source의 Swift 구문 검사, `project.pbxproj` plist와 target membership, `git diff --check`는 통과했다.
+코드 서명을 끈 generic iOS Simulator 제품 빌드는 앱과 네 extension을 포함해 통과했다.
+실제 `GetUpTests` build는 계획대로 T010~T013·T019·T021의 모델·정책·서비스가 없어
+`RestrictionOccurrence`, `CoinLedgerCurrentGate`, `MonthlyAllowancePolicy`, `MonthlyAllowanceService` 등
+미구현 symbol에서 RED가 확인됐다. 실패한 관련 테스트가 있으므로 T007은 체크하지 않고 후속 구현이
+green으로 전환할 때 완료 처리한다.
+
 2026-09-02 002 구현 T006과 Phase 1 체크포인트를 완료했다. `GetUp` 공용 scheme의 BuildAction에
 `GetUpLiveActivity`를 명시하고 Run action에 `Configuration/GetUp.storekit`을 연결했으며,
 `GetUp.xctestplan`에는 같은 StoreKit configuration과 기존 `GetUpTests`·`GetUpUITests`, 앱 변수 확장

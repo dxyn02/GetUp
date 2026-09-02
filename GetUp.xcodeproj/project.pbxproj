@@ -133,6 +133,9 @@
 		AA0000000000000000000211 /* AccessibilityUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000005 /* AccessibilityUITests.swift */; };
 		AA0000000000000000000212 /* PrivacyLoggingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000030 /* PrivacyLoggingTests.swift */; };
 		AA0000000000000000000213 /* RestrictionLatencyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000031 /* RestrictionLatencyTests.swift */; };
+		AA0000000000000000000220 /* LiveActivityCoinModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000033 /* LiveActivityCoinModelTests.swift */; };
+		AA0000000000000000000221 /* MonthlyAllowancePolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000034 /* MonthlyAllowancePolicyTests.swift */; };
+		AA0000000000000000000222 /* MonthlyAllowanceServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000035 /* MonthlyAllowanceServiceTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -275,6 +278,9 @@
 		B50000000000000000000029 /* PermissionGuideModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionGuideModelTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000030 /* PrivacyLoggingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyLoggingTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000031 /* RestrictionLatencyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionLatencyTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000033 /* LiveActivityCoinModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityCoinModelTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000034 /* MonthlyAllowancePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyAllowancePolicyTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000035 /* MonthlyAllowanceServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyAllowanceServiceTests.swift; sourceTree = "<group>"; };
 		B60000000000000000000001 /* UserStory1RuleConfigurationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory1RuleConfigurationUITests.swift; sourceTree = "<group>"; };
 		B60000000000000000000002 /* UserStory2RestrictionActivationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory2RestrictionActivationUITests.swift; sourceTree = "<group>"; };
 		B60000000000000000000003 /* UserStory3AutoReleaseUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory3AutoReleaseUITests.swift; sourceTree = "<group>"; };
@@ -573,6 +579,9 @@
 		B50000000000000000000011 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				B50000000000000000000033 /* LiveActivityCoinModelTests.swift */,
+				B50000000000000000000034 /* MonthlyAllowancePolicyTests.swift */,
+				B50000000000000000000035 /* MonthlyAllowanceServiceTests.swift */,
 				B50000000000000000000002 /* RestrictionStateMachineTests.swift */,
 				B50000000000000000000005 /* ScheduleEvaluatorTests.swift */,
 				B50000000000000000000006 /* RestrictionRuleValidatorTests.swift */,
@@ -1107,6 +1116,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000220 /* LiveActivityCoinModelTests.swift in Sources */,
+				AA0000000000000000000221 /* MonthlyAllowancePolicyTests.swift in Sources */,
+				AA0000000000000000000222 /* MonthlyAllowanceServiceTests.swift in Sources */,
 				AA0000000000000000000081 /* TestFixtures.swift in Sources */,
 				AA0000000000000000000082 /* RestrictionStateMachineTests.swift in Sources */,
 				AA0000000000000000000083 /* SharedSnapshotRepositoryTests.swift in Sources */,
