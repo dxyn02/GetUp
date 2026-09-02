@@ -1616,3 +1616,21 @@ scheme과 test plan에 각각 지정해야 앱 수동 실행과 자동 테스트
 
 **영향 범위**: `GetUp.xcodeproj/project.pbxproj`, 공용 `GetUp.xcscheme`, `GetUp.xctestplan`,
 `GetUpLiveActivity/GetUpLiveActivityBundle.swift`와 T036의 실제 Widget 구현에 적용한다.
+
+## DEC-082 — CloudKit 장부 record의 명시적 필드 whitelist
+
+**날짜**: 2026-09-02
+
+**결정**: 여섯 코인 장부 record type은 schema version별 명시적 필드 whitelist로만 encode·decode한다.
+decode 시 알 수 없는 필드가 하나라도 있으면 record를 무시하지 않고 `invalidRecord` 경계로 거부한다.
+singleton·월·거래·event·command record name도 payload에서 다시 계산한 결정적 ID와 일치해야 하며,
+현재 구현은 schema version 1만 허용한다. 새 필드를 추가할 때는 schema version을 올리고 별도 migration
+codec을 제공한다.
+
+**근거**: 위치 좌표·정확도와 Family Controls token·앱/도메인 식별 정보는 CloudKit 저장 금지
+데이터다. 쓰기 필드만 제한하면 다른 기기나 향후 adapter 오류로 섞인 민감 필드를 기존 client가
+조용히 수용할 수 있으므로 읽기 경계도 닫아야 한다. 미지 필드 추가를 schema 변경으로 취급하면
+구버전 client가 부분 payload를 잘못 해석하는 것도 막을 수 있다.
+
+**영향 범위**: `CoinLedgerRecordMapper`, 후속 CloudKit database adapter·repository와 record schema
+migration에 적용한다.

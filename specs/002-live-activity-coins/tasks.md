@@ -59,7 +59,7 @@ Phase 2에 둔다. US4에는 잔액 UI·지역화·월 경계 인수 검증만 �
 - [X] T014 ActivityKit·CloudKit·StoreKit·장부·해제 예외의 Sendable protocol과 안정 오류 코드를 `GetUp/Core/Contracts/LiveActivityCoinContracts.swift`에 정의한다.
 - [X] T015 [P] App Group 파일명, CloudKit zone·record ID, 상품 catalog key를 `GetUp/Core/Configuration/SharedIdentifiers.swift`에 추가한다.
 - [X] T016 활성 occurrence·잔액 mirror·해제 예외 repository, 기존 001 snapshot 비파괴 migration과 유효기간·활성 occurrence·미소비를 한 번에 검사해 성공 소비 또는 stale route 폐기를 atomic 수행하는 `PendingAppRouteRepository`를 `GetUp/Infrastructure/Persistence/SharedSnapshotRepository.swift`에 구현한다.
-- [ ] T017 [P] CloudKit record codec과 위치·Family Controls token 차단 검증을 `GetUp/Infrastructure/CloudKit/CoinLedgerRecordMapper.swift`에 구현한다.
+- [X] T017 [P] CloudKit record codec과 위치·Family Controls token 차단 검증을 `GetUp/Infrastructure/CloudKit/CoinLedgerRecordMapper.swift`에 구현한다.
 - [ ] T018 `ifServerRecordUnchanged` atomic modify, 결정적 event ID, 충돌·결과 불명 재조회와 allowance+freeGrant+무료 1회 reservation+ReleaseCommand 단일 저장이 포함된 장부 repository를 `GetUp/Infrastructure/CloudKit/CloudKitCoinLedgerRepository.swift`에 구현한다.
 - [ ] T019 account switch 격리, 로컬 빈 설치의 원격 장부 우선 fetch와 최초 `setupRequired`·기존 `current`·삭제 `deletionConfirmed` 구분, 비영속 `CoinLedgerSyncSession`의 monotonic 5분 freshness·프로세스 재시작·epoch/projection·reconciliation gate를 관리하는 동기화 adapter를 `GetUp/Infrastructure/CloudKit/CoinLedgerSyncAdapter.swift`에 구현한다.
 - [ ] T020 [P] ActivityKit·CloudKit·StoreKit·release 실패, current freshness의 monotonic 경과·wall clock 변경·프로세스 재시작과 Shield 4.9초·5초·late commit을 결정적으로 주입하는 clock fake와 fixture를 `GetUpTests/Support/LiveActivityCoinFixtures.swift`에 구현한다.
