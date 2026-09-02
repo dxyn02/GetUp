@@ -13,6 +13,69 @@ struct LiveActivityCoinModelTests {
         #expect(try roundTrip(occurrence) == occurrence)
     }
 
+    @Test("Every occurrence identity field contributes to its deterministic ID")
+    func occurrenceIdentityInputsAreDistinct() throws {
+        let occurrence = try makeOccurrence()
+        let otherRule = try RestrictionOccurrence(
+            ruleID: UUID(uuidString: "00000000-0000-4000-8000-000000000104")!,
+            ruleRevision: occurrence.ruleRevision,
+            startAt: occurrence.startAt,
+            endAt: occurrence.endAt,
+            activatedAt: occurrence.activatedAt
+        )
+        let otherRevision = try RestrictionOccurrence(
+            ruleID: occurrence.ruleID,
+            ruleRevision: occurrence.ruleRevision + 1,
+            startAt: occurrence.startAt,
+            endAt: occurrence.endAt,
+            activatedAt: occurrence.activatedAt
+        )
+        let otherStart = try RestrictionOccurrence(
+            ruleID: occurrence.ruleID,
+            ruleRevision: occurrence.ruleRevision,
+            startAt: occurrence.startAt.addingTimeInterval(1),
+            endAt: occurrence.endAt,
+            activatedAt: occurrence.activatedAt
+        )
+        let otherEnd = try RestrictionOccurrence(
+            ruleID: occurrence.ruleID,
+            ruleRevision: occurrence.ruleRevision,
+            startAt: occurrence.startAt,
+            endAt: occurrence.endAt.addingTimeInterval(1),
+            activatedAt: occurrence.activatedAt
+        )
+        let otherActivation = try RestrictionOccurrence(
+            ruleID: occurrence.ruleID,
+            ruleRevision: occurrence.ruleRevision,
+            startAt: occurrence.startAt,
+            endAt: occurrence.endAt,
+            activatedAt: occurrence.activatedAt.addingTimeInterval(1)
+        )
+
+        #expect(Set([
+            occurrence.id,
+            otherRule.id,
+            otherRevision.id,
+            otherStart.id,
+            otherEnd.id,
+        ]).count == 5)
+        #expect(otherActivation.id == occurrence.id)
+    }
+
+    @Test("Restriction occurrence rejects a persisted ID that does not match its fields")
+    func occurrenceRejectsForgedPersistedID() throws {
+        let data = try JSONEncoder().encode(makeOccurrence())
+        var object = try #require(
+            JSONSerialization.jsonObject(with: data) as? [String: Any]
+        )
+        object["id"] = "forged-occurrence-id"
+        let forgedData = try JSONSerialization.data(withJSONObject: object)
+
+        #expect(throws: LiveActivityCoinModelError.invalidOccurrenceID) {
+            _ = try JSONDecoder().decode(RestrictionOccurrence.self, from: forgedData)
+        }
+    }
+
     @Test("Restriction occurrence rejects a non-positive interval")
     func occurrenceRejectsInvalidInterval() {
         #expect(throws: LiveActivityCoinModelError.invalidOccurrenceInterval) {

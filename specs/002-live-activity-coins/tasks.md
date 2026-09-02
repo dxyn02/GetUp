@@ -52,7 +52,7 @@ Phase 2에 둔다. US4에는 잔액 UI·지역화·월 경계 인수 검증만 �
 
 ### 기반 구현
 
-- [ ] T010 [P] `RestrictionOccurrence`와 `ActiveRestrictionSnapshot` 모델 및 결정적 occurrence ID 생성을 `GetUp/Core/Models/RestrictionOccurrenceModels.swift`에 구현한다.
+- [X] T010 [P] `RestrictionOccurrence`와 `ActiveRestrictionSnapshot` 모델 및 결정적 occurrence ID 생성을 `GetUp/Core/Models/RestrictionOccurrenceModels.swift`에 구현한다.
 - [ ] T011 [P] 4KB 미만 payload의 `RestrictionLiveActivityAttributes`와 거리 표시 상태를 `GetUp/Core/Models/RestrictionLiveActivityModels.swift`에 구현한다.
 - [ ] T012 [P] `LedgerEpoch`, `CoinAccount`, `MonthlyAllowance`, `PurchaseGrant`, `CoinLedgerEvent`와 `setupRequired`를 포함한 `CoinBalanceSnapshot` 상태를 `GetUp/Core/Models/CoinLedgerModels.swift`에 구현한다.
 - [ ] T013 [P] `ReleaseCommand`, funding source·5초 timeout 후 재조정 상태 전이, `ReleaseException`, `PendingAppRoute`를 `GetUp/Core/Models/RuleReleaseModels.swift`에 구현한다.

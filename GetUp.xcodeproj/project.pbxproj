@@ -140,6 +140,11 @@
 		AA0000000000000000000224 /* PendingAppRouteRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000037 /* PendingAppRouteRepositoryTests.swift */; };
 		AA0000000000000000000225 /* CloudKitCoinLedgerRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000038 /* CloudKitCoinLedgerRepositoryTests.swift */; };
 		AA0000000000000000000226 /* CloudKitMonthlyAllowanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000039 /* CloudKitMonthlyAllowanceTests.swift */; };
+		AA0000000000000000000227 /* RestrictionOccurrenceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000057 /* RestrictionOccurrenceModels.swift */; };
+		AA0000000000000000000228 /* RestrictionOccurrenceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000057 /* RestrictionOccurrenceModels.swift */; };
+		AA0000000000000000000229 /* RestrictionOccurrenceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000057 /* RestrictionOccurrenceModels.swift */; };
+		AA0000000000000000000230 /* RestrictionOccurrenceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000057 /* RestrictionOccurrenceModels.swift */; };
+		AA0000000000000000000231 /* RestrictionOccurrenceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000057 /* RestrictionOccurrenceModels.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -256,6 +261,7 @@
 		B40000000000000000000053 /* RestrictionStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStatusView.swift; sourceTree = "<group>"; };
 		B40000000000000000000054 /* PermissionGuideModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionGuideModel.swift; sourceTree = "<group>"; };
 		B40000000000000000000056 /* PermissionGuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionGuideView.swift; sourceTree = "<group>"; };
+		B40000000000000000000057 /* RestrictionOccurrenceModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionOccurrenceModels.swift; sourceTree = "<group>"; };
 		B50000000000000000000001 /* TestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFixtures.swift; sourceTree = "<group>"; };
 		B50000000000000000000002 /* RestrictionStateMachineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStateMachineTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSnapshotRepositoryTests.swift; sourceTree = "<group>"; };
@@ -407,6 +413,7 @@
 		B40000000000000000000012 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				B40000000000000000000057 /* RestrictionOccurrenceModels.swift */,
 				B40000000000000000000002 /* RestrictionRuleModels.swift */,
 				B40000000000000000000003 /* RuntimeStateModels.swift */,
 			);
@@ -1019,6 +1026,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000227 /* RestrictionOccurrenceModels.swift in Sources */,
 				AA0000000000000000000031 /* SharedIdentifiers.swift in Sources */,
 				AA0000000000000000000041 /* RestrictionRuleModels.swift in Sources */,
 				AA0000000000000000000051 /* RuntimeStateModels.swift in Sources */,
@@ -1062,6 +1070,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000228 /* RestrictionOccurrenceModels.swift in Sources */,
 				AA0000000000000000000032 /* SharedIdentifiers.swift in Sources */,
 				AA0000000000000000000042 /* RestrictionRuleModels.swift in Sources */,
 				AA0000000000000000000052 /* RuntimeStateModels.swift in Sources */,
@@ -1088,6 +1097,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000229 /* RestrictionOccurrenceModels.swift in Sources */,
 				AA0000000000000000000033 /* SharedIdentifiers.swift in Sources */,
 				AA0000000000000000000043 /* RestrictionRuleModels.swift in Sources */,
 				AA0000000000000000000053 /* RuntimeStateModels.swift in Sources */,
@@ -1108,6 +1118,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000230 /* RestrictionOccurrenceModels.swift in Sources */,
 				AA0000000000000000000034 /* SharedIdentifiers.swift in Sources */,
 				AA0000000000000000000044 /* RestrictionRuleModels.swift in Sources */,
 				AA0000000000000000000054 /* RuntimeStateModels.swift in Sources */,
@@ -1181,6 +1192,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DK0000000000000000000001 /* GetUpLiveActivityBundle.swift in Sources */,
+				AA0000000000000000000231 /* RestrictionOccurrenceModels.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

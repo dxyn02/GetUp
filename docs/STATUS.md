@@ -7,17 +7,17 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 2 공통 기반 진행 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T007~T009의 도메인·월간 무료분·공유
-snapshot·`PendingAppRoute`·CloudKit 장부 RED 테스트를 작성했다. 후속 T010~T019·T021 타입과
-정책이 아직 없으므로 실제 test target은 의도한 compile 실패 상태이며, 관련 구현이 통과할 때까지
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T010 occurrence·활성 snapshot 모델을
+구현했다. T007~T009의 RED 테스트는 후속 T011~T019·T021 타입과 정책이 아직 없어
+전체 test target이 의도한 compile 실패 상태이며, 관련 구현이 통과할 때까지
 T007~T009는 완료 처리하지 않는다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T006 — Live Activity extension과 StoreKit configuration을 공용 scheme·test plan에 연결하고 Phase 1 빌드를 검증함
+T010 — `RestrictionOccurrence`와 `ActiveRestrictionSnapshot` 모델·결정적 occurrence ID를 구현함
 
 ## 다음 작업
-T010 — `RestrictionOccurrence`와 `ActiveRestrictionSnapshot` 모델 및 결정적 occurrence ID를 구현한다.
+T011 — 4KB 미만 payload의 `RestrictionLiveActivityAttributes`와 거리 표시 상태를 구현한다.
 T007~T009는 관련 기반 구현 후 green 전환과 함께 완료 처리한다. 001은 T083·T085 실기기 재검증과
 T086 구현·하이파이 편차 대조가 남아 있음
 
@@ -34,6 +34,16 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-02 002 구현 T010을 완료했다. `RestrictionOccurrence`는 rule ID·revision·시작·종료
+시각의 정확한 bit pattern으로 재실행·재부팅에도 동일한 ID를 생성하고, 저장 ID가 필드와
+다르거나 구간이 양수가 아니면 거부한다. `ActiveRestrictionSnapshot`은 schema version 1·0 이상 revision·
+고유 occurrence ID를 강제하고 디코딩에서도 동일 불변 조건을 적용한다. 기존 테스트에
+결정적 ID의 모든 식별 필드·`activatedAt` 비식별 규칙과 위조 ID 디코딩 거부를 추가했다.
+모델 typecheck·독립 실행 검증·Swift 구문·project plist·`git diff --check`가 통과했고,
+코드 서명을 끈 generic iOS Simulator 제품 빌드도 앱과 네 extension을 포함해 통과했다.
+전체 `GetUpTests` build에서 T010 symbol 오류가 사라진 것을 확인했으며, 잔여 compile 실패는
+T011~T019·T021의 미구현 타입에 한정된다.
+
 2026-09-02 002 구현 T009의 CloudKit 장부 RED 테스트 12개를 두 파일에 작성했다. 모든
 장부 entity의 record round-trip·schema 거부·위치와 Family Controls token 비포함·결정적 record
 ID를 검증한다. Repository는 `ifServerRecordUnchanged` 단일 atomic modify, change-tag 충돌 후
