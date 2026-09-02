@@ -120,6 +120,57 @@ struct LiveActivityCoinModelTests {
         }
     }
 
+    @Test("Live Activity unavailable distance carries no observation date")
+    func liveActivityUnavailableDistanceHasNoObservation() throws {
+        let valid = try RestrictionLiveActivityAttributes.ContentState(
+            occurrenceID: "occurrence-1",
+            ruleDisplayName: "Home",
+            endsAt: Self.endAt,
+            remainingDistance: .unavailable,
+            distanceObservedAt: nil,
+            hasAdditionalRestrictions: false
+        )
+
+        #expect(try roundTrip(valid) == valid)
+        #expect(throws: LiveActivityCoinModelError.unexpectedDistanceObservation) {
+            try RestrictionLiveActivityAttributes.ContentState(
+                occurrenceID: "occurrence-1",
+                ruleDisplayName: "Home",
+                endsAt: Self.endAt,
+                remainingDistance: .unavailable,
+                distanceObservedAt: Self.activatedAt,
+                hasAdditionalRestrictions: false
+            )
+        }
+    }
+
+    @Test("Live Activity attributes and content state remain below four kilobytes")
+    func liveActivityPayloadSize() throws {
+        let attributes = RestrictionLiveActivityAttributes(
+            activityID: Self.routeID,
+            restrictionStartedAt: Self.activatedAt
+        )
+        let contentState = try RestrictionLiveActivityAttributes.ContentState(
+            occurrenceID: try makeOccurrence().id,
+            ruleDisplayName: String(repeating: "집", count: SavedPlaceNamePolicy.maximumLength),
+            endsAt: Self.endAt,
+            remainingDistance: .known(meters: 1_000),
+            distanceObservedAt: Self.activatedAt,
+            hasAdditionalRestrictions: true
+        )
+        let encoder = JSONEncoder()
+        let attributesData = try encoder.encode(attributes)
+        let contentStateData = try encoder.encode(contentState)
+        let payloadSize = attributesData.count + contentStateData.count
+        let encodedPayload = String(decoding: attributesData, as: UTF8.self)
+            + String(decoding: contentStateData, as: UTF8.self)
+
+        #expect(payloadSize < RestrictionLiveActivityAttributes.maximumPayloadSizeInBytes)
+        for forbiddenFragment in ["latitude", "longitude", "accuracy", "coordinate", "address"] {
+            #expect(!encodedPayload.lowercased().contains(forbiddenFragment))
+        }
+    }
+
     @Test("Live Activity payload rejects coordinates and negative known distance by construction")
     func liveActivityDistanceInvariant() {
         #expect(throws: LiveActivityCoinModelError.invalidRemainingDistance) {

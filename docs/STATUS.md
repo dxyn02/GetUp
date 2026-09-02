@@ -7,17 +7,17 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 2 공통 기반 진행 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T010 occurrence·활성 snapshot 모델을
-구현했다. T007~T009의 RED 테스트는 후속 T011~T019·T021 타입과 정책이 아직 없어
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T010·T011 occurrence·Live Activity 모델을
+구현했다. T007~T009의 RED 테스트는 후속 T012~T019·T021 타입과 정책이 아직 없어
 전체 test target이 의도한 compile 실패 상태이며, 관련 구현이 통과할 때까지
 T007~T009는 완료 처리하지 않는다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T010 — `RestrictionOccurrence`와 `ActiveRestrictionSnapshot` 모델·결정적 occurrence ID를 구현함
+T011 — 4KB 미만 `RestrictionLiveActivityAttributes`와 거리 표시 상태를 구현함
 
 ## 다음 작업
-T011 — 4KB 미만 payload의 `RestrictionLiveActivityAttributes`와 거리 표시 상태를 구현한다.
+T012 — 장부·구매·월간 무료분·잔액 snapshot 모델을 구현한다.
 T007~T009는 관련 기반 구현 후 green 전환과 함께 완료 처리한다. 001은 T083·T085 실기기 재검증과
 T086 구현·하이파이 편차 대조가 남아 있음
 
@@ -34,6 +34,17 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-02 002 구현 T011을 완료했다. `RestrictionLiveActivityAttributes`의 정적 필드와
+`ContentState`에 대표 occurrence·규칙명·종료 시각·추가 제한 여부를 최소 payload로 구성했다.
+거리는 `known(meters)`·`unavailable`로만 표현하고, known의 0 이상 거리·필수 관측 시각과
+unavailable의 nil 관측 시각을 생성·디코딩 모두에서 강제했다. 속성과 상태 JSON 합계가
+4KB 미만이고 좌표·정확도·주소 key가 없음을 테스트했다. iOS에서만 `ActivityAttributes`를
+채택해 앱·Widget Extension이 공유하고, 순수 Codable 부분은 macOS 독립 검증을 가능하게 했다.
+iOS typecheck·독립 실행 검증·Swift 구문·project plist·`git diff --check`가 통과했고,
+코드 서명을 끈 generic iOS Simulator 제품 빌드도 앱과 네 extension을 포함해 통과했다.
+전체 `GetUpTests` build에서 T011 symbol·타입 오류가 사라진 것을 확인했으며, 잔여 compile
+실패는 T012~T019·T021의 미구현 타입에 한정된다.
+
 2026-09-02 002 구현 T010을 완료했다. `RestrictionOccurrence`는 rule ID·revision·시작·종료
 시각의 정확한 bit pattern으로 재실행·재부팅에도 동일한 ID를 생성하고, 저장 ID가 필드와
 다르거나 구간이 양수가 아니면 거부한다. `ActiveRestrictionSnapshot`은 schema version 1·0 이상 revision·
