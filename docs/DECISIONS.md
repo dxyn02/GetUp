@@ -1583,7 +1583,10 @@ T097에서 확인한다.
 `GETUP_COIN_PRODUCT_5_IDENTIFIER` build setting으로 관리한다. 앱 Info.plist의
 `GetUpCoinProductCatalog`는 각 식별자를 지급 수량 1·3·5와 명시적으로 매핑하며 이 목록 밖의 상품은
 지급 대상으로 인정하지 않는다. 완료된 소모성 거래의 후속 검증을 위해
-`SKIncludeConsumableInAppPurchaseHistory`를 활성화한다.
+`SKIncludeConsumableInAppPurchaseHistory`를 활성화한다. 로컬 StoreKit fixture에서는 세 상품을
+판매 가능한 `Consumable`로 두고 한국어 `코인 1개`·`코인 3개`·`코인 5개`, 영어 `1 Coin`·
+`3 Coins`·`5 Coins`와 KOR 테스트 가격 ₩1,100·₩2,900·₩4,400을 사용한다. 이 가격은 로컬 테스트
+시나리오용이며 App Store Connect의 실제 판매 가격을 확정하지 않는다.
 
 **근거**: StoreKit에서 전달된 product ID만으로 지급 수량을 추측하지 않고 배포 설정의 고정 허용
 목록과 대조해야 잘못된 상품·수량 지급을 막을 수 있다. 동일 ID를 StoreKit Configuration과 App Store

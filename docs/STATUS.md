@@ -8,15 +8,15 @@
 
 ## 진행 중
 `codex/live-activity-coins-setup`에서 002-live-activity-coins Phase 1을 진행 중이다. T004로
-코인 1개·3개·5개 상품 ID와 지급 수량의 번들 허용 catalog를 구성했다.
+코인 상품 catalog를 고정했고 T005로 같은 ID의 로컬 StoreKit consumable 3개를 구성했다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T004 — 코인 1개·3개·5개 상품의 build setting과 번들 허용 catalog를 구성함
+T005 — 코인 1개·3개·5개 consumable의 로컬 StoreKit 상품·현지화·테스트 가격을 구성함
 
 ## 다음 작업
-T005 — 1개·3개·5개 consumable의 product ID, 표시명, 테스트 가격과 판매 상태를 로컬 StoreKit
-Configuration에 구성한다. 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
+T006 — Widget Extension과 StoreKit configuration을 공용 scheme·test plan에 연결하고 전체 target
+목록 및 Simulator 빌드를 검증한다. 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
 BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록과
@@ -31,6 +31,12 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-02 002 구현 T005를 완료했다. `Configuration/GetUp.storekit`에
+`com.dxyn02.GetUp.coin.1`·`.3`·`.5`를 판매 가능한 `Consumable`로 등록하고 한국어·영어 표시명과
+설명, KOR storefront 로컬 테스트 가격 ₩1,100·₩2,900·₩4,400을 구성했다. JSON 구조, 상품 3개,
+고정 허용 ID, 상품 종류, 가격, 양쪽 locale과 storefront를 `jq` assertion으로 검증했다.
+`.storekit` 파일의 Xcode 로드와 scheme 연결은 T006에서 함께 검증한다.
+
 2026-09-02 002 구현 T004를 완료했다. 앱 Info.plist의 catalog가
 `com.dxyn02.GetUp.coin.1`→1, `.3`→3, `.5`→5로 구성되고
 `SKIncludeConsumableInAppPurchaseHistory = true`임을 확인했다. Debug·Release에서 세 build setting이
