@@ -1680,3 +1680,25 @@ mirror, `LedgerEpoch`와 계정 epoch 일치, 완료된 projection, pending reco
 
 **영향 범위**: `CoinLedgerSyncAdapter`, `CoinLedgerCurrentGate`, 후속 구매·해제 승인 gate와 T071의
 CloudKit zone 삭제 증거 분류에 적용한다.
+
+## DEC-085 — 월간 무료분 생성 경계와 foreground 복구 격리
+
+**날짜**: 2026-09-02
+
+**결정**: 기존 current 장부의 새달 무료분은 앱 foreground에서 월 레코드가 없을 때만 지연 생성한다.
+이 동작은 제한 일정·위치·Shield 복구와 같은 `AppLifecycleCoordinator.restore()`에서 실행하지만,
+iCloud 쓰기 실패는 `.monthlyAllowance`로 보고하고 기존 제한 복구를 중단하지 않는다. `setupRequired`의
+최초 장부 생성과 삭제 후 reset 장부 생성은 T072의 명시적 사용자 확인 service가 담당한다.
+
+Shield의 무료 해제는 allowance를 별도로 먼저 생성하지 않고 `CoinLedgerRepository.reserveMonthlyFree`에
+위임해 allowance·free grant·reservation·command를 하나의 원자 명령으로 저장한다. 공통
+`MonthlyAllowanceService`는 app과 Shield가 같은 current epoch gate를 사용하도록 하고,
+`DependencyContainer`는 repository와 foreground 동기화 context provider를 주입받아 조립한다.
+
+**근거**: 월 레코드 생성 실패가 기존 Screen Time 제한 복구까지 막으면 코인 부가기능 장애가 핵심
+제한 기능을 훼손한다. 반대로 Shield가 생성과 예약을 두 번의 쓰기로 나누면 지급만 확인되고 예약은
+실패하는 부분 상태가 생긴다. 최초·reset 장부는 고지와 사용자 확인이 필요한 별도 제품 흐름이므로
+일반 foreground 지연 생성에서 자동 처리하지 않는다.
+
+**영향 범위**: `MonthlyAllowancePolicy`, `MonthlyAllowanceService`, `AppLifecycleCoordinator`,
+`DependencyContainer`와 T072 초기 설정 service에 적용한다.

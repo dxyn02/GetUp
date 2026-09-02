@@ -169,6 +169,14 @@
 		AA0000000000000000000253 /* CoinLedgerSyncAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000000000000000000005F /* CoinLedgerSyncAdapter.swift */; };
 		AA0000000000000000000254 /* CoinLedgerSyncAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000000000000000000005F /* CoinLedgerSyncAdapter.swift */; };
 		AA0000000000000000000255 /* LiveActivityCoinFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000040 /* LiveActivityCoinFixtures.swift */; };
+		AA0000000000000000000256 /* MonthlyAllowancePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000060 /* MonthlyAllowancePolicy.swift */; };
+		AA0000000000000000000257 /* MonthlyAllowancePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000060 /* MonthlyAllowancePolicy.swift */; };
+		AA0000000000000000000258 /* MonthlyAllowanceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000061 /* MonthlyAllowanceService.swift */; };
+		AA0000000000000000000259 /* MonthlyAllowanceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000061 /* MonthlyAllowanceService.swift */; };
+		AA0000000000000000000260 /* MonthlyAllowancePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000060 /* MonthlyAllowancePolicy.swift */; };
+		AA0000000000000000000261 /* MonthlyAllowancePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000060 /* MonthlyAllowancePolicy.swift */; };
+		AA0000000000000000000262 /* MonthlyAllowanceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000061 /* MonthlyAllowanceService.swift */; };
+		AA0000000000000000000263 /* MonthlyAllowanceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000061 /* MonthlyAllowanceService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -293,6 +301,8 @@
 		B4000000000000000000005C /* CoinLedgerRecordMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinLedgerRecordMapper.swift; sourceTree = "<group>"; };
 		B4000000000000000000005E /* CloudKitCoinLedgerRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitCoinLedgerRepository.swift; sourceTree = "<group>"; };
 		B4000000000000000000005F /* CoinLedgerSyncAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinLedgerSyncAdapter.swift; sourceTree = "<group>"; };
+		B40000000000000000000060 /* MonthlyAllowancePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyAllowancePolicy.swift; sourceTree = "<group>"; };
+		B40000000000000000000061 /* MonthlyAllowanceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyAllowanceService.swift; sourceTree = "<group>"; };
 		B50000000000000000000001 /* TestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFixtures.swift; sourceTree = "<group>"; };
 		B50000000000000000000002 /* RestrictionStateMachineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStateMachineTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSnapshotRepositoryTests.swift; sourceTree = "<group>"; };
@@ -467,6 +477,7 @@
 		B40000000000000000000014 /* Evaluation */ = {
 			isa = PBXGroup;
 			children = (
+				B40000000000000000000060 /* MonthlyAllowancePolicy.swift */,
 				B40000000000000000000005 /* RestrictionEvaluationModels.swift */,
 				B40000000000000000000020 /* ScheduleEvaluator.swift */,
 				B40000000000000000000021 /* RestrictionRuleValidator.swift */,
@@ -477,6 +488,7 @@
 		B40000000000000000000015 /* StateMachine */ = {
 			isa = PBXGroup;
 			children = (
+				B40000000000000000000061 /* MonthlyAllowanceService.swift */,
 				B40000000000000000000006 /* RestrictionStateMachine.swift */,
 			);
 			path = StateMachine;
@@ -1074,6 +1086,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000258 /* MonthlyAllowanceService.swift in Sources */,
+				AA0000000000000000000256 /* MonthlyAllowancePolicy.swift in Sources */,
 				AA0000000000000000000253 /* CoinLedgerSyncAdapter.swift in Sources */,
 				AA0000000000000000000251 /* CloudKitCoinLedgerRepository.swift in Sources */,
 				AA0000000000000000000249 /* CoinLedgerRecordMapper.swift in Sources */,
@@ -1125,6 +1139,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000262 /* MonthlyAllowanceService.swift in Sources */,
+				AA0000000000000000000260 /* MonthlyAllowancePolicy.swift in Sources */,
 				AA0000000000000000000243 /* LiveActivityCoinContracts.swift in Sources */,
 				AA0000000000000000000246 /* RestrictionLiveActivityModels.swift in Sources */,
 				AA0000000000000000000228 /* RestrictionOccurrenceModels.swift in Sources */,
@@ -1156,6 +1172,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000263 /* MonthlyAllowanceService.swift in Sources */,
+				AA0000000000000000000261 /* MonthlyAllowancePolicy.swift in Sources */,
 				AA0000000000000000000244 /* LiveActivityCoinContracts.swift in Sources */,
 				AA0000000000000000000247 /* RestrictionLiveActivityModels.swift in Sources */,
 				AA0000000000000000000229 /* RestrictionOccurrenceModels.swift in Sources */,
@@ -1181,6 +1199,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000259 /* MonthlyAllowanceService.swift in Sources */,
+				AA0000000000000000000257 /* MonthlyAllowancePolicy.swift in Sources */,
 				AA0000000000000000000254 /* CoinLedgerSyncAdapter.swift in Sources */,
 				AA0000000000000000000252 /* CloudKitCoinLedgerRepository.swift in Sources */,
 				AA0000000000000000000250 /* CoinLedgerRecordMapper.swift in Sources */,

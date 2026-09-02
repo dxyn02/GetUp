@@ -5,6 +5,7 @@ enum AppLifecycleRecoveryFailure: Equatable, Sendable {
     case locationReset
     case schedule(ruleID: UUID)
     case location(ruleID: UUID)
+    case monthlyAllowance
     case restriction
 }
 
@@ -17,11 +18,13 @@ struct AppLifecycleRecoveryResult: Equatable, Sendable {
 
 actor AppLifecycleCoordinator {
     typealias RestrictionRestore = @Sendable () async throws -> RestrictionCoordinationResult
+    typealias MonthlyAllowanceEnsure = @Sendable () async throws -> Void
 
     private let ruleRepository: any RuleRepository
     private let scheduleManager: any ScheduleManaging
     private let locationMonitor: any LocationMonitoring
     private let authorizationProvider: any AuthorizationProviding
+    private let ensureMonthlyAllowance: MonthlyAllowanceEnsure
     private let restoreRestriction: RestrictionRestore
 
     init(
@@ -29,12 +32,14 @@ actor AppLifecycleCoordinator {
         scheduleManager: any ScheduleManaging,
         locationMonitor: any LocationMonitoring,
         authorizationProvider: any AuthorizationProviding,
+        ensureMonthlyAllowance: @escaping MonthlyAllowanceEnsure = {},
         restoreRestriction: @escaping RestrictionRestore
     ) {
         self.ruleRepository = ruleRepository
         self.scheduleManager = scheduleManager
         self.locationMonitor = locationMonitor
         self.authorizationProvider = authorizationProvider
+        self.ensureMonthlyAllowance = ensureMonthlyAllowance
         self.restoreRestriction = restoreRestriction
     }
 
@@ -83,6 +88,12 @@ actor AppLifecycleCoordinator {
             }
         }
 
+        do {
+            try await ensureMonthlyAllowance()
+        } catch {
+            failures.append(.monthlyAllowance)
+        }
+
         let restrictionResult: RestrictionCoordinationResult?
         do {
             restrictionResult = try await restoreRestriction()
@@ -119,6 +130,7 @@ actor AppLifecycleCoordinator {
             scheduleManager: DeviceActivityScheduleAdapter(),
             locationMonitor: container.makeLocationMonitor(),
             authorizationProvider: authorizationProvider,
+            ensureMonthlyAllowance: container.ensureMonthlyAllowanceOnForeground,
             restoreRestriction: {
                 try await restrictionCoordinator.restore()
             }

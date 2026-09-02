@@ -71,6 +71,50 @@ struct MonthlyAllowanceServiceTests {
         }
         #expect(await repository.creationRequests.isEmpty)
     }
+
+    @Test("Shield release delegates allowance creation and reservation as one repository command")
+    func shieldReleaseUsesAtomicReservationPath() async throws {
+        let repository = MonthlyAllowanceRepositorySpy(result: .failure(.unexpectedWrite))
+        let reservationRepository = MonthlyFreeReservationSpy()
+        let service = MonthlyAllowanceService(
+            repository: repository,
+            reserveMonthlyFree: { request in
+                try await reservationRepository.reserve(request)
+            }
+        )
+        let request = MonthlyFreeReservationRequest.fixture()
+
+        let reservation = try await service.reserveAllowanceForShield(
+            request,
+            ledgerState: .current(epoch: .fixture())
+        )
+
+        #expect(reservation.command.commandID == request.commandID)
+        #expect(reservation.command.state == .reserved)
+        #expect(reservation.allowance?.reserved == 1)
+        #expect(await repository.creationRequests.isEmpty)
+        #expect(await reservationRepository.requests == [request])
+    }
+
+    @Test("Shield release cannot reserve against a non-current ledger")
+    func shieldReleaseRejectsUnavailableLedger() async {
+        let repository = MonthlyAllowanceRepositorySpy(result: .failure(.unexpectedWrite))
+        let reservationRepository = MonthlyFreeReservationSpy()
+        let service = MonthlyAllowanceService(
+            repository: repository,
+            reserveMonthlyFree: { request in
+                try await reservationRepository.reserve(request)
+            }
+        )
+
+        await #expect(throws: MonthlyAllowanceServiceError.ledgerNotCurrent) {
+            try await service.reserveAllowanceForShield(
+                .fixture(),
+                ledgerState: .setupRequired
+            )
+        }
+        #expect(await reservationRepository.requests.isEmpty)
+    }
 }
 
 private actor MonthlyAllowanceRepositorySpy: MonthlyAllowanceRepository {
@@ -92,15 +136,60 @@ private actor MonthlyAllowanceRepositorySpy: MonthlyAllowanceRepository {
     }
 }
 
+private actor MonthlyFreeReservationSpy {
+    private(set) var requests: [MonthlyFreeReservationRequest] = []
+
+    func reserve(
+        _ request: MonthlyFreeReservationRequest
+    ) async throws -> CoinReleaseReservation {
+        requests.append(request)
+        let allowance = try MonthlyAllowance.septemberFixture(reserved: 1)
+        let command = try ReleaseCommand.requested(
+            commandID: request.commandID,
+            occurrenceID: request.occurrenceID,
+            ruleID: request.ruleID,
+            requestedFrom: request.requestedFrom,
+            at: request.requestedAt
+        ).transitioning(
+            to: .reserved,
+            fundingSource: .monthlyFree,
+            at: request.requestedAt
+        )
+        return CoinReleaseReservation(
+            command: command,
+            allowance: allowance,
+            account: nil
+        )
+    }
+}
+
 private extension MonthlyAllowance {
-    static func septemberFixture(used: Int = 0) throws -> MonthlyAllowance {
+    static func septemberFixture(
+        used: Int = 0,
+        reserved: Int = 0
+    ) throws -> MonthlyAllowance {
         try MonthlyAllowance(
             monthID: "2026-09",
             quota: 2,
             used: used,
-            reserved: 0,
+            reserved: reserved,
             creationDate: Date(timeIntervalSince1970: 1_788_192_000),
             updatedAt: Date(timeIntervalSince1970: 1_788_192_000)
+        )
+    }
+}
+
+private extension MonthlyFreeReservationRequest {
+    static func fixture() -> MonthlyFreeReservationRequest {
+        MonthlyFreeReservationRequest(
+            commandID: UUID(uuidString: "00000000-0000-4000-8000-000000000211")!,
+            occurrenceID: "rule:1:2026-09-02T00:00:00Z",
+            ruleID: UUID(uuidString: "00000000-0000-4000-8000-000000000212")!,
+            ruleRevision: 1,
+            monthID: "2026-09",
+            ledgerEpochID: LedgerEpoch.fixture().epochID,
+            requestedFrom: .shield,
+            requestedAt: Date(timeIntervalSince1970: 1_788_192_000)
         )
     }
 }

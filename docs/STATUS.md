@@ -4,22 +4,19 @@
 001-location-app-restriction, 002-live-activity-coins
 
 ## 현재 단계
-001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 2 공통 기반 진행 중
+001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 2 공통 기반을 완료하고 Phase 3 시작 준비 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T010~T020 occurrence·Live Activity·코인 장부·해제 모델과
-framework·repository 계약·공용 식별자·공유 snapshot 저장소·CloudKit record codec·원자 장부 repository·동기화 adapter·공용 test fixture를 구현했다.
-T008·T009는 green으로 완료했고, T007의 RED 테스트는 후속 T021 정책과 서비스가 아직 없어
-전체 test target이 의도한 compile 실패 상태이며, 관련 구현이 통과할 때까지
-T007은 완료 처리하지 않는다.
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T007~T021 공통 기반을 완료했다.
+occurrence·Live Activity·코인 장부·해제 모델, framework·repository 계약, 공유 snapshot·CloudKit
+codec·원자 장부 repository·동기화 adapter와 서울 월 정책·지연 생성 service를 독립 검증할 수 있다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T020 — framework·release 실패와 monotonic·wall-clock·Shield deadline을 결정적으로 주입하는 공용 test fixture를 구현함
+T021 — 서울 월 정책, app foreground 지연 생성, Shield 원자 예약 service와 앱 수명주기 조립을 구현함
 
 ## 다음 작업
-T021 — 서울 기준 월 정책과 지연 생성·Shield 원자 예약 service를 구현하고 앱 수명주기·의존성 조립을 연결한다.
-T007은 T019·T021 기반 구현 후 green 전환과 함께 완료 처리한다. 001은 T083·T085 실기기 재검증과
+T022 — 대표 occurrence의 정렬·교체 RED 테스트를 먼저 작성한다. 001은 T083·T085 실기기 재검증과
 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -35,6 +32,16 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-02 002 구현 T021과 선행 RED 테스트 T007의 green 전환을 완료했다.
+`MonthlyAllowancePolicy`는 `Asia/Seoul` 월 경계, 월 quota 2, 비이월, 장부 삭제를 확인한 reset 월의
+quota 0과 서버 생성 시각의 월 일치를 강제한다. `MonthlyAllowanceService`는 확인된 current epoch에서만
+새달 app foreground allowance를 멱등 생성하며, Shield에서는 별도 선행 생성을 하지 않고 repository의
+allowance 생성·무료 1회 예약 단일 원자 명령만 호출한다. `AppLifecycleCoordinator`는 foreground 복구
+때 월 생성 trigger를 실행하고 실패를 `.monthlyAllowance`로 보고하되 기존 제한 복구를 계속한다.
+`DependencyContainer`에는 공통 service·repository와 동기화 context provider 연결 지점을 조립했다.
+iPhone 17 Pro iOS 26.5 Simulator의 전체 `GetUpTests` 306개(동적 인자 실행 포함 346회)가 실패·skip
+없이 통과했다. project plist와 `git diff --check`도 통과했다.
+
 2026-09-02 002 구현 T020을 완료했다. `LiveActivityCoinFixtures.swift`에 ActivityKit 활동 관리,
 CloudKit database, StoreKit storefront, 코인 장부 repository의 순서 있는 성공·실패 script와 호출
 기록을 제공한다. 별도의 mutable monotonic clock과 wall clock으로 5분 freshness·기기 시각 변경·
