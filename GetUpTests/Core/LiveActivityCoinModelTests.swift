@@ -299,7 +299,7 @@ struct LiveActivityCoinModelTests {
 
     @Test("Release command accepts only declared state transitions")
     func releaseCommandStateTransitionInvariant() throws {
-        let requested = ReleaseCommand.requested(
+        let requested = try ReleaseCommand.requested(
             commandID: Self.commandID,
             occurrenceID: "occurrence-1",
             ruleID: Self.ruleID,
@@ -319,6 +319,75 @@ struct LiveActivityCoinModelTests {
                 to: .committed,
                 fundingSource: .monthlyFree,
                 at: Self.activatedAt.addingTimeInterval(1)
+            )
+        }
+    }
+
+    @Test("Release command supports success, compensation, and reconciliation paths")
+    func releaseCommandDeclaredPaths() throws {
+        let requested = try makeRequestedCommand()
+        let reserved = try requested.transitioning(
+            to: .reserved,
+            fundingSource: .monthlyFree,
+            at: Self.activatedAt.addingTimeInterval(1)
+        )
+        let applied = try reserved.transitioning(
+            to: .applied,
+            at: Self.activatedAt.addingTimeInterval(2)
+        )
+        let committed = try applied.transitioning(
+            to: .committed,
+            at: Self.activatedAt.addingTimeInterval(3)
+        )
+        let compensating = try reserved.transitioning(
+            to: .compensating,
+            failureCode: "exception_write_failed",
+            at: Self.activatedAt.addingTimeInterval(2)
+        )
+        let compensated = try compensating.transitioning(
+            to: .compensated,
+            at: Self.activatedAt.addingTimeInterval(3)
+        )
+        let reconciliation = try reserved.transitioning(
+            to: .reconciliationRequired,
+            failureCode: "shield_deadline_exceeded",
+            at: Self.activatedAt.addingTimeInterval(5)
+        )
+        let reconciled = try reconciliation.transitioning(
+            to: .compensated,
+            at: Self.activatedAt.addingTimeInterval(6)
+        )
+
+        #expect(committed.state == .committed)
+        #expect(committed.fundingSource == .monthlyFree)
+        #expect(compensated.state == .compensated)
+        #expect(reconciliation.state == .reconciliationRequired)
+        #expect(reconciliation.failureCode == "shield_deadline_exceeded")
+        #expect(reconciled.state == .compensated)
+        #expect(reconciled.failureCode == "shield_deadline_exceeded")
+        #expect(try roundTrip(committed) == committed)
+        #expect(try roundTrip(reconciled) == reconciled)
+    }
+
+    @Test("Release command cannot change funding source or move time backwards")
+    func releaseCommandRejectsFundingAndTimestampMutation() throws {
+        let reserved = try makeRequestedCommand().transitioning(
+            to: .reserved,
+            fundingSource: .monthlyFree,
+            at: Self.activatedAt.addingTimeInterval(1)
+        )
+
+        #expect(throws: LiveActivityCoinModelError.invalidReleaseCommandTransition) {
+            try reserved.transitioning(
+                to: .applied,
+                fundingSource: .purchased,
+                at: Self.activatedAt.addingTimeInterval(2)
+            )
+        }
+        #expect(throws: LiveActivityCoinModelError.invalidReleaseCommandTransition) {
+            try reserved.transitioning(
+                to: .applied,
+                at: Self.activatedAt
             )
         }
     }
@@ -349,7 +418,7 @@ struct LiveActivityCoinModelTests {
 
     @Test("Pending app route preserves its one-time navigation context through Codable")
     func pendingRouteCodableRoundTrip() throws {
-        let route = PendingAppRoute(
+        let route = try PendingAppRoute(
             routeID: Self.routeID,
             destination: .reconciliation,
             createdAt: Self.activatedAt,
@@ -358,6 +427,15 @@ struct LiveActivityCoinModelTests {
         )
 
         #expect(try roundTrip(route) == route)
+        #expect(throws: LiveActivityCoinModelError.invalidPendingAppRoute) {
+            try PendingAppRoute(
+                routeID: Self.routeID,
+                destination: .coinStore,
+                createdAt: Self.activatedAt,
+                occurrenceID: "occurrence-1",
+                consumedAt: Self.activatedAt.addingTimeInterval(-1)
+            )
+        }
     }
 }
 
@@ -494,6 +572,16 @@ private extension LiveActivityCoinModelTests {
     static let startAt = Date(timeIntervalSince1970: 1_788_192_000)
     static let endAt = startAt.addingTimeInterval(3_600)
     static let activatedAt = startAt.addingTimeInterval(10)
+
+    func makeRequestedCommand() throws -> ReleaseCommand {
+        try ReleaseCommand.requested(
+            commandID: Self.commandID,
+            occurrenceID: "occurrence-1",
+            ruleID: Self.ruleID,
+            requestedFrom: .shield,
+            at: Self.activatedAt
+        )
+    }
 
     func makeOccurrence(
         startAt: Date = Self.startAt,

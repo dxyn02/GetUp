@@ -7,17 +7,17 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 2 공통 기반 진행 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T010~T012 occurrence·Live Activity·코인 장부 모델을
-구현했다. T007~T009의 RED 테스트는 후속 T013~T019·T021 타입과 정책이 아직 없어
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T010~T013 occurrence·Live Activity·코인 장부·해제 모델을
+구현했다. T007~T009의 RED 테스트는 후속 T014~T019·T021 타입과 정책이 아직 없어
 전체 test target이 의도한 compile 실패 상태이며, 관련 구현이 통과할 때까지
 T007~T009는 완료 처리하지 않는다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T012 — 장부·구매·월간 무료분·잔액 snapshot 모델과 불변 조건을 구현함
+T013 — 해제 명령 상태 머신·구간 예외·일회성 앱 route 모델을 구현함
 
 ## 다음 작업
-T013 — 해제 명령·funding source·해제 예외·앱 진입 route 모델과 상태 전이를 구현한다.
+T014 — ActivityKit·CloudKit·StoreKit·장부·해제 예외의 Sendable 계약과 안정 오류 코드를 정의한다.
 T007~T009는 관련 기반 구현 후 green 전환과 함께 완료 처리한다. 001은 T083·T085 실기기 재검증과
 T086 구현·하이파이 편차 대조가 남아 있음
 
@@ -34,6 +34,17 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-02 002 구현 T013을 완료했다. `ReleaseCommand`에 `requested`·`reserved`·`applied`·
+`committed`, 거절·보상, 5초 성공 미확인 뒤 `reconciliationRequired`에서 `committed` 또는
+`compensated`로 수렴하는 선언적 상태 전이를 구현했다. reservation에서 확정한 무료분·구매 코인
+funding source는 이후 바꿀 수 없고, 갱신 시각은 역행하지 않으며 안정 failure code는 최종 상태까지
+보존한다. `ReleaseException`과 중복 command·occurrence를 막는 collection snapshot, `coinStore`·
+`iCloudRecovery`·`ledgerReset`·`reconciliation` 목적의 `PendingAppRoute`도 생성·디코딩 경계에서
+검증한다. 모델 typecheck·독립 실행 검증·Swift 구문·project plist·`git diff --check`가 통과했고,
+코드 서명을 끈 generic iOS Simulator 제품 빌드도 앱과 네 extension을 포함해 통과했다. 전체
+`GetUpTests` build에서 T013 symbol 오류가 사라진 것을 확인했으며, 잔여 compile 실패는
+T014~T019·T021의 미구현 계약·adapter·정책 타입에 한정된다.
+
 2026-09-02 002 구현 T012를 완료했다. `LedgerEpoch`, 구매 잔액·예약을 분리한 `CoinAccount`,
 월 quota·사용·예약을 분리한 `MonthlyAllowance`, 검증된 거래와 조정 수량을 보존하는
 `PurchaseGrant`, 감사 연결 필드를 가진 `CoinLedgerEvent`를 구현했다. `CoinBalanceSnapshot`은

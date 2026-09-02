@@ -16,6 +16,9 @@ enum LiveActivityCoinModelError: Error, Equatable, Sendable {
     case invalidCoinBalanceSnapshot
     case invalidReleaseCommandTransition
     case invalidReleaseExceptionInterval
+    case invalidReleaseExceptionCollection
+    case unsupportedReleaseExceptionCollectionSchema(Int)
+    case invalidPendingAppRoute
 }
 
 struct RestrictionOccurrence: Codable, Equatable, Hashable, Sendable {

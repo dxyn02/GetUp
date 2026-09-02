@@ -186,7 +186,7 @@ private extension PendingAppRouteRepositoryTests {
         occurrenceID: String? = Self.occurrenceID,
         consumedAt: Date? = nil
     ) -> PendingAppRoute {
-        PendingAppRoute(
+        try! PendingAppRoute(
             routeID: Self.routeID,
             destination: destination,
             createdAt: Self.createdAt,
