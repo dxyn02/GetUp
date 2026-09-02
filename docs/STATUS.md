@@ -7,18 +7,19 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 2 공통 기반 진행 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T010~T015 occurrence·Live Activity·코인 장부·해제 모델과
-framework·repository 계약·공용 식별자를 구현했다. T007~T009의 RED 테스트는 후속 T016~T019·T021 타입과 정책이 아직 없어
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T010~T016 occurrence·Live Activity·코인 장부·해제 모델과
+framework·repository 계약·공용 식별자·공유 snapshot 저장소를 구현했다. T008은 green으로 완료했고,
+T007·T009의 RED 테스트는 후속 T017~T019·T021 타입과 정책이 아직 없어
 전체 test target이 의도한 compile 실패 상태이며, 관련 구현이 통과할 때까지
-T007~T009는 완료 처리하지 않는다.
+T007·T009는 완료 처리하지 않는다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T015 — App Group snapshot 파일명, CloudKit zone·record ID, 상품 catalog key를 공용 식별자에 추가함
+T016 — 활성 occurrence·잔액 mirror·해제 예외·pending route의 App Group 저장과 원자 소비를 구현함
 
 ## 다음 작업
-T016 — 공유 snapshot repository에 활성 occurrence·잔액 mirror·해제 예외·pending route 저장을 구현한다.
-T007~T009는 관련 기반 구현 후 green 전환과 함께 완료 처리한다. 001은 T083·T085 실기기 재검증과
+T017 — CloudKit record codec과 개인정보 필드 차단 검증을 구현한다.
+T007·T009는 관련 기반 구현 후 green 전환과 함께 완료 처리한다. 001은 T083·T085 실기기 재검증과
 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -34,6 +35,18 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-02 002 구현 T016과 선행 RED 테스트 T008의 green 전환을 완료했다. 기존 001 규칙·장소·위치
+파일과 분리된 활성 occurrence·confirmed 잔액 mirror·해제 예외 snapshot을 기존 보호된 atomic
+writer로 저장하고, 새 파일 부재는 nil 또는 빈 예외로 안전하게 migration한다. `PendingAppRouteRepository`는
+생성 시각 이상 5분 미만, 미소비, 선택적 occurrence 활성 조건을 actor 내부에서 함께 검사하며,
+성공 route와 만료·미래·중복·종료 route 모두 파일 삭제가 성공한 뒤에만 결과를 반환하거나 폐기한다.
+iPhone 17 Pro iOS 26.5 Simulator에서 관련 테스트 17개(동적 인자 실행 포함 23회)와 기존 001
+`SharedSnapshotRepositoryTests` 14개가 실패·skip 없이 통과했다. 첫 회귀 실행은 직전 runner 때문에
+Simulator preflight가 `Busy`로 중단됐지만 Simulator가 정리된 뒤 동일 명령 재실행은 통과했다.
+Swift 구문, project plist와 제품·test build도 통과했다. 아직 구현되지 않은 T017·T019·T021 및
+그에 대응하는 RED 테스트 소스는 관련 suite 실행에서 제외했으며, 전체 test target은 그 구현 뒤
+검증한다.
+
 2026-09-02 002 구현 T015를 완료했다. 활성 제한·코인 잔액·해제 예외·앱 진입 route의 App Group
 snapshot 파일명과 `CoinLedgerZone`, 여섯 CloudKit record type, 고정·결정적 record ID를 공용
 식별자로 정의했다. 상품 catalog의 Info.plist·상품 ID·수량 key도 T004 설정과 같은 문자열로

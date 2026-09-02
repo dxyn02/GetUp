@@ -29,7 +29,10 @@ struct AtomicSnapshotFileWriter: SnapshotFileWriting {
     }
 }
 
-actor SharedSnapshotRepository: RuleRepository, SavedPlaceRepository, LocationConditionRepository {
+actor SharedSnapshotRepository: RuleRepository, SavedPlaceRepository, LocationConditionRepository,
+    ActiveRestrictionSnapshotRepository, CoinBalanceSnapshotRepository,
+    ReleaseExceptionRepository
+{
     private let containerURL: URL
     private let fileWriter: any SnapshotFileWriting
 
@@ -174,6 +177,53 @@ actor SharedSnapshotRepository: RuleRepository, SavedPlaceRepository, LocationCo
         try deleteSnapshot(fileName: SharedIdentifiers.locationConditionFileName)
     }
 
+    func loadActiveRestrictionSnapshot() async throws -> ActiveRestrictionSnapshot? {
+        try loadSnapshot(
+            ActiveRestrictionSnapshot.self,
+            fileName: SharedIdentifiers.activeRestrictionSnapshotFileName,
+            supportedSchemaVersion: ActiveRestrictionSnapshot.currentSchemaVersion
+        )
+    }
+
+    func saveActiveRestrictionSnapshot(
+        _ snapshot: ActiveRestrictionSnapshot
+    ) async throws {
+        try saveSnapshot(
+            snapshot,
+            fileName: SharedIdentifiers.activeRestrictionSnapshotFileName
+        )
+    }
+
+    func loadCoinBalanceSnapshot() async throws -> CoinBalanceSnapshot? {
+        try loadSnapshot(
+            CoinBalanceSnapshot.self,
+            fileName: SharedIdentifiers.coinBalanceSnapshotFileName,
+            supportedSchemaVersion: CoinBalanceSnapshot.currentSchemaVersion
+        )
+    }
+
+    func saveCoinBalanceSnapshot(_ snapshot: CoinBalanceSnapshot) async throws {
+        try saveSnapshot(
+            snapshot,
+            fileName: SharedIdentifiers.coinBalanceSnapshotFileName
+        )
+    }
+
+    func loadReleaseExceptions() async throws -> [ReleaseException] {
+        try loadSnapshot(
+            ReleaseExceptionCollectionSnapshot.self,
+            fileName: SharedIdentifiers.releaseExceptionsFileName,
+            supportedSchemaVersion: ReleaseExceptionCollectionSnapshot.currentSchemaVersion
+        )?.exceptions ?? []
+    }
+
+    func saveReleaseExceptions(_ exceptions: [ReleaseException]) async throws {
+        try saveSnapshot(
+            ReleaseExceptionCollectionSnapshot(exceptions: exceptions),
+            fileName: SharedIdentifiers.releaseExceptionsFileName
+        )
+    }
+
     private func loadSnapshot<Snapshot: Decodable>(
         _ type: Snapshot.Type,
         fileName: String,
@@ -289,6 +339,110 @@ actor SharedSnapshotRepository: RuleRepository, SavedPlaceRepository, LocationCo
                 places: [place]
             )
         )
+    }
+
+    private func makeEncoder() -> JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.sortedKeys]
+        return encoder
+    }
+
+    private func makeDecoder() -> JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
+    }
+}
+
+actor PendingAppRouteRepository: PendingAppRoutePersisting {
+    static let validityDuration: TimeInterval = 5 * 60
+
+    private let containerURL: URL
+    private let fileWriter: any SnapshotFileWriting
+
+    init(
+        containerURL: URL,
+        fileWriter: any SnapshotFileWriting = AtomicSnapshotFileWriter()
+    ) {
+        self.containerURL = containerURL
+        self.fileWriter = fileWriter
+    }
+
+    func save(_ route: PendingAppRoute) async throws {
+        let data: Data
+        do {
+            data = try makeEncoder().encode(route)
+        } catch {
+            throw SharedSnapshotRepositoryError.encodingFailed(fileName: fileName)
+        }
+
+        do {
+            try fileWriter.write(data, to: fileURL)
+        } catch {
+            throw SharedSnapshotRepositoryError.atomicWriteFailed(fileName: fileName)
+        }
+    }
+
+    func load() async throws -> PendingAppRoute? {
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
+            return nil
+        }
+
+        let data: Data
+        do {
+            data = try Data(contentsOf: fileURL)
+        } catch {
+            throw SharedSnapshotRepositoryError.readFailed(fileName: fileName)
+        }
+
+        do {
+            return try makeDecoder().decode(PendingAppRoute.self, from: data)
+        } catch {
+            throw SharedSnapshotRepositoryError.decodingFailed(fileName: fileName)
+        }
+    }
+
+    func consumeIfEligible(
+        now: Date,
+        activeOccurrenceIDs: Set<String>
+    ) async throws -> PendingAppRoute? {
+        guard let route = try await load() else {
+            return nil
+        }
+
+        let age = now.timeIntervalSince(route.createdAt)
+        let isWithinValidityWindow = age >= 0 && age < Self.validityDuration
+        let hasActiveOccurrence = route.occurrenceID.map {
+            activeOccurrenceIDs.contains($0)
+        } ?? true
+        let isEligible = route.consumedAt == nil
+            && isWithinValidityWindow
+            && hasActiveOccurrence
+
+        guard try deleteRouteIfPresent() else {
+            return nil
+        }
+        return isEligible ? route : nil
+    }
+
+    private var fileName: String {
+        SharedIdentifiers.pendingAppRouteFileName
+    }
+
+    private var fileURL: URL {
+        containerURL.appendingPathComponent(fileName)
+    }
+
+    private func deleteRouteIfPresent() throws -> Bool {
+        do {
+            try FileManager.default.removeItem(at: fileURL)
+            return true
+        } catch let error as CocoaError where error.code == .fileNoSuchFile {
+            return false
+        } catch {
+            throw SharedSnapshotRepositoryError.deletionFailed(fileName: fileName)
+        }
     }
 
     private func makeEncoder() -> JSONEncoder {

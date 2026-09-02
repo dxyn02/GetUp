@@ -130,6 +130,30 @@ struct PendingAppRouteRepositoryTests {
         ) == nil)
     }
 
+    @Test("Concurrent repository instances return the route at most once")
+    func concurrentConsumersClaimRouteOnce() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let firstRepository = PendingAppRouteRepository(containerURL: directory)
+        let secondRepository = PendingAppRouteRepository(containerURL: directory)
+        let route = makeRoute()
+        try await firstRepository.save(route)
+
+        async let firstResult = firstRepository.consumeIfEligible(
+            now: Self.createdAt,
+            activeOccurrenceIDs: [Self.occurrenceID]
+        )
+        async let secondResult = secondRepository.consumeIfEligible(
+            now: Self.createdAt,
+            activeOccurrenceIDs: [Self.occurrenceID]
+        )
+        let (first, second) = try await (firstResult, secondResult)
+        let results = [first, second]
+
+        #expect(results.compactMap { $0 } == [route])
+        #expect(try await firstRepository.load() == nil)
+    }
+
     @Test("Corrupted route JSON reports a decoding failure and never navigates")
     func corruptedRouteIsRejected() async throws {
         let directory = try makeTemporaryDirectory()
