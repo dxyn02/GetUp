@@ -1594,3 +1594,25 @@ Connect에서 사용하면 로컬·sandbox·production 검증의 계약이 일�
 
 **영향 범위**: `Configuration/Base.xcconfig`, `GetUp/Resources/Info.plist`, 후속
 `CoinProductCatalog`, StoreKit Configuration 및 App Store Connect 상품 등록에 적용한다.
+
+## DEC-081 — 공용 scheme·test plan의 Live Activity·StoreKit 연결
+
+**날짜**: 2026-09-02
+
+**결정**: 공용 `GetUp` scheme의 BuildAction에 `GetUpLiveActivity`를 명시하고 Run action의
+`StoreKitConfigurationFileReference`는 `Configuration/GetUp.storekit`을 가리킨다. 공용
+`GetUp.xctestplan`은 `storeKitConfiguration = GetUp.storekit`을 사용하고 실제 test target은
+`GetUpTests`·`GetUpUITests`, 변수 확장 target은 메인 앱으로 유지한다. 비테스트 Widget Extension을
+test target으로 추가하지 않는다.
+
+Phase 1의 빈 Live Activity target이 실행 파일 없는 `.appex`를 만들어 앱 설치를 막지 않도록
+`GetUpLiveActivity/GetUpLiveActivityBundle.swift`에 제품 UI를 노출하지 않는 link anchor를 둔다.
+T036에서 같은 파일을 실제 `WidgetBundle`과 Live Activity UI로 교체한다.
+
+**근거**: 앱의 target dependency만으로 compile은 성공해도 소스가 전혀 없는 extension에는 bundle
+executable이 생성되지 않아 Simulator와 실기기 설치가 실패한다. 공용 build graph에 extension을
+명시하고 최소 실행 산출물을 확인해야 이후 단위·UI 테스트를 설치할 수 있다. StoreKit 구성은 Run
+scheme과 test plan에 각각 지정해야 앱 수동 실행과 자동 테스트가 동일한 로컬 상품 catalog를 사용한다.
+
+**영향 범위**: `GetUp.xcodeproj/project.pbxproj`, 공용 `GetUp.xcscheme`, `GetUp.xctestplan`,
+`GetUpLiveActivity/GetUpLiveActivityBundle.swift`와 T036의 실제 Widget 구현에 적용한다.

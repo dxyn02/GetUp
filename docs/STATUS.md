@@ -4,19 +4,19 @@
 001-location-app-restriction, 002-live-activity-coins
 
 ## 현재 단계
-001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 1 설정 및 타깃 구성 구현 중
+001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 1 설정 및 타깃 구성 완료
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins Phase 1을 진행 중이다. T004로
-코인 상품 catalog를 고정했고 T005로 같은 ID의 로컬 StoreKit consumable 3개를 구성했다.
+`codex/live-activity-coins-setup`에서 002-live-activity-coins Phase 1의 T001~T006을 완료했다.
+공용 scheme·test plan에서 Live Activity extension과 로컬 StoreKit 환경을 빌드·테스트할 수 있다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T005 — 코인 1개·3개·5개 consumable의 로컬 StoreKit 상품·현지화·테스트 가격을 구성함
+T006 — Live Activity extension과 StoreKit configuration을 공용 scheme·test plan에 연결하고 Phase 1 빌드를 검증함
 
 ## 다음 작업
-T006 — Widget Extension과 StoreKit configuration을 공용 scheme·test plan에 연결하고 전체 target
-목록 및 Simulator 빌드를 검증한다. 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
+T007 — occurrence·Live Activity·코인·월간 무료분 모델의 불변 조건과 freshness·최초 지급 실패 테스트를
+먼저 작성한다. 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
 BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록과
@@ -31,6 +31,19 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-02 002 구현 T006과 Phase 1 체크포인트를 완료했다. `GetUp` 공용 scheme의 BuildAction에
+`GetUpLiveActivity`를 명시하고 Run action에 `Configuration/GetUp.storekit`을 연결했으며,
+`GetUp.xctestplan`에는 같은 StoreKit configuration과 기존 `GetUpTests`·`GetUpUITests`, 앱 변수 확장
+target을 유지했다. project plist, scheme XML, test plan JSON과 `xcodebuild -showTestPlans` 검증이
+통과했다. Apple 공식 StoreKit 샘플과 같은 `SKTestSession` 로드 결과를 확인했다.
+
+첫 test 실행에서는 소스가 없는 Live Activity `.appex`에 실행 파일이 생성되지 않아 Simulator 설치가
+실패했다. 실제 Widget UI를 앞당겨 구현하지 않는 `GetUpLiveActivityExtensionBootstrap` link anchor를
+T036의 예정 파일에 추가한 뒤, 앱과 네 확장·단위/UI 테스트 bundle의 build-for-testing 및 Live
+Activity Mach-O 산출물을 확인했다. 공용 test plan의 `GetUpTests` 233개가 동적 실행 포함 267회 모두
+통과했고 실패·skip은 0개다. 코드 서명 비활성화에 따른 XCTest strip 경고, 기존 테스트의 불필요한
+`try` 경고와 Xcode의 빈 device build number 경고는 남지만 빌드·테스트 결과에는 영향을 주지 않았다.
+
 2026-09-02 002 구현 T005를 완료했다. `Configuration/GetUp.storekit`에
 `com.dxyn02.GetUp.coin.1`·`.3`·`.5`를 판매 가능한 `Consumable`로 등록하고 한국어·영어 표시명과
 설명, KOR storefront 로컬 테스트 가격 ₩1,100·₩2,900·₩4,400을 구성했다. JSON 구조, 상품 3개,

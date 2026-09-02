@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		DK0000000000000000000001 /* GetUpLiveActivityBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DL0000000000000000000001 /* GetUpLiveActivityBundle.swift */; };
 		A10400000000000000000001 /* Resources/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B10400000000000000000001 /* Resources/Assets.xcassets */; };
 		A11000000000000000000001 /* Icon.icon in Resources */ = {isa = PBXBuildFile; fileRef = B11000000000000000000001 /* Icon.icon */; };
 		AA0000000000000000000001 /* GetUpDeviceActivityMonitor.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = BA0000000000000000000002 /* GetUpDeviceActivityMonitor.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -195,6 +196,7 @@
 		B10000000000000000000001 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
 		B10000000000000000000002 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		B10000000000000000000003 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
+		B10000000000000000000004 /* GetUp.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = GetUp.storekit; sourceTree = "<group>"; };
 		B10400000000000000000001 /* Resources/Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Resources/Assets.xcassets; sourceTree = "<group>"; };
 		B11000000000000000000001 /* Icon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = Icon.icon; sourceTree = "<group>"; };
 		B20000000000000000000001 /* GetUp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GetUp.entitlements; sourceTree = "<group>"; };
@@ -290,6 +292,7 @@
 		DC0000000000000000000001 /* GetUpLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		DJ0000000000000000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		DJ0000000000000000000002 /* GetUpLiveActivity.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GetUpLiveActivity.entitlements; sourceTree = "<group>"; };
+		DL0000000000000000000001 /* GetUpLiveActivityBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GetUpLiveActivityBundle.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -351,6 +354,7 @@
 				B10000000000000000000001 /* Base.xcconfig */,
 				B10000000000000000000002 /* Debug.xcconfig */,
 				B10000000000000000000003 /* Release.xcconfig */,
+				B10000000000000000000004 /* GetUp.storekit */,
 			);
 			path = Configuration;
 			sourceTree = "<group>";
@@ -708,6 +712,7 @@
 		DD0000000000000000000001 /* GetUpLiveActivity */ = {
 			isa = PBXGroup;
 			children = (
+				DL0000000000000000000001 /* GetUpLiveActivityBundle.swift */,
 				DJ0000000000000000000001 /* Info.plist */,
 				DJ0000000000000000000002 /* GetUpLiveActivity.entitlements */,
 			);
@@ -1147,6 +1152,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DK0000000000000000000001 /* GetUpLiveActivityBundle.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
