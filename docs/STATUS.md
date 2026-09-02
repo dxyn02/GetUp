@@ -7,18 +7,18 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 2 공통 기반 진행 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T010~T019 occurrence·Live Activity·코인 장부·해제 모델과
-framework·repository 계약·공용 식별자·공유 snapshot 저장소·CloudKit record codec·원자 장부 repository·동기화 adapter를 구현했다.
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T010~T020 occurrence·Live Activity·코인 장부·해제 모델과
+framework·repository 계약·공용 식별자·공유 snapshot 저장소·CloudKit record codec·원자 장부 repository·동기화 adapter·공용 test fixture를 구현했다.
 T008·T009는 green으로 완료했고, T007의 RED 테스트는 후속 T021 정책과 서비스가 아직 없어
 전체 test target이 의도한 compile 실패 상태이며, 관련 구현이 통과할 때까지
 T007은 완료 처리하지 않는다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T019 — 계정 전환 격리, 원격 장부 복구 상태 분류와 비영속 monotonic current gate를 구현함
+T020 — framework·release 실패와 monotonic·wall-clock·Shield deadline을 결정적으로 주입하는 공용 test fixture를 구현함
 
 ## 다음 작업
-T020 — monotonic clock 경과·wall clock 변경·프로세스 재시작과 CloudKit·ActivityKit·StoreKit·release 실패를 결정적으로 주입하는 test fake와 fixture를 구현한다.
+T021 — 서울 기준 월 정책과 지연 생성·Shield 원자 예약 service를 구현하고 앱 수명주기·의존성 조립을 연결한다.
 T007은 T019·T021 기반 구현 후 green 전환과 함께 완료 처리한다. 001은 T083·T085 실기기 재검증과
 T086 구현·하이파이 편차 대조가 남아 있음
 
@@ -35,6 +35,17 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-02 002 구현 T020을 완료했다. `LiveActivityCoinFixtures.swift`에 ActivityKit 활동 관리,
+CloudKit database, StoreKit storefront, 코인 장부 repository의 순서 있는 성공·실패 script와 호출
+기록을 제공한다. 별도의 mutable monotonic clock과 wall clock으로 5분 freshness·기기 시각 변경·
+프로세스 재시작을 실제 대기 없이 분리하고, Shield의 4.9초 확인 성공·정확히 5초 성공 미확인·
+5초 이후 late commit을 고정 fixture로 제공한다. fixture 자체 Swift Testing 3개가 실패·skip 없이
+통과해 clock 독립성, deadline 경계와 네 framework/release 실패 주입·호출 기록을 검증했다. 전체
+test target은 T021의 계획된 RED 월 정책·서비스 타입이 아직 없어 완료 상태로 실행하지 않으며,
+T020 source는 임시 Swift Package에서 실제 test source 그대로 컴파일·실행한 뒤 manifest를 제거했다.
+project plist와 `git diff --check`, 코드 서명을 끈 generic iOS Simulator의 앱·네 extension 제품 빌드도
+통과했다.
+
 2026-09-02 002 구현 T019를 완료했다. `CoinLedgerSyncSession`은 Codable이나 wall-clock 시각을 갖지
 않는 현재 프로세스 전용 상태로 두고, 성공한 초기 fetch의 `ContinuousClock.Instant`부터 정확히
 300초까지인 경우에만 `current`를 허용한다. iCloud 가용성, confirmed mirror, 장부·계정 epoch 일치,
