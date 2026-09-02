@@ -12,6 +12,8 @@ enum LiveActivityCoinModelError: Error, Equatable, Sendable {
     case invalidPurchasedBalance
     case invalidMonthlyAllowanceBalance
     case invalidPurchaseAdjustment
+    case invalidCoinLedgerEvent
+    case invalidCoinBalanceSnapshot
     case invalidReleaseCommandTransition
     case invalidReleaseExceptionInterval
 }

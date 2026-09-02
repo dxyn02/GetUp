@@ -73,7 +73,7 @@ struct CloudKitMonthlyAllowanceTests {
             changeTag: "allowance-device-a",
             mapper: mapper
         )
-        let serverFreeGrant = try mapper.record(for: .event(CoinLedgerEvent(
+        let serverFreeGrant = try mapper.record(for: .event(try CoinLedgerEvent(
             eventID: CoinLedgerDeterministicID.freeGrant(
                 monthID: CloudKitLedgerTestFixtures.monthID
             ),

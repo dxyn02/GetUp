@@ -287,7 +287,7 @@ enum CloudKitLedgerTestFixtures {
                 purchaseDate: now,
                 adjustedQuantity: 0
             )),
-            .event(CoinLedgerEvent(
+            .event(try CoinLedgerEvent(
                 eventID: "free:\(monthID)",
                 kind: .freeGrant,
                 source: .monthlyFree,

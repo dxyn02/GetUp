@@ -280,7 +280,7 @@ private extension LiveActivityCoinSnapshotRepositoryTests {
     func makeBalanceSnapshot(
         purchasedAvailable: Int = 3
     ) -> CoinBalanceSnapshot {
-        CoinBalanceSnapshot(
+        try! CoinBalanceSnapshot(
             purchasedAvailable: purchasedAvailable,
             currentMonthID: "2026-09",
             freeAvailable: 2,

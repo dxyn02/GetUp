@@ -197,6 +197,19 @@ struct LiveActivityCoinModelTests {
         }
     }
 
+    @Test("Coin account exposes only unreserved purchased balance")
+    func coinAccountUsableBalanceAndCodableRoundTrip() throws {
+        let account = try CoinAccount(
+            purchasedAvailable: 5,
+            purchasedReserved: 2,
+            revision: 3,
+            updatedAt: Self.activatedAt
+        )
+
+        #expect(account.purchasedUsable == 3)
+        #expect(try roundTrip(account) == account)
+    }
+
     @Test("Purchase grant quantity and adjustment stay within the verified purchase")
     func purchaseGrantInvariantAndCodableRoundTrip() throws {
         let grant = try PurchaseGrant(
@@ -217,6 +230,69 @@ struct LiveActivityCoinModelTests {
                 quantity: 3,
                 purchaseDate: Self.activatedAt,
                 adjustedQuantity: 4
+            )
+        }
+    }
+
+    @Test("Ledger event requires a positive quantity and round-trips through Codable")
+    func coinLedgerEventInvariantAndCodableRoundTrip() throws {
+        let event = try CoinLedgerEvent(
+            eventID: "free:2026-09",
+            kind: .freeGrant,
+            source: .monthlyFree,
+            quantity: 2,
+            relatedTransactionID: nil,
+            relatedCommandID: nil,
+            occurrenceID: nil,
+            createdAt: Self.activatedAt
+        )
+
+        #expect(try roundTrip(event) == event)
+        #expect(throws: LiveActivityCoinModelError.invalidCoinLedgerEvent) {
+            try CoinLedgerEvent(
+                eventID: "free:2026-09",
+                kind: .freeGrant,
+                source: .monthlyFree,
+                quantity: 0,
+                relatedTransactionID: nil,
+                relatedCommandID: nil,
+                occurrenceID: nil,
+                createdAt: Self.activatedAt
+            )
+        }
+    }
+
+    @Test("Setup-required balance mirror cannot authorize coin operations")
+    func setupRequiredBalanceSnapshot() throws {
+        let epoch = LedgerEpoch(
+            epochID: Self.routeID,
+            createdAt: Self.activatedAt,
+            reason: .initialSetup,
+            suppressedFreeMonthID: nil,
+            disclosureVersion: 1
+        )
+        let snapshot = try CoinBalanceSnapshot(
+            purchasedAvailable: 0,
+            currentMonthID: "2026-09",
+            freeAvailable: 0,
+            syncState: .setupRequired,
+            syncedAt: Self.activatedAt,
+            ledgerEpochID: nil,
+            hadConfirmedLedger: false
+        )
+
+        #expect(try roundTrip(epoch) == epoch)
+        #expect(try roundTrip(snapshot) == snapshot)
+        #expect(snapshot.syncState == .setupRequired)
+        #expect(throws: LiveActivityCoinModelError.invalidCoinBalanceSnapshot) {
+            try CoinBalanceSnapshot(
+                purchasedAvailable: 0,
+                currentMonthID: "2026-09",
+                freeAvailable: 2,
+                syncState: .current,
+                syncedAt: Self.activatedAt,
+                ledgerEpochID: nil,
+                hadConfirmedLedger: false
             )
         }
     }
@@ -444,7 +520,7 @@ private extension CoinBalanceSnapshot {
         syncState: CoinBalanceSyncState = .current,
         syncedAt: Date = Date(timeIntervalSince1970: 1_788_192_000)
     ) -> CoinBalanceSnapshot {
-        CoinBalanceSnapshot(
+        try! CoinBalanceSnapshot(
             purchasedAvailable: 3,
             currentMonthID: "2026-09",
             freeAvailable: 2,
