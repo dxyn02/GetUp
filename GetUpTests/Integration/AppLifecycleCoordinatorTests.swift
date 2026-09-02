@@ -142,6 +142,43 @@ struct AppLifecycleCoordinatorTests {
         #expect(result.presentationState == nil)
     }
 
+    @Test("Foreground recovery triggers monthly allowance creation once")
+    func foregroundRecoveryEnsuresMonthlyAllowance() async throws {
+        let allowance = RecoveryMonthlyAllowanceRecorder()
+        let coordinator = AppLifecycleCoordinator(
+            ruleRepository: RecoveryRuleRepository(rules: []),
+            scheduleManager: RecoveryScheduleManager(),
+            locationMonitor: RecoveryLocationMonitor(),
+            authorizationProvider: RecoveryAuthorizationProvider(),
+            ensureMonthlyAllowance: { try await allowance.ensure() },
+            restoreRestriction: { restrictionResult(for: TestFixtures.makeRule(), presentationState: .inactive) }
+        )
+
+        let result = try await coordinator.restore()
+
+        #expect(await allowance.ensureCount == 1)
+        #expect(result.failures.isEmpty)
+    }
+
+    @Test("Monthly allowance failure is reported without skipping restriction recovery")
+    func allowanceFailureDoesNotSkipRestrictionRecovery() async throws {
+        let allowance = RecoveryMonthlyAllowanceRecorder(shouldFail: true)
+        let restriction = RecoveryRestrictionRecorder()
+        let coordinator = AppLifecycleCoordinator(
+            ruleRepository: RecoveryRuleRepository(rules: []),
+            scheduleManager: RecoveryScheduleManager(),
+            locationMonitor: RecoveryLocationMonitor(),
+            authorizationProvider: RecoveryAuthorizationProvider(),
+            ensureMonthlyAllowance: { try await allowance.ensure() },
+            restoreRestriction: { try await restriction.restore() }
+        )
+
+        let result = try await coordinator.restore()
+
+        #expect(await restriction.restoreCount == 1)
+        #expect(result.failures == [.monthlyAllowance])
+    }
+
     private func restrictionResult(
         for rule: RestrictionRuleSnapshot,
         presentationState: RestrictionPresentationState
@@ -272,6 +309,22 @@ private actor RecoveryRestrictionRecorder {
             throw RecoveryFailure.expected
         }
         return result
+    }
+}
+
+private actor RecoveryMonthlyAllowanceRecorder {
+    private(set) var ensureCount = 0
+    private let shouldFail: Bool
+
+    init(shouldFail: Bool = false) {
+        self.shouldFail = shouldFail
+    }
+
+    func ensure() throws {
+        ensureCount += 1
+        if shouldFail {
+            throw RecoveryFailure.expected
+        }
     }
 }
 

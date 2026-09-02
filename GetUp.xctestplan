@@ -10,6 +10,7 @@
   ],
   "defaultOptions" : {
     "codeCoverage" : true,
+    "storeKitConfiguration" : "GetUp.storekit",
     "targetForVariableExpansion" : {
       "containerPath" : "container:GetUp.xcodeproj",
       "identifier" : "D00000000000000000000001",

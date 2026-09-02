@@ -4,21 +4,20 @@
 001-location-app-restriction, 002-live-activity-coins
 
 ## 현재 단계
-001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 교차 산출물 분석 권장 조치 반영 완료
+001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 2 공통 기반을 완료하고 Phase 3 시작 준비 중
 
 ## 진행 중
-002-live-activity-coins의 최초 분석 발견과 재분석 잔여 I1·C1·A1을 spec·plan·research·data model·
-다섯 contract·quickstart·98개 실행 task와 DEC-078에 반영하고 최종 형식 검증을 완료함.
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T007~T021 공통 기반을 완료했다.
+occurrence·Live Activity·코인 장부·해제 모델, framework·repository 계약, 공유 snapshot·CloudKit
+codec·원자 장부 repository·동기화 adapter와 서울 월 정책·지연 생성 service를 독립 검증할 수 있다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T129 — 영어 위치 권한 목업의 `정확한 위치: 켬`과 Shield의 `집`·`회사` 프리셋 이름이
-각각 `Precise Location: On`, `Home`·`Work`로 표시되도록 현지화 경계를 보정함
+T021 — 서울 월 정책, app foreground 지연 생성, Shield 원자 예약 service와 앱 수명주기 조립을 구현함
 
 ## 다음 작업
-`002-live-activity-coins` 산출물의 형식·추적성을 재검증한다. 검증 후 문서 브랜치를 병합하고 최신
-`main`에서 구현 브랜치를 만든다. 001은
-T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
+T022 — 대표 occurrence의 정렬·교체 RED 테스트를 먼저 작성한다. 001은 T083·T085 실기기 재검증과
+T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
 BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록과
@@ -33,6 +32,220 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-02 002 구현 T021과 선행 RED 테스트 T007의 green 전환을 완료했다.
+`MonthlyAllowancePolicy`는 `Asia/Seoul` 월 경계, 월 quota 2, 비이월, 장부 삭제를 확인한 reset 월의
+quota 0과 서버 생성 시각의 월 일치를 강제한다. `MonthlyAllowanceService`는 확인된 current epoch에서만
+새달 app foreground allowance를 멱등 생성하며, Shield에서는 별도 선행 생성을 하지 않고 repository의
+allowance 생성·무료 1회 예약 단일 원자 명령만 호출한다. `AppLifecycleCoordinator`는 foreground 복구
+때 월 생성 trigger를 실행하고 실패를 `.monthlyAllowance`로 보고하되 기존 제한 복구를 계속한다.
+`DependencyContainer`에는 공통 service·repository와 동기화 context provider 연결 지점을 조립했다.
+iPhone 17 Pro iOS 26.5 Simulator의 전체 `GetUpTests` 306개(동적 인자 실행 포함 346회)가 실패·skip
+없이 통과했다. project plist와 `git diff --check`도 통과했다.
+
+2026-09-02 002 구현 T020을 완료했다. `LiveActivityCoinFixtures.swift`에 ActivityKit 활동 관리,
+CloudKit database, StoreKit storefront, 코인 장부 repository의 순서 있는 성공·실패 script와 호출
+기록을 제공한다. 별도의 mutable monotonic clock과 wall clock으로 5분 freshness·기기 시각 변경·
+프로세스 재시작을 실제 대기 없이 분리하고, Shield의 4.9초 확인 성공·정확히 5초 성공 미확인·
+5초 이후 late commit을 고정 fixture로 제공한다. fixture 자체 Swift Testing 3개가 실패·skip 없이
+통과해 clock 독립성, deadline 경계와 네 framework/release 실패 주입·호출 기록을 검증했다. 전체
+test target은 T021의 계획된 RED 월 정책·서비스 타입이 아직 없어 완료 상태로 실행하지 않으며,
+T020 source는 임시 Swift Package에서 실제 test source 그대로 컴파일·실행한 뒤 manifest를 제거했다.
+project plist와 `git diff --check`, 코드 서명을 끈 generic iOS Simulator의 앱·네 extension 제품 빌드도
+통과했다.
+
+2026-09-02 002 구현 T019를 완료했다. `CoinLedgerSyncSession`은 Codable이나 wall-clock 시각을 갖지
+않는 현재 프로세스 전용 상태로 두고, 성공한 초기 fetch의 `ContinuousClock.Instant`부터 정확히
+300초까지인 경우에만 `current`를 허용한다. iCloud 가용성, confirmed mirror, 장부·계정 epoch 일치,
+완료된 projection과 pending reconciliation 부재를 함께 검사하며, 새 프로세스는 성공 fetch 전까지
+wall-clock `syncedAt`만으로 `current`를 복원할 수 없다. 로컬 빈 설치에서는 원격 projection을 우선해
+잔액을 복구하고, 확인된 장부 부재는 삭제 증거에 따라 `setupRequired` 또는 `deletionConfirmed`로
+분류한다. 일시 장애는 `unavailable`로 유지하며 삭제로 간주하지 않는다. 계정 전환은 이전 mirror·
+freshness·pending change를 즉시 폐기하고, 호출자가 이전 mirror를 넘겨도 새 계정 잔액으로 노출하지
+않는다. 모델·gate·adapter Swift Testing 28개가 실패·skip 없이 통과했고 project
+plist, `git diff --check`, 코드 서명을 끈 generic iOS Simulator의 앱·네 extension 제품 빌드가
+통과했다. T007의 current gate 범위는 green이며, 전체 T007은 T021 월 정책·서비스 구현 뒤 완료한다.
+
+2026-09-02 002 구현 T018과 선행 RED 테스트 T009의 green 전환을 완료했다.
+`CloudKitCoinLedgerRepository`는 mutable account·allowance·command의 change tag를 보존하고
+`ifServerRecordUnchanged` 단일 atomic modify에서 balance·결정적 audit event·command를 함께
+저장한다. `serverRecordChanged`는 최신 서버 record를 다시 읽어 제한 횟수 안에서 같은 command·event
+ID로 재평가하며, `resultUnknown`은 새 명령을 만들지 않고 기존 command 또는 purchase grant를 먼저
+조회한다. 현재 월 allowance가 없는 첫 Shield 요청은 quota 2 allowance·free grant·무료 1회
+reservation·reserved command를 한 번에 저장하고, 다기기 생성 충돌 뒤에는 서버 grant를 재사용해
+무료분을 2회 넘게 예약하지 않는다. 구매 잔액 reservation·검증 거래 grant, command applied·commit·
+compensation도 같은 CAS 경계로 구현했다. 기존 mapper·repository·월간 충돌 Swift Testing 12개가
+실패·skip 없이 통과했고 Swift strict typecheck, project plist, `git diff --check`, 코드 서명을 끈
+generic iOS Simulator의 앱·네 extension 제품 빌드가 통과했다. Simulator test runner 추가 접근은
+계정 사용 한도로 허가되지 않아 같은 두 test source를 임시 Swift Package로 그대로 컴파일·실행한
+뒤 manifest를 제거했다. 전체 test target은 T019·T021의 계획된 RED 타입 구현 뒤 실행한다.
+
+2026-09-02 002 구현 T017을 완료했다. `LedgerEpoch`, `CoinAccount`, `MonthlyAllowance`,
+`PurchaseGrant`, `CoinLedgerEvent`, `ReleaseCommand`를 schema version 1의 명시적 필드 whitelist로
+CloudKit record snapshot과 왕복 변환한다. singleton·월·거래·event·command별 결정적 record ID를
+decode 시에도 검증하고, 알 수 없는 type·미지원 schema·필드 타입·record ID·정의되지 않은 필드를
+거부한다. 따라서 위치 좌표·정확도와 Family Controls application/category/web domain token은
+쓰기 record에 생성되지 않으며 원격 record에 섞여도 읽기 경계에서 차단된다. 여섯 entity 왕복,
+mutable ID 안정성, type·schema·개인정보 필드 거부 독립 실행 검증과 Swift typecheck, project plist,
+`git diff --check`가 통과했다. 코드 서명을 끈 generic iOS Simulator에서 앱과 네 extension 제품
+빌드가 통과했다. 첫 sandbox 빌드는 CoreSimulatorService 접근 제한으로 실패했지만 권한을 허용한
+동일 명령은 성공했다. T009의 mapper 범위는 green이나 같은 test source의 repository 범위는 T018
+구현 전 compile할 수 있어 T009는 아직 미완료로 유지한다.
+
+2026-09-02 002 구현 T016과 선행 RED 테스트 T008의 green 전환을 완료했다. 기존 001 규칙·장소·위치
+파일과 분리된 활성 occurrence·confirmed 잔액 mirror·해제 예외 snapshot을 기존 보호된 atomic
+writer로 저장하고, 새 파일 부재는 nil 또는 빈 예외로 안전하게 migration한다. `PendingAppRouteRepository`는
+생성 시각 이상 5분 미만, 미소비, 선택적 occurrence 활성 조건을 actor 내부에서 함께 검사하며,
+성공 route와 만료·미래·중복·종료 route 모두 파일 삭제가 성공한 뒤에만 결과를 반환하거나 폐기한다.
+iPhone 17 Pro iOS 26.5 Simulator에서 관련 테스트 17개(동적 인자 실행 포함 23회)와 기존 001
+`SharedSnapshotRepositoryTests` 14개가 실패·skip 없이 통과했다. 첫 회귀 실행은 직전 runner 때문에
+Simulator preflight가 `Busy`로 중단됐지만 Simulator가 정리된 뒤 동일 명령 재실행은 통과했다.
+Swift 구문, project plist와 제품·test build도 통과했다. 아직 구현되지 않은 T017·T019·T021 및
+그에 대응하는 RED 테스트 소스는 관련 suite 실행에서 제외했으며, 전체 test target은 그 구현 뒤
+검증한다.
+
+2026-09-02 002 구현 T015를 완료했다. 활성 제한·코인 잔액·해제 예외·앱 진입 route의 App Group
+snapshot 파일명과 `CoinLedgerZone`, 여섯 CloudKit record type, 고정·결정적 record ID를 공용
+식별자로 정의했다. 상품 catalog의 Info.plist·상품 ID·수량 key도 T004 설정과 같은 문자열로
+중앙화했다. 구매 지급 record와 구매 event, 해제 명령 record와 예약 event는 같은 custom zone에서
+이름이 충돌하지 않도록 서로 다른 접두사를 사용한다. Swift typecheck, project plist,
+`git diff --check`, 코드 서명을 끈 generic iOS Simulator의 앱·네 extension 제품 빌드가 통과했다.
+전체 `GetUpTests`는 T017의 mapper·repository와 T019의 sync context 등 계획된 RED 구현이 남아 있어
+아직 완료 상태로 실행하지 않으며 T007~T009도 미완료로 유지한다.
+
+2026-09-02 002 구현 T014를 완료했다. ActivityKit 활동 목록·생성·갱신·종료, CloudKit fetch·
+원자 modify, StoreKit 상품·구매·unfinished·transaction update·finish, 월간 allowance·무료 및 구매
+reservation·구매 지급·명령 확정/보상, 활성 occurrence·잔액 mirror·해제 예외·pending route 저장소를
+framework 독립 `Sendable` 계약으로 정의했다. CloudKit record 값과 change tag·save policy를
+도메인 snapshot으로 제한하고, adapter 오류는 좌표·token·시스템 상세를 포함하지 않는 고정
+`LiveActivityCoinErrorCode`로 변환하도록 했다. 이 계약을 앱과 세 Screen Time extension에 연결하고
+공유 Live Activity 모델도 필요한 extension source에 포함했다. Swift strict concurrency typecheck,
+project plist, `git diff --check`, iPhone 17 Pro iOS 26.5 Simulator의 앱·네 extension 제품 빌드가
+통과했다. 전체 `GetUpTests` build는 계획된 RED 상태이며 첫 compile 오류는 T017의
+`CoinLedgerRecordEntity`·`CoinLedgerRecordMapper`와 T019의 `CoinLedgerCurrentContext` 미구현이다.
+후속 T015~T019·T021 구현 전에는 관련 RED 테스트를 완료 처리하지 않는다.
+
+2026-09-02 002 구현 T013을 완료했다. `ReleaseCommand`에 `requested`·`reserved`·`applied`·
+`committed`, 거절·보상, 5초 성공 미확인 뒤 `reconciliationRequired`에서 `committed` 또는
+`compensated`로 수렴하는 선언적 상태 전이를 구현했다. reservation에서 확정한 무료분·구매 코인
+funding source는 이후 바꿀 수 없고, 갱신 시각은 역행하지 않으며 안정 failure code는 최종 상태까지
+보존한다. `ReleaseException`과 중복 command·occurrence를 막는 collection snapshot, `coinStore`·
+`iCloudRecovery`·`ledgerReset`·`reconciliation` 목적의 `PendingAppRoute`도 생성·디코딩 경계에서
+검증한다. 모델 typecheck·독립 실행 검증·Swift 구문·project plist·`git diff --check`가 통과했고,
+코드 서명을 끈 generic iOS Simulator 제품 빌드도 앱과 네 extension을 포함해 통과했다. 전체
+`GetUpTests` build에서 T013 symbol 오류가 사라진 것을 확인했으며, 잔여 compile 실패는
+T014~T019·T021의 미구현 계약·adapter·정책 타입에 한정된다.
+
+2026-09-02 002 구현 T012를 완료했다. `LedgerEpoch`, 구매 잔액·예약을 분리한 `CoinAccount`,
+월 quota·사용·예약을 분리한 `MonthlyAllowance`, 검증된 거래와 조정 수량을 보존하는
+`PurchaseGrant`, 감사 연결 필드를 가진 `CoinLedgerEvent`를 구현했다. `CoinBalanceSnapshot`은
+`setupRequired`를 포함한 동기화 상태와 장부 epoch·확인 이력을 보존하며, `current`는 확인된
+epoch가 있을 때만 생성·디코딩되도록 강제했다. 음수 잔액, 초과 예약·조정, 0 수량 event와
+확인되지 않은 current snapshot 거부를 검증했다. 모델 typecheck·독립 실행 검증·Swift 구문·
+project plist·`git diff --check`가 통과했고, 코드 서명을 끈 generic iOS Simulator 제품 빌드도
+앱과 네 extension을 포함해 통과했다. 전체 `GetUpTests` build에서 T012 symbol 오류가 사라진 것을
+확인했으며, 잔여 compile 실패는 T013~T019·T021의 미구현 타입에 한정된다.
+
+2026-09-02 002 구현 T011을 완료했다. `RestrictionLiveActivityAttributes`의 정적 필드와
+`ContentState`에 대표 occurrence·규칙명·종료 시각·추가 제한 여부를 최소 payload로 구성했다.
+거리는 `known(meters)`·`unavailable`로만 표현하고, known의 0 이상 거리·필수 관측 시각과
+unavailable의 nil 관측 시각을 생성·디코딩 모두에서 강제했다. 속성과 상태 JSON 합계가
+4KB 미만이고 좌표·정확도·주소 key가 없음을 테스트했다. iOS에서만 `ActivityAttributes`를
+채택해 앱·Widget Extension이 공유하고, 순수 Codable 부분은 macOS 독립 검증을 가능하게 했다.
+iOS typecheck·독립 실행 검증·Swift 구문·project plist·`git diff --check`가 통과했고,
+코드 서명을 끈 generic iOS Simulator 제품 빌드도 앱과 네 extension을 포함해 통과했다.
+전체 `GetUpTests` build에서 T011 symbol·타입 오류가 사라진 것을 확인했으며, 잔여 compile
+실패는 T012~T019·T021의 미구현 타입에 한정된다.
+
+2026-09-02 002 구현 T010을 완료했다. `RestrictionOccurrence`는 rule ID·revision·시작·종료
+시각의 정확한 bit pattern으로 재실행·재부팅에도 동일한 ID를 생성하고, 저장 ID가 필드와
+다르거나 구간이 양수가 아니면 거부한다. `ActiveRestrictionSnapshot`은 schema version 1·0 이상 revision·
+고유 occurrence ID를 강제하고 디코딩에서도 동일 불변 조건을 적용한다. 기존 테스트에
+결정적 ID의 모든 식별 필드·`activatedAt` 비식별 규칙과 위조 ID 디코딩 거부를 추가했다.
+모델 typecheck·독립 실행 검증·Swift 구문·project plist·`git diff --check`가 통과했고,
+코드 서명을 끈 generic iOS Simulator 제품 빌드도 앱과 네 extension을 포함해 통과했다.
+전체 `GetUpTests` build에서 T010 symbol 오류가 사라진 것을 확인했으며, 잔여 compile 실패는
+T011~T019·T021의 미구현 타입에 한정된다.
+
+2026-09-02 002 구현 T009의 CloudKit 장부 RED 테스트 12개를 두 파일에 작성했다. 모든
+장부 entity의 record round-trip·schema 거부·위치와 Family Controls token 비포함·결정적 record
+ID를 검증한다. Repository는 `ifServerRecordUnchanged` 단일 atomic modify, change-tag 충돌 후
+동일 ID 재시도, timeout 결과 불명 후 동일 command 재조회와 reconciliation 전환을 검증한다.
+첫 Shield 요청의 allowance·free grant·reservation·command 단일 atomic modify와 다기기 생성 충돌,
+무료분 이중 예약 방지도 포함했다. 두 source의 Swift 구문, `project.pbxproj` plist·target membership,
+`git diff --check`가 통과했고 코드 서명을 끈 generic iOS Simulator 제품 빌드도 앱과 네 extension을
+포함해 통과했다. 실제 `GetUpTests` build는 계획대로 T012~T018의 record mapper·database
+boundary·repository·월간 reservation 타입이 없어 RED가 확인됐다. 실패한 관련 테스트가 있으므로
+T009는 체크하지 않고 T017·T018 구현과 green 전환 때 완료 처리한다.
+
+2026-09-02 002 구현 T008의 RED 테스트를 두 파일에 작성했다. 활성 occurrence·confirmed balance
+mirror·해제 예외의 독립 round-trip, 기존 001 규칙·위치 파일 비파괴 migration, 새 파일 부재의 안전한
+빈 상태, 파일별 손상 JSON·지원하지 않는 schema와 atomic write 실패 시 이전 값 보존을 검증한다.
+`PendingAppRoute`는 생성 직후 소비와 atomic 삭제, 정확히 5분·5분 초과·미래 시각 만료, 종료
+occurrence·이미 소비된 route 폐기, occurrence 없는 복구 route, 같은 route ID 중복 저장·소비 거부,
+손상 JSON과 write 실패를 포함한다. T007 테스트에서 후속 구현 시 드러날 fixture 접근 수준과 actor
+저장 대역의 Sendable 타입도 함께 보정했다. 새 source의 Swift 구문 검사, `project.pbxproj` plist와
+target membership, `git diff --check`가 통과했고 코드 서명을 끈 generic iOS Simulator 제품 빌드도
+앱과 네 extension을 포함해 통과했다. 실제 `GetUpTests` build는 계획대로 T010~T013·T015~T016의
+`ActiveRestrictionSnapshot`, `CoinBalanceSnapshot`, `PendingAppRouteRepository`, 새 파일 식별자 등
+미구현 symbol에서 RED가 확인됐다. 실패한 관련 테스트가 있으므로 T008은 체크하지 않고 T016 구현과
+green 전환 때 완료 처리한다.
+
+2026-09-02 002 구현 T007의 RED 테스트 23개를 세 파일에 작성했다. occurrence 결정적 ID·Codable·
+구간과 중복 불변 조건, Live Activity 거리 payload, 구매·예약 잔액과 해제 명령·예외, 비영속
+`CoinLedgerSyncSession`의 monotonic 정확히 5분 경계·wall clock 무관성·프로세스 재시작·epoch·
+projection·pending reconciliation gate를 검증한다. 서울 월 경계, quota 2, 비이월, 삭제 월 quota 0,
+서버 생성 월 검증과 첫 앱 foreground 지연 생성의 성공·멱등·실패·비가용 장부 무변경도 포함했다.
+세 source의 Swift 구문 검사, `project.pbxproj` plist와 target membership, `git diff --check`는 통과했다.
+코드 서명을 끈 generic iOS Simulator 제품 빌드는 앱과 네 extension을 포함해 통과했다.
+실제 `GetUpTests` build는 계획대로 T010~T013·T019·T021의 모델·정책·서비스가 없어
+`RestrictionOccurrence`, `CoinLedgerCurrentGate`, `MonthlyAllowancePolicy`, `MonthlyAllowanceService` 등
+미구현 symbol에서 RED가 확인됐다. 실패한 관련 테스트가 있으므로 T007은 체크하지 않고 후속 구현이
+green으로 전환할 때 완료 처리한다.
+
+2026-09-02 002 구현 T006과 Phase 1 체크포인트를 완료했다. `GetUp` 공용 scheme의 BuildAction에
+`GetUpLiveActivity`를 명시하고 Run action에 `Configuration/GetUp.storekit`을 연결했으며,
+`GetUp.xctestplan`에는 같은 StoreKit configuration과 기존 `GetUpTests`·`GetUpUITests`, 앱 변수 확장
+target을 유지했다. project plist, scheme XML, test plan JSON과 `xcodebuild -showTestPlans` 검증이
+통과했다. Apple 공식 StoreKit 샘플과 같은 `SKTestSession` 로드 결과를 확인했다.
+
+첫 test 실행에서는 소스가 없는 Live Activity `.appex`에 실행 파일이 생성되지 않아 Simulator 설치가
+실패했다. 실제 Widget UI를 앞당겨 구현하지 않는 `GetUpLiveActivityExtensionBootstrap` link anchor를
+T036의 예정 파일에 추가한 뒤, 앱과 네 확장·단위/UI 테스트 bundle의 build-for-testing 및 Live
+Activity Mach-O 산출물을 확인했다. 공용 test plan의 `GetUpTests` 233개가 동적 실행 포함 267회 모두
+통과했고 실패·skip은 0개다. 코드 서명 비활성화에 따른 XCTest strip 경고, 기존 테스트의 불필요한
+`try` 경고와 Xcode의 빈 device build number 경고는 남지만 빌드·테스트 결과에는 영향을 주지 않았다.
+
+2026-09-02 002 구현 T005를 완료했다. `Configuration/GetUp.storekit`에
+`com.dxyn02.GetUp.coin.1`·`.3`·`.5`를 판매 가능한 `Consumable`로 등록하고 한국어·영어 표시명과
+설명, KOR storefront 로컬 테스트 가격 ₩1,100·₩2,900·₩4,400을 구성했다. JSON 구조, 상품 3개,
+고정 허용 ID, 상품 종류, 가격, 양쪽 locale과 storefront를 `jq` assertion으로 검증했다.
+`.storekit` 파일의 Xcode 로드와 scheme 연결은 T006에서 함께 검증한다.
+
+2026-09-02 002 구현 T004를 완료했다. 앱 Info.plist의 catalog가
+`com.dxyn02.GetUp.coin.1`→1, `.3`→3, `.5`→5로 구성되고
+`SKIncludeConsumableInAppPurchaseHistory = true`임을 확인했다. Debug·Release에서 세 build setting이
+같은 값으로 해석됐으며, 코드 서명 없는 generic iOS Simulator 빌드 뒤 실제 앱 번들 Info.plist의
+변수 확장·수량과 앱 및 네 extension 산출물을 검증했다. 첫 sandbox 실행은 Simulator runtime 접근
+제한으로 실패했으나 권한을 허용한 동일 빌드는 성공했다.
+
+2026-09-02 002 구현 T003을 완료했다. 앱과 Shield Action entitlement의 plist 문법 및
+`com.apple.developer.icloud-container-identifiers`, `com.apple.developer.icloud-services = CloudKit`
+선언을 확인했다. 두 scheme의 Debug build settings에서 공통
+`GETUP_ICLOUD_CONTAINER_IDENTIFIER = iCloud.com.dxyn02.GetUp`과 target별 entitlement 경로가
+해석됐다. 실제 Apple Developer container 등록·두 App ID 할당·production schema와 서명 entitlement는
+T097 배포 준비에서 별도 확인해야 한다.
+
+2026-09-02 002 구현 T002를 완료했다. 앱·확장 Info.plist와 entitlement, `project.pbxproj`의 plist
+문법 검사가 모두 통과했다. 앱의 `NSSupportsLiveActivities = true`, 확장의
+`com.apple.widgetkit-extension`, 양쪽의 `group.com.dxyn02.GetUp`을 확인했다. 확장 Debug build
+settings에서 `CODE_SIGN_ENTITLEMENTS`, `GETUP_APP_GROUP_IDENTIFIER`, `INFOPLIST_FILE`, bundle ID와
+app-extension-only 설정이 기대값으로 해석됐다. 전체 Simulator build는 T006 체크포인트에서 실행한다.
+
+2026-09-02 002 구현 T001을 완료했다. `plutil -lint GetUp.xcodeproj/project.pbxproj`가 통과했고,
+`xcodebuild -list -project GetUp.xcodeproj`에서 `GetUpLiveActivity` target과 scheme을 확인했다.
+시뮬레이터 서비스·로컬 provisioning profile 경고는 출력됐지만 명령은 성공했다. 확장의 Info.plist와
+entitlements는 T002 범위이므로 전체 build와 테스트는 T002·T006 구성 후 실행한다.
+
 2026-09-02 `002-live-activity-coins` 재분석의 잔여 권장 조치 3건을 반영했다. T039는 US1의 T011·
 T032·T033 뒤 실행하고 T055의 직접 ActivityKit 연결만 차단하도록 의존성 그래프를 고쳤다.
 `setupRequired` 최초 활성화는 initial epoch+당월 무료 2회의 `CoinLedgerSetupService`, 삭제 확인은

@@ -1553,3 +1553,152 @@ Simulator 가정만으로 제품 경로를 결정할 수 없고, route·남은 �
 
 **영향 범위**: `specs/002-live-activity-coins`의 전체 설계 산출물과 T007~T021, T024, T039~T040,
 T055, T057, T064, T073, T076, T078~T085, T092, T096, T098에 적용한다.
+
+## DEC-079 — CloudKit container 식별자와 접근 타깃
+
+**날짜**: 2026-09-02
+
+**결정**: 코인 장부의 CloudKit container는 기존 배포 namespace에 맞춘
+`iCloud.com.dxyn02.GetUp`을 사용한다. `GETUP_ICLOUD_CONTAINER_IDENTIFIER` 공통 build setting으로
+정의하고 메인 앱과 `GetUpShieldAction`이 같은 container의 private database에 접근한다. 두 타깃의
+entitlement에는 `com.apple.developer.icloud-container-identifiers`와
+`com.apple.developer.icloud-services = CloudKit`을 선언한다.
+
+**근거**: 메인 앱과 Shield Action은 같은 계정 범위 장부에서 구매·무료 잔액 및 해제 reservation을
+원자적으로 확인해야 한다. container 식별자를 공통 build setting으로 관리하면 target별 문자열
+불일치와 다른 private database 접근을 막을 수 있다.
+
+**영향 범위**: `Configuration/Base.xcconfig`, `GetUp/GetUp.entitlements`,
+`GetUpShieldAction/GetUpShieldAction.entitlements`와 후속 CloudKit adapter에 적용한다. 실제 배포 전
+Apple Developer에서 container 등록, 두 App ID 할당, production schema와 서명 entitlement를
+T097에서 확인한다.
+
+## DEC-080 — 초기 코인 상품 식별자와 번들 허용 catalog
+
+**날짜**: 2026-09-02
+
+**결정**: 초기 consumable 상품 ID는 각각 `com.dxyn02.GetUp.coin.1`,
+`com.dxyn02.GetUp.coin.3`, `com.dxyn02.GetUp.coin.5`를 사용한다. 세 식별자는
+`GETUP_COIN_PRODUCT_1_IDENTIFIER`, `GETUP_COIN_PRODUCT_3_IDENTIFIER`,
+`GETUP_COIN_PRODUCT_5_IDENTIFIER` build setting으로 관리한다. 앱 Info.plist의
+`GetUpCoinProductCatalog`는 각 식별자를 지급 수량 1·3·5와 명시적으로 매핑하며 이 목록 밖의 상품은
+지급 대상으로 인정하지 않는다. 완료된 소모성 거래의 후속 검증을 위해
+`SKIncludeConsumableInAppPurchaseHistory`를 활성화한다. 로컬 StoreKit fixture에서는 세 상품을
+판매 가능한 `Consumable`로 두고 한국어 `코인 1개`·`코인 3개`·`코인 5개`, 영어 `1 Coin`·
+`3 Coins`·`5 Coins`와 KOR 테스트 가격 ₩1,100·₩2,900·₩4,400을 사용한다. 이 가격은 로컬 테스트
+시나리오용이며 App Store Connect의 실제 판매 가격을 확정하지 않는다.
+
+**근거**: StoreKit에서 전달된 product ID만으로 지급 수량을 추측하지 않고 배포 설정의 고정 허용
+목록과 대조해야 잘못된 상품·수량 지급을 막을 수 있다. 동일 ID를 StoreKit Configuration과 App Store
+Connect에서 사용하면 로컬·sandbox·production 검증의 계약이 일치한다.
+
+**영향 범위**: `Configuration/Base.xcconfig`, `GetUp/Resources/Info.plist`, 후속
+`CoinProductCatalog`, StoreKit Configuration 및 App Store Connect 상품 등록에 적용한다.
+
+## DEC-081 — 공용 scheme·test plan의 Live Activity·StoreKit 연결
+
+**날짜**: 2026-09-02
+
+**결정**: 공용 `GetUp` scheme의 BuildAction에 `GetUpLiveActivity`를 명시하고 Run action의
+`StoreKitConfigurationFileReference`는 `Configuration/GetUp.storekit`을 가리킨다. 공용
+`GetUp.xctestplan`은 `storeKitConfiguration = GetUp.storekit`을 사용하고 실제 test target은
+`GetUpTests`·`GetUpUITests`, 변수 확장 target은 메인 앱으로 유지한다. 비테스트 Widget Extension을
+test target으로 추가하지 않는다.
+
+Phase 1의 빈 Live Activity target이 실행 파일 없는 `.appex`를 만들어 앱 설치를 막지 않도록
+`GetUpLiveActivity/GetUpLiveActivityBundle.swift`에 제품 UI를 노출하지 않는 link anchor를 둔다.
+T036에서 같은 파일을 실제 `WidgetBundle`과 Live Activity UI로 교체한다.
+
+**근거**: 앱의 target dependency만으로 compile은 성공해도 소스가 전혀 없는 extension에는 bundle
+executable이 생성되지 않아 Simulator와 실기기 설치가 실패한다. 공용 build graph에 extension을
+명시하고 최소 실행 산출물을 확인해야 이후 단위·UI 테스트를 설치할 수 있다. StoreKit 구성은 Run
+scheme과 test plan에 각각 지정해야 앱 수동 실행과 자동 테스트가 동일한 로컬 상품 catalog를 사용한다.
+
+**영향 범위**: `GetUp.xcodeproj/project.pbxproj`, 공용 `GetUp.xcscheme`, `GetUp.xctestplan`,
+`GetUpLiveActivity/GetUpLiveActivityBundle.swift`와 T036의 실제 Widget 구현에 적용한다.
+
+## DEC-082 — CloudKit 장부 record의 명시적 필드 whitelist
+
+**날짜**: 2026-09-02
+
+**결정**: 여섯 코인 장부 record type은 schema version별 명시적 필드 whitelist로만 encode·decode한다.
+decode 시 알 수 없는 필드가 하나라도 있으면 record를 무시하지 않고 `invalidRecord` 경계로 거부한다.
+singleton·월·거래·event·command record name도 payload에서 다시 계산한 결정적 ID와 일치해야 하며,
+현재 구현은 schema version 1만 허용한다. 새 필드를 추가할 때는 schema version을 올리고 별도 migration
+codec을 제공한다.
+
+**근거**: 위치 좌표·정확도와 Family Controls token·앱/도메인 식별 정보는 CloudKit 저장 금지
+데이터다. 쓰기 필드만 제한하면 다른 기기나 향후 adapter 오류로 섞인 민감 필드를 기존 client가
+조용히 수용할 수 있으므로 읽기 경계도 닫아야 한다. 미지 필드 추가를 schema 변경으로 취급하면
+구버전 client가 부분 payload를 잘못 해석하는 것도 막을 수 있다.
+
+**영향 범위**: `CoinLedgerRecordMapper`, 후속 CloudKit database adapter·repository와 record schema
+migration에 적용한다.
+
+## DEC-083 — 코인 장부 변경의 단일 CAS 조정 경계
+
+**날짜**: 2026-09-02
+
+**결정**: 코인 잔액 또는 월간 무료분을 바꾸는 모든 repository 명령은 mutable record의 최신
+change tag와 `ifServerRecordUnchanged`를 사용하고, 대응하는 결정적 audit event와 `ReleaseCommand`를
+하나의 atomic modify에 포함한다. 충돌은 서버 상태를 다시 읽어 같은 command·event ID로 재평가하고,
+결과 불명은 새 쓰기 전에 해당 command 또는 purchase grant의 존재를 조회한다. 재조회에도 결과를
+확정할 record가 없으면 차감을 성공으로 추정하지 않고 `reconciliationRequired`로 닫는다.
+
+현재 월 allowance가 없는 Shield 무료 예약은 quota 2 allowance, `free:{monthID}` 지급 event,
+`reserve:{commandID}` 예약 event와 release command를 같은 modify에 포함한다. 동시 생성에서 진 기기는
+서버 allowance와 free grant를 다시 읽고 지급 event를 중복 생성하지 않는다.
+
+**근거**: mutable balance만 저장하거나 retry마다 새 event ID를 만들면 다기기 충돌에서 초과 사용과
+중복 감사 기록이 생긴다. timeout을 실패로 단정해 즉시 재시도하면 이미 성공한 차감을 다시 적용할
+수 있으므로, 동일 ID의 서버 결과를 먼저 확인하는 fail-closed 경계가 필요하다.
+
+**영향 범위**: `CloudKitCoinLedgerRepository`, `CoinLedgerCloudDatabase` adapter와 후속
+`RuleReleaseService`, StoreKit 지급·재조정 흐름에 적용한다.
+
+## DEC-084 — 코인 장부 current의 비영속 monotonic 세션과 계정 격리
+
+**날짜**: 2026-09-02
+
+**결정**: 코인 장부의 `current` 권한은 현재 프로세스에서 성공한 초기 fetch 시각을
+`ContinuousClock.Instant`로만 보관하는 `CoinLedgerSyncSession`으로 판정한다. 성공 fetch 이후 정확히
+300초까지 허용하고 300초를 넘거나 프로세스가 재시작되면 새 fetch 전까지 허용하지 않는다.
+wall-clock `CoinBalanceSnapshot.syncedAt`은 표시·진단에만 사용한다. iCloud 계정 가용성, confirmed
+mirror, `LedgerEpoch`와 계정 epoch 일치, 완료된 projection, pending reconciliation 부재도 모두
+동시에 만족해야 한다.
+
+계정 session ID가 바뀌면 이전 mirror·freshness·pending local change를 즉시 폐기한다. 새 계정의
+초기 fetch 호출에 이전 계정 local mirror가 전달되더라도 참고 잔액으로 사용하지 않는다. 성공한
+원격 fetch에서 장부가 있으면 로컬 빈 설치보다 원격 projection을 우선하고, 장부가 없으면 삭제 증거가
+없는 경우 `setupRequired`, 삭제가 확인된 경우에만 `deletionConfirmed`로 분류한다. network·계정
+불확실성은 `unavailable`이며 삭제 증거로 승격하지 않는다.
+
+**근거**: 영속 wall-clock 시각은 기기 시간 변경과 프로세스 재시작 뒤에도 오래된 잔액에 권한을
+부여할 수 있다. 계정 전환 중 이전 mirror를 재사용하면 다른 iCloud 계정의 유료 잔액이 노출되거나
+사용될 수 있다. 원격 부재와 통신 실패를 분리해야 삭제된 장부를 자동 복원하거나 최초 사용자에게
+잘못된 reset을 요구하는 일을 막을 수 있다.
+
+**영향 범위**: `CoinLedgerSyncAdapter`, `CoinLedgerCurrentGate`, 후속 구매·해제 승인 gate와 T071의
+CloudKit zone 삭제 증거 분류에 적용한다.
+
+## DEC-085 — 월간 무료분 생성 경계와 foreground 복구 격리
+
+**날짜**: 2026-09-02
+
+**결정**: 기존 current 장부의 새달 무료분은 앱 foreground에서 월 레코드가 없을 때만 지연 생성한다.
+이 동작은 제한 일정·위치·Shield 복구와 같은 `AppLifecycleCoordinator.restore()`에서 실행하지만,
+iCloud 쓰기 실패는 `.monthlyAllowance`로 보고하고 기존 제한 복구를 중단하지 않는다. `setupRequired`의
+최초 장부 생성과 삭제 후 reset 장부 생성은 T072의 명시적 사용자 확인 service가 담당한다.
+
+Shield의 무료 해제는 allowance를 별도로 먼저 생성하지 않고 `CoinLedgerRepository.reserveMonthlyFree`에
+위임해 allowance·free grant·reservation·command를 하나의 원자 명령으로 저장한다. 공통
+`MonthlyAllowanceService`는 app과 Shield가 같은 current epoch gate를 사용하도록 하고,
+`DependencyContainer`는 repository와 foreground 동기화 context provider를 주입받아 조립한다.
+
+**근거**: 월 레코드 생성 실패가 기존 Screen Time 제한 복구까지 막으면 코인 부가기능 장애가 핵심
+제한 기능을 훼손한다. 반대로 Shield가 생성과 예약을 두 번의 쓰기로 나누면 지급만 확인되고 예약은
+실패하는 부분 상태가 생긴다. 최초·reset 장부는 고지와 사용자 확인이 필요한 별도 제품 흐름이므로
+일반 foreground 지연 생성에서 자동 처리하지 않는다.
+
+**영향 범위**: `MonthlyAllowancePolicy`, `MonthlyAllowanceService`, `AppLifecycleCoordinator`,
+`DependencyContainer`와 T072 초기 설정 service에 적용한다.

@@ -2,12 +2,21 @@ import Foundation
 
 enum SharedIdentifiers {
     static let appGroupIdentifierInfoDictionaryKey = "GetUpAppGroupIdentifier"
+    static let coinProductCatalogInfoDictionaryKey = "GetUpCoinProductCatalog"
+    static let coinProductIdentifierCatalogKey = "ProductIdentifier"
+    static let coinProductQuantityCatalogKey = "Quantity"
 
     static let restrictionRulesFileName = "restriction-rules.json"
     static let savedPlacesFileName = "saved-places.json"
     static let legacyRestrictionRuleFileName = "restriction-rule.json"
     static let restrictionRuleFileName = restrictionRulesFileName
     static let locationConditionFileName = "location-condition.json"
+    static let activeRestrictionSnapshotFileName = "active-restrictions.json"
+    static let coinBalanceSnapshotFileName = "coin-balance.json"
+    static let releaseExceptionsFileName = "release-exceptions.json"
+    static let pendingAppRouteFileName = "pending-app-route.json"
+
+    static let coinLedgerZoneName = "CoinLedgerZone"
 
     static let managedSettingsStoreName = "getup.restriction"
     static let deviceActivityNamePrefix = "getup.schedule"
@@ -60,5 +69,75 @@ enum SharedIdentifiers {
 
     static func deviceActivityName(forWeekdayIdentifier weekdayIdentifier: String) -> String {
         "\(deviceActivityNamePrefix).\(weekdayIdentifier)"
+    }
+}
+
+enum CoinLedgerRecordType {
+    static let ledgerEpoch = "LedgerEpoch"
+    static let coinAccount = "CoinAccount"
+    static let monthlyAllowance = "MonthlyAllowance"
+    static let purchaseGrant = "PurchaseGrant"
+    static let event = "CoinLedgerEvent"
+    static let releaseCommand = "ReleaseCommand"
+}
+
+enum CoinLedgerRecordID {
+    static let ledgerEpoch = "ledger-epoch"
+    static let coinAccount = "coin-account"
+
+    static func allowance(monthID: String) -> String {
+        "allowance:\(monthID)"
+    }
+
+    static func purchaseGrant(
+        environment: PurchaseEnvironment,
+        transactionID: UInt64
+    ) -> String {
+        "purchase-grant:\(environment.rawValue):\(transactionID)"
+    }
+
+    static func event(eventID: String) -> String {
+        eventID
+    }
+
+    static func releaseCommand(commandID: UUID) -> String {
+        "release-command:\(normalized(commandID))"
+    }
+
+    private static func normalized(_ identifier: UUID) -> String {
+        identifier.uuidString.lowercased()
+    }
+}
+
+enum CoinLedgerDeterministicID {
+    static func purchase(
+        environment: PurchaseEnvironment,
+        transactionID: UInt64
+    ) -> String {
+        "purchase:\(environment.rawValue):\(transactionID)"
+    }
+
+    static func freeGrant(monthID: String) -> String {
+        "free:\(monthID)"
+    }
+
+    static func reservation(commandID: UUID) -> String {
+        "reserve:\(normalized(commandID))"
+    }
+
+    static func spend(commandID: UUID) -> String {
+        "spend:\(normalized(commandID))"
+    }
+
+    static func release(commandID: UUID, attempt: Int) -> String {
+        "release:\(normalized(commandID)):\(attempt)"
+    }
+
+    static func refund(transactionID: UInt64, revocationDate: Date) -> String {
+        "refund:\(transactionID):\(String(revocationDate.timeIntervalSince1970.bitPattern, radix: 16))"
+    }
+
+    private static func normalized(_ identifier: UUID) -> String {
+        identifier.uuidString.lowercased()
     }
 }

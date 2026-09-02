@@ -1,0 +1,88 @@
+{
+  "identifier" : "3A1C412B-7DF8-42D0-AC9D-30D02D7F3F20",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "1100",
+      "familyShareable" : false,
+      "internalID" : "B1C9FD9C-7C1A-46D5-BCC9-7647FE9E92F1",
+      "localizations" : [
+        {
+          "description" : "현재 규칙 구간을 1회 해제할 수 있는 코인 1개입니다.",
+          "displayName" : "코인 1개",
+          "locale" : "ko_KR"
+        },
+        {
+          "description" : "One coin for a one-time release of the current rule occurrence.",
+          "displayName" : "1 Coin",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.dxyn02.GetUp.coin.1",
+      "referenceName" : "GetUp Coin 1",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "2900",
+      "familyShareable" : false,
+      "internalID" : "B3ABF337-E125-4BA8-B64F-35CBDB83666B",
+      "localizations" : [
+        {
+          "description" : "현재 규칙 구간을 해제할 때 사용할 수 있는 코인 3개 묶음입니다.",
+          "displayName" : "코인 3개",
+          "locale" : "ko_KR"
+        },
+        {
+          "description" : "A pack of three coins for one-time rule occurrence releases.",
+          "displayName" : "3 Coins",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.dxyn02.GetUp.coin.3",
+      "referenceName" : "GetUp Coin 3",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "4400",
+      "familyShareable" : false,
+      "internalID" : "B5D4D260-49C8-47F0-B7D1-EF59B2628DF5",
+      "localizations" : [
+        {
+          "description" : "현재 규칙 구간을 해제할 때 사용할 수 있는 코인 5개 묶음입니다.",
+          "displayName" : "코인 5개",
+          "locale" : "ko_KR"
+        },
+        {
+          "description" : "A pack of five coins for one-time rule occurrence releases.",
+          "displayName" : "5 Coins",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.dxyn02.GetUp.coin.5",
+      "referenceName" : "GetUp Coin 5",
+      "type" : "Consumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "",
+    "_developerTeamID" : "53H2JY443C",
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 0,
+    "_locale" : "ko_KR",
+    "_renewalBillingIssuesEnabled" : false,
+    "_storefront" : "KOR",
+    "_storeKitErrors" : [
+
+    ],
+    "_timeRate" : 0
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}
