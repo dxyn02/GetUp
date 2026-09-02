@@ -1553,3 +1553,22 @@ Simulator 가정만으로 제품 경로를 결정할 수 없고, route·남은 �
 
 **영향 범위**: `specs/002-live-activity-coins`의 전체 설계 산출물과 T007~T021, T024, T039~T040,
 T055, T057, T064, T073, T076, T078~T085, T092, T096, T098에 적용한다.
+
+## DEC-079 — CloudKit container 식별자와 접근 타깃
+
+**날짜**: 2026-09-02
+
+**결정**: 코인 장부의 CloudKit container는 기존 배포 namespace에 맞춘
+`iCloud.com.dxyn02.GetUp`을 사용한다. `GETUP_ICLOUD_CONTAINER_IDENTIFIER` 공통 build setting으로
+정의하고 메인 앱과 `GetUpShieldAction`이 같은 container의 private database에 접근한다. 두 타깃의
+entitlement에는 `com.apple.developer.icloud-container-identifiers`와
+`com.apple.developer.icloud-services = CloudKit`을 선언한다.
+
+**근거**: 메인 앱과 Shield Action은 같은 계정 범위 장부에서 구매·무료 잔액 및 해제 reservation을
+원자적으로 확인해야 한다. container 식별자를 공통 build setting으로 관리하면 target별 문자열
+불일치와 다른 private database 접근을 막을 수 있다.
+
+**영향 범위**: `Configuration/Base.xcconfig`, `GetUp/GetUp.entitlements`,
+`GetUpShieldAction/GetUpShieldAction.entitlements`와 후속 CloudKit adapter에 적용한다. 실제 배포 전
+Apple Developer에서 container 등록, 두 App ID 할당, production schema와 서명 entitlement를
+T097에서 확인한다.

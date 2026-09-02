@@ -29,7 +29,7 @@ Phase 2에 둔다. US4에는 잔액 UI·지역화·월 경계 인수 검증만 �
 
 - [X] T001 `GetUpLiveActivity/` Widget Extension target과 앱 embed dependency를 `GetUp.xcodeproj/project.pbxproj`에 추가한다.
 - [X] T002 [P] Live Activities 지원과 App Group을 `GetUp/Resources/Info.plist`, `GetUp/GetUp.entitlements`, `GetUpLiveActivity/Info.plist`, `GetUpLiveActivity/GetUpLiveActivity.entitlements`에 구성한다.
-- [ ] T003 CloudKit container와 iCloud capability를 `GetUp/GetUp.entitlements`, `GetUpShieldAction/GetUpShieldAction.entitlements`, `Configuration/Base.xcconfig`에 구성한다.
+- [X] T003 CloudKit container와 iCloud capability를 `GetUp/GetUp.entitlements`, `GetUpShieldAction/GetUpShieldAction.entitlements`, `Configuration/Base.xcconfig`에 구성한다.
 - [ ] T004 코인 1개·3개·5개 상품의 build setting key와 허용 catalog 설정을 `Configuration/Base.xcconfig`, `GetUp/Resources/Info.plist`에 추가한다.
 - [ ] T005 [P] 코인 1개·3개·5개 consumable의 product ID, 표시명, 테스트 가격과 판매 상태를 `Configuration/GetUp.storekit`에 구성한다.
 - [ ] T006 새 Widget Extension과 StoreKit configuration을 공용 scheme·test plan에 연결하고 `GetUp.xcodeproj/xcshareddata/xcschemes/GetUp.xcscheme`, `GetUp.xctestplan`에서 target 목록을 검증한다.
