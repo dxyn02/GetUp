@@ -7,16 +7,16 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 3 사용자 스토리 1 구현 진행 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T024·T033 Live Activity 시간 정책과
-foreground 조정 coordinator를 완료했다. background에서는 ActivityKit을 조회하지 않고, foreground에서
-대표 activity 하나를 멱등 유지하며 중복 종료·수동 제거 후 재생성·오류 격리를 수행한다.
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T025 Live Activity 시작 성공률 자동
+계측을 완료했다. 지원·권한 허용·유효한 활성 제한·foreground 조건만 적격 모집단으로 집계하고,
+권한 거부·미지원은 모집단에서 제외한 안전 실패 경로로 분리한다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T033 — 대표 Live Activity 하나를 foreground에서 멱등 조정하고 수동 제거 뒤 재생성하도록 구현함
+T025 — 적격 foreground 시작 100회의 30초 내 표시율과 권한 비가용 안전 실패를 자동 계측함
 
 ## 다음 작업
-T025 — Live Activity 시작 성공률 계측과 authorization 실패·미지원 테스트를 먼저 작성한다.
+T026 — 메인 앱과 extension-only 위치 근거의 Live Activity 거리 반영 기산점 테스트를 먼저 작성한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -32,6 +32,16 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-03 002 구현 T025를 완료했다. `LiveActivityStartMeasurementTests`는 Live Activity 지원·권한
+허용·유효한 활성 제한·foreground 조건을 만족하는 100회만 적격 모집단으로 집계하고, 활성 제한 확인
+직전의 `ContinuousClock.Instant`부터 fake activity가 실제 생성된 확인 시점까지를 측정한다. 100회
+모두 30초 이내 생성되어 최소 95회 기준을 통과했다. 권한 거부·미지원은 적격 모집단에서 제외하고
+activity 미생성·`activityAuthorizationDenied` 반환·기존 활성 제한 상태 유지를 별도로 검증했다.
+이 자동 계측은 coordinator와 protocol fake 경계의 결정적 증적이며 실제 ActivityKit 시스템 표시
+성공률은 T096의 지원 OS 실기기 검증에서 기록한다. 대상 테스트 2개와 iPhone 17 Pro iOS 26.5
+Simulator의 전체 `GetUpTests` 336개(동적 인자 실행 포함 379회)가 실패·skip 없이 통과했고, 앱과
+네 extension의 코드 서명 없는 generic iOS 빌드, project plist와 `git diff --check`도 통과했다.
+
 2026-09-03 002 구현 T024·T033을 완료했다. `LiveActivityTimePolicyTests`에 주입 시각 기준 종료 전·
 정확한 경계·종료 후 남은 시간과 0 clamp, 즉시 종료 final state를 먼저 추가하고 policy 미구현 compile
 RED를 확인했다. `LiveActivityCoordinatorTests`는 background 무조회·foreground 생성, 동일 조정 멱등성,
