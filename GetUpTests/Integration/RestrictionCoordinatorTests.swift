@@ -127,10 +127,114 @@ struct RestrictionCoordinatorTests {
         #expect(await adapter.isShieldPresent)
     }
 
+    @Test("Applied rules persist deterministic occurrence intervals")
+    func appliedRulesPersistDeterministicOccurrences() async throws {
+        let first = TestFixtures.makeRule()
+        let second = TestFixtures.makeRule(
+            id: UUID(uuidString: "00000000-0000-4000-8000-000000000204")!,
+            revision: 2
+        )
+        let snapshotRepository = CoordinatorActiveRestrictionRepository()
+        let coordinator = makeCoordinator(
+            rules: [second, first],
+            conditions: [
+                TestFixtures.makeLocationCondition(
+                    ruleID: second.id,
+                    ruleRevision: second.revision
+                ),
+                TestFixtures.makeLocationCondition(ruleID: first.id),
+            ],
+            adapter: RecordingRestrictionAdapter(),
+            activeRestrictionSnapshotRepository: snapshotRepository
+        )
+
+        _ = try await coordinator.handleTimeEvent()
+
+        let snapshot = try #require(await snapshotRepository.snapshot)
+        #expect(snapshot.revision == 1)
+        #expect(snapshot.observedAt == TestFixtures.now)
+        #expect(snapshot.occurrences.map(\.ruleID) == [first.id, second.id])
+        #expect(snapshot.occurrences.allSatisfy { occurrence in
+            occurrence.startAt == date(hour: 6)
+                && occurrence.endAt == date(hour: 9)
+                && occurrence.activatedAt == TestFixtures.now
+                && occurrence.id == RestrictionOccurrence.deterministicID(
+                    ruleID: occurrence.ruleID,
+                    ruleRevision: occurrence.ruleRevision,
+                    startAt: occurrence.startAt,
+                    endAt: occurrence.endAt
+                )
+        })
+    }
+
+    @Test("Repeated evaluation preserves activation time and snapshot revision")
+    func repeatedEvaluationPreservesOccurrenceIdentity() async throws {
+        let rule = TestFixtures.makeRule()
+        let clock = LiveActivityCoinWallClock(now: TestFixtures.now)
+        let snapshotRepository = CoordinatorActiveRestrictionRepository()
+        let coordinator = makeCoordinator(
+            rules: [rule],
+            conditions: [TestFixtures.makeLocationCondition(ruleID: rule.id)],
+            adapter: RecordingRestrictionAdapter(),
+            activeRestrictionSnapshotRepository: snapshotRepository,
+            clock: clock
+        )
+
+        _ = try await coordinator.handleTimeEvent()
+        let first = try #require(await snapshotRepository.snapshot)
+        clock.advance(by: 5 * 60)
+        _ = try await coordinator.handleTimeEvent()
+        let repeated = try #require(await snapshotRepository.snapshot)
+
+        #expect(repeated.revision == first.revision)
+        #expect(repeated.occurrences == first.occurrences)
+        #expect(repeated.observedAt == TestFixtures.now.addingTimeInterval(5 * 60))
+    }
+
+    @Test("Removing the final applied rule persists an incremented empty snapshot")
+    func removalPersistsEmptyOccurrenceSnapshot() async throws {
+        let rule = TestFixtures.makeRule()
+        let existingOccurrence = try RestrictionOccurrence(
+            ruleID: rule.id,
+            ruleRevision: rule.revision,
+            startAt: date(hour: 6),
+            endAt: date(hour: 9),
+            activatedAt: TestFixtures.now.addingTimeInterval(-60)
+        )
+        let snapshotRepository = CoordinatorActiveRestrictionRepository(
+            snapshot: try ActiveRestrictionSnapshot(
+                revision: 4,
+                occurrences: [existingOccurrence],
+                observedAt: TestFixtures.now.addingTimeInterval(-60)
+            )
+        )
+        let coordinator = makeCoordinator(
+            rules: [rule],
+            conditions: [
+                TestFixtures.makeLocationCondition(
+                    ruleID: rule.id,
+                    state: .outside
+                ),
+            ],
+            adapter: RecordingRestrictionAdapter(initialRules: [rule]),
+            activeRestrictionSnapshotRepository: snapshotRepository
+        )
+
+        _ = try await coordinator.handleLocationEvent(ruleID: rule.id)
+
+        let snapshot = try #require(await snapshotRepository.snapshot)
+        #expect(snapshot.revision == 5)
+        #expect(snapshot.occurrences.isEmpty)
+        #expect(snapshot.observedAt == TestFixtures.now)
+    }
+
     private func makeCoordinator(
         rules: [RestrictionRuleSnapshot],
         conditions: [LocationConditionSnapshot],
-        adapter: RecordingRestrictionAdapter
+        adapter: RecordingRestrictionAdapter,
+        activeRestrictionSnapshotRepository: CoordinatorActiveRestrictionRepository =
+            CoordinatorActiveRestrictionRepository(),
+        clock: any Clock = FixedClock(now: TestFixtures.now)
     ) -> RestrictionCoordinator {
         RestrictionCoordinator(
             ruleRepository: CoordinatorRuleRepository(rules: rules),
@@ -139,7 +243,8 @@ struct RestrictionCoordinatorTests {
             ),
             authorizationProvider: ApprovedAuthorizationProvider(),
             restrictionAdapter: adapter,
-            clock: FixedClock(now: TestFixtures.now),
+            activeRestrictionSnapshotRepository: activeRestrictionSnapshotRepository,
+            clock: clock,
             calendar: TestFixtures.calendar,
             timeZone: TestFixtures.timeZone
         )
@@ -149,6 +254,33 @@ struct RestrictionCoordinatorTests {
         _ rules: [RestrictionRuleSnapshot]
     ) -> Set<ActiveRuleRevision> {
         Set(rules.map { ActiveRuleRevision(ruleID: $0.id, revision: $0.revision) })
+    }
+
+    private func date(hour: Int) -> Date {
+        TestFixtures.calendar.date(
+            bySettingHour: hour,
+            minute: 0,
+            second: 0,
+            of: TestFixtures.now
+        )!
+    }
+}
+
+private actor CoordinatorActiveRestrictionRepository:
+    ActiveRestrictionSnapshotRepository
+{
+    private(set) var snapshot: ActiveRestrictionSnapshot?
+
+    init(snapshot: ActiveRestrictionSnapshot? = nil) {
+        self.snapshot = snapshot
+    }
+
+    func loadActiveRestrictionSnapshot() -> ActiveRestrictionSnapshot? {
+        snapshot
+    }
+
+    func saveActiveRestrictionSnapshot(_ snapshot: ActiveRestrictionSnapshot) {
+        self.snapshot = snapshot
     }
 }
 
