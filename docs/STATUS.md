@@ -7,17 +7,17 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 3 사용자 스토리 1 구현 진행 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T031 앱 비실행 callback의 occurrence
-동기화를 완료했다. Device Activity 시작·종료 callback은 Shield 적용 상태와 같은 App Group의 활성
-occurrence snapshot을 동기 저장하며 ActivityKit은 호출하지 않는다. 겹친 규칙 종료처럼 동기 경로가
-전체 상태를 안전하게 확정할 수 없으면 기존 coordinator 재평가로 넘긴다.
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T032 ActivityKit system adapter를
+완료했다. `SystemLiveActivityAdapter`는 Live Activity 권한·현재 활동 조회와 request·update·즉시
+종료를 기존 `RestrictionLiveActivityManaging` 계약으로 감싸며 framework 상세 오류를 동작별 안정
+오류로 정규화한다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T031 — 앱 비실행 callback에서 occurrence만 동기화하고 ActivityKit 호출 경계를 분리함
+T032 — ActivityKit request·update·end·authorization 조회 system adapter를 구현함
 
 ## 다음 작업
-T032 — ActivityKit request·update·end·authorization 조회 system adapter를 구현한다.
+T034 — 앱 launch·foreground 복구와 신뢰 위치 변경 시 Live Activity 조정을 연결한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -33,6 +33,20 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-03 002 구현 T032를 완료했다. `SystemLiveActivityAdapter.live()`는
+`ActivityAuthorizationInfo.areActivitiesEnabled`와
+`Activity<RestrictionLiveActivityAttributes>.activities`를 도메인 권한·snapshot으로 변환하고,
+`ActivityContent`의 stale 시각을 제한 종료 시각으로 지정해 로컬 request와 기존 활동 update를
+수행한다. 종료는 최종 content state와 `.immediate` dismissal을 사용한다. 각 mutation은 실제
+ActivityKit 활동을 attributes의 안정 `activityID`로 찾고 framework 상세 오류를
+`requestFailed`·`updateFailed`·`endFailed`로 정규화한다. 주입 가능한 system-call 경계의 권한·활동
+조회, payload 전달, 동작별 오류 변환 테스트 3개를 먼저 추가해 adapter 타입 부재 compile RED를
+확인한 뒤 green으로 전환했다. iPhone 17 Pro iOS 26.5 Simulator에서 대상 테스트 3개와 전체
+`GetUpTests` 346개(동적 인자 실행 포함 389회)가 실패·skip 없이 통과했고, 앱과 네 extension의 코드
+서명 없는 generic iOS Simulator 빌드, project plist와 `git diff --check`도 통과했다. 첫 일반 빌드는
+sandbox의 CoreSimulatorService 접근 제한으로 실패했으나 허용된 호스트 환경에서 같은 명령을
+재실행해 통과했다. 기존 XCTest binary strip 및 불필요한 `try` 경고는 변동 없이 남아 있다.
+
 2026-09-03 002 구현 T031을 완료했다. `DeviceActivityIntervalStartHandler`와 마지막 활성 규칙의
 `DeviceActivityIntervalEndHandler`는 Shield read-back·공유 적용 상태 저장 직후 App Group의
 `active-restrictions.json`을 같은 동기 callback 안에서 atomic write한다. foreground coordinator와
