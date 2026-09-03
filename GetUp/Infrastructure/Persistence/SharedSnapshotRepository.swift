@@ -392,6 +392,11 @@ actor PendingAppRouteRepository: PendingAppRoutePersisting {
         let data: Data
         do {
             data = try Data(contentsOf: fileURL)
+        } catch let error as CocoaError where error.code == .fileReadNoSuchFile {
+            // Another process or repository instance may consume the route
+            // after the existence check. Treat that atomic winner as an
+            // already-consumed route instead of surfacing a read failure.
+            return nil
         } catch {
             throw SharedSnapshotRepositoryError.readFailed(fileName: fileName)
         }
@@ -407,8 +412,19 @@ actor PendingAppRouteRepository: PendingAppRoutePersisting {
         now: Date,
         activeOccurrenceIDs: Set<String>
     ) async throws -> PendingAppRoute? {
-        guard let route = try await load() else {
+        guard let claimedFileURL = try claimRouteFileIfPresent() else {
             return nil
+        }
+        let route: PendingAppRoute
+        do {
+            let data = try Data(contentsOf: claimedFileURL)
+            route = try makeDecoder().decode(PendingAppRoute.self, from: data)
+        } catch is DecodingError {
+            try? FileManager.default.removeItem(at: claimedFileURL)
+            throw SharedSnapshotRepositoryError.decodingFailed(fileName: fileName)
+        } catch {
+            try? FileManager.default.removeItem(at: claimedFileURL)
+            throw SharedSnapshotRepositoryError.readFailed(fileName: fileName)
         }
 
         let age = now.timeIntervalSince(route.createdAt)
@@ -420,8 +436,10 @@ actor PendingAppRouteRepository: PendingAppRoutePersisting {
             && isWithinValidityWindow
             && hasActiveOccurrence
 
-        guard try deleteRouteIfPresent() else {
-            return nil
+        do {
+            try FileManager.default.removeItem(at: claimedFileURL)
+        } catch {
+            throw SharedSnapshotRepositoryError.deletionFailed(fileName: fileName)
         }
         return isEligible ? route : nil
     }
@@ -434,12 +452,17 @@ actor PendingAppRouteRepository: PendingAppRoutePersisting {
         containerURL.appendingPathComponent(fileName)
     }
 
-    private func deleteRouteIfPresent() throws -> Bool {
+    private func claimRouteFileIfPresent() throws -> URL? {
+        let claimedFileURL = containerURL.appendingPathComponent(
+            "\(fileName).claim-\(UUID().uuidString)"
+        )
         do {
-            try FileManager.default.removeItem(at: fileURL)
-            return true
-        } catch let error as CocoaError where error.code == .fileNoSuchFile {
-            return false
+            try FileManager.default.moveItem(at: fileURL, to: claimedFileURL)
+            return claimedFileURL
+        } catch let error as CocoaError
+            where error.code == .fileNoSuchFile
+                || error.code == .fileReadNoSuchFile {
+            return nil
         } catch {
             throw SharedSnapshotRepositoryError.deletionFailed(fileName: fileName)
         }
