@@ -236,6 +236,82 @@ private struct DeviceActivityIntervalStartSnapshotFileReader {
     }
 }
 
+private struct DeviceActivityActiveRestrictionSnapshotFileStore {
+    private struct SchemaHeader: Decodable {
+        let schemaVersion: Int
+    }
+
+    let containerURL: URL
+    let fileWriter: any SnapshotFileWriting
+
+    init(
+        containerURL: URL,
+        fileWriter: any SnapshotFileWriting = AtomicSnapshotFileWriter()
+    ) {
+        self.containerURL = containerURL
+        self.fileWriter = fileWriter
+    }
+
+    func load() throws -> ActiveRestrictionSnapshot? {
+        let fileName = SharedIdentifiers.activeRestrictionSnapshotFileName
+        let fileURL = containerURL.appendingPathComponent(fileName)
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
+            return nil
+        }
+
+        let data: Data
+        do {
+            data = try Data(contentsOf: fileURL)
+        } catch {
+            throw SharedSnapshotRepositoryError.readFailed(fileName: fileName)
+        }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let header: SchemaHeader
+        do {
+            header = try decoder.decode(SchemaHeader.self, from: data)
+        } catch {
+            throw SharedSnapshotRepositoryError.decodingFailed(fileName: fileName)
+        }
+        guard header.schemaVersion == ActiveRestrictionSnapshot.currentSchemaVersion else {
+            throw SharedSnapshotRepositoryError.unsupportedSchema(
+                fileName: fileName,
+                found: header.schemaVersion,
+                supported: ActiveRestrictionSnapshot.currentSchemaVersion
+            )
+        }
+
+        do {
+            return try decoder.decode(ActiveRestrictionSnapshot.self, from: data)
+        } catch {
+            throw SharedSnapshotRepositoryError.decodingFailed(fileName: fileName)
+        }
+    }
+
+    func save(_ snapshot: ActiveRestrictionSnapshot) throws {
+        let fileName = SharedIdentifiers.activeRestrictionSnapshotFileName
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.sortedKeys]
+        let data: Data
+        do {
+            data = try encoder.encode(snapshot)
+        } catch {
+            throw SharedSnapshotRepositoryError.encodingFailed(fileName: fileName)
+        }
+
+        do {
+            try fileWriter.write(
+                data,
+                to: containerURL.appendingPathComponent(fileName)
+            )
+        } catch {
+            throw SharedSnapshotRepositoryError.atomicWriteFailed(fileName: fileName)
+        }
+    }
+}
+
 struct DeviceActivityAuthorizationSnapshotReader {
     typealias CurrentSnapshot = () -> AuthorizationSnapshot
 
@@ -344,11 +420,17 @@ struct DeviceActivityAuthorizationSnapshotReader {
 struct DeviceActivityIntervalStartHandler {
     typealias SnapshotLoader = () throws -> DeviceActivityIntervalStartSnapshot
     typealias AuthorizationSnapshotLoader = () -> AuthorizationSnapshot
+    typealias ActiveRestrictionSnapshotLoader =
+        () throws -> ActiveRestrictionSnapshot?
+    typealias ActiveRestrictionSnapshotSaver =
+        (ActiveRestrictionSnapshot) throws -> Void
 
     private let storeAccess: any ManagedSettingsStoreAccess
     private let defaults: UserDefaults
     private let loadSnapshot: SnapshotLoader
     private let authorizationSnapshot: AuthorizationSnapshotLoader
+    private let loadActiveRestrictionSnapshot: ActiveRestrictionSnapshotLoader
+    private let saveActiveRestrictionSnapshot: ActiveRestrictionSnapshotSaver
     private let now: () -> Date
     private let calendar: Calendar
     private let timeZone: TimeZone
@@ -358,6 +440,8 @@ struct DeviceActivityIntervalStartHandler {
         defaults: UserDefaults,
         loadSnapshot: @escaping SnapshotLoader,
         authorizationSnapshot: @escaping AuthorizationSnapshotLoader,
+        loadActiveRestrictionSnapshot: @escaping ActiveRestrictionSnapshotLoader = { nil },
+        saveActiveRestrictionSnapshot: @escaping ActiveRestrictionSnapshotSaver = { _ in },
         now: @escaping () -> Date = Date.init,
         calendar: Calendar = .current,
         timeZone: TimeZone = .current
@@ -366,6 +450,8 @@ struct DeviceActivityIntervalStartHandler {
         self.defaults = defaults
         self.loadSnapshot = loadSnapshot
         self.authorizationSnapshot = authorizationSnapshot
+        self.loadActiveRestrictionSnapshot = loadActiveRestrictionSnapshot
+        self.saveActiveRestrictionSnapshot = saveActiveRestrictionSnapshot
         self.now = now
         self.calendar = calendar
         self.timeZone = timeZone
@@ -397,11 +483,16 @@ struct DeviceActivityIntervalStartHandler {
         let authorizationReader = DeviceActivityAuthorizationSnapshotReader(
             defaults: defaults
         )
+        let activeRestrictionStore = DeviceActivityActiveRestrictionSnapshotFileStore(
+            containerURL: containerURL
+        )
         return Self(
             storeAccess: SystemManagedSettingsStoreAccess(),
             defaults: defaults,
             loadSnapshot: snapshotReader.load,
-            authorizationSnapshot: authorizationReader.snapshot
+            authorizationSnapshot: authorizationReader.snapshot,
+            loadActiveRestrictionSnapshot: activeRestrictionStore.load,
+            saveActiveRestrictionSnapshot: activeRestrictionStore.save
         )
     }
 
@@ -509,6 +600,32 @@ struct DeviceActivityIntervalStartHandler {
                     desiredState,
                     to: defaults
                 )
+            }
+            do {
+                let activeSnapshot = try ActiveRestrictionSnapshotPolicy.makeSnapshot(
+                    previous: try loadActiveRestrictionSnapshot(),
+                    desiredRules: evaluation.desiredRules,
+                    appliedState: desiredState,
+                    observedAt: observedAt,
+                    calendar: calendar,
+                    timeZone: timeZone
+                )
+                try saveActiveRestrictionSnapshot(activeSnapshot)
+            } catch {
+                saveDiagnostic(
+                    diagnostic(
+                        stage: .occurrenceSnapshotPersistenceFailed,
+                        observedAt: observedAt,
+                        activityName: activityName,
+                        snapshot: snapshot,
+                        evaluation: evaluation,
+                        authorization: authorization,
+                        currentState: currentState,
+                        startedRuleID: startedRuleID,
+                        errorCode: DiagnosticErrorClassifier.classify(error).rawValue
+                    )
+                )
+                return false
             }
             saveDiagnostic(
                 diagnostic(
@@ -619,18 +736,35 @@ enum IntervalStartDiagnosticDefaultsCodec {
 }
 
 struct DeviceActivityIntervalEndHandler {
+    typealias ActiveRestrictionSnapshotLoader =
+        () throws -> ActiveRestrictionSnapshot?
+    typealias ActiveRestrictionSnapshotSaver =
+        (ActiveRestrictionSnapshot) throws -> Void
+
     private let storeAccess: any ManagedSettingsStoreAccess
     private let defaults: UserDefaults
+    private let loadActiveRestrictionSnapshot: ActiveRestrictionSnapshotLoader
+    private let saveActiveRestrictionSnapshot: ActiveRestrictionSnapshotSaver
+    private let now: () -> Date
 
     init(
         storeAccess: any ManagedSettingsStoreAccess,
-        defaults: UserDefaults
+        defaults: UserDefaults,
+        loadActiveRestrictionSnapshot: @escaping ActiveRestrictionSnapshotLoader = { nil },
+        saveActiveRestrictionSnapshot: @escaping ActiveRestrictionSnapshotSaver = { _ in },
+        now: @escaping () -> Date = Date.init
     ) {
         self.storeAccess = storeAccess
         self.defaults = defaults
+        self.loadActiveRestrictionSnapshot = loadActiveRestrictionSnapshot
+        self.saveActiveRestrictionSnapshot = saveActiveRestrictionSnapshot
+        self.now = now
     }
 
-    static func live(bundle: Bundle = .main) throws -> Self {
+    static func live(
+        bundle: Bundle = .main,
+        fileManager: FileManager = .default
+    ) throws -> Self {
         guard
             let identifier = SharedIdentifiers.appGroupIdentifier(in: bundle)
         else {
@@ -639,9 +773,21 @@ struct DeviceActivityIntervalEndHandler {
         guard let defaults = UserDefaults(suiteName: identifier) else {
             throw ManagedSettingsRestrictionAdapterError.sharedDefaultsUnavailable
         }
+        guard
+            let containerURL = fileManager.containerURL(
+                forSecurityApplicationGroupIdentifier: identifier
+            )
+        else {
+            throw DependencyContainerError.appGroupContainerUnavailable
+        }
+        let activeRestrictionStore = DeviceActivityActiveRestrictionSnapshotFileStore(
+            containerURL: containerURL
+        )
         return Self(
             storeAccess: SystemManagedSettingsStoreAccess(),
-            defaults: defaults
+            defaults: defaults,
+            loadActiveRestrictionSnapshot: activeRestrictionStore.load,
+            saveActiveRestrictionSnapshot: activeRestrictionStore.save
         )
     }
 
@@ -684,6 +830,19 @@ struct DeviceActivityIntervalEndHandler {
             AppliedRestrictionState(activeRuleRevisions: []),
             to: defaults
         )
+        do {
+            let activeSnapshot = try ActiveRestrictionSnapshotPolicy.makeSnapshot(
+                previous: try loadActiveRestrictionSnapshot(),
+                desiredRules: [],
+                appliedState: AppliedRestrictionState(activeRuleRevisions: []),
+                observedAt: now(),
+                calendar: .current,
+                timeZone: .current
+            )
+            try saveActiveRestrictionSnapshot(activeSnapshot)
+        } catch {
+            return false
+        }
         return true
     }
 }

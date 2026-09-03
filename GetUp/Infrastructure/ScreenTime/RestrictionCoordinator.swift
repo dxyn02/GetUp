@@ -32,6 +32,86 @@ struct RestrictionRuleSetEvaluation: Sendable {
     let desiredRules: [RestrictionRuleSnapshot]
 }
 
+enum ActiveRestrictionSnapshotPolicy {
+    static func makeSnapshot(
+        previous: ActiveRestrictionSnapshot?,
+        desiredRules: [RestrictionRuleSnapshot],
+        appliedState: AppliedRestrictionState,
+        observedAt: Date,
+        calendar: Calendar,
+        timeZone: TimeZone
+    ) throws -> ActiveRestrictionSnapshot {
+        let previousOccurrences = Dictionary(
+            uniqueKeysWithValues: (previous?.occurrences ?? []).map {
+                ($0.id, $0)
+            }
+        )
+        var occurrences: [RestrictionOccurrence] = []
+
+        for rule in desiredRules where appliedState.contains(rule) {
+            guard let interval = ScheduleEvaluator.activeInterval(
+                weekdays: rule.weekdays,
+                startTime: rule.startTime,
+                endTime: rule.endTime,
+                at: observedAt,
+                calendar: calendar,
+                timeZone: timeZone
+            ) else {
+                continue
+            }
+
+            let occurrenceID = RestrictionOccurrence.deterministicID(
+                ruleID: rule.id,
+                ruleRevision: rule.revision,
+                startAt: interval.lowerBound,
+                endAt: interval.upperBound
+            )
+            occurrences.append(
+                try RestrictionOccurrence(
+                    ruleID: rule.id,
+                    ruleRevision: rule.revision,
+                    startAt: interval.lowerBound,
+                    endAt: interval.upperBound,
+                    activatedAt: previousOccurrences[occurrenceID]?.activatedAt
+                        ?? observedAt
+                )
+            )
+        }
+
+        occurrences.sort(by: occurrenceOrder)
+        let previousOccurrenceIDs = previous?.occurrences
+            .sorted(by: occurrenceOrder)
+            .map(\.id) ?? []
+        let revision: Int
+        if let previous {
+            revision = occurrences.map(\.id) == previousOccurrenceIDs
+                ? previous.revision
+                : previous.revision + 1
+        } else {
+            revision = 1
+        }
+
+        return try ActiveRestrictionSnapshot(
+            revision: revision,
+            occurrences: occurrences,
+            observedAt: observedAt
+        )
+    }
+
+    private static func occurrenceOrder(
+        _ lhs: RestrictionOccurrence,
+        _ rhs: RestrictionOccurrence
+    ) -> Bool {
+        if lhs.activatedAt != rhs.activatedAt {
+            return lhs.activatedAt < rhs.activatedAt
+        }
+        if lhs.startAt != rhs.startAt {
+            return lhs.startAt < rhs.startAt
+        }
+        return lhs.ruleID.uuidString < rhs.ruleID.uuidString
+    }
+}
+
 enum RestrictionRuleSetEvaluator {
     private static let maximumTrustedLocationAge: TimeInterval = 24 * 60 * 60
 
@@ -271,78 +351,16 @@ actor RestrictionCoordinator {
 
         let previous = try await activeRestrictionSnapshotRepository
             .loadActiveRestrictionSnapshot()
-        let previousOccurrences = Dictionary(
-            uniqueKeysWithValues: (previous?.occurrences ?? []).map {
-                ($0.id, $0)
-            }
+        let snapshot = try ActiveRestrictionSnapshotPolicy.makeSnapshot(
+            previous: previous,
+            desiredRules: desiredRules,
+            appliedState: appliedState,
+            observedAt: observedAt,
+            calendar: calendar,
+            timeZone: timeZone
         )
-        var occurrences: [RestrictionOccurrence] = []
-
-        for rule in desiredRules where appliedState.contains(rule) {
-            guard let interval = ScheduleEvaluator.activeInterval(
-                weekdays: rule.weekdays,
-                startTime: rule.startTime,
-                endTime: rule.endTime,
-                at: observedAt,
-                calendar: calendar,
-                timeZone: timeZone
-            ) else {
-                continue
-            }
-
-            let occurrenceID = RestrictionOccurrence.deterministicID(
-                ruleID: rule.id,
-                ruleRevision: rule.revision,
-                startAt: interval.lowerBound,
-                endAt: interval.upperBound
-            )
-            let activatedAt = previousOccurrences[occurrenceID]?.activatedAt
-                ?? observedAt
-            occurrences.append(
-                try RestrictionOccurrence(
-                    ruleID: rule.id,
-                    ruleRevision: rule.revision,
-                    startAt: interval.lowerBound,
-                    endAt: interval.upperBound,
-                    activatedAt: activatedAt
-                )
-            )
-        }
-
-        occurrences.sort(by: occurrenceOrder)
-        let occurrenceIDs = occurrences.map(\.id)
-        let previousOccurrenceIDs = previous?.occurrences
-            .sorted(by: occurrenceOrder)
-            .map(\.id) ?? []
-        let revision: Int
-        if let previous {
-            revision = occurrenceIDs == previousOccurrenceIDs
-                ? previous.revision
-                : previous.revision + 1
-        } else {
-            revision = 1
-        }
-
-        try await activeRestrictionSnapshotRepository.saveActiveRestrictionSnapshot(
-            try ActiveRestrictionSnapshot(
-                revision: revision,
-                occurrences: occurrences,
-                observedAt: observedAt
-            )
-        )
-    }
-
-    private func occurrenceOrder(
-        _ lhs: RestrictionOccurrence,
-        _ rhs: RestrictionOccurrence
-    ) -> Bool {
-        if lhs.activatedAt != rhs.activatedAt {
-            return lhs.activatedAt < rhs.activatedAt
-        }
-        if lhs.startAt != rhs.startAt {
-            return lhs.startAt < rhs.startAt
-        }
-        return lhs.ruleID.uuidString < rhs.ruleID.uuidString
+        try await activeRestrictionSnapshotRepository
+            .saveActiveRestrictionSnapshot(snapshot)
     }
 
 }

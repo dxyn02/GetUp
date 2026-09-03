@@ -7,16 +7,17 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 3 사용자 스토리 1 구현 진행 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T030 활성 occurrence snapshot 기록을
-완료했다. 실제 제한 adapter read-back에 포함된 규칙만 현재 일정 구간의 결정적 occurrence로 만들고,
-같은 occurrence의 최초 `activatedAt`과 revision을 유지하며 활성 집합 변경 시 revision을 증가시킨다.
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T031 앱 비실행 callback의 occurrence
+동기화를 완료했다. Device Activity 시작·종료 callback은 Shield 적용 상태와 같은 App Group의 활성
+occurrence snapshot을 동기 저장하며 ActivityKit은 호출하지 않는다. 겹친 규칙 종료처럼 동기 경로가
+전체 상태를 안전하게 확정할 수 없으면 기존 coordinator 재평가로 넘긴다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T030 — 제한 적용 결과를 결정적 활성 occurrence snapshot으로 기록함
+T031 — 앱 비실행 callback에서 occurrence만 동기화하고 ActivityKit 호출 경계를 분리함
 
 ## 다음 작업
-T031 — 앱 비실행 callback에서 occurrence만 갱신하고 ActivityKit은 호출하지 않도록 연결한다.
+T032 — ActivityKit request·update·end·authorization 조회 system adapter를 구현한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -32,6 +33,19 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-03 002 구현 T031을 완료했다. `DeviceActivityIntervalStartHandler`와 마지막 활성 규칙의
+`DeviceActivityIntervalEndHandler`는 Shield read-back·공유 적용 상태 저장 직후 App Group의
+`active-restrictions.json`을 같은 동기 callback 안에서 atomic write한다. foreground coordinator와
+공통 `ActiveRestrictionSnapshotPolicy`를 사용해 occurrence ID·최초 `activatedAt`·snapshot revision
+규칙을 동일하게 유지한다. 겹친 활성 규칙의 종료와 occurrence 저장 실패는 동기 성공으로 오인하지
+않고 기존 `RestrictionCoordinator` 재평가 경로로 넘기며, Device Activity extension은 ActivityKit을
+import하거나 직접 호출하지 않는다. 시작·종료 저장 테스트 2개를 먼저 추가해 새 주입 경계 미구현
+compile RED를 확인한 뒤 대상 테스트 34개와 iPhone 17 Pro iOS 26.5 Simulator의 전체
+`GetUpTests` 343개(동적 인자 실행 포함 386회)를 실패·skip 없이 통과시켰다. 앱과 네 extension의
+코드 서명 없는 generic iOS Simulator 빌드와 `git diff --check`도 통과했다. 첫 일반 빌드는 sandbox의
+CoreSimulatorService 접근 제한으로 실패했으나 허용된 호스트 환경에서 같은 명령을 재실행해
+통과했다. 기존 XCTest binary strip 및 불필요한 `try` 경고는 변동 없이 남아 있다.
+
 2026-09-03 002 구현 T030을 완료했다. `RestrictionCoordinator`는 제한 적용·제거 뒤 실제 adapter
 read-back과 현재 규칙을 교차 확인하고, 기존 `ScheduleEvaluator`가 계산한 DST 대응 활성 구간으로
 `RestrictionOccurrence`를 생성해 App Group repository에 저장한다. 규칙 입력 순서와 무관하게

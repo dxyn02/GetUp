@@ -396,6 +396,55 @@ struct ManagedSettingsRestrictionAdapterTests {
         defaults.removePersistentDomain(forName: suiteName)
     }
 
+    @Test("The interval start callback synchronously persists active occurrences")
+    func intervalStartPersistsActiveOccurrences() throws {
+        let rule = TestFixtures.makeRule(
+            activitySelection: selection(
+                applicationTokens: [try applicationToken(seed: 25)]
+            )
+        )
+        let store = RecordingManagedSettingsStoreAccess()
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        var persistedSnapshot: ActiveRestrictionSnapshot?
+        let handler = DeviceActivityIntervalStartHandler(
+            storeAccess: store,
+            defaults: defaults,
+            loadSnapshot: {
+                DeviceActivityIntervalStartSnapshot(
+                    rules: [rule],
+                    locationConditions: [
+                        TestFixtures.makeLocationCondition(ruleID: rule.id),
+                    ]
+                )
+            },
+            authorizationSnapshot: { TestFixtures.makeAuthorization() },
+            loadActiveRestrictionSnapshot: { nil },
+            saveActiveRestrictionSnapshot: { persistedSnapshot = $0 },
+            now: { TestFixtures.now },
+            calendar: TestFixtures.calendar,
+            timeZone: TestFixtures.timeZone
+        )
+
+        let didHandle = handler.handle(
+            activityName: "\(SharedIdentifiers.deviceActivityNamePrefix)."
+                + "\(rule.id.uuidString.lowercased()).monday"
+        )
+
+        let snapshot = try #require(persistedSnapshot)
+        let occurrence = try #require(snapshot.occurrences.first)
+        #expect(didHandle)
+        #expect(snapshot.revision == 1)
+        #expect(snapshot.observedAt == TestFixtures.now)
+        #expect(occurrence.ruleID == rule.id)
+        #expect(occurrence.ruleRevision == rule.revision)
+        #expect(occurrence.activatedAt == TestFixtures.now)
+        #expect(occurrence.startAt < TestFixtures.now)
+        #expect(TestFixtures.now < occurrence.endAt)
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
     @Test("The interval start handler does not apply a rule without required permissions")
     func intervalStartDoesNotApplyWithoutRequiredPermissions() throws {
         let rule = TestFixtures.makeRule(
@@ -610,6 +659,67 @@ struct ManagedSettingsRestrictionAdapterTests {
             RestrictionApplicationStateDefaultsCodec.load(from: defaults)
                 == initialState
         )
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    @Test("The interval end callback synchronously persists an empty occurrence set")
+    func intervalEndPersistsEmptyOccurrenceSnapshot() throws {
+        let rule = TestFixtures.makeRule()
+        let interval = try #require(
+            ScheduleEvaluator.activeInterval(
+                weekdays: rule.weekdays,
+                startTime: rule.startTime,
+                endTime: rule.endTime,
+                at: TestFixtures.now,
+                calendar: TestFixtures.calendar,
+                timeZone: TestFixtures.timeZone
+            )
+        )
+        let existingSnapshot = try ActiveRestrictionSnapshot(
+            revision: 8,
+            occurrences: [
+                try RestrictionOccurrence(
+                    ruleID: rule.id,
+                    ruleRevision: rule.revision,
+                    startAt: interval.lowerBound,
+                    endAt: interval.upperBound,
+                    activatedAt: TestFixtures.now.addingTimeInterval(-60)
+                ),
+            ],
+            observedAt: TestFixtures.now.addingTimeInterval(-60)
+        )
+        let storeName = SharedIdentifiers.managedSettingsStoreName
+        let store = RecordingManagedSettingsStoreAccess(stores: [
+            storeName: ManagedSettingsShieldSelection(rules: [rule]),
+        ])
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        RestrictionApplicationStateDefaultsCodec.save(
+            AppliedRestrictionState(activeRuleRevisions: [
+                ActiveRuleRevision(ruleID: rule.id, revision: rule.revision),
+            ]),
+            to: defaults
+        )
+        var persistedSnapshot: ActiveRestrictionSnapshot?
+        let handler = DeviceActivityIntervalEndHandler(
+            storeAccess: store,
+            defaults: defaults,
+            loadActiveRestrictionSnapshot: { existingSnapshot },
+            saveActiveRestrictionSnapshot: { persistedSnapshot = $0 },
+            now: { TestFixtures.now }
+        )
+
+        let didHandle = handler.handle(
+            activityName: "\(SharedIdentifiers.deviceActivityNamePrefix)."
+                + "\(rule.id.uuidString.lowercased()).monday"
+        )
+
+        let snapshot = try #require(persistedSnapshot)
+        #expect(didHandle)
+        #expect(snapshot.revision == 9)
+        #expect(snapshot.occurrences.isEmpty)
+        #expect(snapshot.observedAt == TestFixtures.now)
         defaults.removePersistentDomain(forName: suiteName)
     }
 

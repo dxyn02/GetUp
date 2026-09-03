@@ -5,6 +5,8 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     override func intervalDidStart(for activity: DeviceActivityName) {
         super.intervalDidStart(for: activity)
 
+        // 이 동기 경로는 Shield와 App Group occurrence만 갱신한다.
+        // ActivityKit 시작·조정은 메인 앱 foreground 수명주기에만 맡긴다.
         if let handler = try? DeviceActivityIntervalStartHandler.live(),
            handler.handle(activityName: activity.rawValue)
         {
@@ -30,6 +32,7 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     override func intervalDidEnd(for activity: DeviceActivityName) {
         super.intervalDidEnd(for: activity)
 
+        // 종료 callback도 occurrence를 동기화하되 ActivityKit에는 접근하지 않는다.
         if let handler = try? DeviceActivityIntervalEndHandler.live(),
            handler.handle(activityName: activity.rawValue)
         {
