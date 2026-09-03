@@ -186,6 +186,7 @@
 		AA0000000000000000000270 /* LiveActivityTimePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000064 /* LiveActivityTimePolicy.swift */; };
 		AA0000000000000000000271 /* LiveActivityCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000065 /* LiveActivityCoordinator.swift */; };
 		AA0000000000000000000272 /* LiveActivityStartMeasurementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000045 /* LiveActivityStartMeasurementTests.swift */; };
+		AA0000000000000000000273 /* LiveActivityLocationBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000046 /* LiveActivityLocationBridgeTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -354,6 +355,7 @@
 		B50000000000000000000043 /* LiveActivityTimePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityTimePolicyTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000044 /* LiveActivityCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityCoordinatorTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000045 /* LiveActivityStartMeasurementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityStartMeasurementTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000046 /* LiveActivityLocationBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityLocationBridgeTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000040 /* LiveActivityCoinFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityCoinFixtures.swift; sourceTree = "<group>"; };
 		B60000000000000000000001 /* UserStory1RuleConfigurationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory1RuleConfigurationUITests.swift; sourceTree = "<group>"; };
 		B60000000000000000000002 /* UserStory2RestrictionActivationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory2RestrictionActivationUITests.swift; sourceTree = "<group>"; };
@@ -726,6 +728,7 @@
 		B50000000000000000000014 /* Integration */ = {
 			isa = PBXGroup;
 			children = (
+				B50000000000000000000046 /* LiveActivityLocationBridgeTests.swift */,
 				B50000000000000000000044 /* LiveActivityCoordinatorTests.swift */,
 				B50000000000000000000038 /* CloudKitCoinLedgerRepositoryTests.swift */,
 				B50000000000000000000039 /* CloudKitMonthlyAllowanceTests.swift */,
@@ -1268,6 +1271,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000273 /* LiveActivityLocationBridgeTests.swift in Sources */,
 				AA0000000000000000000272 /* LiveActivityStartMeasurementTests.swift in Sources */,
 				AA0000000000000000000269 /* LiveActivityCoordinatorTests.swift in Sources */,
 				AA0000000000000000000268 /* LiveActivityTimePolicyTests.swift in Sources */,
