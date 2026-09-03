@@ -136,6 +136,8 @@ actor RestrictionCoordinator {
     private let locationConditionRepository: any LocationConditionRepository
     private let authorizationProvider: any AuthorizationProviding
     private let restrictionAdapter: any RestrictionApplying
+    private let activeRestrictionSnapshotRepository:
+        (any ActiveRestrictionSnapshotRepository)?
     private let clock: any Clock
     private let calendar: Calendar
     private let timeZone: TimeZone
@@ -145,6 +147,8 @@ actor RestrictionCoordinator {
         locationConditionRepository: any LocationConditionRepository,
         authorizationProvider: any AuthorizationProviding,
         restrictionAdapter: any RestrictionApplying,
+        activeRestrictionSnapshotRepository:
+            (any ActiveRestrictionSnapshotRepository)? = nil,
         clock: any Clock = SystemRestrictionClock(),
         calendar: Calendar = .current,
         timeZone: TimeZone = .current
@@ -153,6 +157,8 @@ actor RestrictionCoordinator {
         self.locationConditionRepository = locationConditionRepository
         self.authorizationProvider = authorizationProvider
         self.restrictionAdapter = restrictionAdapter
+        self.activeRestrictionSnapshotRepository =
+            activeRestrictionSnapshotRepository
         self.clock = clock
         self.calendar = calendar
         self.timeZone = timeZone
@@ -190,13 +196,14 @@ actor RestrictionCoordinator {
             .loadLocationConditionCollection()?.conditions ?? []
         let authorization = await authorizationProvider.authorizationSnapshot()
         let currentAppliedState = await restrictionAdapter.currentAppliedState()
+        let evaluatedAt = clock.now
 
         let evaluation = RestrictionRuleSetEvaluator.evaluate(
             rules: rules,
             locationConditions: locationConditions,
             authorization: authorization,
             currentAppliedState: currentAppliedState,
-            now: clock.now,
+            now: evaluatedAt,
             calendar: calendar,
             timeZone: timeZone
         )
@@ -230,6 +237,11 @@ actor RestrictionCoordinator {
         }
 
         let appliedState = await restrictionAdapter.currentAppliedState()
+        try await saveActiveRestrictionSnapshot(
+            desiredRules: desiredRules,
+            appliedState: appliedState,
+            observedAt: evaluatedAt
+        )
         let transitionMeasurement = eventConfirmedAt.flatMap { confirmedAt in
             performedEffect.map { effect in
                 RestrictionTransitionMeasurement(
@@ -248,6 +260,91 @@ actor RestrictionCoordinator {
         )
     }
 
+    private func saveActiveRestrictionSnapshot(
+        desiredRules: [RestrictionRuleSnapshot],
+        appliedState: AppliedRestrictionState,
+        observedAt: Date
+    ) async throws {
+        guard let activeRestrictionSnapshotRepository else {
+            return
+        }
+
+        let previous = try await activeRestrictionSnapshotRepository
+            .loadActiveRestrictionSnapshot()
+        let previousOccurrences = Dictionary(
+            uniqueKeysWithValues: (previous?.occurrences ?? []).map {
+                ($0.id, $0)
+            }
+        )
+        var occurrences: [RestrictionOccurrence] = []
+
+        for rule in desiredRules where appliedState.contains(rule) {
+            guard let interval = ScheduleEvaluator.activeInterval(
+                weekdays: rule.weekdays,
+                startTime: rule.startTime,
+                endTime: rule.endTime,
+                at: observedAt,
+                calendar: calendar,
+                timeZone: timeZone
+            ) else {
+                continue
+            }
+
+            let occurrenceID = RestrictionOccurrence.deterministicID(
+                ruleID: rule.id,
+                ruleRevision: rule.revision,
+                startAt: interval.lowerBound,
+                endAt: interval.upperBound
+            )
+            let activatedAt = previousOccurrences[occurrenceID]?.activatedAt
+                ?? observedAt
+            occurrences.append(
+                try RestrictionOccurrence(
+                    ruleID: rule.id,
+                    ruleRevision: rule.revision,
+                    startAt: interval.lowerBound,
+                    endAt: interval.upperBound,
+                    activatedAt: activatedAt
+                )
+            )
+        }
+
+        occurrences.sort(by: occurrenceOrder)
+        let occurrenceIDs = occurrences.map(\.id)
+        let previousOccurrenceIDs = previous?.occurrences
+            .sorted(by: occurrenceOrder)
+            .map(\.id) ?? []
+        let revision: Int
+        if let previous {
+            revision = occurrenceIDs == previousOccurrenceIDs
+                ? previous.revision
+                : previous.revision + 1
+        } else {
+            revision = 1
+        }
+
+        try await activeRestrictionSnapshotRepository.saveActiveRestrictionSnapshot(
+            try ActiveRestrictionSnapshot(
+                revision: revision,
+                occurrences: occurrences,
+                observedAt: observedAt
+            )
+        )
+    }
+
+    private func occurrenceOrder(
+        _ lhs: RestrictionOccurrence,
+        _ rhs: RestrictionOccurrence
+    ) -> Bool {
+        if lhs.activatedAt != rhs.activatedAt {
+            return lhs.activatedAt < rhs.activatedAt
+        }
+        if lhs.startAt != rhs.startAt {
+            return lhs.startAt < rhs.startAt
+        }
+        return lhs.ruleID.uuidString < rhs.ruleID.uuidString
+    }
+
 }
 
 @MainActor
@@ -260,7 +357,8 @@ extension DependencyContainer {
             ruleRepository: ruleRepository,
             locationConditionRepository: locationConditionRepository,
             authorizationProvider: authorizationProvider,
-            restrictionAdapter: try makeRestrictionAdapter(bundle: bundle)
+            restrictionAdapter: try makeRestrictionAdapter(bundle: bundle),
+            activeRestrictionSnapshotRepository: sharedSnapshotRepository
         )
     }
 }

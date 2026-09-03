@@ -7,16 +7,16 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 3 사용자 스토리 1 구현 진행 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T027 Live Activity preview fixture를
-완료했다. Lock Screen과 Dynamic Island minimal·compact·expanded에서 재사용할 known·unavailable·
-다중 규칙 상태의 결정적 12개 조합을 Widget Extension target에 연결했다.
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T030 활성 occurrence snapshot 기록을
+완료했다. 실제 제한 adapter read-back에 포함된 규칙만 현재 일정 구간의 결정적 occurrence로 만들고,
+같은 occurrence의 최초 `activatedAt`과 revision을 유지하며 활성 집합 변경 시 revision을 증가시킨다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T027 — Live Activity의 네 표시 표면과 세 상태를 포괄하는 preview fixture를 작성함
+T030 — 제한 적용 결과를 결정적 활성 occurrence snapshot으로 기록함
 
 ## 다음 작업
-T030 — 제한 적용 결과에서 활성 occurrence snapshot을 결정적으로 기록한다.
+T031 — 앱 비실행 callback에서 occurrence만 갱신하고 ActivityKit은 호출하지 않도록 연결한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -32,6 +32,17 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-03 002 구현 T030을 완료했다. `RestrictionCoordinator`는 제한 적용·제거 뒤 실제 adapter
+read-back과 현재 규칙을 교차 확인하고, 기존 `ScheduleEvaluator`가 계산한 DST 대응 활성 구간으로
+`RestrictionOccurrence`를 생성해 App Group repository에 저장한다. 규칙 입력 순서와 무관하게
+`activatedAt`·`startAt`·`ruleID` 순으로 정렬하며, 동일 ID 재평가에서는 최초 `activatedAt`과 snapshot
+revision을 보존하고 활성 집합 변경에서만 revision을 증가시킨다. 적용 구간·재평가·마지막 규칙 제거
+테스트 3개를 먼저 추가해 persistence dependency 미구현 compile RED를 확인한 뒤 green으로 전환했다.
+coordinator·일정 대상 테스트 19개와 iPhone 17 Pro iOS 26.5 Simulator의 전체 `GetUpTests` 341개
+(동적 인자 실행 포함 384회), 앱과 네 extension의 코드 서명 없는 generic iOS 빌드, project plist와
+`git diff --check`가 실패·skip 없이 통과했다. 기존 XCTest binary strip 및 불필요한 `try` 경고는
+변동 없이 남아 있다.
+
 2026-09-03 002 구현 T027을 완료했다. `RestrictionLiveActivityPreviewFixtures`는 고정 시각과 ID를
 사용해 Lock Screen·Dynamic Island minimal·compact·expanded 네 표면에 known·unavailable·다중 규칙
 세 상태를 조합한 12개 `Scenario`를 제공한다. 실제 `#Preview`와 표시 UI는 계획된 T036에서 이 fixture를

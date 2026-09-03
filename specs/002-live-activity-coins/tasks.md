@@ -89,7 +89,7 @@ Phase 2에 둔다. US4에는 잔액 UI·지역화·월 경계 인수 검증만 �
 
 - [X] T028 [P] [US1] 대표 occurrence 선택과 종료·revision 불일치 정리를 `GetUp/Core/Evaluation/RestrictionOccurrenceEvaluator.swift`에 구현한다.
 - [X] T029 [P] [US1] 기존 `LocationEvidenceEvaluator`의 `.inside` 결과와 5분 유효기간을 재사용하고 남은 거리를 항상 미터·10m 단위 half-up으로 만드는 좌표 없는 content state를 `GetUp/Core/Evaluation/LiveActivityContentPolicy.swift`에 구현한다.
-- [ ] T030 [US1] 제한 적용 결과에서 활성 occurrence snapshot을 결정적으로 기록하도록 `GetUp/Infrastructure/ScreenTime/RestrictionCoordinator.swift`를 확장한다.
+- [X] T030 [US1] 제한 적용 결과에서 활성 occurrence snapshot을 결정적으로 기록하도록 `GetUp/Infrastructure/ScreenTime/RestrictionCoordinator.swift`를 확장한다.
 - [ ] T031 [US1] 앱 비실행 callback에서는 occurrence만 갱신하고 ActivityKit을 호출하지 않도록 `GetUpDeviceActivityMonitor/DeviceActivityMonitorExtension.swift`를 연결한다.
 - [ ] T032 [P] [US1] request·update·end·authorization 조회를 감싸는 system adapter를 `GetUp/Infrastructure/ActivityKit/SystemLiveActivityAdapter.swift`에 구현한다.
 - [X] T033 [US1] 대표 활동 하나를 멱등 조정하고 수동 제거를 suppression 없이 재생성하는 `GetUp/Infrastructure/ActivityKit/LiveActivityCoordinator.swift`를 구현한다.
