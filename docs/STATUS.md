@@ -7,17 +7,17 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 3 사용자 스토리 1 구현 진행 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T032 ActivityKit system adapter를
-완료했다. `SystemLiveActivityAdapter`는 Live Activity 권한·현재 활동 조회와 request·update·즉시
-종료를 기존 `RestrictionLiveActivityManaging` 계약으로 감싸며 framework 상세 오류를 동작별 안정
-오류로 정규화한다.
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T034 foreground Live Activity 조정을
+완료했다. 앱 launch·foreground 복구는 위치 근거와 제한 상태를 먼저 갱신한 뒤 현재 revision의 대표
+occurrence, 규칙·장소 표시명, 신뢰 가능한 위치 근거를 ActivityKit snapshot으로 조립해 대표 활동
+하나를 생성·갱신·종료한다. ActivityKit 조정 준비 실패는 제한 복구와 표시 상태를 되돌리지 않는다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T032 — ActivityKit request·update·end·authorization 조회 system adapter를 구현함
+T034 — 앱 launch·foreground 복구와 신뢰 위치 근거 기반 Live Activity 조정을 연결함
 
 ## 다음 작업
-T034 — 앱 launch·foreground 복구와 신뢰 위치 변경 시 Live Activity 조정을 연결한다.
+T035 — extension-only 위치 근거를 App Group에 저장하고 다음 foreground에서 소비하는 경계를 연결한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -33,6 +33,19 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-03 002 구현 T034를 완료했다. `AppLifecycleCoordinator`는 일정·위치·월 allowance·제한 상태
+복구가 끝난 뒤에만 Live Activity 조정 closure를 실행하며, 조정 준비 오류를 `.liveActivity`로
+보고하되 기존 제한 복구 결과와 presentation state를 유지한다. `AppEnvironment.live()`는 앱 타깃의
+`SystemLiveActivityAdapter`와 `LiveActivityCoordinator`를 조립하고, App Group의 활성 occurrence·
+현재 규칙 revision·저장 장소·위치 근거로 대표 snapshot을 만든다. 규칙명이 없으면 정규화한 장소명을
+사용하고, 현재 revision의 대표가 없으면 nil을 전달해 기존 활동을 종료하며, 5분 이내 `.inside`
+근거만 기존 거리 policy를 통해 표시한다. 복구 순서·실패 격리·대표 snapshot 테스트 3개를 먼저
+추가해 미구현 compile RED를 확인한 뒤 대상 테스트 10개와 iPhone 17 Pro iOS 26.5 Simulator의 전체
+`GetUpTests` 349개(동적 인자 실행 포함 392회)를 실패·skip 없이 통과시켰다. 앱과 네 extension의
+코드 서명 없는 generic iOS Simulator 빌드, project plist와 `git diff --check`도 통과했다. 첫 일반
+빌드는 sandbox의 CoreSimulatorService 접근 제한으로 실패했으나 허용된 호스트 환경에서 같은 명령을
+재실행해 통과했다. 기존 XCTest binary strip 및 불필요한 `try` 경고는 변동 없이 남아 있다.
+
 2026-09-03 002 구현 T032를 완료했다. `SystemLiveActivityAdapter.live()`는
 `ActivityAuthorizationInfo.areActivitiesEnabled`와
 `Activity<RestrictionLiveActivityAttributes>.activities`를 도메인 권한·snapshot으로 변환하고,

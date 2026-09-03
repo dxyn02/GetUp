@@ -892,6 +892,66 @@ private enum AppRuntime {
     }
 }
 
+enum AppLiveActivityRecovery {
+    static func makeSnapshot(
+        rules: [RestrictionRuleSnapshot],
+        savedPlaces: [SavedPlaceSnapshot],
+        activeSnapshot: ActiveRestrictionSnapshot?,
+        locationConditions: [LocationConditionSnapshot],
+        now: Date
+    ) throws -> RestrictionLiveActivitySnapshot? {
+        let enabledRules = rules.filter(\.isEnabled)
+        let currentRuleRevisions = enabledRules.reduce(into: [UUID: Int]()) {
+            $0[$1.id] = $1.revision
+        }
+        let evaluation = RestrictionOccurrenceEvaluator.evaluate(
+            snapshot: activeSnapshot,
+            currentRuleRevisions: currentRuleRevisions,
+            now: now
+        )
+        guard let occurrence = evaluation.representative else {
+            return nil
+        }
+        guard let rule = enabledRules.first(where: { candidate in
+            candidate.id == occurrence.ruleID
+                && candidate.revision == occurrence.ruleRevision
+        }) else {
+            return nil
+        }
+
+        let placeName = savedPlaces.first(where: { place in
+            place.id == rule.savedPlaceID
+        }).map { SavedPlaceNamePolicy.normalized($0.name) }
+        let ruleName = rule.name.map(SavedPlaceNamePolicy.normalized)
+        guard let displayName = [ruleName, placeName]
+            .compactMap({ $0 })
+            .first(where: { !$0.isEmpty })
+        else {
+            return nil
+        }
+
+        let locationCondition = locationConditions.first { condition in
+            condition.ruleID == occurrence.ruleID
+                && condition.ruleRevision == occurrence.ruleRevision
+        }
+        let contentState = try LiveActivityContentPolicy.makeContentState(
+            occurrence: occurrence,
+            ruleDisplayName: displayName,
+            radiusMeters: rule.radius.meters,
+            locationCondition: locationCondition,
+            hasAdditionalRestrictions: evaluation.hasAdditionalRestrictions,
+            now: now
+        )
+        return RestrictionLiveActivitySnapshot(
+            attributes: RestrictionLiveActivityAttributes(
+                activityID: occurrence.ruleID,
+                restrictionStartedAt: occurrence.activatedAt
+            ),
+            contentState: contentState
+        )
+    }
+}
+
 @MainActor
 private struct AppEnvironment {
     typealias RuntimeRecovery = @Sendable () async -> AppLifecycleRecoveryResult?
@@ -912,9 +972,31 @@ private struct AppEnvironment {
     static func live() throws -> AppEnvironment {
         let container = try DependencyContainer.live()
         let locationSession = CoreLocationCurrentLocationSession()
+        let liveActivityCoordinator = LiveActivityCoordinator(
+            manager: SystemLiveActivityAdapter.live()
+        )
         let lifecycleCoordinator = try AppLifecycleCoordinator.live(
             container: container,
-            authorizationProvider: SystemAuthorizationProvider.forApplication()
+            authorizationProvider: SystemAuthorizationProvider.forApplication(),
+            reconcileLiveActivity: { rules in
+                let savedPlaces = try await container.savedPlaceRepository
+                    .loadSavedPlaceCollection()?.places ?? []
+                let activeSnapshot = try await container.sharedSnapshotRepository
+                    .loadActiveRestrictionSnapshot()
+                let locationConditions = try await container.locationConditionRepository
+                    .loadLocationConditionCollection()?.conditions ?? []
+                let desiredActivity = try AppLiveActivityRecovery.makeSnapshot(
+                    rules: rules,
+                    savedPlaces: savedPlaces,
+                    activeSnapshot: activeSnapshot,
+                    locationConditions: locationConditions,
+                    now: Date()
+                )
+                _ = await liveActivityCoordinator.reconcile(
+                    context: .foreground,
+                    desiredActivity: desiredActivity
+                )
+            }
         )
         let restrictionAdapter = try ManagedSettingsRestrictionAdapter.live()
         return AppEnvironment(
