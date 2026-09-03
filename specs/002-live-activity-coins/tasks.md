@@ -94,7 +94,7 @@ Phase 2에 둔다. US4에는 잔액 UI·지역화·월 경계 인수 검증만 �
 - [X] T032 [P] [US1] request·update·end·authorization 조회를 감싸는 system adapter를 `GetUp/Infrastructure/ActivityKit/SystemLiveActivityAdapter.swift`에 구현한다.
 - [X] T033 [US1] 대표 활동 하나를 멱등 조정하고 수동 제거를 suppression 없이 재생성하는 `GetUp/Infrastructure/ActivityKit/LiveActivityCoordinator.swift`를 구현한다.
 - [X] T034 [US1] 앱 launch·foreground 복구와 신뢰 가능한 기존 위치 근거 변경 시 Live Activity를 조정하도록 `GetUp/App/AppLifecycleCoordinator.swift`, `GetUp/App/GetUpApp.swift`를 연결한다.
-- [ ] T035 [US1] extension-only 위치 근거를 App Group에 저장하고 다음 foreground에서 소비하되 extension에서는 ActivityKit을 직접 호출하지 않도록 `GetUp/Infrastructure/Persistence/SharedSnapshotRepository.swift`, `GetUp/App/AppLifecycleCoordinator.swift`를 연결한다.
+- [X] T035 [US1] extension-only 위치 근거를 App Group에 저장하고 다음 foreground에서 소비하되 extension에서는 ActivityKit을 직접 호출하지 않도록 `GetUp/Infrastructure/Persistence/SharedSnapshotRepository.swift`, `GetUp/App/AppLifecycleCoordinator.swift`를 연결한다.
 - [ ] T036 [US1] 0 clamp된 `endsAt` content policy를 사용해 Lock Screen과 Dynamic Island UI에 규칙명·60초 이내 동적 카운트다운·거리·추가 제한만 표시하도록 `GetUpLiveActivity/GetUpLiveActivityBundle.swift`, `GetUpLiveActivity/RestrictionLiveActivity.swift`를 구현한다.
 - [ ] T037 [US1] 한국어·영어 Live Activity 문자열과 VoiceOver label을 `GetUp/Resources/Localizable.xcstrings`, `GetUpLiveActivity/Resources/Localizable.xcstrings`에 추가한다.
 - [ ] T038 [US1] 새 US1 파일의 target membership을 `GetUp.xcodeproj/project.pbxproj`에 연결하고 `GetUpTests/Integration/LiveActivityCoordinatorTests.swift` 및 Widget Extension 빌드를 통과시킨다.
