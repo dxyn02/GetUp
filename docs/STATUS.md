@@ -7,16 +7,16 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 3 사용자 스토리 1 구현 진행 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T022·T028 대표 occurrence 평가를
-완료했다. 종료됐거나 현재 규칙 revision과 불일치하는 occurrence를 제거한 뒤
-`activatedAt`·`startAt`·`ruleID` 순으로 대표와 추가 제한 여부를 결정론적으로 계산할 수 있다.
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T023·T029 Live Activity 거리 정책을
+완료했다. 현재 rule occurrence와 일치하는 5분 이내 `.inside` 위치만 좌표 없이 10m 단위 미터 거리로
+표시하고, stale·불확실·손상 근거는 `unavailable`로 처리한다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T028 — 대표 occurrence 선택과 종료·revision 불일치 정리 evaluator를 구현함
+T029 — 5분 freshness와 10m half-up 반올림을 적용하는 좌표 없는 Live Activity content policy를 구현함
 
 ## 다음 작업
-T023 — Live Activity 거리 계산·반올림·stale·unavailable RED 테스트를 먼저 작성한다. 001은 T083·T085 실기기 재검증과
+T024 — Live Activity foreground 조정과 남은 시간 정책 RED 테스트를 먼저 작성한다. 001은 T083·T085 실기기 재검증과
 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -32,6 +32,17 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-03 002 구현 T023·T029를 완료했다. `LiveActivityDistancePolicyTests`에 `.inside` 근거의
+`max(0, radius - centerDistance)`, 항상 미터인 10m half-up 반올림, 5m·15m 경계, 0 clamp,
+정확히 5분 유효·5분 초과 stale, outside·unavailable·미래·누락·revision 불일치 근거를 검증하는
+8개 테스트(동적 실행 포함 11회)를 먼저 추가하고 policy 미구현 compile RED를 확인했다.
+`LiveActivityContentPolicy`는 유효한 거리만 `known(meters)`와 관측 시각으로 전달하고 그 밖의 상태는
+관측 시각까지 제거한 `unavailable` content state로 만든다. 전체 회귀 중 기존
+`PendingAppRouteRepository`의 조회 후 삭제 경쟁이 반복 재현되어, route 파일을 고유 claim 파일로
+원자 이동한 단일 소비자만 반환하도록 보정했다. 해당 동시 소비 테스트 50회 반복과 iPhone 17 Pro
+iOS 26.5 Simulator의 전체 `GetUpTests` 320개(동적 인자 실행 포함 363회)가 실패·skip 없이 통과했고,
+앱과 네 extension의 코드 서명 없는 Simulator 빌드, project plist와 `git diff --check`도 통과했다.
+
 2026-09-03 002 구현 T022·T028을 완료했다. `RestrictionOccurrenceEvaluatorTests`에
 `activatedAt`·`startAt`·`ruleID` tie-break, 종료 경계의 대표 교체, 현재 규칙 revision 불일치 제거,
 snapshot 부재를 검증하는 6개 테스트를 먼저 추가하고 evaluator 미구현 compile RED를 확인했다.
