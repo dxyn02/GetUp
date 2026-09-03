@@ -149,6 +149,19 @@ actor SharedSnapshotRepository: RuleRepository, SavedPlaceRepository, LocationCo
         }
     }
 
+    func loadLocationConditions(
+        matching rules: [RestrictionRuleSnapshot]
+    ) async throws -> [LocationConditionSnapshot] {
+        let currentRevisions = rules.reduce(into: [UUID: Int]()) {
+            $0[$1.id] = $1.revision
+        }
+        return try await loadLocationConditionCollection()?.conditions.filter {
+            currentRevisions[$0.ruleID] == $0.ruleRevision
+        }.sorted {
+            $0.ruleID.uuidString < $1.ruleID.uuidString
+        } ?? []
+    }
+
     func saveLocationCondition(_ condition: LocationConditionSnapshot) async throws {
         var conditions = try await loadLocationConditionCollection()?.conditions ?? []
         conditions.removeAll { $0.ruleID == condition.ruleID }

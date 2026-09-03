@@ -116,6 +116,37 @@ struct SharedSnapshotRepositoryTests {
         #expect(collection.conditions.count == 2)
     }
 
+    @Test("Foreground handoff loads only current rule-revision location evidence")
+    func foregroundHandoffFiltersLocationEvidence() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let repository = SharedSnapshotRepository(containerURL: directory)
+        let currentRule = TestFixtures.makeRule(revision: 3)
+        let unrelatedRule = TestFixtures.makeRule(
+            id: UUID(uuidString: "00000000-0000-4000-8000-000000000202")!,
+            revision: 1
+        )
+        let currentEvidence = TestFixtures.makeLocationCondition(
+            ruleID: currentRule.id,
+            ruleRevision: currentRule.revision,
+            source: .regionEvent
+        )
+        let unrelatedEvidence = TestFixtures.makeLocationCondition(
+            ruleID: unrelatedRule.id,
+            ruleRevision: unrelatedRule.revision,
+            source: .regionEvent
+        )
+
+        try await repository.saveLocationCondition(currentEvidence)
+        try await repository.saveLocationCondition(unrelatedEvidence)
+
+        let handoff = try await repository.loadLocationConditions(
+            matching: [currentRule]
+        )
+
+        #expect(handoff == [currentEvidence])
+    }
+
     @Test("A legacy location snapshot migrates to an empty safe collection")
     func legacyLocationSnapshotDoesNotGuessRuleIdentity() async throws {
         let directory = try makeTemporaryDirectory()

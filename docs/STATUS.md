@@ -7,17 +7,17 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 3 사용자 스토리 1 구현 진행 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T034 foreground Live Activity 조정을
-완료했다. 앱 launch·foreground 복구는 위치 근거와 제한 상태를 먼저 갱신한 뒤 현재 revision의 대표
-occurrence, 규칙·장소 표시명, 신뢰 가능한 위치 근거를 ActivityKit snapshot으로 조립해 대표 활동
-하나를 생성·갱신·종료한다. ActivityKit 조정 준비 실패는 제한 복구와 표시 상태를 되돌리지 않는다.
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T035 extension 위치 근거 handoff를
+완료했다. 앱 launch·foreground 복구는 위치 초기화 전에 App Group의 현재 규칙 revision 근거를 읽고,
+0초 이상 5분 이내의 `.regionEvent`를 foreground Live Activity 조정에 소비한다. stale·미래 근거는
+foreground `.restoration` 갱신으로 대체하며 extension은 ActivityKit을 직접 호출하지 않는다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T034 — 앱 launch·foreground 복구와 신뢰 위치 근거 기반 Live Activity 조정을 연결함
+T035 — extension-only 위치 근거의 App Group 저장·foreground 소비 경계를 연결함
 
 ## 다음 작업
-T035 — extension-only 위치 근거를 App Group에 저장하고 다음 foreground에서 소비하는 경계를 연결한다.
+T036 — Lock Screen과 Dynamic Island Live Activity UI를 구현한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -33,6 +33,16 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-03 002 구현 T035를 완료했다. `SharedSnapshotRepository`는 App Group의 위치 근거 중 현재
+활성 규칙과 revision이 정확히 일치하는 항목만 foreground handoff로 반환한다.
+`AppLifecycleCoordinator`는 위치 monitor가 `.restoration` 근거로 덮어쓰기 전에 이 handoff를 읽고,
+관측 후 0초 이상 5분 이내의 `.regionEvent`는 그대로 Live Activity 조정에 전달하며 5분 초과·미래
+근거는 foreground 위치 갱신으로 대체한다. extension 경로는 공유 저장소까지만 사용하고 ActivityKit은
+호출하지 않는다. 저장소 API 부재 compile RED를 확인한 뒤 handoff 대상 테스트 27개와 extension
+통합 테스트 2개, iPhone 17 Pro iOS 26.5 Simulator의 전체 `GetUpTests` 352개(동적 인자 실행 포함
+395회)를 실패·skip 없이 통과시켰다. 앱과 네 extension의 코드 서명 없는 generic iOS Simulator
+빌드도 통과했다. 기존 XCTest binary strip 및 불필요한 `try` 경고는 변동 없이 남아 있다.
+
 2026-09-03 002 구현 T034를 완료했다. `AppLifecycleCoordinator`는 일정·위치·월 allowance·제한 상태
 복구가 끝난 뒤에만 Live Activity 조정 closure를 실행하며, 조정 준비 오류를 `.liveActivity`로
 보고하되 기존 제한 복구 결과와 presentation state를 유지한다. `AppEnvironment.live()`는 앱 타깃의

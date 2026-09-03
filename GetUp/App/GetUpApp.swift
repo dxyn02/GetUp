@@ -978,13 +978,11 @@ private struct AppEnvironment {
         let lifecycleCoordinator = try AppLifecycleCoordinator.live(
             container: container,
             authorizationProvider: SystemAuthorizationProvider.forApplication(),
-            reconcileLiveActivity: { rules in
+            reconcileLiveActivity: { rules, locationConditions in
                 let savedPlaces = try await container.savedPlaceRepository
                     .loadSavedPlaceCollection()?.places ?? []
                 let activeSnapshot = try await container.sharedSnapshotRepository
                     .loadActiveRestrictionSnapshot()
-                let locationConditions = try await container.locationConditionRepository
-                    .loadLocationConditionCollection()?.conditions ?? []
                 let desiredActivity = try AppLiveActivityRecovery.makeSnapshot(
                     rules: rules,
                     savedPlaces: savedPlaces,
