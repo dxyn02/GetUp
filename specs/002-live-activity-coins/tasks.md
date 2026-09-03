@@ -82,7 +82,7 @@ Phase 2에 둔다. US4에는 잔액 UI·지역화·월 경계 인수 검증만 �
 - [X] T023 [P] [US1] 기존 위치 평가가 `.inside`이고 5분 이내일 때만 `max(0, radius - centerDistance)`를 항상 미터·10m 단위 half-up으로 표시하며 5m 경계·0 clamp·stale·unavailable을 검증하는 테스트를 `GetUpTests/Core/LiveActivityDistancePolicyTests.swift`에 먼저 작성한다.
 - [X] T024 [P] [US1] foreground 시작, background 미시작, 중복 조정, 수동 제거 후 재생성, 즉시 종료, ActivityKit 실패 격리와 주입 시계의 종료 전·경계·종료 후 남은 시간 오차 60초 이내·0 clamp 테스트를 `GetUpTests/Integration/LiveActivityCoordinatorTests.swift`, `GetUpTests/Core/LiveActivityTimePolicyTests.swift`에 먼저 작성한다.
 - [X] T025 [P] [US1] 지원·권한 허용·활성 제한·foreground 100회 중 95회 이상이 활성 확인 뒤 30초 안에 표시되고 권한 거부·미지원은 제한 기능에 영향을 주지 않는 계측 테스트를 `GetUpTests/Performance/LiveActivityStartMeasurementTests.swift`에 먼저 작성한다.
-- [ ] T026 [P] [US1] 메인 앱의 신뢰 위치 수신 기산점과 extension-only 근거 저장 후 다음 foreground 기산점부터 각각 30초 안에 거리가 반영되는 테스트를 `GetUpTests/Integration/LiveActivityLocationBridgeTests.swift`에 먼저 작성한다.
+- [X] T026 [P] [US1] 메인 앱의 신뢰 위치 수신 기산점과 extension-only 근거 저장 후 다음 foreground 기산점부터 각각 30초 안에 거리가 반영되는 테스트를 `GetUpTests/Integration/LiveActivityLocationBridgeTests.swift`에 먼저 작성한다.
 - [ ] T027 [P] [US1] Lock Screen·Dynamic Island minimal·compact·expanded의 known·unavailable·다중 규칙 preview fixture를 `GetUpLiveActivity/RestrictionLiveActivityPreviews.swift`에 먼저 작성한다.
 
 ### 사용자 스토리 1 구현
