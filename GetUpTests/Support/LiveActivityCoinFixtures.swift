@@ -109,6 +109,9 @@ actor LiveActivityManagerFake: RestrictionLiveActivityManaging {
     var activities: [RestrictionLiveActivitySnapshot]
     private var failures: [Operation: RestrictionLiveActivityError]
     private(set) var operations: [Operation] = []
+    private(set) var endedContentStates: [UUID: RestrictionLiveActivityAttributes.ContentState] = [:]
+    private(set) var authorizationRequestCount = 0
+    private(set) var activeActivitiesRequestCount = 0
 
     init(
         authorization: RestrictionLiveActivityAuthorizationStatus = .enabled,
@@ -121,11 +124,13 @@ actor LiveActivityManagerFake: RestrictionLiveActivityManaging {
     }
 
     func authorizationStatus() async -> RestrictionLiveActivityAuthorizationStatus {
-        authorization
+        authorizationRequestCount += 1
+        return authorization
     }
 
     func activeActivities() async -> [RestrictionLiveActivitySnapshot] {
-        activities
+        activeActivitiesRequestCount += 1
+        return activities
     }
 
     func request(
@@ -133,6 +138,12 @@ actor LiveActivityManagerFake: RestrictionLiveActivityManaging {
         contentState: RestrictionLiveActivityAttributes.ContentState
     ) async throws {
         try record(.request)
+        activities.append(
+            RestrictionLiveActivitySnapshot(
+                attributes: attributes,
+                contentState: contentState
+            )
+        )
     }
 
     func update(
@@ -140,6 +151,15 @@ actor LiveActivityManagerFake: RestrictionLiveActivityManaging {
         contentState: RestrictionLiveActivityAttributes.ContentState
     ) async throws {
         try record(.update(activityID))
+        guard let index = activities.firstIndex(where: {
+            $0.attributes.activityID == activityID
+        }) else {
+            throw RestrictionLiveActivityError.updateFailed
+        }
+        activities[index] = RestrictionLiveActivitySnapshot(
+            attributes: activities[index].attributes,
+            contentState: contentState
+        )
     }
 
     func end(
@@ -147,10 +167,21 @@ actor LiveActivityManagerFake: RestrictionLiveActivityManaging {
         finalContentState: RestrictionLiveActivityAttributes.ContentState
     ) async throws {
         try record(.end(activityID))
+        guard let index = activities.firstIndex(where: {
+            $0.attributes.activityID == activityID
+        }) else {
+            throw RestrictionLiveActivityError.endFailed
+        }
+        endedContentStates[activityID] = finalContentState
+        activities.remove(at: index)
     }
 
     func setFailure(_ error: RestrictionLiveActivityError?, for operation: Operation) {
         failures[operation] = error
+    }
+
+    func removeAllActivities() {
+        activities.removeAll()
     }
 
     private func record(_ operation: Operation) throws {
