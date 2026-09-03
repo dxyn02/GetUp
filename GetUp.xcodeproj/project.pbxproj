@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		DK0000000000000000000001 /* GetUpLiveActivityBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DL0000000000000000000001 /* GetUpLiveActivityBundle.swift */; };
+		DK0000000000000000000002 /* RestrictionLiveActivityPreviews.swift in Sources */ = {isa = PBXBuildFile; fileRef = DL0000000000000000000002 /* RestrictionLiveActivityPreviews.swift */; };
+		DK0000000000000000000003 /* RestrictionLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = DL0000000000000000000003 /* RestrictionLiveActivity.swift */; };
 		A10400000000000000000001 /* Resources/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B10400000000000000000001 /* Resources/Assets.xcassets */; };
 		A11000000000000000000001 /* Icon.icon in Resources */ = {isa = PBXBuildFile; fileRef = B11000000000000000000001 /* Icon.icon */; };
 		AA0000000000000000000001 /* GetUpDeviceActivityMonitor.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = BA0000000000000000000002 /* GetUpDeviceActivityMonitor.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -379,6 +381,8 @@
 		DJ0000000000000000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		DJ0000000000000000000002 /* GetUpLiveActivity.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GetUpLiveActivity.entitlements; sourceTree = "<group>"; };
 		DL0000000000000000000001 /* GetUpLiveActivityBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GetUpLiveActivityBundle.swift; sourceTree = "<group>"; };
+		DL0000000000000000000002 /* RestrictionLiveActivityPreviews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionLiveActivityPreviews.swift; sourceTree = "<group>"; };
+		DL0000000000000000000003 /* RestrictionLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionLiveActivity.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -845,6 +849,8 @@
 			isa = PBXGroup;
 			children = (
 				DL0000000000000000000001 /* GetUpLiveActivityBundle.swift */,
+				DL0000000000000000000003 /* RestrictionLiveActivity.swift */,
+				DL0000000000000000000002 /* RestrictionLiveActivityPreviews.swift */,
 				DJ0000000000000000000001 /* Info.plist */,
 				DJ0000000000000000000002 /* GetUpLiveActivity.entitlements */,
 			);
@@ -1339,6 +1345,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				DK0000000000000000000001 /* GetUpLiveActivityBundle.swift in Sources */,
+				DK0000000000000000000003 /* RestrictionLiveActivity.swift in Sources */,
+				DK0000000000000000000002 /* RestrictionLiveActivityPreviews.swift in Sources */,
 				AA0000000000000000000231 /* RestrictionOccurrenceModels.swift in Sources */,
 				AA0000000000000000000233 /* RestrictionLiveActivityModels.swift in Sources */,
 			);
