@@ -7,6 +7,7 @@ enum AppLifecycleRecoveryFailure: Equatable, Sendable {
     case location(ruleID: UUID)
     case monthlyAllowance
     case restriction
+    case liveActivity
 }
 
 struct AppLifecycleRecoveryResult: Equatable, Sendable {
@@ -18,6 +19,9 @@ struct AppLifecycleRecoveryResult: Equatable, Sendable {
 
 actor AppLifecycleCoordinator {
     typealias RestrictionRestore = @Sendable () async throws -> RestrictionCoordinationResult
+    typealias LiveActivityReconcile = @Sendable (
+        [RestrictionRuleSnapshot]
+    ) async throws -> Void
     typealias MonthlyAllowanceEnsure = @Sendable () async throws -> Void
 
     private let ruleRepository: any RuleRepository
@@ -26,6 +30,7 @@ actor AppLifecycleCoordinator {
     private let authorizationProvider: any AuthorizationProviding
     private let ensureMonthlyAllowance: MonthlyAllowanceEnsure
     private let restoreRestriction: RestrictionRestore
+    private let reconcileLiveActivity: LiveActivityReconcile
 
     init(
         ruleRepository: any RuleRepository,
@@ -33,7 +38,8 @@ actor AppLifecycleCoordinator {
         locationMonitor: any LocationMonitoring,
         authorizationProvider: any AuthorizationProviding,
         ensureMonthlyAllowance: @escaping MonthlyAllowanceEnsure = {},
-        restoreRestriction: @escaping RestrictionRestore
+        restoreRestriction: @escaping RestrictionRestore,
+        reconcileLiveActivity: @escaping LiveActivityReconcile = { _ in }
     ) {
         self.ruleRepository = ruleRepository
         self.scheduleManager = scheduleManager
@@ -41,6 +47,7 @@ actor AppLifecycleCoordinator {
         self.authorizationProvider = authorizationProvider
         self.ensureMonthlyAllowance = ensureMonthlyAllowance
         self.restoreRestriction = restoreRestriction
+        self.reconcileLiveActivity = reconcileLiveActivity
     }
 
     func restore() async throws -> AppLifecycleRecoveryResult {
@@ -102,6 +109,14 @@ actor AppLifecycleCoordinator {
             restrictionResult = nil
         }
 
+        if restrictionResult != nil {
+            do {
+                try await reconcileLiveActivity(rules)
+            } catch {
+                failures.append(.liveActivity)
+            }
+        }
+
         return AppLifecycleRecoveryResult(
             recoveredRuleIDs: recoveredRuleIDs,
             failures: failures,
@@ -118,7 +133,8 @@ actor AppLifecycleCoordinator {
     static func live(
         container: DependencyContainer,
         bundle: Bundle = .main,
-        authorizationProvider: any AuthorizationProviding = SystemAuthorizationProvider()
+        authorizationProvider: any AuthorizationProviding = SystemAuthorizationProvider(),
+        reconcileLiveActivity: @escaping LiveActivityReconcile = { _ in }
     ) throws -> AppLifecycleCoordinator {
         let restrictionCoordinator = try container.makeRestrictionCoordinator(
             bundle: bundle,
@@ -133,7 +149,8 @@ actor AppLifecycleCoordinator {
             ensureMonthlyAllowance: container.ensureMonthlyAllowanceOnForeground,
             restoreRestriction: {
                 try await restrictionCoordinator.restore()
-            }
+            },
+            reconcileLiveActivity: reconcileLiveActivity
         )
     }
 
