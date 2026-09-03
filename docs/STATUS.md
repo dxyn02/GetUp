@@ -4,19 +4,19 @@
 001-location-app-restriction, 002-live-activity-coins
 
 ## 현재 단계
-001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 2 공통 기반을 완료하고 Phase 3 시작 준비 중
+001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 3 사용자 스토리 1 구현 진행 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T007~T021 공통 기반을 완료했다.
-occurrence·Live Activity·코인 장부·해제 모델, framework·repository 계약, 공유 snapshot·CloudKit
-codec·원자 장부 repository·동기화 adapter와 서울 월 정책·지연 생성 service를 독립 검증할 수 있다.
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T022·T028 대표 occurrence 평가를
+완료했다. 종료됐거나 현재 규칙 revision과 불일치하는 occurrence를 제거한 뒤
+`activatedAt`·`startAt`·`ruleID` 순으로 대표와 추가 제한 여부를 결정론적으로 계산할 수 있다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T021 — 서울 월 정책, app foreground 지연 생성, Shield 원자 예약 service와 앱 수명주기 조립을 구현함
+T028 — 대표 occurrence 선택과 종료·revision 불일치 정리 evaluator를 구현함
 
 ## 다음 작업
-T022 — 대표 occurrence의 정렬·교체 RED 테스트를 먼저 작성한다. 001은 T083·T085 실기기 재검증과
+T023 — Live Activity 거리 계산·반올림·stale·unavailable RED 테스트를 먼저 작성한다. 001은 T083·T085 실기기 재검증과
 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -32,6 +32,17 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-03 002 구현 T022·T028을 완료했다. `RestrictionOccurrenceEvaluatorTests`에
+`activatedAt`·`startAt`·`ruleID` tie-break, 종료 경계의 대표 교체, 현재 규칙 revision 불일치 제거,
+snapshot 부재를 검증하는 6개 테스트를 먼저 추가하고 evaluator 미구현 compile RED를 확인했다.
+`RestrictionOccurrenceEvaluator`는 `endAt` 배타 경계와 현재 revision을 만족하는 occurrence만 남겨
+계약 순서로 정렬하고 대표·추가 제한 여부를 반환한다. 대상 suite와 iPhone 17 Pro iOS 26.5
+Simulator의 전체 `GetUpTests` 312개(동적 인자 실행 포함 352회)가 실패·skip 없이 통과했고 앱과
+네 extension의 코드 서명 없는 Simulator 빌드, project plist와 `git diff --check`도 통과했다.
+첫 전체 회귀에서는 기존 `PendingAppRouteRepositoryTests.concurrentConsumersClaimRouteOnce()`가
+파일 삭제 경쟁 중 `readFailed`로 1회 실패했으나 해당 테스트 10회 반복과 전체 suite 재실행은 모두
+통과했다.
+
 2026-09-02 002 구현 T021과 선행 RED 테스트 T007의 green 전환을 완료했다.
 `MonthlyAllowancePolicy`는 `Asia/Seoul` 월 경계, 월 quota 2, 비이월, 장부 삭제를 확인한 reset 월의
 quota 0과 서버 생성 시각의 월 일치를 강제한다. `MonthlyAllowanceService`는 확인된 current epoch에서만
