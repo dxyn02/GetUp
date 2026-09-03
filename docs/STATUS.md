@@ -7,17 +7,17 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 3 사용자 스토리 1 구현 진행 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T035 extension 위치 근거 handoff를
-완료했다. 앱 launch·foreground 복구는 위치 초기화 전에 App Group의 현재 규칙 revision 근거를 읽고,
-0초 이상 5분 이내의 `.regionEvent`를 foreground Live Activity 조정에 소비한다. stale·미래 근거는
-foreground `.restoration` 갱신으로 대체하며 extension은 ActivityKit을 직접 호출하지 않는다.
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T036 Live Activity UI를 완료했다.
+Widget Extension은 실제 `WidgetBundle`과 `ActivityConfiguration`을 제공하며 Lock Screen과 Dynamic
+Island minimal·compact·expanded에 규칙명·동적 종료 카운트다운·거리·추가 제한 상태만 공간에 맞게
+표시한다. 카운트다운은 `endsAt`을 현재 시각 이상으로 clamp한 SwiftUI timer라 초 단위 update가 없다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T035 — extension-only 위치 근거의 App Group 저장·foreground 소비 경계를 연결함
+T036 — Lock Screen과 Dynamic Island Live Activity UI를 구현함
 
 ## 다음 작업
-T036 — Lock Screen과 Dynamic Island Live Activity UI를 구현한다.
+T037 — 한국어·영어 Live Activity 문자열과 VoiceOver label을 추가한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -33,6 +33,20 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-03 002 구현 T036을 완료했다. 빈 extension bootstrap을 실제 `WidgetBundle`로 교체하고,
+`RestrictionLiveActivity`를 `ActivityConfiguration`에 연결했다. Lock Screen은 규칙명·종료 카운트다운·
+known 또는 확인 불가 거리·추가 제한을 한 화면에 표시하며, Dynamic Island expanded는 같은 정보를
+영역별로 나누고 compact·minimal은 공간에 맞춰 거리와 카운트다운을 우선한다. 동적 timer 구간은
+`Date.now...max(Date.now, endsAt)`으로 구성해 종료 후 0에 머물고 Activity update를 초마다 만들지
+않는다. T027의 deterministic known·unavailable·다중 규칙 fixture를 Lock Screen과 Dynamic Island
+minimal·compact·expanded `#Preview`에 연결했다. iPhone 17 Pro iOS 26.5 Simulator의 전체
+`GetUpTests` 352개(동적 인자 실행 포함 395회)를 실패·skip 없이 통과시켰고, 앱과 네 extension의
+코드 서명 없는 generic iOS Simulator Debug·Release 빌드, project plist와 `git diff --check`도
+통과했다. 첫 일반 빌드는 sandbox의 CoreSimulatorService 접근 제한으로 실패했으나 허용된 호스트
+환경에서 같은 빌드를 재실행해 통과했다. `RestrictionLiveActivity.swift`의 source membership은
+컴파일 검증에 필요한 범위로 연결했으며 T037 resource를 포함한 최종 membership 검증은 T038에 남아
+있다. 기존 XCTest binary strip 및 불필요한 `try` 경고는 변동 없이 남아 있다.
+
 2026-09-03 002 구현 T035를 완료했다. `SharedSnapshotRepository`는 App Group의 위치 근거 중 현재
 활성 규칙과 revision이 정확히 일치하는 항목만 foreground handoff로 반환한다.
 `AppLifecycleCoordinator`는 위치 monitor가 `.restoration` 근거로 덮어쓰기 전에 이 handoff를 읽고,

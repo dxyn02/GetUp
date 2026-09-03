@@ -1,3 +1,9 @@
-import Foundation
+import SwiftUI
+import WidgetKit
 
-enum GetUpLiveActivityExtensionBootstrap {}
+@main
+struct GetUpLiveActivityBundle: WidgetBundle {
+    var body: some Widget {
+        RestrictionLiveActivity()
+    }
+}
