@@ -109,6 +109,7 @@ enum IntervalStartDiagnosticStage: String, Codable, Sendable {
     case snapshotReadFailed
     case startedRuleMissing
     case storeVerificationFailed
+    case occurrenceSnapshotPersistenceFailed
     case completed
 }
 
