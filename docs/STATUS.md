@@ -7,17 +7,17 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 3 사용자 스토리 1 구현 진행 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T023·T029 Live Activity 거리 정책을
-완료했다. 현재 rule occurrence와 일치하는 5분 이내 `.inside` 위치만 좌표 없이 10m 단위 미터 거리로
-표시하고, stale·불확실·손상 근거는 `unavailable`로 처리한다.
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T024·T033 Live Activity 시간 정책과
+foreground 조정 coordinator를 완료했다. background에서는 ActivityKit을 조회하지 않고, foreground에서
+대표 activity 하나를 멱등 유지하며 중복 종료·수동 제거 후 재생성·오류 격리를 수행한다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T029 — 5분 freshness와 10m half-up 반올림을 적용하는 좌표 없는 Live Activity content policy를 구현함
+T033 — 대표 Live Activity 하나를 foreground에서 멱등 조정하고 수동 제거 뒤 재생성하도록 구현함
 
 ## 다음 작업
-T024 — Live Activity foreground 조정과 남은 시간 정책 RED 테스트를 먼저 작성한다. 001은 T083·T085 실기기 재검증과
-T086 구현·하이파이 편차 대조가 남아 있음
+T025 — Live Activity 시작 성공률 계측과 authorization 실패·미지원 테스트를 먼저 작성한다.
+001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
 BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록과
@@ -32,6 +32,16 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-03 002 구현 T024·T033을 완료했다. `LiveActivityTimePolicyTests`에 주입 시각 기준 종료 전·
+정확한 경계·종료 후 남은 시간과 0 clamp, 즉시 종료 final state를 먼저 추가하고 policy 미구현 compile
+RED를 확인했다. `LiveActivityCoordinatorTests`는 background 무조회·foreground 생성, 동일 조정 멱등성,
+대표 하나로 중복 정리, 대표 변경 갱신, 수동 제거 후 재생성, 대상 부재 시 즉시 전체 종료,
+authorization 비활성·미지원과 request·update·end 실패 격리를 검증한다. `LiveActivityCoordinator`는
+actor 경계에서 주입된 `Clock`의 한 시각으로 조정을 직렬화하고, 실패를 안정 오류 코드로 반환해 제한
+상태에 예외가 전파되지 않게 한다. iPhone 17 Pro iOS 26.5 Simulator의 전체 `GetUpTests` 334개
+(동적 인자 실행 포함 377회)가 실패·skip 없이 통과했고, 앱과 네 extension의 코드 서명 없는 generic
+iOS 빌드, project plist와 `git diff --check`도 통과했다.
+
 2026-09-03 002 구현 T023·T029를 완료했다. `LiveActivityDistancePolicyTests`에 `.inside` 근거의
 `max(0, radius - centerDistance)`, 항상 미터인 10m half-up 반올림, 5m·15m 경계, 0 clamp,
 정확히 5분 유효·5분 초과 stale, outside·unavailable·미래·누락·revision 불일치 근거를 검증하는
