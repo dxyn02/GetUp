@@ -177,6 +177,8 @@
 		AA0000000000000000000261 /* MonthlyAllowancePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000060 /* MonthlyAllowancePolicy.swift */; };
 		AA0000000000000000000262 /* MonthlyAllowanceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000061 /* MonthlyAllowanceService.swift */; };
 		AA0000000000000000000263 /* MonthlyAllowanceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000061 /* MonthlyAllowanceService.swift */; };
+		AA0000000000000000000264 /* RestrictionOccurrenceEvaluatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000041 /* RestrictionOccurrenceEvaluatorTests.swift */; };
+		AA0000000000000000000265 /* RestrictionOccurrenceEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000062 /* RestrictionOccurrenceEvaluator.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -303,6 +305,7 @@
 		B4000000000000000000005F /* CoinLedgerSyncAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinLedgerSyncAdapter.swift; sourceTree = "<group>"; };
 		B40000000000000000000060 /* MonthlyAllowancePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyAllowancePolicy.swift; sourceTree = "<group>"; };
 		B40000000000000000000061 /* MonthlyAllowanceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyAllowanceService.swift; sourceTree = "<group>"; };
+		B40000000000000000000062 /* RestrictionOccurrenceEvaluator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionOccurrenceEvaluator.swift; sourceTree = "<group>"; };
 		B50000000000000000000001 /* TestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFixtures.swift; sourceTree = "<group>"; };
 		B50000000000000000000002 /* RestrictionStateMachineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStateMachineTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSnapshotRepositoryTests.swift; sourceTree = "<group>"; };
@@ -336,6 +339,7 @@
 		B50000000000000000000037 /* PendingAppRouteRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingAppRouteRepositoryTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000038 /* CloudKitCoinLedgerRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitCoinLedgerRepositoryTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000039 /* CloudKitMonthlyAllowanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitMonthlyAllowanceTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000041 /* RestrictionOccurrenceEvaluatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionOccurrenceEvaluatorTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000040 /* LiveActivityCoinFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityCoinFixtures.swift; sourceTree = "<group>"; };
 		B60000000000000000000001 /* UserStory1RuleConfigurationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory1RuleConfigurationUITests.swift; sourceTree = "<group>"; };
 		B60000000000000000000002 /* UserStory2RestrictionActivationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory2RestrictionActivationUITests.swift; sourceTree = "<group>"; };
@@ -477,6 +481,7 @@
 		B40000000000000000000014 /* Evaluation */ = {
 			isa = PBXGroup;
 			children = (
+				B40000000000000000000062 /* RestrictionOccurrenceEvaluator.swift */,
 				B40000000000000000000060 /* MonthlyAllowancePolicy.swift */,
 				B40000000000000000000005 /* RestrictionEvaluationModels.swift */,
 				B40000000000000000000020 /* ScheduleEvaluator.swift */,
@@ -654,6 +659,7 @@
 		B50000000000000000000011 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				B50000000000000000000041 /* RestrictionOccurrenceEvaluatorTests.swift */,
 				B50000000000000000000033 /* LiveActivityCoinModelTests.swift */,
 				B50000000000000000000034 /* MonthlyAllowancePolicyTests.swift */,
 				B50000000000000000000035 /* MonthlyAllowanceServiceTests.swift */,
@@ -1086,6 +1092,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000265 /* RestrictionOccurrenceEvaluator.swift in Sources */,
 				AA0000000000000000000258 /* MonthlyAllowanceService.swift in Sources */,
 				AA0000000000000000000256 /* MonthlyAllowancePolicy.swift in Sources */,
 				AA0000000000000000000253 /* CoinLedgerSyncAdapter.swift in Sources */,
@@ -1229,6 +1236,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000264 /* RestrictionOccurrenceEvaluatorTests.swift in Sources */,
 				AA0000000000000000000255 /* LiveActivityCoinFixtures.swift in Sources */,
 				AA0000000000000000000225 /* CloudKitCoinLedgerRepositoryTests.swift in Sources */,
 				AA0000000000000000000226 /* CloudKitMonthlyAllowanceTests.swift in Sources */,
