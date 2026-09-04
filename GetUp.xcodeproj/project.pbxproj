@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		DK0000000000000000000001 /* GetUpLiveActivityBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DL0000000000000000000001 /* GetUpLiveActivityBundle.swift */; };
+		DK0000000000000000000002 /* RestrictionLiveActivityPreviews.swift in Sources */ = {isa = PBXBuildFile; fileRef = DL0000000000000000000002 /* RestrictionLiveActivityPreviews.swift */; };
+		DK0000000000000000000003 /* RestrictionLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = DL0000000000000000000003 /* RestrictionLiveActivity.swift */; };
+		DK0000000000000000000004 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = DL0000000000000000000004 /* Localizable.xcstrings */; };
 		A10400000000000000000001 /* Resources/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B10400000000000000000001 /* Resources/Assets.xcassets */; };
 		A11000000000000000000001 /* Icon.icon in Resources */ = {isa = PBXBuildFile; fileRef = B11000000000000000000001 /* Icon.icon */; };
 		AA0000000000000000000001 /* GetUpDeviceActivityMonitor.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = BA0000000000000000000002 /* GetUpDeviceActivityMonitor.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -177,6 +180,18 @@
 		AA0000000000000000000261 /* MonthlyAllowancePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000060 /* MonthlyAllowancePolicy.swift */; };
 		AA0000000000000000000262 /* MonthlyAllowanceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000061 /* MonthlyAllowanceService.swift */; };
 		AA0000000000000000000263 /* MonthlyAllowanceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000061 /* MonthlyAllowanceService.swift */; };
+		AA0000000000000000000264 /* RestrictionOccurrenceEvaluatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000041 /* RestrictionOccurrenceEvaluatorTests.swift */; };
+		AA0000000000000000000265 /* RestrictionOccurrenceEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000062 /* RestrictionOccurrenceEvaluator.swift */; };
+		AA0000000000000000000266 /* LiveActivityDistancePolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000042 /* LiveActivityDistancePolicyTests.swift */; };
+		AA0000000000000000000267 /* LiveActivityContentPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000063 /* LiveActivityContentPolicy.swift */; };
+		AA0000000000000000000268 /* LiveActivityTimePolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000043 /* LiveActivityTimePolicyTests.swift */; };
+		AA0000000000000000000269 /* LiveActivityCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000044 /* LiveActivityCoordinatorTests.swift */; };
+		AA0000000000000000000270 /* LiveActivityTimePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000064 /* LiveActivityTimePolicy.swift */; };
+		AA0000000000000000000271 /* LiveActivityCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000065 /* LiveActivityCoordinator.swift */; };
+		AA0000000000000000000272 /* LiveActivityStartMeasurementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000045 /* LiveActivityStartMeasurementTests.swift */; };
+		AA0000000000000000000273 /* LiveActivityLocationBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000046 /* LiveActivityLocationBridgeTests.swift */; };
+		AA0000000000000000000274 /* SystemLiveActivityAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000067 /* SystemLiveActivityAdapter.swift */; };
+		AA0000000000000000000275 /* SystemLiveActivityAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000047 /* SystemLiveActivityAdapterTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -303,6 +318,11 @@
 		B4000000000000000000005F /* CoinLedgerSyncAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinLedgerSyncAdapter.swift; sourceTree = "<group>"; };
 		B40000000000000000000060 /* MonthlyAllowancePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyAllowancePolicy.swift; sourceTree = "<group>"; };
 		B40000000000000000000061 /* MonthlyAllowanceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyAllowanceService.swift; sourceTree = "<group>"; };
+		B40000000000000000000062 /* RestrictionOccurrenceEvaluator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionOccurrenceEvaluator.swift; sourceTree = "<group>"; };
+		B40000000000000000000063 /* LiveActivityContentPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityContentPolicy.swift; sourceTree = "<group>"; };
+		B40000000000000000000064 /* LiveActivityTimePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityTimePolicy.swift; sourceTree = "<group>"; };
+		B40000000000000000000065 /* LiveActivityCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityCoordinator.swift; sourceTree = "<group>"; };
+		B40000000000000000000067 /* SystemLiveActivityAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemLiveActivityAdapter.swift; sourceTree = "<group>"; };
 		B50000000000000000000001 /* TestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFixtures.swift; sourceTree = "<group>"; };
 		B50000000000000000000002 /* RestrictionStateMachineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStateMachineTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSnapshotRepositoryTests.swift; sourceTree = "<group>"; };
@@ -336,6 +356,13 @@
 		B50000000000000000000037 /* PendingAppRouteRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingAppRouteRepositoryTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000038 /* CloudKitCoinLedgerRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitCoinLedgerRepositoryTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000039 /* CloudKitMonthlyAllowanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitMonthlyAllowanceTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000041 /* RestrictionOccurrenceEvaluatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionOccurrenceEvaluatorTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000042 /* LiveActivityDistancePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityDistancePolicyTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000043 /* LiveActivityTimePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityTimePolicyTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000044 /* LiveActivityCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityCoordinatorTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000045 /* LiveActivityStartMeasurementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityStartMeasurementTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000046 /* LiveActivityLocationBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityLocationBridgeTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000047 /* SystemLiveActivityAdapterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemLiveActivityAdapterTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000040 /* LiveActivityCoinFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityCoinFixtures.swift; sourceTree = "<group>"; };
 		B60000000000000000000001 /* UserStory1RuleConfigurationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory1RuleConfigurationUITests.swift; sourceTree = "<group>"; };
 		B60000000000000000000002 /* UserStory2RestrictionActivationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory2RestrictionActivationUITests.swift; sourceTree = "<group>"; };
@@ -355,6 +382,9 @@
 		DJ0000000000000000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		DJ0000000000000000000002 /* GetUpLiveActivity.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GetUpLiveActivity.entitlements; sourceTree = "<group>"; };
 		DL0000000000000000000001 /* GetUpLiveActivityBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GetUpLiveActivityBundle.swift; sourceTree = "<group>"; };
+		DL0000000000000000000002 /* RestrictionLiveActivityPreviews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionLiveActivityPreviews.swift; sourceTree = "<group>"; };
+		DL0000000000000000000003 /* RestrictionLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionLiveActivity.swift; sourceTree = "<group>"; };
+		DL0000000000000000000004 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Resources/Localizable.xcstrings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -477,6 +507,9 @@
 		B40000000000000000000014 /* Evaluation */ = {
 			isa = PBXGroup;
 			children = (
+				B40000000000000000000064 /* LiveActivityTimePolicy.swift */,
+				B40000000000000000000063 /* LiveActivityContentPolicy.swift */,
+				B40000000000000000000062 /* RestrictionOccurrenceEvaluator.swift */,
 				B40000000000000000000060 /* MonthlyAllowancePolicy.swift */,
 				B40000000000000000000005 /* RestrictionEvaluationModels.swift */,
 				B40000000000000000000020 /* ScheduleEvaluator.swift */,
@@ -497,6 +530,7 @@
 		B40000000000000000000016 /* Infrastructure */ = {
 			isa = PBXGroup;
 			children = (
+				B40000000000000000000066 /* ActivityKit */,
 				B4000000000000000000005D /* CloudKit */,
 				B40000000000000000000019 /* Diagnostics */,
 				B40000000000000000000026 /* Location */,
@@ -506,6 +540,15 @@
 				B40000000000000000000029 /* ScreenTime */,
 			);
 			path = Infrastructure;
+			sourceTree = "<group>";
+		};
+		B40000000000000000000066 /* ActivityKit */ = {
+			isa = PBXGroup;
+			children = (
+				B40000000000000000000067 /* SystemLiveActivityAdapter.swift */,
+				B40000000000000000000065 /* LiveActivityCoordinator.swift */,
+			);
+			path = ActivityKit;
 			sourceTree = "<group>";
 		};
 		B4000000000000000000005D /* CloudKit */ = {
@@ -654,6 +697,9 @@
 		B50000000000000000000011 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				B50000000000000000000043 /* LiveActivityTimePolicyTests.swift */,
+				B50000000000000000000042 /* LiveActivityDistancePolicyTests.swift */,
+				B50000000000000000000041 /* RestrictionOccurrenceEvaluatorTests.swift */,
 				B50000000000000000000033 /* LiveActivityCoinModelTests.swift */,
 				B50000000000000000000034 /* MonthlyAllowancePolicyTests.swift */,
 				B50000000000000000000035 /* MonthlyAllowanceServiceTests.swift */,
@@ -693,6 +739,9 @@
 		B50000000000000000000014 /* Integration */ = {
 			isa = PBXGroup;
 			children = (
+				B50000000000000000000047 /* SystemLiveActivityAdapterTests.swift */,
+				B50000000000000000000046 /* LiveActivityLocationBridgeTests.swift */,
+				B50000000000000000000044 /* LiveActivityCoordinatorTests.swift */,
 				B50000000000000000000038 /* CloudKitCoinLedgerRepositoryTests.swift */,
 				B50000000000000000000039 /* CloudKitMonthlyAllowanceTests.swift */,
 				B50000000000000000000008 /* CurrentLocationProviderTests.swift */,
@@ -713,6 +762,7 @@
 		B50000000000000000000032 /* Performance */ = {
 			isa = PBXGroup;
 			children = (
+				B50000000000000000000045 /* LiveActivityStartMeasurementTests.swift */,
 				B50000000000000000000031 /* RestrictionLatencyTests.swift */,
 			);
 			path = Performance;
@@ -801,6 +851,9 @@
 			isa = PBXGroup;
 			children = (
 				DL0000000000000000000001 /* GetUpLiveActivityBundle.swift */,
+				DL0000000000000000000003 /* RestrictionLiveActivity.swift */,
+				DL0000000000000000000002 /* RestrictionLiveActivityPreviews.swift */,
+				DL0000000000000000000004 /* Localizable.xcstrings */,
 				DJ0000000000000000000001 /* Info.plist */,
 				DJ0000000000000000000002 /* GetUpLiveActivity.entitlements */,
 			);
@@ -1076,6 +1129,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DK0000000000000000000004 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1086,6 +1140,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000274 /* SystemLiveActivityAdapter.swift in Sources */,
+				AA0000000000000000000271 /* LiveActivityCoordinator.swift in Sources */,
+				AA0000000000000000000270 /* LiveActivityTimePolicy.swift in Sources */,
+				AA0000000000000000000267 /* LiveActivityContentPolicy.swift in Sources */,
+				AA0000000000000000000265 /* RestrictionOccurrenceEvaluator.swift in Sources */,
 				AA0000000000000000000258 /* MonthlyAllowanceService.swift in Sources */,
 				AA0000000000000000000256 /* MonthlyAllowancePolicy.swift in Sources */,
 				AA0000000000000000000253 /* CoinLedgerSyncAdapter.swift in Sources */,
@@ -1229,6 +1288,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000275 /* SystemLiveActivityAdapterTests.swift in Sources */,
+				AA0000000000000000000273 /* LiveActivityLocationBridgeTests.swift in Sources */,
+				AA0000000000000000000272 /* LiveActivityStartMeasurementTests.swift in Sources */,
+				AA0000000000000000000269 /* LiveActivityCoordinatorTests.swift in Sources */,
+				AA0000000000000000000268 /* LiveActivityTimePolicyTests.swift in Sources */,
+				AA0000000000000000000266 /* LiveActivityDistancePolicyTests.swift in Sources */,
+				AA0000000000000000000264 /* RestrictionOccurrenceEvaluatorTests.swift in Sources */,
 				AA0000000000000000000255 /* LiveActivityCoinFixtures.swift in Sources */,
 				AA0000000000000000000225 /* CloudKitCoinLedgerRepositoryTests.swift in Sources */,
 				AA0000000000000000000226 /* CloudKitMonthlyAllowanceTests.swift in Sources */,
@@ -1283,6 +1349,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				DK0000000000000000000001 /* GetUpLiveActivityBundle.swift in Sources */,
+				DK0000000000000000000003 /* RestrictionLiveActivity.swift in Sources */,
+				DK0000000000000000000002 /* RestrictionLiveActivityPreviews.swift in Sources */,
 				AA0000000000000000000231 /* RestrictionOccurrenceModels.swift in Sources */,
 				AA0000000000000000000233 /* RestrictionLiveActivityModels.swift in Sources */,
 			);

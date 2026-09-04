@@ -1,5 +1,9 @@
 import Foundation
 
+private struct SystemAppLifecycleClock: Clock {
+    var now: Date { Date() }
+}
+
 enum AppLifecycleRecoveryFailure: Equatable, Sendable {
     case scheduleReset
     case locationReset
@@ -7,6 +11,7 @@ enum AppLifecycleRecoveryFailure: Equatable, Sendable {
     case location(ruleID: UUID)
     case monthlyAllowance
     case restriction
+    case liveActivity
 }
 
 struct AppLifecycleRecoveryResult: Equatable, Sendable {
@@ -17,7 +22,16 @@ struct AppLifecycleRecoveryResult: Equatable, Sendable {
 }
 
 actor AppLifecycleCoordinator {
+    static let maximumExtensionEvidenceAge: TimeInterval = 5 * 60
+
     typealias RestrictionRestore = @Sendable () async throws -> RestrictionCoordinationResult
+    typealias PersistedLocationConditionLoad = @Sendable (
+        [RestrictionRuleSnapshot]
+    ) async throws -> [LocationConditionSnapshot]
+    typealias LiveActivityReconcile = @Sendable (
+        [RestrictionRuleSnapshot],
+        [LocationConditionSnapshot]
+    ) async throws -> Void
     typealias MonthlyAllowanceEnsure = @Sendable () async throws -> Void
 
     private let ruleRepository: any RuleRepository
@@ -26,6 +40,9 @@ actor AppLifecycleCoordinator {
     private let authorizationProvider: any AuthorizationProviding
     private let ensureMonthlyAllowance: MonthlyAllowanceEnsure
     private let restoreRestriction: RestrictionRestore
+    private let loadPersistedLocationConditions: PersistedLocationConditionLoad
+    private let reconcileLiveActivity: LiveActivityReconcile
+    private let clock: any Clock
 
     init(
         ruleRepository: any RuleRepository,
@@ -33,7 +50,10 @@ actor AppLifecycleCoordinator {
         locationMonitor: any LocationMonitoring,
         authorizationProvider: any AuthorizationProviding,
         ensureMonthlyAllowance: @escaping MonthlyAllowanceEnsure = {},
-        restoreRestriction: @escaping RestrictionRestore
+        restoreRestriction: @escaping RestrictionRestore,
+        loadPersistedLocationConditions: @escaping PersistedLocationConditionLoad = { _ in [] },
+        reconcileLiveActivity: @escaping LiveActivityReconcile = { _, _ in },
+        clock: any Clock = SystemAppLifecycleClock()
     ) {
         self.ruleRepository = ruleRepository
         self.scheduleManager = scheduleManager
@@ -41,14 +61,22 @@ actor AppLifecycleCoordinator {
         self.authorizationProvider = authorizationProvider
         self.ensureMonthlyAllowance = ensureMonthlyAllowance
         self.restoreRestriction = restoreRestriction
+        self.loadPersistedLocationConditions = loadPersistedLocationConditions
+        self.reconcileLiveActivity = reconcileLiveActivity
+        self.clock = clock
     }
 
     func restore() async throws -> AppLifecycleRecoveryResult {
         let rules = try await ruleRepository.loadRuleCollection()?.rules ?? []
         let enabledRules = rules.filter(\.isEnabled).sorted(by: Self.ruleOrder)
+        let persistedLocationConditions = try await loadPersistedLocationConditions(
+            enabledRules
+        )
         let authorization = await authorizationProvider.authorizationSnapshot()
+        let recoveryStartedAt = clock.now
         var failures: [AppLifecycleRecoveryFailure] = []
         var recoveredRuleIDs: [UUID] = []
+        var liveActivityLocationConditions: [LocationConditionSnapshot] = []
 
         do {
             try await scheduleManager.removeSchedules()
@@ -64,6 +92,13 @@ actor AppLifecycleCoordinator {
         for rule in enabledRules {
             var recoveredSchedule = true
             var recoveredLocation = true
+            let extensionEvidence = persistedLocationConditions.first {
+                Self.isFreshExtensionEvidence(
+                    $0,
+                    for: rule,
+                    now: recoveryStartedAt
+                )
+            }
 
             do {
                 try await scheduleManager.replaceSchedules(for: rule)
@@ -74,13 +109,22 @@ actor AppLifecycleCoordinator {
 
             do {
                 try await locationMonitor.replaceMonitoring(for: rule)
-                _ = await locationMonitor.refreshLocationCondition(
-                    for: rule,
-                    source: .restoration
-                )
+                if let extensionEvidence {
+                    liveActivityLocationConditions.append(extensionEvidence)
+                } else {
+                    liveActivityLocationConditions.append(
+                        await locationMonitor.refreshLocationCondition(
+                            for: rule,
+                            source: .restoration
+                        )
+                    )
+                }
             } catch {
                 recoveredLocation = false
                 failures.append(.location(ruleID: rule.id))
+                if let extensionEvidence {
+                    liveActivityLocationConditions.append(extensionEvidence)
+                }
             }
 
             if recoveredSchedule && recoveredLocation {
@@ -102,6 +146,17 @@ actor AppLifecycleCoordinator {
             restrictionResult = nil
         }
 
+        if restrictionResult != nil {
+            do {
+                try await reconcileLiveActivity(
+                    rules,
+                    liveActivityLocationConditions
+                )
+            } catch {
+                failures.append(.liveActivity)
+            }
+        }
+
         return AppLifecycleRecoveryResult(
             recoveredRuleIDs: recoveredRuleIDs,
             failures: failures,
@@ -118,7 +173,8 @@ actor AppLifecycleCoordinator {
     static func live(
         container: DependencyContainer,
         bundle: Bundle = .main,
-        authorizationProvider: any AuthorizationProviding = SystemAuthorizationProvider()
+        authorizationProvider: any AuthorizationProviding = SystemAuthorizationProvider(),
+        reconcileLiveActivity: @escaping LiveActivityReconcile = { _, _ in }
     ) throws -> AppLifecycleCoordinator {
         let restrictionCoordinator = try container.makeRestrictionCoordinator(
             bundle: bundle,
@@ -133,8 +189,30 @@ actor AppLifecycleCoordinator {
             ensureMonthlyAllowance: container.ensureMonthlyAllowanceOnForeground,
             restoreRestriction: {
                 try await restrictionCoordinator.restore()
-            }
+            },
+            loadPersistedLocationConditions: { rules in
+                try await container.sharedSnapshotRepository
+                    .loadLocationConditions(matching: rules)
+            },
+            reconcileLiveActivity: reconcileLiveActivity
         )
+    }
+
+    private static func isFreshExtensionEvidence(
+        _ condition: LocationConditionSnapshot,
+        for rule: RestrictionRuleSnapshot,
+        now: Date
+    ) -> Bool {
+        guard
+            condition.ruleID == rule.id,
+            condition.ruleRevision == rule.revision,
+            condition.source == .regionEvent
+        else {
+            return false
+        }
+
+        let age = now.timeIntervalSince(condition.observedAt)
+        return age >= 0 && age <= maximumExtensionEvidenceAge
     }
 
     private static func presentationState(

@@ -4,20 +4,21 @@
 001-location-app-restriction, 002-live-activity-coins
 
 ## 현재 단계
-001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 2 공통 기반을 완료하고 Phase 3 시작 준비 중
+001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 3 사용자 스토리 1 완료 및 Phase 4 준비 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T007~T021 공통 기반을 완료했다.
-occurrence·Live Activity·코인 장부·해제 모델, framework·repository 계약, 공유 snapshot·CloudKit
-codec·원자 장부 repository·동기화 adapter와 서울 월 정책·지연 생성 service를 독립 검증할 수 있다.
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T038 US1 target membership·빌드 검증을
+완료했다. US1 앱 source, 단위·통합·성능 테스트, Widget source·공유 model·String Catalog가 각 target의
+Sources 또는 Resources phase에 연결됐음을 확인했고, 지정 coordinator 테스트와 Widget을 포함한
+Debug·Release 빌드를 통과시켰다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T021 — 서울 월 정책, app foreground 지연 생성, Shield 원자 예약 service와 앱 수명주기 조립을 구현함
+T038 — US1 전체 target membership과 coordinator·Widget Extension 빌드를 최종 검증함
 
 ## 다음 작업
-T022 — 대표 occurrence의 정렬·교체 RED 테스트를 먼저 작성한다. 001은 T083·T085 실기기 재검증과
-T086 구현·하이파이 편차 대조가 남아 있음
+T039 — DEBUG 전용 Shield Action ActivityKit feasibility probe를 지원 OS 실기기에서 검증한다.
+001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
 BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록과
@@ -32,6 +33,165 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-04 002 구현 T038을 완료했다. `RestrictionOccurrenceEvaluator`, Live Activity content·time
+policy, coordinator·system adapter와 관련 테스트 7개, Widget bundle·UI·preview, 공유 model 2개,
+Widget String Catalog가 각각 앱·`GetUpTests`·`GetUpLiveActivity` target의 올바른 Sources·Resources
+phase에 연결됐음을 최종 대조했다. iPhone 17 Pro iOS 26.5 Simulator의
+`LiveActivityCoordinatorTests` 9개를 실패·skip 없이 통과시켰다. 코드 서명 없는 generic iOS
+Simulator Debug·Release `GetUp` scheme 빌드가 모두 통과했고, 두 구성의 앱 내부
+`GetUpLiveActivity.appex`에서 실행 파일·영문 문자열 리소스·`com.apple.widgetkit-extension` 식별자를
+확인했다. target membership 누락이 없어 `project.pbxproj` 추가 변경은 필요하지 않았다. 기존 XCTest
+binary strip 및 불필요한 `try` 경고는 변동 없이 남아 있다. 다음 T039는 지원 OS 실기기에서 수행하는
+Shield Action ActivityKit feasibility gate다.
+
+2026-09-04 002 구현 T037을 완료했다. Live Activity의 visible 거리·확인 불가·추가 제한 문구와
+VoiceOver용 규칙명·남은 시간·남은 거리·다중 제한 설명을 한국어 source language와 영어 번역으로
+앱 및 Widget String Catalog에 추가했다. `RestrictionRuleLabel`, `RestrictionCountdown`,
+`RestrictionDistanceLabel`, `AdditionalRestrictionsLabel`은 각각 명시적인 접근성 label/value를
+제공하고 장식 SF Symbol은 접근성 트리에서 숨긴다. Widget String Catalog를 extension resource에
+연결했으며 빌드된 `GetUpLiveActivity.appex/en.lproj/Localizable.strings`에서 8개 번역과 `%lld`·`%@`
+보간 형식을 확인했다. iPhone 17 Pro iOS 26.5 Simulator의 전체 `GetUpTests` 352개(동적 인자 실행
+포함 395회)를 실패·skip 없이 통과시켰고, 앱과 네 extension의 코드 서명 없는 generic iOS
+Simulator Debug·Release 빌드, 두 catalog JSON parse, project plist와 `git diff --check`도 통과했다.
+T038에는 US1 전체 source·resource membership과 coordinator·Widget Extension의 최종 회귀 검증이
+남아 있다. 기존 XCTest binary strip 및 불필요한 `try` 경고는 변동 없이 남아 있다.
+
+2026-09-03 002 구현 T036을 완료했다. 빈 extension bootstrap을 실제 `WidgetBundle`로 교체하고,
+`RestrictionLiveActivity`를 `ActivityConfiguration`에 연결했다. Lock Screen은 규칙명·종료 카운트다운·
+known 또는 확인 불가 거리·추가 제한을 한 화면에 표시하며, Dynamic Island expanded는 같은 정보를
+영역별로 나누고 compact·minimal은 공간에 맞춰 거리와 카운트다운을 우선한다. 동적 timer 구간은
+`Date.now...max(Date.now, endsAt)`으로 구성해 종료 후 0에 머물고 Activity update를 초마다 만들지
+않는다. T027의 deterministic known·unavailable·다중 규칙 fixture를 Lock Screen과 Dynamic Island
+minimal·compact·expanded `#Preview`에 연결했다. iPhone 17 Pro iOS 26.5 Simulator의 전체
+`GetUpTests` 352개(동적 인자 실행 포함 395회)를 실패·skip 없이 통과시켰고, 앱과 네 extension의
+코드 서명 없는 generic iOS Simulator Debug·Release 빌드, project plist와 `git diff --check`도
+통과했다. 첫 일반 빌드는 sandbox의 CoreSimulatorService 접근 제한으로 실패했으나 허용된 호스트
+환경에서 같은 빌드를 재실행해 통과했다. `RestrictionLiveActivity.swift`의 source membership은
+컴파일 검증에 필요한 범위로 연결했으며 T037 resource를 포함한 최종 membership 검증은 T038에 남아
+있다. 기존 XCTest binary strip 및 불필요한 `try` 경고는 변동 없이 남아 있다.
+
+2026-09-03 002 구현 T035를 완료했다. `SharedSnapshotRepository`는 App Group의 위치 근거 중 현재
+활성 규칙과 revision이 정확히 일치하는 항목만 foreground handoff로 반환한다.
+`AppLifecycleCoordinator`는 위치 monitor가 `.restoration` 근거로 덮어쓰기 전에 이 handoff를 읽고,
+관측 후 0초 이상 5분 이내의 `.regionEvent`는 그대로 Live Activity 조정에 전달하며 5분 초과·미래
+근거는 foreground 위치 갱신으로 대체한다. extension 경로는 공유 저장소까지만 사용하고 ActivityKit은
+호출하지 않는다. 저장소 API 부재 compile RED를 확인한 뒤 handoff 대상 테스트 27개와 extension
+통합 테스트 2개, iPhone 17 Pro iOS 26.5 Simulator의 전체 `GetUpTests` 352개(동적 인자 실행 포함
+395회)를 실패·skip 없이 통과시켰다. 앱과 네 extension의 코드 서명 없는 generic iOS Simulator
+빌드도 통과했다. 기존 XCTest binary strip 및 불필요한 `try` 경고는 변동 없이 남아 있다.
+
+2026-09-03 002 구현 T034를 완료했다. `AppLifecycleCoordinator`는 일정·위치·월 allowance·제한 상태
+복구가 끝난 뒤에만 Live Activity 조정 closure를 실행하며, 조정 준비 오류를 `.liveActivity`로
+보고하되 기존 제한 복구 결과와 presentation state를 유지한다. `AppEnvironment.live()`는 앱 타깃의
+`SystemLiveActivityAdapter`와 `LiveActivityCoordinator`를 조립하고, App Group의 활성 occurrence·
+현재 규칙 revision·저장 장소·위치 근거로 대표 snapshot을 만든다. 규칙명이 없으면 정규화한 장소명을
+사용하고, 현재 revision의 대표가 없으면 nil을 전달해 기존 활동을 종료하며, 5분 이내 `.inside`
+근거만 기존 거리 policy를 통해 표시한다. 복구 순서·실패 격리·대표 snapshot 테스트 3개를 먼저
+추가해 미구현 compile RED를 확인한 뒤 대상 테스트 10개와 iPhone 17 Pro iOS 26.5 Simulator의 전체
+`GetUpTests` 349개(동적 인자 실행 포함 392회)를 실패·skip 없이 통과시켰다. 앱과 네 extension의
+코드 서명 없는 generic iOS Simulator 빌드, project plist와 `git diff --check`도 통과했다. 첫 일반
+빌드는 sandbox의 CoreSimulatorService 접근 제한으로 실패했으나 허용된 호스트 환경에서 같은 명령을
+재실행해 통과했다. 기존 XCTest binary strip 및 불필요한 `try` 경고는 변동 없이 남아 있다.
+
+2026-09-03 002 구현 T032를 완료했다. `SystemLiveActivityAdapter.live()`는
+`ActivityAuthorizationInfo.areActivitiesEnabled`와
+`Activity<RestrictionLiveActivityAttributes>.activities`를 도메인 권한·snapshot으로 변환하고,
+`ActivityContent`의 stale 시각을 제한 종료 시각으로 지정해 로컬 request와 기존 활동 update를
+수행한다. 종료는 최종 content state와 `.immediate` dismissal을 사용한다. 각 mutation은 실제
+ActivityKit 활동을 attributes의 안정 `activityID`로 찾고 framework 상세 오류를
+`requestFailed`·`updateFailed`·`endFailed`로 정규화한다. 주입 가능한 system-call 경계의 권한·활동
+조회, payload 전달, 동작별 오류 변환 테스트 3개를 먼저 추가해 adapter 타입 부재 compile RED를
+확인한 뒤 green으로 전환했다. iPhone 17 Pro iOS 26.5 Simulator에서 대상 테스트 3개와 전체
+`GetUpTests` 346개(동적 인자 실행 포함 389회)가 실패·skip 없이 통과했고, 앱과 네 extension의 코드
+서명 없는 generic iOS Simulator 빌드, project plist와 `git diff --check`도 통과했다. 첫 일반 빌드는
+sandbox의 CoreSimulatorService 접근 제한으로 실패했으나 허용된 호스트 환경에서 같은 명령을
+재실행해 통과했다. 기존 XCTest binary strip 및 불필요한 `try` 경고는 변동 없이 남아 있다.
+
+2026-09-03 002 구현 T031을 완료했다. `DeviceActivityIntervalStartHandler`와 마지막 활성 규칙의
+`DeviceActivityIntervalEndHandler`는 Shield read-back·공유 적용 상태 저장 직후 App Group의
+`active-restrictions.json`을 같은 동기 callback 안에서 atomic write한다. foreground coordinator와
+공통 `ActiveRestrictionSnapshotPolicy`를 사용해 occurrence ID·최초 `activatedAt`·snapshot revision
+규칙을 동일하게 유지한다. 겹친 활성 규칙의 종료와 occurrence 저장 실패는 동기 성공으로 오인하지
+않고 기존 `RestrictionCoordinator` 재평가 경로로 넘기며, Device Activity extension은 ActivityKit을
+import하거나 직접 호출하지 않는다. 시작·종료 저장 테스트 2개를 먼저 추가해 새 주입 경계 미구현
+compile RED를 확인한 뒤 대상 테스트 34개와 iPhone 17 Pro iOS 26.5 Simulator의 전체
+`GetUpTests` 343개(동적 인자 실행 포함 386회)를 실패·skip 없이 통과시켰다. 앱과 네 extension의
+코드 서명 없는 generic iOS Simulator 빌드와 `git diff --check`도 통과했다. 첫 일반 빌드는 sandbox의
+CoreSimulatorService 접근 제한으로 실패했으나 허용된 호스트 환경에서 같은 명령을 재실행해
+통과했다. 기존 XCTest binary strip 및 불필요한 `try` 경고는 변동 없이 남아 있다.
+
+2026-09-03 002 구현 T030을 완료했다. `RestrictionCoordinator`는 제한 적용·제거 뒤 실제 adapter
+read-back과 현재 규칙을 교차 확인하고, 기존 `ScheduleEvaluator`가 계산한 DST 대응 활성 구간으로
+`RestrictionOccurrence`를 생성해 App Group repository에 저장한다. 규칙 입력 순서와 무관하게
+`activatedAt`·`startAt`·`ruleID` 순으로 정렬하며, 동일 ID 재평가에서는 최초 `activatedAt`과 snapshot
+revision을 보존하고 활성 집합 변경에서만 revision을 증가시킨다. 적용 구간·재평가·마지막 규칙 제거
+테스트 3개를 먼저 추가해 persistence dependency 미구현 compile RED를 확인한 뒤 green으로 전환했다.
+coordinator·일정 대상 테스트 19개와 iPhone 17 Pro iOS 26.5 Simulator의 전체 `GetUpTests` 341개
+(동적 인자 실행 포함 384회), 앱과 네 extension의 코드 서명 없는 generic iOS 빌드, project plist와
+`git diff --check`가 실패·skip 없이 통과했다. 기존 XCTest binary strip 및 불필요한 `try` 경고는
+변동 없이 남아 있다.
+
+2026-09-03 002 구현 T027을 완료했다. `RestrictionLiveActivityPreviewFixtures`는 고정 시각과 ID를
+사용해 Lock Screen·Dynamic Island minimal·compact·expanded 네 표면에 known·unavailable·다중 규칙
+세 상태를 조합한 12개 `Scenario`를 제공한다. 실제 `#Preview`와 표시 UI는 계획된 T036에서 이 fixture를
+사용한다. 앱과 네 extension의 코드 서명 없는 generic iOS 빌드, iPhone 17 Pro iOS 26.5 Simulator의
+전체 `GetUpTests` 338개(동적 인자 실행 포함 381회), project plist와 `git diff --check`가 실패·skip
+없이 통과했다. 첫 sandbox 빌드는 CoreSimulatorService 접근 제한으로 실패했지만 같은 명령을 허용된
+호스트 환경에서 재실행해 통과했다. 기존 XCTest binary strip 및 불필요한 `try` 경고는 변동 없이
+남아 있다.
+
+2026-09-03 002 구현 T026을 완료했다. `LiveActivityLocationBridgeTests`는 메인 앱이 신뢰 가능한
+`.inside` 위치를 받은 시점부터 `LiveActivityContentPolicy`와 foreground coordinator가 기존 activity의
+거리를 `known(300m)`로 갱신한 시점까지 30초 이내임을 검증한다. extension-only 경로는 공용
+`SharedSnapshotRepository`에 위치 근거를 저장하는 동안 ActivityKit 호출이 0건임을 확인하고, 다음
+foreground에서 저장 근거를 읽어 조정 가능해진 시점부터 같은 거리 반영까지를 별도 기산점으로
+측정한다. 실제 AppLifecycle 연결은 계획된 T035에서 이 계약에 맞게 구현한다. 대상 테스트 2개와
+iPhone 17 Pro iOS 26.5 Simulator의 전체 `GetUpTests` 338개(동적 인자 실행 포함 381회)가 실패·skip
+없이 통과했고, 앱과 네 extension의 코드 서명 없는 generic iOS 빌드, project plist와
+`git diff --check`도 통과했다. 기존 XCTest binary strip 및 불필요한 `try` 경고는 변동 없이 남아 있다.
+
+2026-09-03 002 구현 T025를 완료했다. `LiveActivityStartMeasurementTests`는 Live Activity 지원·권한
+허용·유효한 활성 제한·foreground 조건을 만족하는 100회만 적격 모집단으로 집계하고, 활성 제한 확인
+직전의 `ContinuousClock.Instant`부터 fake activity가 실제 생성된 확인 시점까지를 측정한다. 100회
+모두 30초 이내 생성되어 최소 95회 기준을 통과했다. 권한 거부·미지원은 적격 모집단에서 제외하고
+activity 미생성·`activityAuthorizationDenied` 반환·기존 활성 제한 상태 유지를 별도로 검증했다.
+이 자동 계측은 coordinator와 protocol fake 경계의 결정적 증적이며 실제 ActivityKit 시스템 표시
+성공률은 T096의 지원 OS 실기기 검증에서 기록한다. 대상 테스트 2개와 iPhone 17 Pro iOS 26.5
+Simulator의 전체 `GetUpTests` 336개(동적 인자 실행 포함 379회)가 실패·skip 없이 통과했고, 앱과
+네 extension의 코드 서명 없는 generic iOS 빌드, project plist와 `git diff --check`도 통과했다.
+
+2026-09-03 002 구현 T024·T033을 완료했다. `LiveActivityTimePolicyTests`에 주입 시각 기준 종료 전·
+정확한 경계·종료 후 남은 시간과 0 clamp, 즉시 종료 final state를 먼저 추가하고 policy 미구현 compile
+RED를 확인했다. `LiveActivityCoordinatorTests`는 background 무조회·foreground 생성, 동일 조정 멱등성,
+대표 하나로 중복 정리, 대표 변경 갱신, 수동 제거 후 재생성, 대상 부재 시 즉시 전체 종료,
+authorization 비활성·미지원과 request·update·end 실패 격리를 검증한다. `LiveActivityCoordinator`는
+actor 경계에서 주입된 `Clock`의 한 시각으로 조정을 직렬화하고, 실패를 안정 오류 코드로 반환해 제한
+상태에 예외가 전파되지 않게 한다. iPhone 17 Pro iOS 26.5 Simulator의 전체 `GetUpTests` 334개
+(동적 인자 실행 포함 377회)가 실패·skip 없이 통과했고, 앱과 네 extension의 코드 서명 없는 generic
+iOS 빌드, project plist와 `git diff --check`도 통과했다.
+
+2026-09-03 002 구현 T023·T029를 완료했다. `LiveActivityDistancePolicyTests`에 `.inside` 근거의
+`max(0, radius - centerDistance)`, 항상 미터인 10m half-up 반올림, 5m·15m 경계, 0 clamp,
+정확히 5분 유효·5분 초과 stale, outside·unavailable·미래·누락·revision 불일치 근거를 검증하는
+8개 테스트(동적 실행 포함 11회)를 먼저 추가하고 policy 미구현 compile RED를 확인했다.
+`LiveActivityContentPolicy`는 유효한 거리만 `known(meters)`와 관측 시각으로 전달하고 그 밖의 상태는
+관측 시각까지 제거한 `unavailable` content state로 만든다. 전체 회귀 중 기존
+`PendingAppRouteRepository`의 조회 후 삭제 경쟁이 반복 재현되어, route 파일을 고유 claim 파일로
+원자 이동한 단일 소비자만 반환하도록 보정했다. 해당 동시 소비 테스트 50회 반복과 iPhone 17 Pro
+iOS 26.5 Simulator의 전체 `GetUpTests` 320개(동적 인자 실행 포함 363회)가 실패·skip 없이 통과했고,
+앱과 네 extension의 코드 서명 없는 Simulator 빌드, project plist와 `git diff --check`도 통과했다.
+
+2026-09-03 002 구현 T022·T028을 완료했다. `RestrictionOccurrenceEvaluatorTests`에
+`activatedAt`·`startAt`·`ruleID` tie-break, 종료 경계의 대표 교체, 현재 규칙 revision 불일치 제거,
+snapshot 부재를 검증하는 6개 테스트를 먼저 추가하고 evaluator 미구현 compile RED를 확인했다.
+`RestrictionOccurrenceEvaluator`는 `endAt` 배타 경계와 현재 revision을 만족하는 occurrence만 남겨
+계약 순서로 정렬하고 대표·추가 제한 여부를 반환한다. 대상 suite와 iPhone 17 Pro iOS 26.5
+Simulator의 전체 `GetUpTests` 312개(동적 인자 실행 포함 352회)가 실패·skip 없이 통과했고 앱과
+네 extension의 코드 서명 없는 Simulator 빌드, project plist와 `git diff --check`도 통과했다.
+첫 전체 회귀에서는 기존 `PendingAppRouteRepositoryTests.concurrentConsumersClaimRouteOnce()`가
+파일 삭제 경쟁 중 `readFailed`로 1회 실패했으나 해당 테스트 10회 반복과 전체 suite 재실행은 모두
+통과했다.
+
 2026-09-02 002 구현 T021과 선행 RED 테스트 T007의 green 전환을 완료했다.
 `MonthlyAllowancePolicy`는 `Asia/Seoul` 월 경계, 월 quota 2, 비이월, 장부 삭제를 확인한 reset 월의
 quota 0과 서버 생성 시각의 월 일치를 강제한다. `MonthlyAllowanceService`는 확인된 current epoch에서만

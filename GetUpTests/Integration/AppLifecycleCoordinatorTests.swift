@@ -128,18 +128,23 @@ struct AppLifecycleCoordinatorTests {
     func restrictionFailureDoesNotInferPresentation() async throws {
         let rule = TestFixtures.makeRule()
         let restriction = RecoveryRestrictionRecorder(shouldFail: true)
+        let events = RecoveryLifecycleEventRecorder()
         let coordinator = AppLifecycleCoordinator(
             ruleRepository: RecoveryRuleRepository(rules: [rule]),
             scheduleManager: RecoveryScheduleManager(),
             locationMonitor: RecoveryLocationMonitor(),
             authorizationProvider: RecoveryAuthorizationProvider(),
-            restoreRestriction: { try await restriction.restore() }
+            restoreRestriction: { try await restriction.restore() },
+            reconcileLiveActivity: { _, _ in
+                await events.record(.liveActivity([rule.id]))
+            }
         )
 
         let result = try await coordinator.restore()
 
         #expect(result.failures == [.restriction])
         #expect(result.presentationState == nil)
+        #expect(await events.events.isEmpty)
     }
 
     @Test("Foreground recovery triggers monthly allowance creation once")
@@ -177,6 +182,161 @@ struct AppLifecycleCoordinatorTests {
 
         #expect(await restriction.restoreCount == 1)
         #expect(result.failures == [.monthlyAllowance])
+    }
+
+    @Test("Foreground recovery reconciles Live Activity after restriction state")
+    func foregroundRecoveryReconcilesLiveActivityLast() async throws {
+        let rule = TestFixtures.makeRule()
+        let events = RecoveryLifecycleEventRecorder()
+        let coordinator = AppLifecycleCoordinator(
+            ruleRepository: RecoveryRuleRepository(rules: [rule]),
+            scheduleManager: RecoveryScheduleManager(),
+            locationMonitor: RecoveryLocationMonitor(),
+            authorizationProvider: RecoveryAuthorizationProvider(),
+            restoreRestriction: {
+                await events.record(.restriction)
+                return restrictionResult(for: rule, presentationState: .active)
+            },
+            reconcileLiveActivity: { rules, _ in
+                await events.record(.liveActivity(rules.map(\.id)))
+            }
+        )
+
+        let result = try await coordinator.restore()
+
+        #expect(result.failures.isEmpty)
+        #expect(await events.events == [
+            .restriction,
+            .liveActivity([rule.id]),
+        ])
+    }
+
+    @Test("Live Activity failure is isolated from foreground recovery")
+    func liveActivityFailureIsNonFatal() async throws {
+        let rule = TestFixtures.makeRule()
+        let coordinator = AppLifecycleCoordinator(
+            ruleRepository: RecoveryRuleRepository(rules: [rule]),
+            scheduleManager: RecoveryScheduleManager(),
+            locationMonitor: RecoveryLocationMonitor(),
+            authorizationProvider: RecoveryAuthorizationProvider(),
+            restoreRestriction: {
+                restrictionResult(for: rule, presentationState: .active)
+            },
+            reconcileLiveActivity: { _, _ in
+                throw RecoveryFailure.expected
+            }
+        )
+
+        let result = try await coordinator.restore()
+
+        #expect(result.failures == [.liveActivity])
+        #expect(result.presentationState == .active)
+    }
+
+    @Test("Fresh extension evidence is consumed before foreground refresh")
+    func foregroundConsumesFreshExtensionEvidence() async throws {
+        let rule = TestFixtures.makeRule(revision: 4)
+        let extensionEvidence = TestFixtures.makeLocationCondition(
+            ruleID: rule.id,
+            ruleRevision: rule.revision,
+            observedAt: TestFixtures.now.addingTimeInterval(-300),
+            source: .regionEvent
+        )
+        let location = RecoveryLocationMonitor()
+        let liveActivity = RecoveryLiveActivityRecorder()
+        let coordinator = AppLifecycleCoordinator(
+            ruleRepository: RecoveryRuleRepository(rules: [rule]),
+            scheduleManager: RecoveryScheduleManager(),
+            locationMonitor: location,
+            authorizationProvider: RecoveryAuthorizationProvider(),
+            restoreRestriction: {
+                restrictionResult(for: rule, presentationState: .active)
+            },
+            loadPersistedLocationConditions: { _ in [extensionEvidence] },
+            reconcileLiveActivity: { _, conditions in
+                await liveActivity.record(conditions)
+            },
+            clock: FixedClock(now: TestFixtures.now)
+        )
+
+        let result = try await coordinator.restore()
+
+        #expect(result.failures.isEmpty)
+        #expect(await location.refreshedRuleIDs.isEmpty)
+        #expect(await liveActivity.locationConditions == [extensionEvidence])
+    }
+
+    @Test("Stale extension evidence falls back to foreground refresh")
+    func staleExtensionEvidenceRefreshesLocation() async throws {
+        let rule = TestFixtures.makeRule(revision: 4)
+        let staleEvidence = TestFixtures.makeLocationCondition(
+            ruleID: rule.id,
+            ruleRevision: rule.revision,
+            observedAt: TestFixtures.now.addingTimeInterval(-301),
+            source: .regionEvent
+        )
+        let location = RecoveryLocationMonitor()
+        let liveActivity = RecoveryLiveActivityRecorder()
+        let coordinator = AppLifecycleCoordinator(
+            ruleRepository: RecoveryRuleRepository(rules: [rule]),
+            scheduleManager: RecoveryScheduleManager(),
+            locationMonitor: location,
+            authorizationProvider: RecoveryAuthorizationProvider(),
+            restoreRestriction: {
+                restrictionResult(for: rule, presentationState: .active)
+            },
+            loadPersistedLocationConditions: { _ in [staleEvidence] },
+            reconcileLiveActivity: { _, conditions in
+                await liveActivity.record(conditions)
+            },
+            clock: FixedClock(now: TestFixtures.now)
+        )
+
+        let result = try await coordinator.restore()
+
+        #expect(result.failures.isEmpty)
+        #expect(await location.refreshedRuleIDs == [rule.id])
+        #expect(await liveActivity.locationConditions.first?.source == .restoration)
+    }
+
+    @Test("Live Activity snapshot uses the representative rule and trusted distance")
+    func buildsRepresentativeLiveActivitySnapshot() throws {
+        let rule = TestFixtures.makeRule(name: nil)
+        let place = SavedPlaceSnapshot(
+            id: rule.savedPlaceID,
+            name: "집",
+            coordinate: ReferenceLocation(latitude: 37.5, longitude: 127.0),
+            createdAt: TestFixtures.now,
+            updatedAt: TestFixtures.now
+        )
+        let occurrence = try RestrictionOccurrence(
+            ruleID: rule.id,
+            ruleRevision: rule.revision,
+            startAt: TestFixtures.now.addingTimeInterval(-60),
+            endAt: TestFixtures.now.addingTimeInterval(3_600),
+            activatedAt: TestFixtures.now.addingTimeInterval(-30)
+        )
+        let activeSnapshot = try ActiveRestrictionSnapshot(
+            revision: 1,
+            occurrences: [occurrence],
+            observedAt: TestFixtures.now
+        )
+
+        let desiredSnapshot = try AppLiveActivityRecovery.makeSnapshot(
+            rules: [rule],
+            savedPlaces: [place],
+            activeSnapshot: activeSnapshot,
+            locationConditions: [TestFixtures.makeLocationCondition()],
+            now: TestFixtures.now
+        )
+        let snapshot = try #require(desiredSnapshot)
+
+        #expect(snapshot.attributes.activityID == rule.id)
+        #expect(snapshot.attributes.restrictionStartedAt == occurrence.activatedAt)
+        #expect(snapshot.contentState.occurrenceID == occurrence.id)
+        #expect(snapshot.contentState.ruleDisplayName == place.name)
+        #expect(snapshot.contentState.remainingDistance == .known(meters: 400))
+        #expect(!snapshot.contentState.hasAdditionalRestrictions)
     }
 
     private func restrictionResult(
@@ -325,6 +485,27 @@ private actor RecoveryMonthlyAllowanceRecorder {
         if shouldFail {
             throw RecoveryFailure.expected
         }
+    }
+}
+
+private actor RecoveryLifecycleEventRecorder {
+    enum Event: Equatable, Sendable {
+        case restriction
+        case liveActivity([UUID])
+    }
+
+    private(set) var events: [Event] = []
+
+    func record(_ event: Event) {
+        events.append(event)
+    }
+}
+
+private actor RecoveryLiveActivityRecorder {
+    private(set) var locationConditions: [LocationConditionSnapshot] = []
+
+    func record(_ conditions: [LocationConditionSnapshot]) {
+        locationConditions = conditions
     }
 }
 

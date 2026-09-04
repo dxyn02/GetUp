@@ -78,26 +78,26 @@ Phase 2에 둔다. US4에는 잔액 UI·지역화·월 경계 인수 검증만 �
 
 ### 사용자 스토리 1 테스트
 
-- [ ] T022 [P] [US1] 대표 occurrence의 `activatedAt`·`startAt`·`ruleID` 정렬과 대표 교체 테스트를 `GetUpTests/Core/RestrictionOccurrenceEvaluatorTests.swift`에 먼저 작성한다.
-- [ ] T023 [P] [US1] 기존 위치 평가가 `.inside`이고 5분 이내일 때만 `max(0, radius - centerDistance)`를 항상 미터·10m 단위 half-up으로 표시하며 5m 경계·0 clamp·stale·unavailable을 검증하는 테스트를 `GetUpTests/Core/LiveActivityDistancePolicyTests.swift`에 먼저 작성한다.
-- [ ] T024 [P] [US1] foreground 시작, background 미시작, 중복 조정, 수동 제거 후 재생성, 즉시 종료, ActivityKit 실패 격리와 주입 시계의 종료 전·경계·종료 후 남은 시간 오차 60초 이내·0 clamp 테스트를 `GetUpTests/Integration/LiveActivityCoordinatorTests.swift`, `GetUpTests/Core/LiveActivityTimePolicyTests.swift`에 먼저 작성한다.
-- [ ] T025 [P] [US1] 지원·권한 허용·활성 제한·foreground 100회 중 95회 이상이 활성 확인 뒤 30초 안에 표시되고 권한 거부·미지원은 제한 기능에 영향을 주지 않는 계측 테스트를 `GetUpTests/Performance/LiveActivityStartMeasurementTests.swift`에 먼저 작성한다.
-- [ ] T026 [P] [US1] 메인 앱의 신뢰 위치 수신 기산점과 extension-only 근거 저장 후 다음 foreground 기산점부터 각각 30초 안에 거리가 반영되는 테스트를 `GetUpTests/Integration/LiveActivityLocationBridgeTests.swift`에 먼저 작성한다.
-- [ ] T027 [P] [US1] Lock Screen·Dynamic Island minimal·compact·expanded의 known·unavailable·다중 규칙 preview fixture를 `GetUpLiveActivity/RestrictionLiveActivityPreviews.swift`에 먼저 작성한다.
+- [X] T022 [P] [US1] 대표 occurrence의 `activatedAt`·`startAt`·`ruleID` 정렬과 대표 교체 테스트를 `GetUpTests/Core/RestrictionOccurrenceEvaluatorTests.swift`에 먼저 작성한다.
+- [X] T023 [P] [US1] 기존 위치 평가가 `.inside`이고 5분 이내일 때만 `max(0, radius - centerDistance)`를 항상 미터·10m 단위 half-up으로 표시하며 5m 경계·0 clamp·stale·unavailable을 검증하는 테스트를 `GetUpTests/Core/LiveActivityDistancePolicyTests.swift`에 먼저 작성한다.
+- [X] T024 [P] [US1] foreground 시작, background 미시작, 중복 조정, 수동 제거 후 재생성, 즉시 종료, ActivityKit 실패 격리와 주입 시계의 종료 전·경계·종료 후 남은 시간 오차 60초 이내·0 clamp 테스트를 `GetUpTests/Integration/LiveActivityCoordinatorTests.swift`, `GetUpTests/Core/LiveActivityTimePolicyTests.swift`에 먼저 작성한다.
+- [X] T025 [P] [US1] 지원·권한 허용·활성 제한·foreground 100회 중 95회 이상이 활성 확인 뒤 30초 안에 표시되고 권한 거부·미지원은 제한 기능에 영향을 주지 않는 계측 테스트를 `GetUpTests/Performance/LiveActivityStartMeasurementTests.swift`에 먼저 작성한다.
+- [X] T026 [P] [US1] 메인 앱의 신뢰 위치 수신 기산점과 extension-only 근거 저장 후 다음 foreground 기산점부터 각각 30초 안에 거리가 반영되는 테스트를 `GetUpTests/Integration/LiveActivityLocationBridgeTests.swift`에 먼저 작성한다.
+- [X] T027 [P] [US1] Lock Screen·Dynamic Island minimal·compact·expanded의 known·unavailable·다중 규칙 preview fixture를 `GetUpLiveActivity/RestrictionLiveActivityPreviews.swift`에 먼저 작성한다.
 
 ### 사용자 스토리 1 구현
 
-- [ ] T028 [P] [US1] 대표 occurrence 선택과 종료·revision 불일치 정리를 `GetUp/Core/Evaluation/RestrictionOccurrenceEvaluator.swift`에 구현한다.
-- [ ] T029 [P] [US1] 기존 `LocationEvidenceEvaluator`의 `.inside` 결과와 5분 유효기간을 재사용하고 남은 거리를 항상 미터·10m 단위 half-up으로 만드는 좌표 없는 content state를 `GetUp/Core/Evaluation/LiveActivityContentPolicy.swift`에 구현한다.
-- [ ] T030 [US1] 제한 적용 결과에서 활성 occurrence snapshot을 결정적으로 기록하도록 `GetUp/Infrastructure/ScreenTime/RestrictionCoordinator.swift`를 확장한다.
-- [ ] T031 [US1] 앱 비실행 callback에서는 occurrence만 갱신하고 ActivityKit을 호출하지 않도록 `GetUpDeviceActivityMonitor/DeviceActivityMonitorExtension.swift`를 연결한다.
-- [ ] T032 [P] [US1] request·update·end·authorization 조회를 감싸는 system adapter를 `GetUp/Infrastructure/ActivityKit/SystemLiveActivityAdapter.swift`에 구현한다.
-- [ ] T033 [US1] 대표 활동 하나를 멱등 조정하고 수동 제거를 suppression 없이 재생성하는 `GetUp/Infrastructure/ActivityKit/LiveActivityCoordinator.swift`를 구현한다.
-- [ ] T034 [US1] 앱 launch·foreground 복구와 신뢰 가능한 기존 위치 근거 변경 시 Live Activity를 조정하도록 `GetUp/App/AppLifecycleCoordinator.swift`, `GetUp/App/GetUpApp.swift`를 연결한다.
-- [ ] T035 [US1] extension-only 위치 근거를 App Group에 저장하고 다음 foreground에서 소비하되 extension에서는 ActivityKit을 직접 호출하지 않도록 `GetUp/Infrastructure/Persistence/SharedSnapshotRepository.swift`, `GetUp/App/AppLifecycleCoordinator.swift`를 연결한다.
-- [ ] T036 [US1] 0 clamp된 `endsAt` content policy를 사용해 Lock Screen과 Dynamic Island UI에 규칙명·60초 이내 동적 카운트다운·거리·추가 제한만 표시하도록 `GetUpLiveActivity/GetUpLiveActivityBundle.swift`, `GetUpLiveActivity/RestrictionLiveActivity.swift`를 구현한다.
-- [ ] T037 [US1] 한국어·영어 Live Activity 문자열과 VoiceOver label을 `GetUp/Resources/Localizable.xcstrings`, `GetUpLiveActivity/Resources/Localizable.xcstrings`에 추가한다.
-- [ ] T038 [US1] 새 US1 파일의 target membership을 `GetUp.xcodeproj/project.pbxproj`에 연결하고 `GetUpTests/Integration/LiveActivityCoordinatorTests.swift` 및 Widget Extension 빌드를 통과시킨다.
+- [X] T028 [P] [US1] 대표 occurrence 선택과 종료·revision 불일치 정리를 `GetUp/Core/Evaluation/RestrictionOccurrenceEvaluator.swift`에 구현한다.
+- [X] T029 [P] [US1] 기존 `LocationEvidenceEvaluator`의 `.inside` 결과와 5분 유효기간을 재사용하고 남은 거리를 항상 미터·10m 단위 half-up으로 만드는 좌표 없는 content state를 `GetUp/Core/Evaluation/LiveActivityContentPolicy.swift`에 구현한다.
+- [X] T030 [US1] 제한 적용 결과에서 활성 occurrence snapshot을 결정적으로 기록하도록 `GetUp/Infrastructure/ScreenTime/RestrictionCoordinator.swift`를 확장한다.
+- [X] T031 [US1] 앱 비실행 callback에서는 occurrence만 갱신하고 ActivityKit을 호출하지 않도록 `GetUpDeviceActivityMonitor/DeviceActivityMonitorExtension.swift`를 연결한다.
+- [X] T032 [P] [US1] request·update·end·authorization 조회를 감싸는 system adapter를 `GetUp/Infrastructure/ActivityKit/SystemLiveActivityAdapter.swift`에 구현한다.
+- [X] T033 [US1] 대표 활동 하나를 멱등 조정하고 수동 제거를 suppression 없이 재생성하는 `GetUp/Infrastructure/ActivityKit/LiveActivityCoordinator.swift`를 구현한다.
+- [X] T034 [US1] 앱 launch·foreground 복구와 신뢰 가능한 기존 위치 근거 변경 시 Live Activity를 조정하도록 `GetUp/App/AppLifecycleCoordinator.swift`, `GetUp/App/GetUpApp.swift`를 연결한다.
+- [X] T035 [US1] extension-only 위치 근거를 App Group에 저장하고 다음 foreground에서 소비하되 extension에서는 ActivityKit을 직접 호출하지 않도록 `GetUp/Infrastructure/Persistence/SharedSnapshotRepository.swift`, `GetUp/App/AppLifecycleCoordinator.swift`를 연결한다.
+- [X] T036 [US1] 0 clamp된 `endsAt` content policy를 사용해 Lock Screen과 Dynamic Island UI에 규칙명·60초 이내 동적 카운트다운·거리·추가 제한만 표시하도록 `GetUpLiveActivity/GetUpLiveActivityBundle.swift`, `GetUpLiveActivity/RestrictionLiveActivity.swift`를 구현한다.
+- [X] T037 [US1] 한국어·영어 Live Activity 문자열과 VoiceOver label을 `GetUp/Resources/Localizable.xcstrings`, `GetUpLiveActivity/Resources/Localizable.xcstrings`에 추가한다.
+- [X] T038 [US1] 새 US1 파일의 target membership을 `GetUp.xcodeproj/project.pbxproj`에 연결하고 `GetUpTests/Integration/LiveActivityCoordinatorTests.swift` 및 Widget Extension 빌드를 통과시킨다.
 
 **체크포인트**: US1은 코인 기능 없이 독립적으로 시연·검증 가능하다.
 

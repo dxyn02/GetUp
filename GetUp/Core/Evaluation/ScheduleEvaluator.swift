@@ -35,13 +35,31 @@ enum ScheduleEvaluator {
         calendar inputCalendar: Calendar,
         timeZone: TimeZone
     ) -> Bool {
+        activeInterval(
+            weekdays: weekdays,
+            startTime: startTime,
+            endTime: endTime,
+            at: date,
+            calendar: inputCalendar,
+            timeZone: timeZone
+        ) != nil
+    }
+
+    static func activeInterval(
+        weekdays: Set<Weekday>,
+        startTime: TimeOfDay,
+        endTime: TimeOfDay,
+        at date: Date,
+        calendar inputCalendar: Calendar,
+        timeZone: TimeZone
+    ) -> Range<Date>? {
         guard
             !weekdays.isEmpty,
             isValid(startTime),
             isValid(endTime),
             startTime != endTime
         else {
-            return false
+            return nil
         }
 
         var calendar = inputCalendar
@@ -50,32 +68,35 @@ enum ScheduleEvaluator {
         let currentDay = calendar.startOfDay(for: date)
         let crossesMidnight = minutes(for: endTime) < minutes(for: startTime)
 
-        if interval(
+        if let currentInterval = interval(
             startingOn: currentDay,
             weekdays: weekdays,
             startTime: startTime,
             endTime: endTime,
             crossesMidnight: crossesMidnight,
             calendar: calendar
-        ).contains(date) {
-            return true
+        ), currentInterval.contains(date) {
+            return currentInterval
         }
 
         guard
             crossesMidnight,
             let previousDay = calendar.date(byAdding: .day, value: -1, to: currentDay)
         else {
-            return false
+            return nil
         }
 
-        return interval(
+        guard let previousInterval = interval(
             startingOn: previousDay,
             weekdays: weekdays,
             startTime: startTime,
             endTime: endTime,
             crossesMidnight: true,
             calendar: calendar
-        ).contains(date)
+        ), previousInterval.contains(date) else {
+            return nil
+        }
+        return previousInterval
     }
 
     private static func interval(
@@ -85,7 +106,7 @@ enum ScheduleEvaluator {
         endTime: TimeOfDay,
         crossesMidnight: Bool,
         calendar: Calendar
-    ) -> Range<Date> {
+    ) -> Range<Date>? {
         guard
             let weekday = weekday(for: calendar.component(.weekday, from: day)),
             weekdays.contains(weekday),
@@ -106,7 +127,7 @@ enum ScheduleEvaluator {
             ),
             start < end
         else {
-            return Date.distantPast..<Date.distantPast
+            return nil
         }
 
         return start..<end
