@@ -1,5 +1,33 @@
 # 차단 사항
 
+## BLK-015 — T047 occurrence 단위 중복 예약의 원자적 저장 계약
+
+**상태**: 미해결(OPEN) — 2026-09-04
+
+`rule-release-contract.md`는 같은 occurrence의 진행·완료 command가 있으면 새 예약을 금지한다.
+`data-model.md`는 command ID를 최초 시도에 만들고 재시도에 유지하며, `requestedFrom`은 감사용으로
+정의한다. 그러나 `CloudKitCoinLedgerRepository.reserveMonthlyFree`·`reservePurchasedCoin`은 요청
+command ID의 레코드만 조회하고 occurrence 단위 고유성은 검사하거나 atomic하게 저장하지 않는다.
+따라서 서로 다른 command ID를 가진 앱·Shield 요청은 같은 occurrence에 잔액을 두 번 예약할 수 있다.
+잔액 CAS는 초과 사용은 방지하지만 같은 occurrence의 중복 예약을 방지하지 않는다.
+
+T040의 `AtomicOccurrenceReservationRepository` 대역은 `Set<String>`으로 occurrence를 별도 차단하므로
+현재 100회 동시 요청 테스트만 통과시켜서는 실제 저장소의 보장을 입증할 수 없다. 기존 저장소는
+같은 command의 `requestedFrom`까지 일치를 요구하며 `compensated` command를 재예약할 수 없다.
+단순히 occurrence에서 command ID를 하나로 고정하면 표면 간 요청 및 보상 완료 후 새 시도 처리도
+함께 결정해야 하므로 내부 helper 변경만으로 해결하지 않는다.
+
+**권장안**: T047 범위를 확장해 epoch·occurrence별 예약 소유권 레코드를 도입한다. 무료·구매 예약과
+소유권 획득을 같은 atomic modify에 넣고, 진행·완료 command가 있으면 새 예약을 거부한다.
+보상 완료 때만 소유권을 원자적으로 해제해 새 사용자 시도를 허용하고, 결과 불명에서는 유지한다.
+기존 command ID는 재시도 동안 유지하고 진입 표면은 최초 요청의 감사 정보로 보존한다.
+저장 계약·record codec·schema 호환 전략·관련 테스트를 같은 변경에서 갱신하며, 실제 repository와
+공유 상태를 갖는 database fake로 서로 다른 command ID의 앱·Shield 동시 요청을 검증한다.
+
+**승인 요청**: 위 occurrence 소유권 저장 계약 및 CloudKit 스키마 보강을 T047에 포함할지 확인이 필요하다.
+승인 전에는 서비스 구현과 T047 완료 처리를 진행하지 않는다. 현재 판단은 코드·계약 정적 대조이며,
+이번 세션에서 신규 실행 테스트나 실제 CloudKit 다기기 재현은 수행하지 않았다.
+
 ## BLK-014 — Live Activity background 시작·거리 갱신·결제 서버·월 경계
 
 **상태**: 해결됨(RESOLVED) — 2026-09-01

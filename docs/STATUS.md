@@ -7,20 +7,22 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 4 사용자 스토리 2 구현 진행 중
 
 ## 진행 중
-`codex/us2-reservation-tests`에서 T046의 무료 우선 funding source 선택 정책을 완료했다.
-현재 장부·epoch 일치를 검사하고 예약 수량을 제외한 무료분, 구매 코인 순으로 선택한다.
-정책은 장부를 변경하지 않으며 앱과 Shield Action 타깃에 연결했다. 현재 구현 중인 task는 없으며,
-최신 컨텍스트 확인과 atomic reservation은 다음 T047에서 연결한다.
+`codex/us2-reservation-tests`에서 T047의 최신 컨텍스트·atomic reservation 연결을 검토하다가
+occurrence 단위 중복 예약 계약의 공백을 확인해 구현 전 중단했다. 실제 CloudKit repository는
+command ID 단위 멱등성만 제공하지만 T040 대역은 occurrence 고유성을 별도 보장한다.
+BLK-015의 원자적 예약 소유권 계약·스키마 보강 승인 대기 중이며 T047은 미완료다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
 T046 — 무료 우선 reservation 정책 구현과 예약 잔액 제외 테스트 통과
 
 ## 다음 작업
-T047 — 최신 occurrence·epoch·잔액 확인과 결정적 command ID의 atomic reservation을 구현한다.
+BLK-015 결정 후 T047을 재개한다. 완료 후 다음 task는 T048 해제 예외 repository다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
+BLK-015 미해결: occurrence별 예약 소유권을 무료·구매 예약과 atomic하게 저장하는 계약·스키마
+보강 승인 필요. 같은 command 재시도와 다른 command의 같은 occurrence 요청은 구분해야 한다.
 T045 보고서 접근 차단은 사용자 허용 후 같은 명령 재시도로 해결됐다.
 BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록과
 `group.com.dxyn02.GetUp` 할당, Family Controls Distribution `Assigned`와 갱신 profile을 사용한
@@ -34,6 +36,11 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-04 T047 검토: 계약·실제 repository·T040 대역을 정적으로 대조했다. 제품 코드와 테스트는
+변경하지 않았고 신규 테스트 실행도 하지 않았다. T047은 완료 표시하지 않았으며 T040 service
+테스트의 미구현 타입 RED와 T041~T045의 미검증 상태는 유지한다. BLK-015 해결 뒤 실제 repository
+경계의 앱·Shield 교차 동시 예약 회귀를 추가해야 한다.
+
 2026-09-04 T046: `CoinReservationPolicy`·오류 타입 부재의 compile RED를 확인한 뒤 구현했다.
 예약된 무료분의 구매 fallback과 전액 예약된 구매 잔액 거부 테스트 2개를 추가했다.
 iPhone 17 Pro iOS 26.5에서 `CoinReservationPolicyTests`와 `MonthlyAllowancePolicyTests`
