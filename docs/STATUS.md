@@ -4,20 +4,20 @@
 001-location-app-restriction, 002-live-activity-coins
 
 ## 현재 단계
-001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 3 사용자 스토리 1 구현 진행 중
+001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 3 사용자 스토리 1 완료 및 Phase 4 준비 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T037 Live Activity 지역화·VoiceOver를
-완료했다. 한국어 source 문구와 영어 번역을 앱·Widget String Catalog에 추가하고 Widget resource로
-연결했다. 규칙·동적 남은 시간·known 또는 확인 불가 거리·추가 제한을 의미별 VoiceOver 요소로 읽고,
-상태를 전달하지 않는 잠금·위치·물음표 아이콘은 접근성 트리에서 제외한다.
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T038 US1 target membership·빌드 검증을
+완료했다. US1 앱 source, 단위·통합·성능 테스트, Widget source·공유 model·String Catalog가 각 target의
+Sources 또는 Resources phase에 연결됐음을 확인했고, 지정 coordinator 테스트와 Widget을 포함한
+Debug·Release 빌드를 통과시켰다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T037 — 한국어·영어 Live Activity 문자열과 VoiceOver label을 추가함
+T038 — US1 전체 target membership과 coordinator·Widget Extension 빌드를 최종 검증함
 
 ## 다음 작업
-T038 — US1 파일·resource target membership과 coordinator·Widget Extension 빌드를 최종 검증한다.
+T039 — DEBUG 전용 Shield Action ActivityKit feasibility probe를 지원 OS 실기기에서 검증한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -33,6 +33,17 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-04 002 구현 T038을 완료했다. `RestrictionOccurrenceEvaluator`, Live Activity content·time
+policy, coordinator·system adapter와 관련 테스트 7개, Widget bundle·UI·preview, 공유 model 2개,
+Widget String Catalog가 각각 앱·`GetUpTests`·`GetUpLiveActivity` target의 올바른 Sources·Resources
+phase에 연결됐음을 최종 대조했다. iPhone 17 Pro iOS 26.5 Simulator의
+`LiveActivityCoordinatorTests` 9개를 실패·skip 없이 통과시켰다. 코드 서명 없는 generic iOS
+Simulator Debug·Release `GetUp` scheme 빌드가 모두 통과했고, 두 구성의 앱 내부
+`GetUpLiveActivity.appex`에서 실행 파일·영문 문자열 리소스·`com.apple.widgetkit-extension` 식별자를
+확인했다. target membership 누락이 없어 `project.pbxproj` 추가 변경은 필요하지 않았다. 기존 XCTest
+binary strip 및 불필요한 `try` 경고는 변동 없이 남아 있다. 다음 T039는 지원 OS 실기기에서 수행하는
+Shield Action ActivityKit feasibility gate다.
+
 2026-09-04 002 구현 T037을 완료했다. Live Activity의 visible 거리·확인 불가·추가 제한 문구와
 VoiceOver용 규칙명·남은 시간·남은 거리·다중 제한 설명을 한국어 source language와 영어 번역으로
 앱 및 Widget String Catalog에 추가했다. `RestrictionRuleLabel`, `RestrictionCountdown`,
