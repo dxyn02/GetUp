@@ -117,7 +117,7 @@ occurrence만 예외 처리되는지, 중복 100회에서 최대 1회만 소모�
 - [X] T040 [P] [US2] 무료 우선·구매 fallback·잔액 부족·비`current`·epoch 불일치 reservation, 같은 occurrence 100회 요청과 requested→reserved→applied→committed·보상·결과 불명 전이 테스트를 `GetUpTests/Core/CoinReservationPolicyTests.swift`, `GetUpTests/Core/RuleReleaseServiceTests.swift`에 먼저 작성한다.
 - [X] T041 [P] [US2] 예외의 재실행·재부팅 유지, 만료·revision 불일치 정리, 다음 occurrence 미적용 테스트를 `GetUpTests/Persistence/ReleaseExceptionRepositoryTests.swift`에 먼저 작성한다.
 - [X] T042 [P] [US2] App Group write·Managed Settings write·CloudKit commit 각 실패 지점의 보상, 성공 직후 대표 Live Activity 갱신·종료와 ActivityKit 실패 비치명 처리를 `GetUpTests/Integration/RuleReleaseCoordinatorTests.swift`에 먼저 작성한다.
-- [ ] T043 [P] [US2] 단일 `해제권 1회 사용` 버튼의 무료 우선·구매 fallback, 잔액 부족 coin store route, stale·삭제·조정 중 장부의 recovery route, 다중 규칙과 iOS 26.5·이전 호환 응답 테스트를 `GetUpTests/Integration/ShieldCoinActionTests.swift`에 먼저 작성한다.
+- [X] T043 [P] [US2] 단일 `해제권 1회 사용` 버튼의 무료 우선·구매 fallback, 잔액 부족 coin store route, stale·삭제·조정 중 장부의 recovery route, 다중 규칙과 iOS 26.5·이전 호환 응답 테스트를 `GetUpTests/Integration/ShieldCoinActionTests.swift`에 먼저 작성한다.
 - [ ] T044 [P] [US2] primary action 전달부터 4.9초 성공, 5초 성공 미확인, late commit·extension 종료의 fail-closed와 최종 미적용 차감 0을 `GetUpTests/Integration/ShieldReleaseDeadlineTests.swift`에 먼저 작성한다.
 - [ ] T045 [P] [US2] 현재 Shield 요소·`해제권 1회 사용`·`앱 닫기` 구성과 앱 내 대상·비용·종료·남을 제한 확인 및 중복 tap UI 테스트를 `GetUpUITests/UserStory2CoinReleaseUITests.swift`에 먼저 작성한다.
 
