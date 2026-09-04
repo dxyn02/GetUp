@@ -7,17 +7,17 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 4 사용자 스토리 2 구현 진행 중
 
 ## 진행 중
-`codex/us2-reservation-tests`에서 002-live-activity-coins T041을 완료했다. release exception의
-재실행·재부팅 유지, 종료 직전과 정확한 만료 경계, rule revision 불일치 정리, 다음 occurrence
-미적용과 atomic write 실패 시 기존 collection 보존 계약을 테스트로 고정했다. 테스트는 TDD RED
-단계이며 T048의 `AppGroupReleaseExceptionRepository` 구현 전까지 의도적으로 컴파일 실패한다.
+`codex/us2-reservation-tests`에서 002-live-activity-coins T042를 완료했다. reservation 이후 App Group
+예외 저장, 제한 합집합 재적용·read-back, CloudKit applied·commit, Live Activity 조정 순서와 각 로컬·
+CloudKit 실패의 역순 복구·코인 보상, ActivityKit 실패의 비치명적 격리를 테스트로 고정했다. 테스트는
+TDD RED 단계이며 T049의 `RuleReleaseCoordinator` 구현 전까지 의도적으로 컴파일 실패한다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T041 — release exception의 영속·정리·다음 occurrence 격리 테스트를 먼저 작성함
+T042 — release coordinator의 순서·실패 보상·Live Activity 격리 테스트를 먼저 작성함
 
 ## 다음 작업
-T042 — release coordinator의 단계별 실패 보상과 Live Activity 조정 테스트를 먼저 작성한다.
+T043 — Shield 단일 해제 action의 funding·route·호환 응답 테스트를 먼저 작성한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -33,6 +33,16 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-04 002 구현 T042를 TDD RED 단계로 완료했다. `RuleReleaseCoordinatorTests` 6개는 성공 시
+App Group 예외 저장→제한 합집합 재적용→CloudKit applied·commit→대표 Live Activity 갱신 또는 종료
+순서를 검증한다. App Group write 실패는 제한 변경 없이, Managed Settings write와 확정적 CloudKit
+commit 실패는 예외·제한을 역순 복구한 뒤 reservation을 `compensated`로 수렴하도록 정의했다.
+ActivityKit 실패는 committed 해제와 예외를 유지한 채 안정 failure code만 반환하도록 고정했다.
+T040·T041 RED 소스를 `EXCLUDED_SOURCE_FILE_NAMES`로 임시 제외한 T042 독립 `xcodebuild test`는 예상대로
+아직 없는 `RuleReleaseCoordinator`, `RuleReleaseApplication`과 연쇄 타입 추론 오류 때문에 컴파일
+실패했으며 T049에서 GREEN으로 전환해야 한다. 새 파일의 `GetUpTests` Integration group·Sources 연결,
+project plist와 `git diff --check`는 통과했다.
+
 2026-09-04 002 구현 T041을 TDD RED 단계로 완료했다. `ReleaseExceptionRepositoryTests` 6개는 새
 repository instance를 통한 재실행·재부팅 영속, `expiresAt` 직전 적용과 정확한 경계 정리, rule
 revision 불일치의 영속 데이터 정리, 다음 반복 occurrence 미적용, atomic write 실패 시 기존 collection
