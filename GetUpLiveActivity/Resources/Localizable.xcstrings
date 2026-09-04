@@ -1,0 +1,86 @@
+{
+  "sourceLanguage" : "ko",
+  "strings" : {
+    "%lld m" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld m"
+          }
+        }
+      }
+    },
+    "거리 확인 불가" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Distance unavailable"
+          }
+        }
+      }
+    },
+    "남은 거리 %lld미터" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld meters remaining"
+          }
+        }
+      }
+    },
+    "남은 거리 확인 불가" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remaining distance unavailable"
+          }
+        }
+      }
+    },
+    "남은 시간" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time remaining"
+          }
+        }
+      }
+    },
+    "다른 제한도 활성화되어 있어요" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other restrictions are also active"
+          }
+        }
+      }
+    },
+    "제한 규칙: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restriction rule: %1$@"
+          }
+        }
+      }
+    },
+    "추가 제한 있음" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More restrictions active"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.1"
+}
