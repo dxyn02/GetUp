@@ -4,6 +4,125 @@ import Testing
 
 @Suite("Release exception repository", .serialized)
 struct ReleaseExceptionRepositoryTests {
+    @Test("Missing storage is empty and does not create an exception file")
+    func missingStorage() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let repository = AppGroupReleaseExceptionRepository(containerURL: directory)
+        #expect(try await repository.loadReleaseExceptions().isEmpty)
+        #expect(try await repository.loadApplicableReleaseExceptions(
+            at: Self.now, activeOccurrenceIDs: [], currentRuleRevisions: [:]
+        ).isEmpty)
+        #expect(!FileManager.default.fileExists(atPath: directory.appendingPathComponent(
+            SharedIdentifiers.releaseExceptionsFileName
+        ).path))
+    }
+
+    @Test("Future-effective and temporarily inactive exceptions are retained but not applied")
+    func retainedWithoutApplying() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let repository = AppGroupReleaseExceptionRepository(containerURL: directory)
+        let exception = try makeException()
+        try await repository.saveReleaseExceptions([exception])
+        for (date, ids) in [(exception.effectiveAt.addingTimeInterval(-1), Set([Self.occurrence.id])), (Self.now, Set<String>())] {
+            #expect(try await repository.loadApplicableReleaseExceptions(
+                at: date, activeOccurrenceIDs: ids, currentRuleRevisions: [Self.ruleID: 4]
+            ).isEmpty)
+            #expect(try await repository.loadReleaseExceptions() == [exception])
+        }
+        #expect(try await repository.loadApplicableReleaseExceptions(
+            at: exception.effectiveAt, activeOccurrenceIDs: [Self.occurrence.id],
+            currentRuleRevisions: [Self.ruleID: 4]
+        ) == [exception])
+    }
+
+    @Test("Cleanup write failure propagates and preserves the original bytes")
+    func cleanupFailure() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let repository = AppGroupReleaseExceptionRepository(containerURL: directory)
+        let exception = try makeException()
+        try await repository.saveReleaseExceptions([exception])
+        let failing = AppGroupReleaseExceptionRepository(containerURL: directory, fileWriter: FailingReleaseExceptionFileWriter())
+        await #expect(throws: ReleaseExceptionRepositoryError.writeFailed) {
+            try await failing.loadApplicableReleaseExceptions(
+                at: Self.occurrence.endAt, activeOccurrenceIDs: [], currentRuleRevisions: [Self.ruleID: 4]
+            )
+        }
+        #expect(try await repository.loadReleaseExceptions() == [exception])
+        // A valid read does not unnecessarily rewrite storage.
+        #expect(try await failing.loadApplicableReleaseExceptions(
+            at: Self.now, activeOccurrenceIDs: [Self.occurrence.id], currentRuleRevisions: [Self.ruleID: 4]
+        ) == [exception])
+    }
+
+    @Test("Malformed and unsupported snapshots fail closed without replacing their bytes", arguments: ["not-json", "{\"schemaVersion\":99,\"exceptions\":[]}"])
+    func corruptStorage(payload: String) async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let url = directory.appendingPathComponent(SharedIdentifiers.releaseExceptionsFileName)
+        let data = Data(payload.utf8)
+        try data.write(to: url)
+        let repository = AppGroupReleaseExceptionRepository(containerURL: directory)
+        await #expect(throws: ReleaseExceptionRepositoryError.readFailed) {
+            try await repository.loadApplicableReleaseExceptions(
+                at: Self.now, activeOccurrenceIDs: [], currentRuleRevisions: [:]
+            )
+        }
+        #expect(try Data(contentsOf: url) == data)
+    }
+
+    @Test("Invalid duplicate collection cannot replace a valid snapshot")
+    func duplicateCollection() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let repository = AppGroupReleaseExceptionRepository(containerURL: directory)
+        let exception = try makeException()
+        try await repository.saveReleaseExceptions([exception])
+        await #expect(throws: ReleaseExceptionRepositoryError.writeFailed) {
+            try await repository.saveReleaseExceptions([exception, exception])
+        }
+        #expect(try await repository.loadReleaseExceptions() == [exception])
+    }
+
+    @Test("The shared snapshot facade and dedicated repository use the same schema and file")
+    func sharedFacadeCompatibility() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let shared = SharedSnapshotRepository(containerURL: directory)
+        let dedicated = AppGroupReleaseExceptionRepository(containerURL: directory)
+        let exception = try makeException()
+        try await shared.saveReleaseExceptions([exception])
+        #expect(try await dedicated.loadReleaseExceptions() == [exception])
+        _ = try await dedicated.loadApplicableReleaseExceptions(
+            at: Self.now, activeOccurrenceIDs: [Self.occurrence.id], currentRuleRevisions: [:]
+        )
+        #expect(try await shared.loadReleaseExceptions().isEmpty)
+    }
+
+    @Test("Cleanup and another facade's save cannot overwrite each other's in-flight transaction")
+    func concurrentCleanupAndSave() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let expired = try makeException()
+        let fresh = try ReleaseException(commandID: UUID(), occurrenceID: "fresh-occurrence",
+            ruleID: Self.ruleID, ruleRevision: 4, effectiveAt: Self.occurrence.endAt,
+            expiresAt: Self.occurrence.endAt.addingTimeInterval(3600))
+        for _ in 0..<50 {
+            let shared = SharedSnapshotRepository(containerURL: directory)
+            let cleaner = AppGroupReleaseExceptionRepository(containerURL: directory)
+            try await shared.saveReleaseExceptions([expired])
+            async let clean = cleaner.loadApplicableReleaseExceptions(
+                at: Self.occurrence.endAt, activeOccurrenceIDs: [fresh.occurrenceID],
+                currentRuleRevisions: [Self.ruleID: 4]
+            )
+            async let save: Void = shared.saveReleaseExceptions([fresh])
+            _ = try await (clean, save)
+            #expect(try await cleaner.loadReleaseExceptions() == [fresh])
+        }
+    }
+
     @Test("An active exception survives fresh repository instances after relaunch and reboot")
     func activeExceptionSurvivesRelaunchAndReboot() async throws {
         let directory = try makeTemporaryDirectory()

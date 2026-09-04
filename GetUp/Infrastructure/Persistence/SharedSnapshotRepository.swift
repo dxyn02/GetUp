@@ -223,18 +223,11 @@ actor SharedSnapshotRepository: RuleRepository, SavedPlaceRepository, LocationCo
     }
 
     func loadReleaseExceptions() async throws -> [ReleaseException] {
-        try loadSnapshot(
-            ReleaseExceptionCollectionSnapshot.self,
-            fileName: SharedIdentifiers.releaseExceptionsFileName,
-            supportedSchemaVersion: ReleaseExceptionCollectionSnapshot.currentSchemaVersion
-        )?.exceptions ?? []
+        try ReleaseExceptionFileStore(containerURL: containerURL, fileWriter: fileWriter).load()
     }
 
     func saveReleaseExceptions(_ exceptions: [ReleaseException]) async throws {
-        try saveSnapshot(
-            ReleaseExceptionCollectionSnapshot(exceptions: exceptions),
-            fileName: SharedIdentifiers.releaseExceptionsFileName
-        )
+        try ReleaseExceptionFileStore(containerURL: containerURL, fileWriter: fileWriter).save(exceptions)
     }
 
     private func loadSnapshot<Snapshot: Decodable>(

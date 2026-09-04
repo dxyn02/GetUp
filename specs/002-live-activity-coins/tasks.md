@@ -128,7 +128,7 @@ occurrence만 예외 처리되는지, 중복 100회에서 최대 1회만 소모�
   - [X] T047a [US2] BLK-015 승인에 따라 epoch·occurrence별 `ReleaseOccurrenceClaim` 모델, 결정적 record ID, 엄격한 codec과 호환 정책·테스트를 추가한다.
   - [X] T047b [US2] 무료·구매 예약과 claim 획득, 보상과 claim 해제를 같은 atomic modify로 연결하고 실제 repository·공유 database fake에서 앱·Shield 동시 100회, 충돌·결과 불명·보상 재시도를 검증한다. 기존 command의 claim 부재와 구버전 writer 공존은 안전성이 검증되기 전 fail-closed하며 epoch 확인·무료 우선 충돌 재평가도 검증한다.
   - [X] T047c [US2] 최신 컨텍스트·월간 서비스·예약 repository를 `RuleReleaseService`에 연결하고 종료·revision·epoch·기존 예외 검증과 관련 회귀를 통과시켜 T047을 완료한다.
-- [ ] T048 [P] [US2] release exception의 atomic 저장·조회·만료 정리를 `GetUp/Infrastructure/Persistence/ReleaseExceptionRepository.swift`에 구현한다.
+- [X] T048 [P] [US2] release exception의 atomic 저장·조회·만료 정리를 `GetUp/Infrastructure/Persistence/ReleaseExceptionRepository.swift`에 구현한다.
 - [ ] T049 [US2] reservation→App Group 예외→제한 합집합 재평가→CloudKit commit→대표 Live Activity 조정 순서와 보상을 구현하고 ActivityKit 실패는 해제 성공을 되돌리지 않도록 `GetUp/Infrastructure/ScreenTime/RuleReleaseCoordinator.swift`를 구현한다.
 - [ ] T050 [US2] 결과 불명 command를 새 해제보다 먼저 조회해 committed 또는 compensated로 수렴시키는 `GetUp/Infrastructure/CloudKit/RuleReleaseReconciler.swift`를 구현한다.
 - [ ] T051 [US2] 주입 가능한 monotonic clock으로 Shield CloudKit 성공 확인을 5초로 제한하고 timeout 시 reconciliation route와 같은 command ID 재조정을 만드는 `GetUp/Infrastructure/ScreenTime/ShieldReleaseDeadlinePolicy.swift`를 구현한다.

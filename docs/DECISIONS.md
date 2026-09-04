@@ -1763,6 +1763,30 @@ requestedFrom은 최초 감사 정보를 보존한다.
 **영향 범위**: 공유 해제 모델·record ID·mapper, CloudKit 예약·보상 repository, T047 서비스와
 database fake 통합 테스트. T047a→T047b→T047c 순으로 구현하고 전체 연결 전 T047은 미완료로 둔다.
 
+## DEC-089 — 해제 예외 정리의 공유 파일 조정 경계
+
+**날짜**: 2026-09-04
+
+**결정**: T048의 `AppGroupReleaseExceptionRepository`와 기존 `SharedSnapshotRepository`는
+`ReleaseExceptionFileStore`를 공유한다. schema 1·기존 파일명·ISO8601·보호된 atomic write는 유지한다.
+`NSFileCoordinator`로 모든 예외 파일 접근을 조정하며 정리의 읽기·필터·저장을 하나의 동기 접근
+블록으로 수행한다. coordinator 블록 안에서는 await하지 않는다. 전용 facade는 읽기·쓰기 실패를
+기존 안정 오류 코드로 전달하고, 공통 snapshot facade의 schema 오류 경계는 유지한다.
+
+**근거**: atomic 파일 교체만으로는 서로 다른 repository instance의 정리가 중간에 저장된 최신
+예외를 덮는 읽기·쓰기 경합을 막지 못한다. actor만 추가하는 대안도 다른 instance·프로세스를
+직렬화하지 못한다. 두 facade가 같은 조정 경계를 사용해 기존 쓰기 경로의 우회를 방지한다.
+
+**정리 기준**: 전체 저장 규칙 revision 사전을 받아 만료·삭제 규칙·revision 불일치만 영속 정리한다.
+일시적 위치 이탈 등으로 inactive가 된 예외와 미래 effectiveAt 예외는 적용하지 않되 만료 전에는
+보존한다. 정리가 필요 없으면 파일을 다시 쓰지 않는다. decode·정리 쓰기 실패는 빈 상태로 숨기거나
+파일을 삭제하지 않는다.
+
+**범위와 한계**: 새 스키마·migration은 없다. 전체 collection 저장 API는 병합·CAS가 아니므로
+별도 load→save를 원자적 수정으로 간주하지 않는다. 후속 coordinator의 명령별 수정·보상 연결과
+실제 앱/extension 중단·재부팅·잠금 인수는 별도 검증한다. T048은 같은 프로세스의 독립 instance
+50회 경합을 확인했으며 실기기 교차 프로세스 검증 완료를 주장하지 않는다.
+
 ## DEC-086 — Shield Action의 Live Activity 조정은 foreground fallback 사용
 
 **날짜**: 2026-09-04

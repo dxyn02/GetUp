@@ -7,16 +7,16 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 4 사용자 스토리 2 구현 진행 중
 
 ## 진행 중
-`codex/us2-reservation-tests`에서 T047c 서비스 연결을 완료해 T047 전체를 완료했다.
-현재 진행 중인 구현 task는 없으며 다음은 T048이다. 호환성 검증 경계는 기본 거부이며
+`codex/us2-reservation-tests`에서 T048 해제 예외 저장·조회·만료 정리를 완료했다.
+현재 진행 중인 구현 task는 없으며 다음은 T049다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 앱·Shield의 최신 컨텍스트 provider 연결은 후속 통합에 남아 있다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T047c 및 T047 — 최신 컨텍스트 검증·월간 무료 우선·원자 예약 서비스 연결
+T048 — App Group 해제 예외의 원자 저장·조회·정리와 공유 파일 조정
 
 ## 다음 작업
-T048 — App Group release exception의 원자 저장·조회·만료 정리 구현.
+T049 — 예약·예외 저장·제한 합집합·장부 확정·Live Activity 조정과 실패 보상 구현.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -34,6 +34,22 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-04 T048: `AppGroupReleaseExceptionRepository` 타입 부재 compile RED를 확인한 뒤 구현했다.
+기존 T041 테스트 6개를 GREEN으로 전환하고 회귀 7개(인자 포함 8회)를 추가했다. 파일 부재의 빈 상태,
+effectiveAt 경계, 유효하지만 비활성인 예외 보존, 만료·revision 불일치·삭제 규칙 정리, 정리 쓰기 실패의
+기존 데이터 보존, 손상·지원하지 않는 schema 거부, 중복 collection 저장 거부, 기존 snapshot facade
+호환과 50회 동시 정리·저장 경합을 검증했다. 저장은 기존 schema 1·ISO8601·보호된 atomic JSON을
+유지하며 양쪽 facade가 같은 `NSFileCoordinator` 경계를 사용한다(DEC-089).
+최종 iPhone 17 Pro iOS 26.5 `GetUpTests` 405개(인자 포함 462회)가 실패·skip 없이 통과했다.
+미구현 타입의 `RuleReleaseCoordinatorTests.swift`, `ShieldCoinActionTests.swift`,
+`ShieldReleaseDeadlineTests.swift`는 명령행 `EXCLUDED_SOURCE_FILE_NAMES`로 제외했다.
+T045 UI RED는 재실행하지 않았으며 전체 기능 완료가 아니다. 앱·네 extension의 generic iOS Simulator
+Release 빌드, project plist와 diff 검사도 통과했다. 기존 binary strip·다른 테스트의 불필요한 try
+경고가 남아 있다. 최종 결과: `/tmp/getup-t048/Logs/Test/Test-GetUp-2026.09.04_22-22-12-+0900.xcresult`.
+재실행·재부팅 테스트는 새 repository instance로 파일 영속을 확인한 것이며 실제 재부팅·잠금·
+앱/extension 별도 프로세스 중단 검증은 후속 실기기 인수에 남아 있다. 제한 평가 연결은 T052·T053에
+남겨 두었고 실제 장부·운영 데이터는 변경하지 않았다.
+
 2026-09-04 T047c: 서비스·요청·컨텍스트 타입 부재 compile RED 뒤 `RuleReleaseService`를 구현했다.
 기존 T040 서비스 테스트 8개를 GREEN으로 전환하고 회귀 9개(인자 포함 15회)를 추가했다.
 최신 컨텍스트 조회 후 종료·식별자·저장 규칙 revision·epoch·기존 예외·서울 월을 검증하며,

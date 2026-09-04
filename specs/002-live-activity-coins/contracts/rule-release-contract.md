@@ -86,6 +86,14 @@ BLK-015 승인 보강: 같은 epoch·occurrence의 명령은 공통 `ReleaseOccu
 - 다음 반복 occurrence ID는 다르므로 이전 해제가 적용되지 않는다.
 - 규칙 삭제·revision 변경은 활성 중 금지되며 만료 뒤 오래된 exception을 제거한다.
 
+T048 저장 경계는 기존 schema 1 파일을 유지한다. `loadApplicableReleaseExceptions`에는 전체 저장
+규칙의 revision 사전과 현재 활성 occurrence ID를 전달한다. `effectiveAt <= now < expiresAt`이고
+활성 ID가 일치하는 예외만 반환하며, 아직 유효한 예외는 일시적인 비활성만으로 삭제하지 않는다.
+만료·삭제 규칙·revision 불일치의 정리는 읽기부터 atomic 교체까지 파일 조정 안에서 수행한다.
+손상·지원하지 않는 schema·정리 쓰기 실패는 오류를 전달하고 기존 bytes를 보존한다.
+`saveReleaseExceptions`는 전체 collection 교체이며 외부의 분리된 load→save에 대한 병합·CAS를
+제공하지 않는다. 후속 coordinator는 오래된 collection으로 다른 명령의 예외를 덮어쓰면 안 된다.
+
 ## 필수 테스트
 
 - 무료 우선, 구매 fallback, 양쪽 잔액 부족
