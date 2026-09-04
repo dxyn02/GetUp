@@ -1,5 +1,43 @@
 import Foundation
 
+/// Remote ownership shared by every funding path for one epoch and occurrence.
+/// Only an atomic compensation may release it; timestamps do not expire ownership.
+struct ReleaseOccurrenceClaim: Equatable, Sendable {
+    enum State: String, Equatable, Sendable {
+        case held
+        case released
+    }
+
+    enum ValidationError: Error, Equatable, Sendable {
+        case invalidValue
+    }
+
+    static let currentSchemaVersion = 1
+
+    let ledgerEpochID: UUID
+    let occurrenceID: String
+    let commandID: UUID
+    let state: State
+    let updatedAt: Date
+
+    init(
+        ledgerEpochID: UUID,
+        occurrenceID: String,
+        commandID: UUID,
+        state: State,
+        updatedAt: Date
+    ) throws {
+        guard !occurrenceID.isEmpty, updatedAt.timeIntervalSince1970.isFinite else {
+            throw ValidationError.invalidValue
+        }
+        self.ledgerEpochID = ledgerEpochID
+        self.occurrenceID = occurrenceID
+        self.commandID = commandID
+        self.state = state
+        self.updatedAt = updatedAt
+    }
+}
+
 enum ReleaseRequestSource: String, Codable, Equatable, Hashable, Sendable {
     case shield
     case app

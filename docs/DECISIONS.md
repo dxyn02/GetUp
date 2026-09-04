@@ -1703,6 +1703,38 @@ Shield의 무료 해제는 allowance를 별도로 먼저 생성하지 않고 `Co
 **영향 범위**: `MonthlyAllowancePolicy`, `MonthlyAllowanceService`, `AppLifecycleCoordinator`,
 `DependencyContainer`와 T072 초기 설정 service에 적용한다.
 
+## DEC-087 — occurrence 소유권과 해제 명령 멱등성 분리
+
+**날짜**: 2026-09-04
+
+**상태**: 승인됨 — BLK-015에 대한 사용자 승인
+
+**결정**: 같은 epoch·occurrence의 해제 요청은 `ReleaseOccurrenceClaim` 하나를 공유한다.
+새 record type의 schema version은 1이며 기존 여섯 record type의 필드와 version은 변경하지 않는다.
+record ID는 `release-claim:{소문자 epoch UUID}:{occurrenceID UTF-8 SHA-256 소문자 hex}`다.
+해시를 사용해 record name 길이를 고정하고, payload의 원래 occurrence·epoch를 읽기 때 다시 검사한다.
+이는 식별자 구성이지 민감 정보를 익명화하는 보안 경계가 아니다.
+
+claim은 `held | released`와 소유 command ID를 갖는다. 무료·구매 reservation과 `held` 획득은 같은
+CAS atomic modify로 처리하고, committed·결과 불명에서는 held를 유지한다. 잔액 보상·command의
+compensated 확정과 released 전환도 같은 modify로 처리한다. released record는 삭제하지 않고 기존
+change tag를 사용해 새 소유자를 기록하므로 이전 소유자의 지연 응답이 새 소유권을 지울 수 없다.
+시간 경과만으로 소유권을 해제하지 않는다. command ID는 시도별로 만들고 재시도에는 유지하며,
+requestedFrom은 최초 감사 정보를 보존한다.
+
+**대안**: occurrence에서 command ID 하나만 파생하는 방식은 보상 완료 후 새 시도와 감사 이력을
+혼합한다. 프로세스 내 Set·actor만 사용하는 방식은 앱·extension·다기기 공통 배타성을 제공하지 않는다.
+
+**호환·출시 조건**: T047a는 모델·codec 기반만 추가하며 원격 쓰기나 운영 schema 배포를 하지 않는다.
+새 record type을 모르는 구버전 codec은 이를 거부하지만, 구버전 writer가 claim을 무시하는 경우까지
+차단한다고 간주하지 않는다. claim 없는 기존 진행·완료 command가 있는 장부와 구버전 writer 공존은
+검증된 전환 절차 전에는 새 예약을 허용하지 않는 fail-closed 연결이 T047b에 필요하다.
+기존 잔액·command 삭제나 자동 reset으로 migration하지 않는다. 원격 데이터·배포 상태 확인과
+혼합 버전 안전성 검증은 실제 코인 해제 활성화 전 필수이며, 기존 schema 1 읽기 자체는 유지한다.
+
+**영향 범위**: 공유 해제 모델·record ID·mapper, CloudKit 예약·보상 repository, T047 서비스와
+database fake 통합 테스트. T047a→T047b→T047c 순으로 구현하고 전체 연결 전 T047은 미완료로 둔다.
+
 ## DEC-086 — Shield Action의 Live Activity 조정은 foreground fallback 사용
 
 **날짜**: 2026-09-04

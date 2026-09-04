@@ -246,6 +246,11 @@ mirror·해제 예외를 보관한다. 별도 서버와 외부 패키지는 도�
   미지원·실패·timeout이면 앱 진입 또는 다음 foreground 재조정을 기본 경로로 확정한다. 이 게이트를
   통과하기 전에는 직접 ActivityKit 조정 코드를 제품 흐름에 연결하지 않는다.
 - Shield와 앱의 해제 요청을 동일한 command service에 전달한다.
+- BLK-015 승인에 따라 epoch·occurrence별 `ReleaseOccurrenceClaim`을 무료·구매 예약이 공유한다.
+  claim 획득과 예약, claim 해제와 보상을 각각 같은 atomic modify로 처리한다. T047a 모델·codec,
+  T047b 원자 저장·호환 gate, T047c 서비스 연결 순으로 검증한다. 기존 schema 데이터 삭제나
+  자동 reset은 하지 않으며 claim 없는 기존 command와 구버전 writer 공존은 전환 안전성 검증 전
+  새 예약을 허용하지 않는다.
 - Shield에는 기존 제한 정보·닫기 행동과 `해제권 1회 사용` 버튼을 제공한다. 이 버튼은 최신 장부에서
   현재 월 무료분을 확인·생성한 뒤 무료분을 우선 사용하고, 없을 때 구매 코인 1개를 사용하는 데 대한
   명시적 확정이다.

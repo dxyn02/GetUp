@@ -33,6 +33,11 @@ Shield 요청은 primary action이 release service에 전달된 시점부터 주
 
 ## 처리 순서
 
+BLK-015 승인 보강: 같은 epoch·occurrence의 명령은 공통 `ReleaseOccurrenceClaim`을 원자적으로
+획득해야 한다. 요청별 command ID는 재시도에 유지하되 다른 command의 중복 예약은 claim으로 막는다.
+보상 완료 시에만 소유권을 released로 바꾸고 새 사용자 시도를 허용한다. 결과 불명·committed에서는
+추가 예약을 허용하지 않는다. 실제 repository 경계의 서로 다른 앱·Shield command 100회로 검증한다.
+
 1. 최신 CoinAccount, 현재 서울 기준 MonthlyAllowance와 occurrence command를 fetch한다. 현재 월
    allowance가 없고 장부가 `current`이면 quota 2 생성을 같은 atomic command에 포함한다.
 2. 생성·조회한 무료분이 있으면 무료 1회를, 없으면 구매 코인 1개를 atomic reservation한다.

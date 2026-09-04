@@ -4,6 +4,105 @@ import Testing
 
 @Suite("CloudKit coin ledger record mapping")
 struct CloudKitCoinLedgerRecordMapperTests {
+    @Test("Occurrence claims round-trip held and released ownership", arguments: ["held", "released"])
+    func claimRoundTrip(state: String) throws {
+        let mapper = CoinLedgerRecordMapper()
+        let claim = try ReleaseOccurrenceClaim(
+            ledgerEpochID: CloudKitLedgerTestFixtures.epochID,
+            occurrenceID: "occurrence-1",
+            commandID: CloudKitLedgerTestFixtures.commandID,
+            state: try #require(ReleaseOccurrenceClaim.State(rawValue: state)),
+            updatedAt: CloudKitLedgerTestFixtures.now
+        )
+        let record = try mapper.record(for: .releaseOccurrenceClaim(claim))
+        #expect(try mapper.entity(from: record) == .releaseOccurrenceClaim(claim))
+        #expect(record.recordType == "ReleaseOccurrenceClaim")
+        #expect(record.schemaVersion == 1)
+        #expect(Set(record.fields.keys) == [
+            "schemaVersion", "epochID", "occurrenceID", "commandID", "state", "updatedAt",
+        ])
+    }
+
+    @Test("Claim identity depends on epoch and occurrence, never command or funding source")
+    func claimIdentity() throws {
+        let epoch = CloudKitLedgerTestFixtures.epochID
+        let name = CoinLedgerRecordID.releaseOccurrenceClaim(
+            ledgerEpochID: epoch, occurrenceID: "occurrence-1"
+        )
+        #expect(name == "release-claim:00000000-0000-4000-8000-000000000501:"
+            + "8a18206abc262875a31e18ff1ecb49856497b9e9fd56493bdbe66bc03c93553e")
+        #expect(name == CoinLedgerRecordID.releaseOccurrenceClaim(
+            ledgerEpochID: epoch, occurrenceID: "occurrence-1"
+        ))
+        #expect(name != CoinLedgerRecordID.releaseOccurrenceClaim(
+            ledgerEpochID: UUID(), occurrenceID: "occurrence-1"
+        ))
+        #expect(name != CoinLedgerRecordID.releaseOccurrenceClaim(
+            ledgerEpochID: epoch, occurrenceID: "occurrence-2"
+        ))
+        let first = try claimRecord(commandID: CloudKitLedgerTestFixtures.commandID)
+        let next = try claimRecord(commandID: UUID())
+        #expect(first.recordName == next.recordName)
+        #expect(!name.contains("occurrence-1"))
+        #expect(name.utf8.count == "release-claim:".utf8.count + 36 + 1 + 64)
+    }
+
+    @Test("Claim decoding rejects missing, unknown, malformed, and mismatched fields")
+    func invalidClaimRecords() throws {
+        let mapper = CoinLedgerRecordMapper()
+        let record = try claimRecord()
+        for key in record.fields.keys {
+            var fields = record.fields
+            fields.removeValue(forKey: key)
+            #expect(throws: (any Error).self) {
+                try mapper.entity(from: CloudKitRecordSnapshot(
+                    recordType: record.recordType, recordName: record.recordName,
+                    changeTag: nil, fields: fields
+                ))
+            }
+        }
+        for invalid in [
+            record.replacingField("schemaVersion", with: .int(2)),
+            record.replacingField("state", with: .string("unknown")),
+            record.replacingField("epochID", with: .string("not-a-uuid")),
+            record.replacingField("occurrenceID", with: .string("")),
+            record.replacingField("occurrenceID", with: .string("another-occurrence")),
+            record.replacingField("updatedAt", with: .date(Date(timeIntervalSince1970: .infinity))),
+            record.replacingField("latitude", with: .string("forbidden")),
+        ] {
+            #expect(throws: (any Error).self) { try mapper.entity(from: invalid) }
+        }
+    }
+
+    @Test("A claim rejects empty occurrences and non-finite timestamps")
+    func invalidClaimModel() throws {
+        for (occurrence, date) in [
+            ("", CloudKitLedgerTestFixtures.now),
+            ("occurrence-1", Date(timeIntervalSince1970: .infinity)),
+            ("occurrence-1", Date(timeIntervalSince1970: .nan)),
+        ] {
+            #expect(throws: ReleaseOccurrenceClaim.ValidationError.invalidValue) {
+                try ReleaseOccurrenceClaim(
+                    ledgerEpochID: CloudKitLedgerTestFixtures.epochID,
+                    occurrenceID: occurrence, commandID: CloudKitLedgerTestFixtures.commandID,
+                    state: .held, updatedAt: date
+                )
+            }
+        }
+    }
+
+    private func claimRecord(
+        commandID: UUID = CloudKitLedgerTestFixtures.commandID
+    ) throws -> CloudKitRecordSnapshot {
+        try CoinLedgerRecordMapper().record(for: .releaseOccurrenceClaim(
+            try ReleaseOccurrenceClaim(
+                ledgerEpochID: CloudKitLedgerTestFixtures.epochID,
+                occurrenceID: "occurrence-1", commandID: commandID,
+                state: .held, updatedAt: CloudKitLedgerTestFixtures.now
+            )
+        ))
+    }
+
     @Test("Every ledger entity round-trips through its CloudKit record schema")
     func entityRoundTrip() throws {
         let mapper = CoinLedgerRecordMapper()

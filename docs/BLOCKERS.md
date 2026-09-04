@@ -2,7 +2,7 @@
 
 ## BLK-015 — T047 occurrence 단위 중복 예약의 원자적 저장 계약
 
-**상태**: 미해결(OPEN) — 2026-09-04
+**상태**: 해결됨(RESOLVED) — 2026-09-04
 
 `rule-release-contract.md`는 같은 occurrence의 진행·완료 command가 있으면 새 예약을 금지한다.
 `data-model.md`는 command ID를 최초 시도에 만들고 재시도에 유지하며, `requestedFrom`은 감사용으로
@@ -24,9 +24,9 @@ T040의 `AtomicOccurrenceReservationRepository` 대역은 `Set<String>`으로 oc
 저장 계약·record codec·schema 호환 전략·관련 테스트를 같은 변경에서 갱신하며, 실제 repository와
 공유 상태를 갖는 database fake로 서로 다른 command ID의 앱·Shield 동시 요청을 검증한다.
 
-**승인 요청**: 위 occurrence 소유권 저장 계약 및 CloudKit 스키마 보강을 T047에 포함할지 확인이 필요하다.
-승인 전에는 서비스 구현과 T047 완료 처리를 진행하지 않는다. 현재 판단은 코드·계약 정적 대조이며,
-이번 세션에서 신규 실행 테스트나 실제 CloudKit 다기기 재현은 수행하지 않았다.
+**해결**: 사용자가 occurrence 소유권 저장 계약·CloudKit 스키마 보강과 실제 repository 경계 검증을
+T047에 포함하도록 승인했다. T047a 모델·codec, T047b 원자 예약·보상, T047c 서비스 연결로 나누어
+진행한다. 운영 스키마 배포와 기존 데이터 삭제는 승인 범위에 포함하지 않는다.
 
 ## BLK-014 — Live Activity background 시작·거리 갱신·결제 서버·월 경계
 

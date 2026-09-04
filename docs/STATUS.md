@@ -7,22 +7,21 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 4 사용자 스토리 2 구현 진행 중
 
 ## 진행 중
-`codex/us2-reservation-tests`에서 T047의 최신 컨텍스트·atomic reservation 연결을 검토하다가
-occurrence 단위 중복 예약 계약의 공백을 확인해 구현 전 중단했다. 실제 CloudKit repository는
-command ID 단위 멱등성만 제공하지만 T040 대역은 occurrence 고유성을 별도 보장한다.
-BLK-015의 원자적 예약 소유권 계약·스키마 보강 승인 대기 중이며 T047은 미완료다.
+BLK-015 보강을 사용자 승인받아 `codex/us2-reservation-tests`에서 T047을 재개했다.
+T047a 소유권 모델·codec·호환 정책을 완료했다. 원자 저장에 아직 연결하지 않았으므로 실제
+중복 예약 방지는 미완료다. T047b 원자 예약·보상, T047c 서비스 연결과 검증이 남아 있다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T046 — 무료 우선 reservation 정책 구현과 예약 잔액 제외 테스트 통과
+T047a — occurrence 소유권 모델·결정적 ID·엄격한 codec·호환 정책 및 회귀 테스트
 
 ## 다음 작업
-BLK-015 결정 후 T047을 재개한다. 완료 후 다음 task는 T048 해제 예외 repository다.
+T047b — 원자 예약·보상에 소유권 연결, 기존 장부·구버전 호환 gate와 실제 repository 동시성 검증.
+T047 전체 완료 후 T048이다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
-BLK-015 미해결: occurrence별 예약 소유권을 무료·구매 예약과 atomic하게 저장하는 계약·스키마
-보강 승인 필요. 같은 command 재시도와 다른 command의 같은 occurrence 요청은 구분해야 한다.
+BLK-015 해결됨: occurrence별 예약 소유권 계약·스키마 보강을 사용자 승인받았다.
 T045 보고서 접근 차단은 사용자 허용 후 같은 명령 재시도로 해결됐다.
 BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록과
 `group.com.dxyn02.GetUp` 할당, Family Controls Distribution `Assigned`와 갱신 profile을 사용한
@@ -36,6 +35,20 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-04 T047a: 모델·codec 부재 compile RED 뒤 `ReleaseOccurrenceClaim`의 held/released 왕복,
+epoch·occurrence별 고정 SHA-256 record ID, 필수 필드 누락·미지 필드·잘못된 상태·schema·record name,
+빈 occurrence·비유한 시각 거부 테스트 4개(상태 인자 포함 5회)를 추가했다.
+관련 장부·모델 테스트 35개(36회)가 통과했고, 고정 ID 기대값·비유한 원격 날짜 검증을 보강한
+최종 `GetUpTests` 실행은 363개(동적 인자 포함 412회)가 실패·skip 없이 통과했다.
+`RuleReleaseServiceTests.swift`, `ReleaseExceptionRepositoryTests.swift`, `RuleReleaseCoordinatorTests.swift`,
+`ShieldCoinActionTests.swift`, `ShieldReleaseDeadlineTests.swift`는 미구현 RED 타입 때문에 명령행
+`EXCLUDED_SOURCE_FILE_NAMES`로 이번 실행에서 제외했다. T045 UI 테스트는 재실행하지 않았다.
+일반 sandbox 실행은 Simulator 접근 제한으로 실패했으나 허용된 환경에서 재실행했다. 기존
+binary strip·불필요한 try 경고가 남아 있다. project plist·`git diff --check`도 통과했다.
+최종 결과: `/tmp/getup-t047a/Logs/Test/Test-GetUp-2026.09.04_21-55-17-+0900.xcresult`.
+실제 CloudKit schema 배포·원격 데이터 변경·다기기 검증은 수행하지 않았다. claim 획득·해제의
+원자성과 혼합 버전 차단은 아직 구현·검증 전이며 T047b에서 진행한다.
+
 2026-09-04 T047 검토: 계약·실제 repository·T040 대역을 정적으로 대조했다. 제품 코드와 테스트는
 변경하지 않았고 신규 테스트 실행도 하지 않았다. T047은 완료 표시하지 않았으며 T040 service
 테스트의 미구현 타입 RED와 T041~T045의 미검증 상태는 유지한다. BLK-015 해결 뒤 실제 repository

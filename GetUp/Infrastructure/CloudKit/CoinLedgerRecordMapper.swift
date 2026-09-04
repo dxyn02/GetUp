@@ -7,6 +7,7 @@ enum CoinLedgerRecordEntity: Equatable, Sendable {
     case purchaseGrant(PurchaseGrant)
     case event(CoinLedgerEvent)
     case releaseCommand(ReleaseCommand)
+    case releaseOccurrenceClaim(ReleaseOccurrenceClaim)
 }
 
 enum CoinLedgerRecordMapperError: Error, Equatable, Sendable {
@@ -22,6 +23,21 @@ enum CoinLedgerRecordMapperError: Error, Equatable, Sendable {
 struct CoinLedgerRecordMapper: Sendable {
     func record(for entity: CoinLedgerRecordEntity) throws -> CloudKitRecordSnapshot {
         switch entity {
+        case let .releaseOccurrenceClaim(claim):
+            return snapshot(
+                recordType: CoinLedgerRecordType.releaseOccurrenceClaim,
+                recordName: CoinLedgerRecordID.releaseOccurrenceClaim(
+                    ledgerEpochID: claim.ledgerEpochID, occurrenceID: claim.occurrenceID
+                ),
+                fields: [
+                    Field.schemaVersion: .int(ReleaseOccurrenceClaim.currentSchemaVersion),
+                    Field.epochID: .uuid(claim.ledgerEpochID),
+                    Field.occurrenceID: .string(claim.occurrenceID),
+                    Field.commandID: .uuid(claim.commandID),
+                    Field.state: .string(claim.state.rawValue),
+                    Field.updatedAt: .date(claim.updatedAt),
+                ]
+            )
         case let .ledgerEpoch(epoch):
             try validateSchema(
                 epoch.schemaVersion,
@@ -169,6 +185,21 @@ struct CoinLedgerRecordMapper: Sendable {
 
         do {
             switch record.recordType {
+            case CoinLedgerRecordType.releaseOccurrenceClaim:
+                let entity = try ReleaseOccurrenceClaim(
+                    ledgerEpochID: uuid(Field.epochID, in: record),
+                    occurrenceID: string(Field.occurrenceID, in: record),
+                    commandID: uuid(Field.commandID, in: record),
+                    state: rawValue(Field.state, in: record),
+                    updatedAt: date(Field.updatedAt, in: record)
+                )
+                try validateRecordName(
+                    record,
+                    expected: CoinLedgerRecordID.releaseOccurrenceClaim(
+                        ledgerEpochID: entity.ledgerEpochID, occurrenceID: entity.occurrenceID
+                    )
+                )
+                return .releaseOccurrenceClaim(entity)
             case CoinLedgerRecordType.ledgerEpoch:
                 let entity = LedgerEpoch(
                     schemaVersion: try int(Field.schemaVersion, in: record),
@@ -363,6 +394,9 @@ private extension CoinLedgerRecordMapper {
 
     func allowedFields(for recordType: String) throws -> Set<String> {
         switch recordType {
+        case CoinLedgerRecordType.releaseOccurrenceClaim:
+            [Field.schemaVersion, Field.epochID, Field.occurrenceID, Field.commandID,
+             Field.state, Field.updatedAt]
         case CoinLedgerRecordType.ledgerEpoch:
             [Field.schemaVersion, Field.epochID, Field.createdAt, Field.reason,
              Field.suppressedFreeMonthID, Field.disclosureVersion]

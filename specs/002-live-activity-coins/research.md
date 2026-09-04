@@ -112,6 +112,12 @@ ActivityKit 업데이트를 만들지 않는다. 남은 거리는 앱이 신뢰 
 
 ## 6. iCloud 장부와 동시성
 
+**2026-09-04 승인 보강**: BLK-015·DEC-087에 따라 요청 ID의 멱등성과 occurrence의 배타성을 분리한다.
+`ReleaseOccurrenceClaim`을 무료·구매 경로가 공유하며 잔액 예약과 같은 atomic modify로 획득한다.
+보상 완료와 같은 modify로만 released로 전환하고 결과 불명·committed에서는 유지한다. 프로세스 내
+Set만으로는 다기기·extension 경쟁을 막을 수 없고 occurrence별 command ID 고정은 보상 뒤 새 시도와
+감사 이력을 혼합하므로 제외한다. 기존 장부·구버전 writer 호환 검증 전 원격 사용을 활성화하지 않는다.
+
 **결정**: 같은 iCloud 계정의 CloudKit private database에 custom record zone을 만들고 구매 잔액,
 월간 무료 해제권, 추가 전용 장부 이벤트를 같은 zone에 둔다. 결정적 이벤트 ID를 사용하고,
 mutable 잔액·월간 버킷은 `ifServerRecordUnchanged`로 비교 후 교환한다. 잔액 변경과 장부 이벤트는
