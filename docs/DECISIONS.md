@@ -1703,6 +1703,34 @@ Shield의 무료 해제는 allowance를 별도로 먼저 생성하지 않고 `Co
 **영향 범위**: `MonthlyAllowancePolicy`, `MonthlyAllowanceService`, `AppLifecycleCoordinator`,
 `DependencyContainer`와 T072 초기 설정 service에 적용한다.
 
+## DEC-088 — claim 예약의 epoch CAS와 기본 거부 호환성 경계
+
+**날짜**: 2026-09-04
+
+**결정**: T047b의 무료·구매 예약은 공통 내부 경로에서 최신 epoch·allowance·account·command·event·
+claim을 조회한다. claim 획득, 잔액 reservation, command·event와 읽은 epoch의 change tag를 같은
+atomic modify에 포함한다. 구매 fallback은 소진된 allowance도 CAS해 다른 요청의 보상으로 무료분이
+복구되면 충돌 재시도에서 무료분을 우선한다. epoch 교체는 기존 요청의 CAS 또는 재조회에서 거부한다.
+
+`verifyReservationCompatibility(epochID)`는 현재 장부 freshness와 별개인 호환성 주입 경계다.
+기본값은 false로 새 예약을 거부하며 이번 구현에는 운영 환경에서 true를 반환하는 provider를 넣지
+않는다. 격리된 database fake에서만 명시적으로 허용한다. 이 closure 자체가 구버전 writer를
+탐지하거나 원격 migration을 완료한 것은 아니다. 실제 활성화 전 구버전 writer 부재·기존 command
+전환을 검증한 provider가 필요하며, T047c도 임의로 true를 주입해서는 안 된다.
+
+같은 command의 표면 간 재시도는 최초 `requestedFrom`을 보존한다. command가 존재하더라도 claim·
+reservation event가 없거나 소유자가 불일치하면 새 예약이나 성공 응답 대신 재조정으로 보낸다.
+결과 불명 예약은 동일 record 집합을 재조회해 확인된 잔액만 반환하고, 재조회 실패도
+`reconciliationRequired`로 남긴다. applied·commit·보상 쓰기도 epoch·현재 소유권을 CAS하며,
+보상 완료 command의 재호출은 새 owner를 수정하지 않는다.
+
+**근거**: claim만 저장하면 장부 reset과 경쟁할 수 있고, 구매 잔액만 CAS하면 충돌 중 복구된 무료분을
+건너뛸 수 있다. 호환성을 record 부재에서 추정하거나 기존 테스트의 허용 값을 운영 조립에 사용하면
+구버전 writer의 중복 예약 위험이 재발한다.
+
+**영향 범위**: `CloudKitCoinLedgerRepository`, 실제 repository를 사용하는 공유 CAS database fake,
+후속 T047c 서비스 및 운영 장부 활성화·migration 검증. 원격 쓰기·schema 배포·데이터 삭제는 없다.
+
 ## DEC-087 — occurrence 소유권과 해제 명령 멱등성 분리
 
 **날짜**: 2026-09-04

@@ -202,7 +202,8 @@ struct CloudKitCoinLedgerRepositoryTests {
             fetchResults: [.success([allowanceRecord])],
             modifyResults: [.success([])]
         )
-        let repository = CloudKitCoinLedgerRepository(database: database, mapper: mapper)
+        let repository = CloudKitCoinLedgerRepository(database: database, mapper: mapper,
+            verifyReservationCompatibility: { _ in true })
         let request = CloudKitLedgerTestFixtures.reservationRequest()
 
         _ = try await repository.reserveMonthlyFree(request)
@@ -250,7 +251,8 @@ struct CloudKitCoinLedgerRepositoryTests {
         let repository = CloudKitCoinLedgerRepository(
             database: database,
             mapper: mapper,
-            conflictRetryLimit: 1
+            conflictRetryLimit: 1,
+            verifyReservationCompatibility: { _ in true }
         )
         let request = CloudKitLedgerTestFixtures.reservationRequest()
 
@@ -285,10 +287,15 @@ struct CloudKitCoinLedgerRepositoryTests {
             mapper: mapper
         )
         let database = ScriptedCoinLedgerDatabase(
-            fetchResults: [.success([allowance]), .success([committedCommand])],
+            fetchResults: [.success([allowance]), .success([
+                committedCommand, allowance,
+                try CloudKitLedgerTestFixtures.claimRecord(),
+                try CloudKitLedgerTestFixtures.reservationRecord(),
+            ])],
             modifyResults: [.failure(.resultUnknown)]
         )
-        let repository = CloudKitCoinLedgerRepository(database: database, mapper: mapper)
+        let repository = CloudKitCoinLedgerRepository(database: database, mapper: mapper,
+            verifyReservationCompatibility: { _ in true })
         let request = CloudKitLedgerTestFixtures.reservationRequest()
 
         let result = try await repository.reserveMonthlyFree(request)
@@ -296,9 +303,9 @@ struct CloudKitCoinLedgerRepositoryTests {
         #expect(result.command.commandID == request.commandID)
         #expect(result.command.state == .reserved)
         #expect(await database.modifyRequests.count == 1)
-        #expect(await database.fetchRequests.last?.recordNames == [
-            CoinLedgerRecordID.releaseCommand(commandID: request.commandID),
-        ])
+        #expect(await database.fetchRequests.last?.recordNames.contains(
+            CoinLedgerRecordID.releaseCommand(commandID: request.commandID)
+        ) == true)
     }
 
     @Test("An unknown result without a command becomes reconciliation-required without a new command ID")
@@ -313,7 +320,8 @@ struct CloudKitCoinLedgerRepositoryTests {
             fetchResults: [.success([allowance]), .success([])],
             modifyResults: [.failure(.resultUnknown)]
         )
-        let repository = CloudKitCoinLedgerRepository(database: database, mapper: mapper)
+        let repository = CloudKitCoinLedgerRepository(database: database, mapper: mapper,
+            verifyReservationCompatibility: { _ in true })
         let request = CloudKitLedgerTestFixtures.reservationRequest()
 
         await #expect(throws: CoinLedgerRepositoryError.reconciliationRequired(
@@ -323,9 +331,344 @@ struct CloudKitCoinLedgerRepositoryTests {
         }
 
         #expect(await database.modifyRequests.count == 1)
-        #expect(await database.fetchRequests.last?.recordNames == [
-            CoinLedgerRecordID.releaseCommand(commandID: request.commandID),
+        #expect(await database.fetchRequests.last?.recordNames.contains(
+            CoinLedgerRecordID.releaseCommand(commandID: request.commandID)
+        ) == true)
+    }
+}
+
+@Suite("Occurrence claim atomic repository")
+struct OccurrenceClaimRepositoryTests {
+    @Test("Independent app and Shield repositories reserve one occurrence once in 100 requests", arguments: [0, 2])
+    func concurrentClaim(freeUsed: Int) async throws {
+        let database = try ClaimDatabase(freeUsed: freeUsed)
+        let results = await withTaskGroup(of: Bool.self) { group in
+            for index in 0..<100 {
+                group.addTask {
+                    let repository = self.repository(database)
+                    do {
+                        let request = self.purchased(
+                            commandID: UUID(), source: index.isMultiple(of: 2) ? .app : .shield
+                        )
+                        if index.isMultiple(of: 2) {
+                            _ = try await repository.reserveMonthlyFree(MonthlyFreeReservationRequest(
+                                commandID: request.commandID, occurrenceID: request.occurrenceID,
+                                ruleID: request.ruleID, ruleRevision: request.ruleRevision,
+                                monthID: CloudKitLedgerTestFixtures.monthID,
+                                ledgerEpochID: request.ledgerEpochID, requestedFrom: request.requestedFrom,
+                                requestedAt: request.requestedAt
+                            ))
+                        } else {
+                            _ = try await repository.reservePurchasedCoin(request)
+                        }
+                        return true
+                    } catch { return false }
+                }
+            }
+            var count = 0
+            for await success in group where success { count += 1 }
+            return count
+        }
+        #expect(results == 1)
+        #expect(await database.savedCommands == 1)
+        #expect(await database.accountReserved == (freeUsed == 2 ? 1 : 0))
+        #expect(await database.freeReserved == (freeUsed == 2 ? 0 : 1))
+        let write = try #require(await database.modifications.first)
+        #expect(write.recordsToSave.contains { $0.recordType == "ReleaseOccurrenceClaim" })
+        #expect(write.recordsToSave.contains { $0.recordType == "MonthlyAllowance" })
+    }
+
+    @Test("Compensation releases ownership atomically and an old retry cannot release a new owner")
+    func compensationAndRetry() async throws {
+        let database = try ClaimDatabase(freeUsed: 2)
+        let repository = repository(database)
+        let first = purchased()
+        _ = try await repository.reservePurchasedCoin(first)
+        _ = try await repository.compensateRelease(commandID: first.commandID, at: Self.now)
+        #expect(await database.accountReserved == 0)
+        #expect(await database.claimState == .released)
+        let next = purchased(commandID: UUID())
+        _ = try await repository.reservePurchasedCoin(next)
+        _ = try await repository.compensateRelease(commandID: first.commandID, at: Self.now)
+        #expect(await database.accountReserved == 1)
+        #expect(await database.claimOwner == next.commandID)
+        #expect(await database.claimState == .held)
+    }
+
+    @Test("Committed ownership blocks a fresh command and cross-surface retry preserves audit source")
+    func commitAndReplay() async throws {
+        let database = try ClaimDatabase()
+        let repository = repository(database)
+        let request = purchased()
+        _ = try await repository.reservePurchasedCoin(request)
+        _ = try await repository.markReleaseApplied(commandID: request.commandID, at: Self.now)
+        _ = try await repository.commitRelease(commandID: request.commandID, at: Self.now)
+        let replay = try await repository.reservePurchasedCoin(purchased(
+            commandID: request.commandID, source: .shield
+        ))
+        #expect(replay.command.requestedFrom == .app)
+        #expect(replay.command.state == .committed)
+        await #expect(throws: CoinLedgerRepositoryError.reconciliationRequired(commandID: request.commandID)) {
+            try await repository.reservePurchasedCoin(purchased(commandID: UUID()))
+        }
+        #expect(await database.claimState == .held)
+    }
+
+    @Test("Unknown outcomes retain ownership and resolve the same command without another reservation")
+    func unknownResult() async throws {
+        let database = try ClaimDatabase()
+        await database.loseNextResponse()
+        let repository = repository(database)
+        let request = purchased()
+        let result = try await repository.reservePurchasedCoin(request)
+        #expect(result.command.commandID == request.commandID)
+        #expect(await database.savedCommands == 1)
+        #expect(await database.freeReserved == 1)
+        #expect(await database.claimState == .held)
+    }
+
+    @Test("Unverified compatibility and wrong epochs cannot mutate the ledger")
+    func compatibilityAndEpoch() async throws {
+        let database = try ClaimDatabase()
+        await #expect(throws: CoinLedgerRepositoryError.ledgerNotCurrent) {
+            try await CloudKitCoinLedgerRepository(database: database).reservePurchasedCoin(purchased())
+        }
+        await #expect(throws: CoinLedgerRepositoryError.ledgerEpochMismatch) {
+            try await repository(database).reservePurchasedCoin(purchased(epochID: UUID()))
+        }
+        #expect(await database.modifications.isEmpty)
+    }
+
+    @Test("A legacy command with no claim fails closed even in an explicitly permitted fixture")
+    func legacyCommand() async throws {
+        let database = try ClaimDatabase()
+        let request = purchased()
+        try await database.insert(.releaseCommand(try .requested(
+            commandID: request.commandID, occurrenceID: request.occurrenceID,
+            ruleID: request.ruleID, requestedFrom: .app, at: Self.now
+        ).transitioning(to: .reserved, fundingSource: .monthlyFree, at: Self.now)))
+        await #expect(throws: CoinLedgerRepositoryError.reconciliationRequired(commandID: request.commandID)) {
+            try await repository(database).reservePurchasedCoin(request)
+        }
+        #expect(await database.modifications.isEmpty)
+    }
+
+    private static let now = CloudKitLedgerTestFixtures.now
+
+    @Test("A free balance restored during a purchased CAS conflict is selected on retry")
+    func freeRestoredDuringConflict() async throws {
+        let database = try ClaimDatabase(freeUsed: 2)
+        await database.restoreFreeOnNextModify()
+        let result = try await repository(database).reservePurchasedCoin(purchased())
+        #expect(result.command.fundingSource == .monthlyFree)
+        #expect(await database.accountReserved == 0)
+        #expect(await database.freeReserved == 1)
+    }
+
+    @Test("An epoch replacement during CAS prevents the old request from reserving")
+    func epochChangesDuringConflict() async throws {
+        let database = try ClaimDatabase()
+        await database.replaceEpochOnNextModify()
+        await #expect(throws: CoinLedgerRepositoryError.ledgerEpochMismatch) {
+            try await repository(database).reservePurchasedCoin(purchased())
+        }
+        #expect(await database.modifications.isEmpty)
+        #expect(await database.freeReserved == 0)
+    }
+
+    @Test("An unknown write with no confirmed command is not retried")
+    func unknownWithoutCommit() async throws {
+        let database = try ClaimDatabase()
+        await database.failNextModify(.resultUnknown)
+        let request = purchased()
+        await #expect(throws: CoinLedgerRepositoryError.reconciliationRequired(commandID: request.commandID)) {
+            try await repository(database).reservePurchasedCoin(request)
+        }
+        #expect(await database.modifications.isEmpty)
+        #expect(await database.modifyAttempts == 1)
+    }
+
+    @Test("A failed read after an unknown reservation remains reconciliation-required")
+    func unknownReadFailure() async throws {
+        let database = try ClaimDatabase()
+        await database.loseNextResponse(failRead: true)
+        let request = purchased()
+        await #expect(throws: CoinLedgerRepositoryError.reconciliationRequired(commandID: request.commandID)) {
+            try await repository(database).reservePurchasedCoin(request)
+        }
+        #expect(await database.claimState == .held)
+        #expect(await database.savedCommands == 1)
+        let replay = try await repository(database).reservePurchasedCoin(request)
+        #expect(replay.command.commandID == request.commandID)
+        #expect(await database.modifyAttempts == 1)
+    }
+
+    @Test("A failed compensation preserves both reservation and ownership")
+    func failedCompensation() async throws {
+        let database = try ClaimDatabase()
+        let repository = repository(database)
+        let request = purchased()
+        _ = try await repository.reservePurchasedCoin(request)
+        await database.failNextModify(.serverUnavailable)
+        await #expect(throws: CoinLedgerRepositoryError.database(.serverUnavailable)) {
+            try await repository.compensateRelease(commandID: request.commandID, at: Self.now)
+        }
+        #expect(await database.freeReserved == 1)
+        #expect(await database.claimState == .held)
+        await database.loseNextResponse()
+        let compensated = try await repository.compensateRelease(commandID: request.commandID, at: Self.now)
+        #expect(compensated.state == .compensated)
+        #expect(await database.freeReserved == 0)
+        #expect(await database.claimState == .released)
+        let last = try #require(await database.modifications.last)
+        #expect(Set(last.recordsToSave.map(\.recordType)) == [
+            "ReleaseCommand", "ReleaseOccurrenceClaim", "MonthlyAllowance", "CoinLedgerEvent", "LedgerEpoch",
         ])
+    }
+
+    @Test("Different occurrences acquire independent claims")
+    func independentOccurrences() async throws {
+        let database = try ClaimDatabase()
+        let first = try await repository(database).reservePurchasedCoin(purchased())
+        let second = try await repository(database).reservePurchasedCoin(purchased(
+            commandID: UUID(), occurrenceID: "occurrence-2"
+        ))
+        #expect(first.command.occurrenceID != second.command.occurrenceID)
+        #expect(await database.savedCommands == 2)
+        #expect(await database.freeReserved == 2)
+    }
+
+    private func repository(_ database: ClaimDatabase) -> CloudKitCoinLedgerRepository {
+        CloudKitCoinLedgerRepository(database: database, verifyReservationCompatibility: { _ in true })
+    }
+
+    private func purchased(
+        commandID: UUID = CloudKitLedgerTestFixtures.commandID,
+        source: ReleaseRequestSource = .app,
+        epochID: UUID = CloudKitLedgerTestFixtures.epochID,
+        occurrenceID: String = "occurrence-1"
+    ) -> PurchasedCoinReservationRequest {
+        PurchasedCoinReservationRequest(
+            commandID: commandID, occurrenceID: occurrenceID,
+            ruleID: CloudKitLedgerTestFixtures.ruleID, ruleRevision: 3,
+            ledgerEpochID: epochID, requestedFrom: source, requestedAt: Self.now
+        )
+    }
+}
+
+private actor ClaimDatabase: CoinLedgerCloudDatabase {
+    private var records: [String: CloudKitRecordSnapshot] = [:]
+    private var revision = 0
+    private var loseResponse = false
+    private var failReadAfterLostResponse = false
+    private var failFetch = false
+    private var nextFailure: CoinLedgerDatabaseError?
+    private var restoreFree = false
+    private var replaceEpoch = false
+    private(set) var modifyAttempts = 0
+    private(set) var modifications: [CoinLedgerModifyRequest] = []
+
+    init(freeUsed: Int = 0) throws {
+        let mapper = CoinLedgerRecordMapper()
+        let values: [CoinLedgerRecordEntity] = [
+            .ledgerEpoch(LedgerEpoch(
+                epochID: CloudKitLedgerTestFixtures.epochID,
+                createdAt: CloudKitLedgerTestFixtures.now, reason: .initialSetup,
+                suppressedFreeMonthID: nil, disclosureVersion: 1
+            )),
+            .coinAccount(try CloudKitLedgerTestFixtures.coinAccount()),
+            .monthlyAllowance(try CloudKitLedgerTestFixtures.allowance(used: freeUsed)),
+        ]
+        for value in values {
+            let record = try mapper.record(for: value)
+            records[record.recordName] = CloudKitRecordSnapshot(
+                recordType: record.recordType, recordName: record.recordName,
+                changeTag: "initial", fields: record.fields
+            )
+        }
+    }
+
+    var savedCommands: Int { records.values.filter { $0.recordType == "ReleaseCommand" }.count }
+    var accountReserved: Int { integer("purchasedReserved", type: "CoinAccount") }
+    var freeReserved: Int { integer("reserved", type: "MonthlyAllowance") }
+    var claimState: ReleaseOccurrenceClaim.State? {
+        guard case .string(let value) = claim?.fields["state"] else { return nil }
+        return .init(rawValue: value)
+    }
+    var claimOwner: UUID? {
+        guard case .uuid(let value) = claim?.fields["commandID"] else { return nil }
+        return value
+    }
+    private var claim: CloudKitRecordSnapshot? {
+        records.values.first { $0.recordType == "ReleaseOccurrenceClaim" }
+    }
+    private func integer(_ key: String, type: String) -> Int {
+        guard case .int(let value) = records.values.first(where: { $0.recordType == type })?.fields[key]
+        else { return -1 }
+        return value
+    }
+    func insert(_ entity: CoinLedgerRecordEntity) throws {
+        let record = try CoinLedgerRecordMapper().record(for: entity)
+        revision += 1
+        records[record.recordName] = CloudKitRecordSnapshot(
+            recordType: record.recordType, recordName: record.recordName,
+            changeTag: String(revision), fields: record.fields
+        )
+    }
+    func loseNextResponse(failRead: Bool = false) {
+        loseResponse = true
+        failReadAfterLostResponse = failRead
+    }
+    func failNextModify(_ error: CoinLedgerDatabaseError) { nextFailure = error }
+    func restoreFreeOnNextModify() { restoreFree = true }
+    func replaceEpochOnNextModify() { replaceEpoch = true }
+    func fetch(_ request: CoinLedgerFetchRequest) async throws -> [CloudKitRecordSnapshot] {
+        if failFetch {
+            failFetch = false
+            throw CoinLedgerDatabaseError.serverUnavailable
+        }
+        let snapshot = request.recordNames.compactMap { records[$0] }
+        await Task.yield()
+        return snapshot
+    }
+    func modify(_ request: CoinLedgerModifyRequest) throws -> [CloudKitRecordSnapshot] {
+        modifyAttempts += 1
+        if let error = nextFailure {
+            nextFailure = nil
+            throw error
+        }
+        if restoreFree {
+            restoreFree = false
+            try insert(.monthlyAllowance(CloudKitLedgerTestFixtures.allowance()))
+        }
+        if replaceEpoch {
+            replaceEpoch = false
+            try insert(.ledgerEpoch(LedgerEpoch(
+                epochID: UUID(), createdAt: CloudKitLedgerTestFixtures.now,
+                reason: .initialSetup, suppressedFreeMonthID: nil, disclosureVersion: 1
+            )))
+        }
+        guard request.isAtomic, request.savePolicy == .ifServerRecordUnchanged,
+              request.recordNamesToDelete.isEmpty else { throw CoinLedgerDatabaseError.unexpectedRequest }
+        for record in request.recordsToSave {
+            guard records[record.recordName]?.changeTag == record.changeTag else {
+                throw CoinLedgerDatabaseError.serverRecordChanged
+            }
+        }
+        revision += 1
+        let saved = request.recordsToSave.map { record in
+            CloudKitRecordSnapshot(recordType: record.recordType, recordName: record.recordName,
+                changeTag: String(revision), fields: record.fields)
+        }
+        for record in saved { records[record.recordName] = record }
+        modifications.append(request)
+        if loseResponse {
+            loseResponse = false
+            failFetch = failReadAfterLostResponse
+            failReadAfterLostResponse = false
+            throw CoinLedgerDatabaseError.resultUnknown
+        }
+        return saved
     }
 }
 
@@ -348,7 +691,19 @@ actor ScriptedCoinLedgerDatabase: CoinLedgerCloudDatabase {
         guard !fetchResults.isEmpty else {
             throw CocoaError(.coderInvalidValue)
         }
-        return try fetchResults.removeFirst().get()
+        var result = try fetchResults.removeFirst().get()
+        // These legacy scripts model a confirmed fixture epoch; the stateful claim fake does not inject it.
+        if request.recordNames.contains(CoinLedgerRecordID.ledgerEpoch),
+           !result.contains(where: { $0.recordName == CoinLedgerRecordID.ledgerEpoch }) {
+            result.append(try CloudKitLedgerTestFixtures.record(
+                for: .ledgerEpoch(LedgerEpoch(
+                    epochID: CloudKitLedgerTestFixtures.epochID,
+                    createdAt: CloudKitLedgerTestFixtures.now, reason: .initialSetup,
+                    suppressedFreeMonthID: nil, disclosureVersion: 1
+                )), changeTag: "epoch-fixture", mapper: CoinLedgerRecordMapper()
+            ))
+        }
+        return result
     }
 
     func modify(_ request: CoinLedgerModifyRequest) async throws -> [CloudKitRecordSnapshot] {
@@ -361,6 +716,22 @@ actor ScriptedCoinLedgerDatabase: CoinLedgerCloudDatabase {
 }
 
 enum CloudKitLedgerTestFixtures {
+    static func claimRecord() throws -> CloudKitRecordSnapshot {
+        try record(for: .releaseOccurrenceClaim(ReleaseOccurrenceClaim(
+            ledgerEpochID: epochID, occurrenceID: "occurrence-1", commandID: commandID,
+            state: .held, updatedAt: now
+        )), changeTag: "claim-fixture", mapper: CoinLedgerRecordMapper())
+    }
+
+    static func reservationRecord() throws -> CloudKitRecordSnapshot {
+        try CoinLedgerRecordMapper().record(for: .event(CoinLedgerEvent(
+            eventID: CoinLedgerDeterministicID.reservation(commandID: commandID),
+            kind: .reservation, source: .monthlyFree, quantity: 1,
+            relatedTransactionID: nil, relatedCommandID: commandID,
+            occurrenceID: "occurrence-1", createdAt: now
+        )))
+    }
+
     static let epochID = UUID(uuidString: "00000000-0000-4000-8000-000000000501")!
     static let ruleID = UUID(uuidString: "00000000-0000-4000-8000-000000000502")!
     static let commandID = UUID(uuidString: "00000000-0000-4000-8000-000000000503")!

@@ -243,6 +243,7 @@ protocol CoinLedgerRepository: MonthlyAllowanceRepository, Sendable {
         _ request: MonthlyFreeReservationRequest
     ) async throws -> CoinReleaseReservation
 
+    /// Rechecks free allowance atomically; may return monthlyFree if free funds are now available.
     func reservePurchasedCoin(
         _ request: PurchasedCoinReservationRequest
     ) async throws -> CoinReleaseReservation

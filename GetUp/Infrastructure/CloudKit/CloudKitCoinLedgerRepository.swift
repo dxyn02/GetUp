@@ -4,15 +4,20 @@ struct CloudKitCoinLedgerRepository: CoinLedgerRepository, Sendable {
     private let database: any CoinLedgerCloudDatabase
     private let mapper: CoinLedgerRecordMapper
     private let conflictRetryLimit: Int
+    // Permission to use the claim protocol for this epoch, not the ledger freshness gate.
+    // Only a verified migration/new-ledger boundary may supply true; production defaults closed.
+    private let verifyReservationCompatibility: @Sendable (UUID) async throws -> Bool
 
     init(
         database: any CoinLedgerCloudDatabase,
         mapper: CoinLedgerRecordMapper = CoinLedgerRecordMapper(),
-        conflictRetryLimit: Int = 2
+        conflictRetryLimit: Int = 2,
+        verifyReservationCompatibility: @escaping @Sendable (UUID) async throws -> Bool = { _ in false }
     ) {
         self.database = database
         self.mapper = mapper
         self.conflictRetryLimit = max(0, conflictRetryLimit)
+        self.verifyReservationCompatibility = verifyReservationCompatibility
     }
 
     func createAllowanceIfNeeded(
@@ -72,182 +77,143 @@ struct CloudKitCoinLedgerRepository: CoinLedgerRepository, Sendable {
     func reserveMonthlyFree(
         _ request: MonthlyFreeReservationRequest
     ) async throws -> CoinReleaseReservation {
-        let allowanceName = CoinLedgerRecordID.allowance(monthID: request.monthID)
-        let freeGrantName = CoinLedgerDeterministicID.freeGrant(monthID: request.monthID)
-        let reservationName = CoinLedgerDeterministicID.reservation(
-            commandID: request.commandID
-        )
-        let commandName = CoinLedgerRecordID.releaseCommand(commandID: request.commandID)
-        let names = [allowanceName, freeGrantName, reservationName, commandName]
-
-        for attempt in 0...conflictRetryLimit {
-            let records = try await fetch(recordNames: names)
-            let indexed = try index(records)
-
-            if let commandRecord = indexed[commandName] {
-                let command = try releaseCommand(from: commandRecord)
-                try validate(command, against: request)
-                return try existingReservation(
-                    command: command,
-                    allowanceRecord: indexed[allowanceName],
-                    accountRecord: nil
-                )
-            }
-            guard indexed[reservationName] == nil else {
-                throw CoinLedgerRepositoryError.reconciliationRequired(
-                    commandID: request.commandID
-                )
-            }
-
-            let existingAllowance = try indexed[allowanceName].map(monthlyAllowance(from:))
-            let allowance = try reserveFreeAllowance(
-                existingAllowance,
-                monthID: request.monthID,
-                at: request.requestedAt
-            )
-            let command = try ReleaseCommand.requested(
-                commandID: request.commandID,
-                occurrenceID: request.occurrenceID,
-                ruleID: request.ruleID,
-                requestedFrom: request.requestedFrom,
-                at: request.requestedAt
-            ).transitioning(
-                to: .reserved,
-                fundingSource: .monthlyFree,
-                at: request.requestedAt
-            )
-            let reservation = try reservationEvent(
-                request: request,
-                source: .monthlyFree
-            )
-
-            var entities: [(CoinLedgerRecordEntity, String?)] = [
-                (.monthlyAllowance(allowance), indexed[allowanceName]?.changeTag),
-                (.event(reservation), nil),
-                (.releaseCommand(command), nil),
-            ]
-            if existingAllowance == nil {
-                guard indexed[freeGrantName] == nil else {
-                    throw CoinLedgerRepositoryError.database(.invalidRecord)
-                }
-                entities.append((
-                    .event(try freeGrantEvent(
-                        monthID: request.monthID,
-                        createdAt: request.requestedAt
-                    )),
-                    nil
-                ))
-            }
-
-            do {
-                _ = try await database.modify(try modifyRequest(for: entities))
-                return CoinReleaseReservation(
-                    command: command,
-                    allowance: allowance,
-                    account: nil
-                )
-            } catch CoinLedgerDatabaseError.serverRecordChanged
-                where attempt < conflictRetryLimit {
-                continue
-            } catch CoinLedgerDatabaseError.resultUnknown {
-                return try await resolveUnknownReservation(
-                    commandID: request.commandID,
-                    proposedAllowance: allowance,
-                    proposedAccount: nil
-                )
-            } catch {
-                throw map(error)
-            }
-        }
-
-        throw CoinLedgerRepositoryError.database(.serverRecordChanged)
+        try await reserve(request, allowsPurchasedFallback: false)
     }
 
     func reservePurchasedCoin(
         _ request: PurchasedCoinReservationRequest
     ) async throws -> CoinReleaseReservation {
-        let accountName = CoinLedgerRecordID.coinAccount
-        let reservationName = CoinLedgerDeterministicID.reservation(
-            commandID: request.commandID
-        )
+        // Reevaluate free funds even when the caller previously saw them exhausted.
+        try await reserve(MonthlyFreeReservationRequest(
+            commandID: request.commandID, occurrenceID: request.occurrenceID,
+            ruleID: request.ruleID, ruleRevision: request.ruleRevision,
+            monthID: MonthlyAllowancePolicy.monthID(containing: request.requestedAt),
+            ledgerEpochID: request.ledgerEpochID, requestedFrom: request.requestedFrom,
+            requestedAt: request.requestedAt
+        ), allowsPurchasedFallback: true)
+    }
+
+    private func reserve(
+        _ request: MonthlyFreeReservationRequest,
+        allowsPurchasedFallback: Bool
+    ) async throws -> CoinReleaseReservation {
+        guard request.requestedAt.timeIntervalSince1970.isFinite,
+              request.monthID == MonthlyAllowancePolicy.monthID(containing: request.requestedAt),
+              !request.occurrenceID.isEmpty else {
+            throw CoinLedgerRepositoryError.database(.invalidRecord)
+        }
+        let allowanceName = CoinLedgerRecordID.allowance(monthID: request.monthID)
+        let grantName = CoinLedgerDeterministicID.freeGrant(monthID: request.monthID)
         let commandName = CoinLedgerRecordID.releaseCommand(commandID: request.commandID)
-        let names = [accountName, reservationName, commandName]
+        let reservationName = CoinLedgerDeterministicID.reservation(commandID: request.commandID)
+        let claimName = CoinLedgerRecordID.releaseOccurrenceClaim(
+            ledgerEpochID: request.ledgerEpochID, occurrenceID: request.occurrenceID
+        )
+        let names = [CoinLedgerRecordID.ledgerEpoch, CoinLedgerRecordID.coinAccount,
+                     allowanceName, grantName, commandName, reservationName, claimName]
 
         for attempt in 0...conflictRetryLimit {
-            let records = try await fetch(recordNames: names)
-            let indexed = try index(records)
-
-            if let commandRecord = indexed[commandName] {
-                let command = try releaseCommand(from: commandRecord)
-                try validate(command, against: request)
-                return try existingReservation(
-                    command: command,
-                    allowanceRecord: nil,
-                    accountRecord: indexed[accountName]
-                )
-            }
-            guard indexed[reservationName] == nil else {
-                throw CoinLedgerRepositoryError.reconciliationRequired(
-                    commandID: request.commandID
-                )
-            }
-            guard let accountRecord = indexed[accountName] else {
+            // Default deny: production must not infer migration safety from a missing claim.
+            guard try await verifyReservationCompatibility(request.ledgerEpochID) else {
                 throw CoinLedgerRepositoryError.ledgerNotCurrent
             }
-
-            let account = try coinAccount(from: accountRecord)
-            guard account.purchasedUsable > 0 else {
-                throw CoinLedgerRepositoryError.insufficientPurchasedBalance
+            let indexed = try index(try await fetch(recordNames: names))
+            let epochRecord = try validatedEpoch(indexed, requestedEpochID: request.ledgerEpochID)
+            guard case .ledgerEpoch(let epoch) = try decode(epochRecord) else {
+                throw CoinLedgerRepositoryError.database(.invalidRecord)
             }
-            let updatedAccount = try CoinAccount(
-                purchasedAvailable: account.purchasedAvailable,
-                purchasedReserved: try adding(account.purchasedReserved, 1),
-                revision: try adding(account.revision, 1),
-                updatedAt: request.requestedAt
+            if let replay = try reservationReplay(request, indexed: indexed) { return replay }
+            if let record = indexed[claimName] {
+                let claim = try occurrenceClaim(from: record)
+                guard claim.state == .released else {
+                    throw CoinLedgerRepositoryError.reconciliationRequired(commandID: claim.commandID)
+                }
+            }
+            guard indexed[reservationName] == nil else {
+                throw CoinLedgerRepositoryError.reconciliationRequired(commandID: request.commandID)
+            }
+            let existing = try indexed[allowanceName].map(monthlyAllowance(from:))
+            let allowance = try existing ?? MonthlyAllowancePolicy.makeAllowance(
+                monthID: request.monthID, ledgerEpoch: epoch,
+                serverCreationDate: request.requestedAt
+            )
+            let funding: ReleaseFundingSource = allowance.available > 0 ? .monthlyFree : .purchased
+            if funding == .purchased, !allowsPurchasedFallback {
+                throw CoinLedgerRepositoryError.insufficientMonthlyAllowance
+            }
+            let claim = try ReleaseOccurrenceClaim(
+                ledgerEpochID: request.ledgerEpochID, occurrenceID: request.occurrenceID,
+                commandID: request.commandID, state: .held, updatedAt: request.requestedAt
             )
             let command = try ReleaseCommand.requested(
-                commandID: request.commandID,
-                occurrenceID: request.occurrenceID,
-                ruleID: request.ruleID,
-                requestedFrom: request.requestedFrom,
-                at: request.requestedAt
-            ).transitioning(
-                to: .reserved,
-                fundingSource: .purchased,
-                at: request.requestedAt
+                commandID: request.commandID, occurrenceID: request.occurrenceID,
+                ruleID: request.ruleID, requestedFrom: request.requestedFrom, at: request.requestedAt
+            ).transitioning(to: .reserved, fundingSource: funding, at: request.requestedAt)
+            let event = try reservationEvent(
+                request: request, source: funding == .monthlyFree ? .monthlyFree : .purchased
             )
-            let reservation = try reservationEvent(
-                commandID: request.commandID,
-                occurrenceID: request.occurrenceID,
-                source: .purchased,
-                createdAt: request.requestedAt
-            )
-
-            do {
-                _ = try await database.modify(try modifyRequest(for: [
-                    (.coinAccount(updatedAccount), accountRecord.changeTag),
-                    (.event(reservation), nil),
-                    (.releaseCommand(command), nil),
-                ]))
-                return CoinReleaseReservation(
-                    command: command,
-                    allowance: nil,
-                    account: updatedAccount
+            var entities: [(CoinLedgerRecordEntity, String?)] = [
+                (.ledgerEpoch(epoch), epochRecord.changeTag),
+                (.releaseOccurrenceClaim(claim), indexed[claimName]?.changeTag),
+                (.releaseCommand(command), nil), (.event(event), nil),
+            ]
+            let updatedAllowance: MonthlyAllowance
+            var updatedAccount: CoinAccount?
+            if funding == .monthlyFree {
+                updatedAllowance = try reserveFreeAllowance(
+                    allowance, monthID: request.monthID, at: request.requestedAt
                 )
-            } catch CoinLedgerDatabaseError.serverRecordChanged
-                where attempt < conflictRetryLimit {
+            } else {
+                guard let record = indexed[CoinLedgerRecordID.coinAccount] else {
+                    throw CoinLedgerRepositoryError.ledgerNotCurrent
+                }
+                let account = try coinAccount(from: record)
+                guard account.purchasedUsable > 0 else {
+                    throw CoinLedgerRepositoryError.insufficientPurchasedBalance
+                }
+                let updated = try CoinAccount(
+                    purchasedAvailable: account.purchasedAvailable,
+                    purchasedReserved: adding(account.purchasedReserved, 1),
+                    revision: adding(account.revision, 1), updatedAt: request.requestedAt
+                )
+                updatedAccount = updated
+                entities.append((.coinAccount(updated), record.changeTag))
+                // CAS the exhausted bucket too: a concurrent compensation may restore free funds.
+                updatedAllowance = allowance
+            }
+            entities.append((.monthlyAllowance(updatedAllowance), indexed[allowanceName]?.changeTag))
+            if existing == nil {
+                guard indexed[grantName] == nil else {
+                    throw CoinLedgerRepositoryError.database(.invalidRecord)
+                }
+                if allowance.quota > 0 {
+                    entities.append((.event(try freeGrantEvent(
+                        monthID: request.monthID, createdAt: request.requestedAt
+                    )), nil))
+                }
+            }
+            do {
+                _ = try await database.modify(try modifyRequest(for: entities))
+                return CoinReleaseReservation(command: command,
+                    allowance: updatedAllowance, account: updatedAccount)
+            } catch CoinLedgerDatabaseError.serverRecordChanged where attempt < conflictRetryLimit {
                 continue
             } catch CoinLedgerDatabaseError.resultUnknown {
-                return try await resolveUnknownReservation(
-                    commandID: request.commandID,
-                    proposedAllowance: nil,
-                    proposedAccount: updatedAccount
-                )
+                // Read confirmed balances, never return a proposed balance after an unknown write.
+                do {
+                    let confirmed = try index(try await fetch(recordNames: names))
+                    _ = try validatedEpoch(confirmed, requestedEpochID: request.ledgerEpochID)
+                    guard let replay = try reservationReplay(request, indexed: confirmed) else {
+                        throw CoinLedgerRepositoryError.reconciliationRequired(commandID: request.commandID)
+                    }
+                    return replay
+                } catch {
+                    throw CoinLedgerRepositoryError.reconciliationRequired(commandID: request.commandID)
+                }
             } catch {
                 throw map(error)
             }
         }
-
         throw CoinLedgerRepositoryError.database(.serverRecordChanged)
     }
 
@@ -377,6 +343,83 @@ struct CloudKitCoinLedgerRepository: CoinLedgerRepository, Sendable {
 }
 
 private extension CloudKitCoinLedgerRepository {
+    func validatedEpoch(
+        _ records: [String: CloudKitRecordSnapshot], requestedEpochID: UUID
+    ) throws -> CloudKitRecordSnapshot {
+        guard let record = records[CoinLedgerRecordID.ledgerEpoch], record.changeTag != nil,
+              case .ledgerEpoch(let epoch) = try decode(record) else {
+            throw CoinLedgerRepositoryError.ledgerNotCurrent
+        }
+        guard epoch.epochID == requestedEpochID else {
+            throw CoinLedgerRepositoryError.ledgerEpochMismatch
+        }
+        return record
+    }
+
+    func occurrenceClaim(from record: CloudKitRecordSnapshot) throws -> ReleaseOccurrenceClaim {
+        guard record.changeTag != nil, case .releaseOccurrenceClaim(let claim) = try decode(record) else {
+            throw CoinLedgerRepositoryError.database(.invalidRecord)
+        }
+        return claim
+    }
+
+    func reservationReplay(
+        _ request: MonthlyFreeReservationRequest, indexed: [String: CloudKitRecordSnapshot]
+    ) throws -> CoinReleaseReservation? {
+        guard let record = indexed[CoinLedgerRecordID.releaseCommand(commandID: request.commandID)]
+        else { return nil }
+        let command = try releaseCommand(from: record)
+        try validate(command, against: request)
+        let claimName = CoinLedgerRecordID.releaseOccurrenceClaim(
+            ledgerEpochID: request.ledgerEpochID, occurrenceID: request.occurrenceID
+        )
+        guard let claimRecord = indexed[claimName] else {
+            throw CoinLedgerRepositoryError.reconciliationRequired(commandID: command.commandID)
+        }
+        let claim = try occurrenceClaim(from: claimRecord)
+        guard claim.state == .held, claim.commandID == command.commandID,
+              let eventRecord = indexed[CoinLedgerDeterministicID.reservation(commandID: command.commandID)]
+        else { throw CoinLedgerRepositoryError.reconciliationRequired(commandID: command.commandID) }
+        let event = try ledgerEvent(from: eventRecord)
+        guard event.kind == .reservation, event.quantity == 1,
+              event.relatedCommandID == command.commandID, event.occurrenceID == command.occurrenceID,
+              event.source.rawValue == command.fundingSource?.rawValue else {
+            throw CoinLedgerRepositoryError.database(.invalidRecord)
+        }
+        let balanceName = event.source == .monthlyFree
+            ? CoinLedgerRecordID.allowance(monthID: monthID(for: event.createdAt))
+            : CoinLedgerRecordID.coinAccount
+        guard indexed[balanceName] != nil else {
+            throw CoinLedgerRepositoryError.reconciliationRequired(commandID: command.commandID)
+        }
+        return try existingReservation(command: command,
+            allowanceRecord: indexed[CoinLedgerRecordID.allowance(monthID: request.monthID)],
+            accountRecord: indexed[CoinLedgerRecordID.coinAccount])
+    }
+
+    /// Used for application/finalization as well as reservation so a stale owner cannot mutate a new claim.
+    func ownershipFence(for command: ReleaseCommand) async throws
+        -> (epoch: CloudKitRecordSnapshot, claimRecord: CloudKitRecordSnapshot, claim: ReleaseOccurrenceClaim) {
+        let records = try index(try await fetch(recordNames: [CoinLedgerRecordID.ledgerEpoch]))
+        guard let record = records[CoinLedgerRecordID.ledgerEpoch],
+              case .ledgerEpoch(let epoch) = try decode(record) else {
+            throw CoinLedgerRepositoryError.ledgerNotCurrent
+        }
+        _ = try validatedEpoch(records, requestedEpochID: epoch.epochID)
+        let name = CoinLedgerRecordID.releaseOccurrenceClaim(
+            ledgerEpochID: epoch.epochID, occurrenceID: command.occurrenceID
+        )
+        let claims = try index(try await fetch(recordNames: [name]))
+        guard let claimRecord = claims[name] else {
+            throw CoinLedgerRepositoryError.reconciliationRequired(commandID: command.commandID)
+        }
+        let claim = try occurrenceClaim(from: claimRecord)
+        guard claim.state == .held, claim.commandID == command.commandID else {
+            throw CoinLedgerRepositoryError.reconciliationRequired(commandID: claim.commandID)
+        }
+        return (record, claimRecord, claim)
+    }
+
     func fetch(recordNames: [String]) async throws -> [CloudKitRecordSnapshot] {
         do {
             return try await database.fetch(CoinLedgerFetchRequest(recordNames: recordNames))
@@ -546,22 +589,7 @@ private extension CloudKitCoinLedgerRepository {
         guard
             command.commandID == request.commandID,
             command.occurrenceID == request.occurrenceID,
-            command.ruleID == request.ruleID,
-            command.requestedFrom == request.requestedFrom
-        else {
-            throw CoinLedgerRepositoryError.database(.invalidRecord)
-        }
-    }
-
-    func validate(
-        _ command: ReleaseCommand,
-        against request: PurchasedCoinReservationRequest
-    ) throws {
-        guard
-            command.commandID == request.commandID,
-            command.occurrenceID == request.occurrenceID,
-            command.ruleID == request.ruleID,
-            command.requestedFrom == request.requestedFrom
+            command.ruleID == request.ruleID
         else {
             throw CoinLedgerRepositoryError.database(.invalidRecord)
         }
@@ -588,27 +616,6 @@ private extension CloudKitCoinLedgerRepository {
         }
     }
 
-    func resolveUnknownReservation(
-        commandID: UUID,
-        proposedAllowance: MonthlyAllowance?,
-        proposedAccount: CoinAccount?
-    ) async throws -> CoinReleaseReservation {
-        let name = CoinLedgerRecordID.releaseCommand(commandID: commandID)
-        let records = try await fetch(recordNames: [name])
-        guard let record = try index(records)[name] else {
-            throw CoinLedgerRepositoryError.reconciliationRequired(commandID: commandID)
-        }
-        let command = try releaseCommand(from: record)
-        return try existingReservation(
-            command: command,
-            allowanceRecord: nil,
-            accountRecord: nil
-        ).replacingBalances(
-            allowance: proposedAllowance,
-            account: proposedAccount
-        )
-    }
-
     func updateCommand(
         commandID: UUID,
         targetState: ReleaseCommandState,
@@ -631,10 +638,13 @@ private extension CloudKitCoinLedgerRepository {
                 throw CoinLedgerRepositoryError.database(.invalidRecord)
             }
 
+            let fence = try await ownershipFence(for: command)
+            var modification = try modifyRequest(for: [
+                (.releaseCommand(updated), record.changeTag),
+            ]).recordsToSave
+            modification.append(contentsOf: [fence.epoch, fence.claimRecord])
             do {
-                _ = try await database.modify(try modifyRequest(for: [
-                    (.releaseCommand(updated), record.changeTag),
-                ]))
+                _ = try await database.modify(CoinLedgerModifyRequest(recordsToSave: modification))
                 return updated
             } catch CoinLedgerDatabaseError.serverRecordChanged
                 where attempt < conflictRetryLimit {
@@ -679,10 +689,14 @@ private extension CloudKitCoinLedgerRepository {
             if commit, command.state == .committed { return command }
             if !commit, command.state == .compensated { return command }
 
+            let fence = try await ownershipFence(for: command)
+
             let reservation = try ledgerEvent(from: reservationRecord)
             guard
                 reservation.kind == .reservation,
                 reservation.relatedCommandID == commandID,
+                reservation.occurrenceID == command.occurrenceID,
+                reservation.source.rawValue == command.fundingSource?.rawValue,
                 reservation.quantity == 1
             else {
                 throw CoinLedgerRepositoryError.database(.invalidRecord)
@@ -707,6 +721,10 @@ private extension CloudKitCoinLedgerRepository {
             let updatedCommand = try finalizedCommand(command, commit: commit, at: date)
             var entities: [(CoinLedgerRecordEntity, String?)] = [
                 (.releaseCommand(updatedCommand), commandRecord.changeTag),
+                (.releaseOccurrenceClaim(try ReleaseOccurrenceClaim(
+                    ledgerEpochID: fence.claim.ledgerEpochID, occurrenceID: fence.claim.occurrenceID,
+                    commandID: commandID, state: commit ? .held : .released, updatedAt: date
+                )), fence.claimRecord.changeTag),
             ]
             if reservation.source == .monthlyFree {
                 let allowance = try monthlyAllowance(from: balanceRecord)
@@ -751,7 +769,9 @@ private extension CloudKitCoinLedgerRepository {
             entities.append((.event(event), nil))
 
             do {
-                _ = try await database.modify(try modifyRequest(for: entities))
+                var recordsToSave = try modifyRequest(for: entities).recordsToSave
+                recordsToSave.append(fence.epoch)
+                _ = try await database.modify(CoinLedgerModifyRequest(recordsToSave: recordsToSave))
                 return updatedCommand
             } catch CoinLedgerDatabaseError.serverRecordChanged
                 where attempt < conflictRetryLimit {
@@ -824,18 +844,5 @@ private extension CloudKitCoinLedgerRepository {
             }
         }
         return .database(.unexpectedRequest)
-    }
-}
-
-private extension CoinReleaseReservation {
-    func replacingBalances(
-        allowance: MonthlyAllowance?,
-        account: CoinAccount?
-    ) -> CoinReleaseReservation {
-        CoinReleaseReservation(
-            command: command,
-            allowance: allowance,
-            account: account
-        )
     }
 }

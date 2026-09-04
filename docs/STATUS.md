@@ -8,15 +8,15 @@
 
 ## 진행 중
 BLK-015 보강을 사용자 승인받아 `codex/us2-reservation-tests`에서 T047을 재개했다.
-T047a 소유권 모델·codec·호환 정책을 완료했다. 원자 저장에 아직 연결하지 않았으므로 실제
-중복 예약 방지는 미완료다. T047b 원자 예약·보상, T047c 서비스 연결과 검증이 남아 있다.
+T047b의 원자 예약·보상과 claim·epoch CAS 연결을 완료했다. 호환성 검증 경계는 기본 거부이며
+테스트의 격리 장부에서만 허용한다. T047c 서비스 연결은 남아 있으므로 T047 전체는 미완료다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T047a — occurrence 소유권 모델·결정적 ID·엄격한 codec·호환 정책 및 회귀 테스트
+T047b — 소유권·장부 세대의 원자 예약·보상 연결과 실제 repository 동시성 회귀
 
 ## 다음 작업
-T047b — 원자 예약·보상에 소유권 연결, 기존 장부·구버전 호환 gate와 실제 repository 동시성 검증.
+T047c — 최신 occurrence·epoch·잔액·월간 서비스와 RuleReleaseService 연결 및 사전 조건 검증.
 T047 전체 완료 후 T048이다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
@@ -35,6 +35,26 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-04 T047b: 실제 `CloudKitCoinLedgerRepository`와 공유 CAS database fake의 테스트 12개
+(인자 포함 13회)를 추가했다. 무료분 보유·소진 각각 앱·Shield/무료·구매 경로 100개 동시 요청에서
+하나의 command·reservation만 생성됐고, 무료 우선 충돌 재평가, epoch 교체 거부, 보상과 released
+원자 전환, 보상 실패 시 held·잔액 보존, 이전 보상 재시도의 새 owner 보호, committed 중복 차단,
+표면 간 멱등 감사 정보 보존, 결과 불명 후 조회·조회 실패·미반영, 기본 호환 거부·claim 없는 기존
+command 거부, 다른 occurrence 독립 예약을 검증했다. 처음에는 호환성 initializer 부재 compile
+RED를 확인했다. 기존 월간·장부 script 테스트도 epoch·claim 계약에 맞게 보강했다.
+최종 iPhone 17 Pro iOS 26.5 `GetUpTests` 375개(인자 포함 425회)가 실패·skip 없이 통과했다.
+중간 최종 재실행 한 번은 Simulator `Busy / Application failed preflight checks`로 runner를
+실행하지 못했으나 같은 명령 재시도는 통과했다. 기존 binary strip·불필요한 try 경고가 남아 있다.
+미구현 타입을 참조하는 `RuleReleaseServiceTests.swift`, `ReleaseExceptionRepositoryTests.swift`,
+`RuleReleaseCoordinatorTests.swift`, `ShieldCoinActionTests.swift`, `ShieldReleaseDeadlineTests.swift`는
+명령행 `EXCLUDED_SOURCE_FILE_NAMES`로 제외했다. T045 UI RED는 재실행하지 않았다.
+최종 결과: `/tmp/getup-t047b/Logs/Test/Test-GetUp-2026.09.04_22-06-38-+0900.xcresult`.
+앱·네 extension의 generic iOS Simulator Release 빌드와 project plist·diff 검사도 통과했다.
+현재 `verifyReservationCompatibility`의 운영 provider는 없으며 기본값 false로 신규 예약을 막는다.
+이는 구버전 writer 탐지·기존 장부 migration·실기기 CloudKit 다기기 검증 완료를 뜻하지 않는다.
+운영 활성화 전에 별도 호환 검증 provider가 필요하고 T047c에서 임의로 true를 공급하지 않는다.
+실제 CloudKit schema 배포·원격 데이터 수정·데이터 삭제는 수행하지 않았다.
+
 2026-09-04 T047a: 모델·codec 부재 compile RED 뒤 `ReleaseOccurrenceClaim`의 held/released 왕복,
 epoch·occurrence별 고정 SHA-256 record ID, 필수 필드 누락·미지 필드·잘못된 상태·schema·record name,
 빈 occurrence·비유한 시각 거부 테스트 4개(상태 인자 포함 5회)를 추가했다.
