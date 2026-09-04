@@ -198,6 +198,7 @@
 		AA0000000000000000000280 /* ReleaseExceptionRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5000000000000000000004A /* ReleaseExceptionRepositoryTests.swift */; };
 		AA0000000000000000000281 /* RuleReleaseCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5000000000000000000004B /* RuleReleaseCoordinatorTests.swift */; };
 		AA0000000000000000000282 /* ShieldCoinActionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5000000000000000000004C /* ShieldCoinActionTests.swift */; };
+		AA0000000000000000000283 /* ShieldReleaseDeadlineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5000000000000000000004D /* ShieldReleaseDeadlineTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -374,6 +375,7 @@
 		B5000000000000000000004A /* ReleaseExceptionRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseExceptionRepositoryTests.swift; sourceTree = "<group>"; };
 		B5000000000000000000004B /* RuleReleaseCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleReleaseCoordinatorTests.swift; sourceTree = "<group>"; };
 		B5000000000000000000004C /* ShieldCoinActionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldCoinActionTests.swift; sourceTree = "<group>"; };
+		B5000000000000000000004D /* ShieldReleaseDeadlineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldReleaseDeadlineTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000040 /* LiveActivityCoinFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityCoinFixtures.swift; sourceTree = "<group>"; };
 		B60000000000000000000001 /* UserStory1RuleConfigurationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory1RuleConfigurationUITests.swift; sourceTree = "<group>"; };
 		B60000000000000000000002 /* UserStory2RestrictionActivationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory2RestrictionActivationUITests.swift; sourceTree = "<group>"; };
@@ -754,6 +756,7 @@
 		B50000000000000000000014 /* Integration */ = {
 			isa = PBXGroup;
 			children = (
+				B5000000000000000000004D /* ShieldReleaseDeadlineTests.swift */,
 				B5000000000000000000004C /* ShieldCoinActionTests.swift */,
 				B5000000000000000000004B /* RuleReleaseCoordinatorTests.swift */,
 				B50000000000000000000047 /* SystemLiveActivityAdapterTests.swift */,
@@ -1307,6 +1310,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000283 /* ShieldReleaseDeadlineTests.swift in Sources */,
 				AA0000000000000000000282 /* ShieldCoinActionTests.swift in Sources */,
 				AA0000000000000000000281 /* RuleReleaseCoordinatorTests.swift in Sources */,
 				AA0000000000000000000280 /* ReleaseExceptionRepositoryTests.swift in Sources */,

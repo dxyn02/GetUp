@@ -7,17 +7,17 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 4 사용자 스토리 2 구현 진행 중
 
 ## 진행 중
-`codex/us2-reservation-tests`에서 002-live-activity-coins T043을 완료했다. Shield의 단일 primary
-action이 무료분을 우선 사용하고 구매 코인으로 fallback하는 흐름, 잔액 부족·stale·장부 삭제·조정 중
-route, 대표 occurrence만 해제하는 다중 규칙 동작, iOS 26.5 앱 열기와 이전 버전 닫힘 응답을 테스트로
-고정했다. 테스트는 TDD RED 단계이며 T055의 Shield coin action 구현 전까지 의도적으로 컴파일 실패한다.
+`codex/us2-reservation-tests`에서 002-live-activity-coins T044를 완료했다. Shield primary action 전달
+시점부터 monotonic strict 5초 deadline을 적용해 4.9초 확인만 해제를 적용하고, 정확히 5초 미확인·
+5.1초 late commit·extension 중단은 같은 command ID로 fail-closed 재조정하도록 테스트로 고정했다.
+테스트는 TDD RED 단계이며 T051의 `ShieldReleaseDeadlinePolicy` 구현 전까지 의도적으로 컴파일 실패한다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T043 — Shield 단일 해제 action의 funding·route·호환 응답 테스트를 먼저 작성함
+T044 — Shield release의 strict 5초 deadline·late commit·중단 복구 테스트를 먼저 작성함
 
 ## 다음 작업
-T044 — Shield release의 5초 deadline·late commit fail-closed 테스트를 먼저 작성한다.
+T045 — Shield와 앱 내 해제 확인 UI 테스트를 먼저 작성한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -33,6 +33,19 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-04 002 구현 T044를 TDD RED 단계로 완료했다. `ShieldReleaseDeadlineTests` 4개는 주입한
+`LiveActivityCoinMonotonicClock`으로 primary action 전달 후 4.9초 CloudKit 확인은 해제를 적용하고,
+정확히 5초 미확인과 5.1초 late commit은 로컬 예외·제한을 적용하지 않는 strict deadline을 정의했다.
+deadline 실패는 occurrence와 연결된 `.reconciliation` route를 저장하고 같은 command ID를 재조정하며,
+late reservation과 extension 중단 뒤 발견된 reservation은 `compensated`로 수렴해 최종 미적용 차감이
+0임을 검증한다. T040~T043 RED 소스를 `EXCLUDED_SOURCE_FILE_NAMES`로 임시 제외한 T044 독립
+`xcodebuild test`는 예상대로 아직 없는 `ShieldReleaseDeadlinePolicy`, `ShieldReleaseConfirmation`
+때문에 컴파일 실패했으며 T051에서 GREEN으로 전환해야 한다. 새 파일의 `GetUpTests` Integration
+group·Sources 연결, project plist와 `git diff --check`는 통과했다.
+재개 후 테스트 대역의 성공 처리에서 미적용 차감을 이중으로 빼던 계산을 수정하고 같은 전용 빌드를
+재실행했다. 컴파일은 위 미구현 타입 때문에 다시 실패했으며 테스트 본문 실행·실제 5초 대기 상한과
+프로세스 종료 복구의 통합 검증은 아직 완료되지 않았다.
+
 2026-09-04 002 구현 T043을 TDD RED 단계로 완료했다. `ShieldCoinActionTests` 8개(동적 상태 인자 포함
 10회)는 단일 primary action의 무료분 우선·구매 코인 fallback, 현재 장부 잔액 부족의 `.coinStore`,
 stale·unavailable의 `.iCloudRecovery`, deletionConfirmed·resetRequired의 `.ledgerReset`, pending
