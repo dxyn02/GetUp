@@ -4,6 +4,38 @@ import Testing
 
 @Suite("Coin reservation policy")
 struct CoinReservationPolicyTests {
+    @Test("Reserved free uses are unavailable and fall back to an unreserved purchased coin")
+    func reservedFreeUsesAreExcluded() throws {
+        let allowance = try MonthlyAllowance(
+            monthID: "2026-09", quota: 2, used: 1, reserved: 1,
+            creationDate: .reservationFixture, updatedAt: .reservationFixture
+        )
+        let account = try CoinAccount(
+            purchasedAvailable: 2, purchasedReserved: 1,
+            revision: 1, updatedAt: .reservationFixture
+        )
+        #expect(try CoinReservationPolicy.selectFundingSource(
+            ledgerState: .current(epoch: .reservationFixture()),
+            requestedEpochID: LedgerEpoch.reservationFixture().epochID,
+            allowance: allowance, account: account
+        ) == .purchased)
+    }
+
+    @Test("A fully reserved purchased balance cannot fund another release")
+    func reservedPurchasedCoinsAreExcluded() throws {
+        let account = try CoinAccount(
+            purchasedAvailable: 3, purchasedReserved: 3,
+            revision: 1, updatedAt: .reservationFixture
+        )
+        #expect(throws: CoinReservationPolicyError.insufficientBalance) {
+            try CoinReservationPolicy.selectFundingSource(
+                ledgerState: .current(epoch: .reservationFixture()),
+                requestedEpochID: LedgerEpoch.reservationFixture().epochID,
+                allowance: try .reservationFixture(available: 0), account: account
+            )
+        }
+    }
+
     @Test("Monthly allowance is selected before a purchased coin")
     func monthlyFreeHasPriority() throws {
         let source = try CoinReservationPolicy.selectFundingSource(

@@ -7,16 +7,17 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 4 사용자 스토리 2 구현 진행 중
 
 ## 진행 중
-`codex/us2-reservation-tests`에서 T045의 UI 테스트 4개를 작성했다. Shield probe 안내·단일 사용/닫기
-버튼, 앱 별도 확인·취소 무차감, 앱·Shield 중복 tap을 다룬다. 기존 UI에 새 해제 진입점·대상 안내가
-없어 실패하는 RED 단계이며, T054~T058의 UI·fixture 연결 뒤 전체 assertion을 검증해야 한다.
+`codex/us2-reservation-tests`에서 T046의 무료 우선 funding source 선택 정책을 완료했다.
+현재 장부·epoch 일치를 검사하고 예약 수량을 제외한 무료분, 구매 코인 순으로 선택한다.
+정책은 장부를 변경하지 않으며 앱과 Shield Action 타깃에 연결했다. 현재 구현 중인 task는 없으며,
+최신 컨텍스트 확인과 atomic reservation은 다음 T047에서 연결한다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T045 — Shield·앱 내 해제 확인 UI 테스트 4개 작성과 요소 부재 RED 확인
+T046 — 무료 우선 reservation 정책 구현과 예약 잔액 제외 테스트 통과
 
 ## 다음 작업
-T046 — 무료 우선 reservation 정책을 구현한다.
+T047 — 최신 occurrence·epoch·잔액 확인과 결정적 command ID의 atomic reservation을 구현한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -33,6 +34,17 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-04 T046: `CoinReservationPolicy`·오류 타입 부재의 compile RED를 확인한 뒤 구현했다.
+예약된 무료분의 구매 fallback과 전액 예약된 구매 잔액 거부 테스트 2개를 추가했다.
+iPhone 17 Pro iOS 26.5에서 `CoinReservationPolicyTests`와 `MonthlyAllowancePolicyTests`
+12개(동적 인자 포함 17회)가 실패·skip 없이 통과했다. 미구현 타입을 참조하는
+`RuleReleaseServiceTests.swift`, `ReleaseExceptionRepositoryTests.swift`,
+`RuleReleaseCoordinatorTests.swift`, `ShieldCoinActionTests.swift`, `ShieldReleaseDeadlineTests.swift`는
+명령행 `EXCLUDED_SOURCE_FILE_NAMES`로 이번 실행에서만 제외했다. 전체 테스트 통과를 의미하지 않으며
+T040의 service 테스트·T041~T045의 RED와 실제 해제 흐름 검증은 후속 구현에 남아 있다.
+project plist·`git diff --check`도 통과했다. 기존 binary strip·불필요한 try 경고가 남아 있다.
+결과: `/tmp/getup-t046/Logs/Test/Test-GetUp-2026.09.04_21-38-48-+0900.xcresult`.
+
 2026-09-04 T045 전용 UI 실행: iPhone 17 Pro iOS 26.5, 4개 테스트 모두 실패. 선행 T040~T044의
 미구현 타입을 참조하는 단위 테스트 6개 파일만 명령행 `EXCLUDED_SOURCE_FILE_NAMES`로 임시 제외했다.
 새 UI 테스트의 컴파일과 project plist·diff 검사는 통과했다. 기존 binary strip·불필요한 try 경고와

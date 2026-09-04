@@ -123,7 +123,7 @@ occurrence만 예외 처리되는지, 중복 100회에서 최대 1회만 소모�
 
 ### 사용자 스토리 2 구현
 
-- [ ] T046 [P] [US2] 무료 우선 funding source 선택과 사용 가능 잔액 검증을 `GetUp/Core/Evaluation/CoinReservationPolicy.swift`에 구현한다.
+- [X] T046 [P] [US2] 무료 우선 funding source 선택과 사용 가능 잔액 검증을 `GetUp/Core/Evaluation/CoinReservationPolicy.swift`에 구현한다.
 - [ ] T047 [US2] 최신 occurrence·epoch·잔액을 fetch하고 Phase 2 `MonthlyAllowanceService`로 allowance 생성+무료 예약 또는 구매 fallback을 결정적 command ID의 atomic reservation으로 실행하는 `GetUp/Core/StateMachine/RuleReleaseService.swift`를 구현한다.
 - [ ] T048 [P] [US2] release exception의 atomic 저장·조회·만료 정리를 `GetUp/Infrastructure/Persistence/ReleaseExceptionRepository.swift`에 구현한다.
 - [ ] T049 [US2] reservation→App Group 예외→제한 합집합 재평가→CloudKit commit→대표 Live Activity 조정 순서와 보상을 구현하고 ActivityKit 실패는 해제 성공을 되돌리지 않도록 `GetUp/Infrastructure/ScreenTime/RuleReleaseCoordinator.swift`를 구현한다.
