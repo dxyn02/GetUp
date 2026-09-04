@@ -202,6 +202,8 @@
 		AA0000000000000000000284 /* UserStory2CoinReleaseUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000006 /* UserStory2CoinReleaseUITests.swift */; };
 		AA0000000000000000000285 /* CoinReservationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000068 /* CoinReservationPolicy.swift */; };
 		AA0000000000000000000286 /* CoinReservationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000068 /* CoinReservationPolicy.swift */; };
+		AA0000000000000000000287 /* RuleReleaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000069 /* RuleReleaseService.swift */; };
+		AA0000000000000000000288 /* RuleReleaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000069 /* RuleReleaseService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -404,6 +406,7 @@
 		DL0000000000000000000004 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Resources/Localizable.xcstrings; sourceTree = "<group>"; };
 		B60000000000000000000006 /* UserStory2CoinReleaseUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory2CoinReleaseUITests.swift; sourceTree = "<group>"; };
 		B40000000000000000000068 /* CoinReservationPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinReservationPolicy.swift; sourceTree = "<group>"; };
+		B40000000000000000000069 /* RuleReleaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleReleaseService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -542,6 +545,7 @@
 			isa = PBXGroup;
 			children = (
 				B40000000000000000000061 /* MonthlyAllowanceService.swift */,
+				B40000000000000000000069 /* RuleReleaseService.swift */,
 				B40000000000000000000006 /* RestrictionStateMachine.swift */,
 			);
 			path = StateMachine;
@@ -1174,6 +1178,7 @@
 				AA0000000000000000000267 /* LiveActivityContentPolicy.swift in Sources */,
 				AA0000000000000000000265 /* RestrictionOccurrenceEvaluator.swift in Sources */,
 				AA0000000000000000000258 /* MonthlyAllowanceService.swift in Sources */,
+				AA0000000000000000000287 /* RuleReleaseService.swift in Sources */,
 				AA0000000000000000000256 /* MonthlyAllowancePolicy.swift in Sources */,
 				AA0000000000000000000285 /* CoinReservationPolicy.swift in Sources */,
 				AA0000000000000000000253 /* CoinLedgerSyncAdapter.swift in Sources */,
@@ -1289,6 +1294,7 @@
 			files = (
 				AA0000000000000000000276 /* ActivityKitFeasibilityProbe.swift in Sources */,
 				AA0000000000000000000259 /* MonthlyAllowanceService.swift in Sources */,
+				AA0000000000000000000288 /* RuleReleaseService.swift in Sources */,
 				AA0000000000000000000257 /* MonthlyAllowancePolicy.swift in Sources */,
 				AA0000000000000000000286 /* CoinReservationPolicy.swift in Sources */,
 				AA0000000000000000000254 /* CoinLedgerSyncAdapter.swift in Sources */,

@@ -7,17 +7,16 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 4 사용자 스토리 2 구현 진행 중
 
 ## 진행 중
-BLK-015 보강을 사용자 승인받아 `codex/us2-reservation-tests`에서 T047을 재개했다.
-T047b의 원자 예약·보상과 claim·epoch CAS 연결을 완료했다. 호환성 검증 경계는 기본 거부이며
-테스트의 격리 장부에서만 허용한다. T047c 서비스 연결은 남아 있으므로 T047 전체는 미완료다.
+`codex/us2-reservation-tests`에서 T047c 서비스 연결을 완료해 T047 전체를 완료했다.
+현재 진행 중인 구현 task는 없으며 다음은 T048이다. 호환성 검증 경계는 기본 거부이며
+운영 활성화·migration은 수행하지 않았다. 앱·Shield의 최신 컨텍스트 provider 연결은 후속 통합에 남아 있다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T047b — 소유권·장부 세대의 원자 예약·보상 연결과 실제 repository 동시성 회귀
+T047c 및 T047 — 최신 컨텍스트 검증·월간 무료 우선·원자 예약 서비스 연결
 
 ## 다음 작업
-T047c — 최신 occurrence·epoch·잔액·월간 서비스와 RuleReleaseService 연결 및 사전 조건 검증.
-T047 전체 완료 후 T048이다.
+T048 — App Group release exception의 원자 저장·조회·만료 정리 구현.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -35,6 +34,22 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-04 T047c: 서비스·요청·컨텍스트 타입 부재 compile RED 뒤 `RuleReleaseService`를 구현했다.
+기존 T040 서비스 테스트 8개를 GREEN으로 전환하고 회귀 9개(인자 포함 15회)를 추가했다.
+최신 컨텍스트 조회 후 종료·식별자·저장 규칙 revision·epoch·기존 예외·서울 월을 검증하며,
+없는 월간 레코드는 별도 지급 없이 생성·예약을 요청한다. 무료 예약의 확정 잔액 충돌만 같은
+command ID로 컨텍스트를 한 번 더 조회하고, 결과 불명·조회 실패는 구매 fallback하지 않는다.
+조회 중 occurrence 종료, 충돌 재시도 시 stale 전환, reset 당월 무료 억제, 기본 호환성 거부 유지도 검증했다.
+최종 iPhone 17 Pro iOS 26.5 `GetUpTests` 392개(인자 포함 448회)가 실패·skip 없이 통과했다.
+미구현 타입을 참조하는 `ReleaseExceptionRepositoryTests.swift`, `RuleReleaseCoordinatorTests.swift`,
+`ShieldCoinActionTests.swift`, `ShieldReleaseDeadlineTests.swift`는 명령행
+`EXCLUDED_SOURCE_FILE_NAMES`로 제외했다. T045 UI RED는 재실행하지 않았고 전체 기능 완료가 아니다.
+최종 결과: `/tmp/getup-t047c/Logs/Test/Test-GetUp-2026.09.04_22-15-45-+0900.xcresult`.
+앱·네 extension의 generic iOS Simulator Release 빌드도 통과했다. 기존 binary strip·다른 테스트의
+불필요한 try 경고가 남아 있다. 실제 CloudKit·다기기·Shield 해제는 검증하지 않았다.
+서비스의 필수 주입 provider는 fresh fetch·monotonic current 증명을 담당하며, UI 통합과 별도
+운영 호환 provider는 아직 미구현이다. `verifyReservationCompatibility` 기본 false는 유지했다.
+
 2026-09-04 T047b: 실제 `CloudKitCoinLedgerRepository`와 공유 CAS database fake의 테스트 12개
 (인자 포함 13회)를 추가했다. 무료분 보유·소진 각각 앱·Shield/무료·구매 경로 100개 동시 요청에서
 하나의 command·reservation만 생성됐고, 무료 우선 충돌 재평가, epoch 교체 거부, 보상과 released

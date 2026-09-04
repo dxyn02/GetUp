@@ -33,6 +33,15 @@ Shield 요청은 primary action이 release service에 전달된 시점부터 주
 
 ## 처리 순서
 
+T047 서비스 경계: `RuleReleaseService`의 필수 `fetchCurrentContext` provider는 매 호출마다
+위 사전 조건의 fresh fetch·monotonic current 증명을 수행하고 현재 저장 규칙의 revision도 반환한다.
+서비스는 await 이후 시각으로 occurrence·요청을 검증한다. 앱·Shield의 실제 provider 주입은 후속
+통합에서 수행하며 fixture의 `current` 값은 운영 freshness 증명이 아니다. 무료 예약이 확정적으로
+잔액 부족을 반환한 경우에만 같은 command ID로 컨텍스트를 한 번 재조회·재검증한다. 결과 불명은
+구매 fallback하지 않고 기존 명령 재조정으로 넘긴다. 월간 레코드가 없을 때 정책 계산용 provisional
+allowance를 별도로 저장하지 않으며, 실제 생성·예약은 repository의 atomic modify에 맡긴다.
+이 서비스 연결은 기본 거부인 `verifyReservationCompatibility`를 활성화하지 않는다.
+
 BLK-015 승인 보강: 같은 epoch·occurrence의 명령은 공통 `ReleaseOccurrenceClaim`을 원자적으로
 획득해야 한다. 요청별 command ID는 재시도에 유지하되 다른 command의 중복 예약은 claim으로 막는다.
 보상 완료 시에만 소유권을 released로 바꾸고 새 사용자 시도를 허용한다. 결과 불명·committed에서는

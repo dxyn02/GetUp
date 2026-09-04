@@ -4,6 +4,142 @@ import Testing
 
 @Suite("Rule release service")
 struct RuleReleaseServiceTests {
+    @Test("An occurrence ending during context fetch is rejected before reservation")
+    func endsDuringFetch() async throws {
+        let repository = AtomicOccurrenceReservationRepository()
+        let clock = LiveActivityCoinWallClock(now: .reservationFixture)
+        let service = RuleReleaseService(repository: repository, now: { clock.now }, fetchCurrentContext: { _ in
+            clock.setNow(RestrictionOccurrence.reservationFixture.endAt)
+            return try .fixture()
+        })
+        await #expect(throws: RuleReleaseServiceError.occurrenceNotActive) {
+            try await service.reserve(.fixture())
+        }
+        #expect(await repository.operations.isEmpty)
+    }
+
+    @Test("A conflict retry rechecks ledger availability before any fallback")
+    func retryRechecksLedger() async throws {
+        let repository = AtomicOccurrenceReservationRepository(freeError: .insufficientMonthlyAllowance)
+        let source = RuleReleaseContextSource(context: try .fixture(ledgerState: .stale))
+        let service = RuleReleaseService(repository: repository, now: { .reservationFixture }, fetchCurrentContext: { request in
+            let context = await source.fetch(for: request)
+            return await source.requests.count == 1 ? try .fixture() : context
+        })
+        await #expect(throws: CoinReservationPolicyError.ledgerNotCurrent) {
+            try await service.reserve(.fixture())
+        }
+        #expect(await source.requests.count == 2)
+        #expect(await repository.operations == [.reserveMonthlyFree])
+    }
+
+    @Test("A missing allowance in a reset-suppressed month does not grant free funds")
+    func suppressedMonthUsesPurchased() async throws {
+        let repository = AtomicOccurrenceReservationRepository()
+        let service = RuleReleaseService(repository: repository, now: { .reservationFixture }, fetchCurrentContext: { _ in
+            RuleReleaseReservationContext(
+                ledgerState: .current(epoch: LedgerEpoch(
+                    epochID: LedgerEpoch.reservationFixture().epochID,
+                    createdAt: .reservationFixture, reason: .userConfirmedResetAfterDeletion,
+                    suppressedFreeMonthID: "2026-09", disclosureVersion: 1
+                )), occurrence: .reservationFixture, currentRuleRevision: 7,
+                hasReleaseException: false, allowance: nil,
+                account: try .reservationFixture(available: 1)
+            )
+        })
+        let result = try await service.reserve(.fixture())
+        #expect(result.command.fundingSource == .purchased)
+        #expect(await repository.operations == [.reservePurchased])
+    }
+
+    @Test("Invalid fresh context fails without a reservation", arguments: ["missing", "revision", "exception", "ended", "future", "month", "identity"])
+    func invalidFreshContext(reason: String) async throws {
+        let repository = AtomicOccurrenceReservationRepository()
+        let occurrence = RestrictionOccurrence.reservationFixture
+        let service = RuleReleaseService(repository: repository, now: {
+            reason == "ended" ? occurrence.endAt : reason == "future" ? occurrence.startAt.addingTimeInterval(-1) : .reservationFixture
+        }, fetchCurrentContext: { _ in
+            RuleReleaseReservationContext(
+                ledgerState: .current(epoch: .reservationFixture()),
+                occurrence: reason == "missing" ? nil : occurrence,
+                currentRuleRevision: reason == "revision" ? 8 : 7,
+                hasReleaseException: reason == "exception",
+                allowance: try .reservationFixture(available: 2),
+                account: try .reservationFixture(available: 2)
+            )
+        })
+        let request = RuleReleaseRequest.fixture(
+            occurrenceID: reason == "identity" ? "wrong-occurrence" : occurrence.id,
+            monthID: reason == "month" ? "2026-08" : "2026-09"
+        )
+        await #expect(throws: (any Error).self) { try await service.reserve(request) }
+        #expect(await repository.operations.isEmpty)
+    }
+
+    @Test("A missing monthly bucket uses the combined creation and reservation command")
+    func missingAllowanceIsAtomic() async throws {
+        let repository = AtomicOccurrenceReservationRepository()
+        let service = RuleReleaseService(repository: repository, now: { .reservationFixture }, fetchCurrentContext: { _ in
+            RuleReleaseReservationContext(
+                ledgerState: .current(epoch: .reservationFixture()),
+                occurrence: .reservationFixture, currentRuleRevision: 7,
+                hasReleaseException: false, allowance: nil,
+                account: try .reservationFixture(available: 0)
+            )
+        })
+        let result = try await service.reserve(.fixture())
+        #expect(result.command.fundingSource == .monthlyFree)
+        #expect(await repository.operations == [.reserveMonthlyFree])
+    }
+
+    @Test("A free reservation conflict refetches context and keeps the command ID for fallback")
+    func freeConflictRefetches() async throws {
+        let repository = AtomicOccurrenceReservationRepository(freeError: .insufficientMonthlyAllowance)
+        let source = RuleReleaseContextSource(context: try .fixture(freeAvailable: 0))
+        let service = RuleReleaseService(repository: repository, now: { .reservationFixture }, fetchCurrentContext: { request in
+            let context = await source.fetch(for: request)
+            return await source.requests.count == 1 ? try .fixture() : context
+        })
+        let request = RuleReleaseRequest.fixture()
+        let result = try await service.reserve(request)
+        #expect(result.command.commandID == request.commandID)
+        #expect(await source.requests == [request, request])
+        #expect(await repository.operations == [.reserveMonthlyFree, .reservePurchased])
+    }
+
+    @Test("Unknown reservation results are not converted into a purchased fallback")
+    func unknownDoesNotFallback() async throws {
+        let request = RuleReleaseRequest.fixture()
+        let error = CoinLedgerRepositoryError.reconciliationRequired(commandID: request.commandID)
+        let repository = AtomicOccurrenceReservationRepository(freeError: error)
+        let service = RuleReleaseService(repository: repository, now: { .reservationFixture }, fetchCurrentContext: { _ in try .fixture() })
+        await #expect(throws: error) { try await service.reserve(request) }
+        #expect(await repository.operations == [.reserveMonthlyFree])
+    }
+
+    @Test("Context fetch failure causes no mutation")
+    func fetchFailure() async throws {
+        let repository = AtomicOccurrenceReservationRepository()
+        let service = RuleReleaseService(repository: repository, now: { .reservationFixture }, fetchCurrentContext: { _ in
+            throw CoinLedgerRepositoryError.ledgerNotCurrent
+        })
+        await #expect(throws: CoinLedgerRepositoryError.ledgerNotCurrent) {
+            try await service.reserve(.fixture())
+        }
+        #expect(await repository.operations.isEmpty)
+    }
+
+    @Test("The service does not unlock the default CloudKit compatibility gate")
+    func productionGateRemainsClosed() async throws {
+        let database = ScriptedCoinLedgerDatabase(fetchResults: [], modifyResults: [])
+        let service = RuleReleaseService(repository: CloudKitCoinLedgerRepository(database: database),
+            now: { .reservationFixture }, fetchCurrentContext: { _ in try .fixture() })
+        await #expect(throws: CoinLedgerRepositoryError.ledgerNotCurrent) {
+            try await service.reserve(.fixture())
+        }
+        #expect(await database.modifyRequests.isEmpty)
+    }
+
     @Test("The service fetches current context and reserves the monthly allowance first")
     func monthlyFreeReservationUsesLatestContext() async throws {
         let repository = AtomicOccurrenceReservationRepository()
@@ -12,8 +148,9 @@ struct RuleReleaseServiceTests {
         )
         let service = RuleReleaseService(
             repository: repository,
+            now: { .reservationFixture },
             fetchCurrentContext: { request in
-                try await contextSource.fetch(for: request)
+                await contextSource.fetch(for: request)
             }
         )
         let request = RuleReleaseRequest.fixture()
@@ -30,6 +167,7 @@ struct RuleReleaseServiceTests {
         let repository = AtomicOccurrenceReservationRepository()
         let service = RuleReleaseService(
             repository: repository,
+            now: { .reservationFixture },
             fetchCurrentContext: { _ in
                 try .fixture(freeAvailable: 0, purchasedAvailable: 1)
             }
@@ -46,6 +184,7 @@ struct RuleReleaseServiceTests {
         let repository = AtomicOccurrenceReservationRepository()
         let service = RuleReleaseService(
             repository: repository,
+            now: { .reservationFixture },
             fetchCurrentContext: { _ in
                 try .fixture(freeAvailable: 0, purchasedAvailable: 0)
             }
@@ -62,6 +201,7 @@ struct RuleReleaseServiceTests {
         let repository = AtomicOccurrenceReservationRepository()
         let nonCurrent = RuleReleaseService(
             repository: repository,
+            now: { .reservationFixture },
             fetchCurrentContext: { _ in
                 try .fixture(ledgerState: .deletionConfirmed)
             }
@@ -72,6 +212,7 @@ struct RuleReleaseServiceTests {
 
         let mismatched = RuleReleaseService(
             repository: repository,
+            now: { .reservationFixture },
             fetchCurrentContext: { _ in try .fixture() }
         )
         await #expect(throws: CoinReservationPolicyError.ledgerEpochMismatch) {
@@ -88,6 +229,7 @@ struct RuleReleaseServiceTests {
         let repository = AtomicOccurrenceReservationRepository()
         let service = RuleReleaseService(
             repository: repository,
+            now: { .reservationFixture },
             fetchCurrentContext: { _ in try .fixture() }
         )
 
@@ -211,11 +353,14 @@ private actor RuleReleaseContextSource {
 
 private actor AtomicOccurrenceReservationRepository: CoinLedgerRepository {
     enum Operation: Equatable, Sendable {
+        case createAllowance
         case reserveMonthlyFree
         case reservePurchased
     }
 
     private var reservedOccurrences: Set<String> = []
+    private let freeError: CoinLedgerRepositoryError?
+    init(freeError: CoinLedgerRepositoryError? = nil) { self.freeError = freeError }
     private(set) var operations: [Operation] = []
 
     var reservationCount: Int { reservedOccurrences.count }
@@ -223,13 +368,15 @@ private actor AtomicOccurrenceReservationRepository: CoinLedgerRepository {
     func createAllowanceIfNeeded(
         _ request: MonthlyAllowanceCreationRequest
     ) async throws -> MonthlyAllowance {
-        try .reservationFixture(available: 2)
+        operations.append(.createAllowance)
+        return try .reservationFixture(available: 2)
     }
 
     func reserveMonthlyFree(
         _ request: MonthlyFreeReservationRequest
     ) async throws -> CoinReleaseReservation {
         operations.append(.reserveMonthlyFree)
+        if let freeError { throw freeError }
         return try reserve(
             commandID: request.commandID,
             occurrenceID: request.occurrenceID,
@@ -301,16 +448,18 @@ private actor AtomicOccurrenceReservationRepository: CoinLedgerRepository {
 private extension RuleReleaseRequest {
     static func fixture(
         commandID: UUID = UUID(uuidString: "00000000-0000-4000-8000-000000000402")!,
-        ledgerEpochID: UUID = LedgerEpoch.reservationFixture().epochID
+        ledgerEpochID: UUID = LedgerEpoch.reservationFixture().epochID,
+        occurrenceID: String = RestrictionOccurrence.reservationFixture.id,
+        monthID: String = "2026-09"
     ) -> RuleReleaseRequest {
         RuleReleaseRequest(
             commandID: commandID,
-            occurrenceID: RestrictionOccurrence.reservationFixture.id,
+            occurrenceID: occurrenceID,
             ruleID: RestrictionOccurrence.reservationFixture.ruleID,
             ruleRevision: RestrictionOccurrence.reservationFixture.ruleRevision,
             endsAt: RestrictionOccurrence.reservationFixture.endAt,
             ledgerEpochID: ledgerEpochID,
-            monthID: "2026-09",
+            monthID: monthID,
             requestedFrom: .app,
             requestedAt: .reservationFixture
         )
@@ -326,6 +475,7 @@ private extension RuleReleaseReservationContext {
         RuleReleaseReservationContext(
             ledgerState: ledgerState,
             occurrence: .reservationFixture,
+            currentRuleRevision: RestrictionOccurrence.reservationFixture.ruleRevision,
             hasReleaseException: false,
             allowance: try .reservationFixture(available: freeAvailable),
             account: try .reservationFixture(available: purchasedAvailable)
