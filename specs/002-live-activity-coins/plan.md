@@ -246,6 +246,10 @@ mirror·해제 예외를 보관한다. 별도 서버와 외부 패키지는 도�
   미지원·실패·timeout이면 앱 진입 또는 다음 foreground 재조정을 기본 경로로 확정한다. 이 게이트를
   통과하기 전에는 직접 ActivityKit 조정 코드를 제품 흐름에 연결하지 않는다.
 - Shield와 앱의 해제 요청을 동일한 command service에 전달한다.
+- BLK-016 승인에 따라 T049a에서 명령별 예외 추가·조건부 제거를 기존 파일 조정 경계 안에서
+  수행한다. 같은 영속 payload는 멱등 처리하며 다른 command·occurrence 소유권은 덮지 않는다.
+  T049b는 과거 목록 복원을 사용하지 않고 최신 규칙·예외 재평가와 로컬 적용 경합을 검증한다.
+  저장소 반환 snapshot은 적용 시점까지 최신이라는 보장이 아니며 원격 완료 상태 판정도 대체하지 않는다.
 - BLK-015 승인에 따라 epoch·occurrence별 `ReleaseOccurrenceClaim`을 무료·구매 예약이 공유한다.
   claim 획득과 예약, claim 해제와 보상을 각각 같은 atomic modify로 처리한다. T047a 모델·codec,
   T047b 원자 저장·호환 gate, T047c 서비스 연결 순으로 검증한다. 기존 schema 데이터 삭제나

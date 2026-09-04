@@ -344,7 +344,12 @@ protocol CoinBalanceSnapshotRepository: Sendable {
 
 protocol ReleaseExceptionRepository: Sendable {
     func loadReleaseExceptions() async throws -> [ReleaseException]
+    /// Full replacement only; never use a stale collection for command insertion or rollback.
     func saveReleaseExceptions(_ exceptions: [ReleaseException]) async throws
+    /// Atomic insert; identical persisted payload is idempotent, conflicting owner/content fails.
+    func insertReleaseException(_ exception: ReleaseException) async throws -> [ReleaseException]
+    /// Atomic removal matching both identifiers; unrelated owners and missing records are untouched.
+    func removeReleaseException(commandID: UUID, occurrenceID: String) async throws -> [ReleaseException]
 }
 
 protocol PendingAppRoutePersisting: Sendable {
@@ -358,12 +363,14 @@ enum ReleaseExceptionRepositoryError: Error, Equatable, Sendable,
     case readFailed
     case writeFailed
     case deletionFailed
+    case conflict
 
     var errorCode: LiveActivityCoinErrorCode {
         switch self {
         case .readFailed: .releaseExceptionReadFailed
         case .writeFailed: .releaseExceptionWriteFailed
         case .deletionFailed: .releaseExceptionDeleteFailed
+        case .conflict: .releaseExceptionWriteFailed
         }
     }
 }

@@ -269,6 +269,31 @@ private actor ReleaseExceptionRepositorySpy: ReleaseExceptionRepository {
         return exceptions
     }
 
+    func insertReleaseException(_ exception: ReleaseException) async throws -> [ReleaseException] {
+        if let existing = exceptions.first(where: {
+            $0.commandID == exception.commandID || $0.occurrenceID == exception.occurrenceID
+        }) {
+            guard existing == exception else { throw ReleaseExceptionRepositoryError.conflict }
+            return exceptions
+        }
+        writeAttempt += 1
+        guard writeFailsOnAttempt != writeAttempt else { throw ReleaseExceptionRepositoryError.writeFailed }
+        exceptions.append(exception)
+        let result = exceptions
+        await recorder.record(.saveExceptions(result.count))
+        return result
+    }
+
+    func removeReleaseException(commandID: UUID, occurrenceID: String) async throws -> [ReleaseException] {
+        let next = exceptions.filter { !($0.commandID == commandID && $0.occurrenceID == occurrenceID) }
+        guard next != exceptions else { return exceptions }
+        writeAttempt += 1
+        guard writeFailsOnAttempt != writeAttempt else { throw ReleaseExceptionRepositoryError.writeFailed }
+        exceptions = next
+        await recorder.record(.saveExceptions(next.count))
+        return next
+    }
+
     func saveReleaseExceptions(_ exceptions: [ReleaseException]) async throws {
         writeAttempt += 1
         await recorder.record(.saveExceptions(exceptions.count))

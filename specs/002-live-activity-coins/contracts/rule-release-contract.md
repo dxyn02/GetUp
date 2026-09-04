@@ -94,6 +94,16 @@ T048 저장 경계는 기존 schema 1 파일을 유지한다. `loadApplicableRel
 `saveReleaseExceptions`는 전체 collection 교체이며 외부의 분리된 load→save에 대한 병합·CAS를
 제공하지 않는다. 후속 coordinator는 오래된 collection으로 다른 명령의 예외를 덮어쓰면 안 된다.
 
+BLK-016 승인 보강: `insertReleaseException`은 최신 목록 조회·고유성 확인·추가를 한 파일 조정 안에서
+수행한다. 같은 command·occurrence·내용의 재시도는 무변경 성공이며, 같은 command 또는 occurrence에
+다른 내용이 있으면 충돌로 거부한다. `removeReleaseException(commandID:occurrenceID:)`는 두 식별자가
+모두 일치하는 항목만 제거하고 부재·다른 소유자는 무변경으로 둔다. 반환 목록은 각 수정 직후의
+snapshot이며 이후 제한 적용 시점까지 최신이라는 보장은 아니다. 보상은 과거 목록 전체를 복원하지
+않고 해당 명령만 제거한 뒤 최신 규칙·예외로 재평가한다. 중단된 명령의 지연 재시도는 coordinator가
+원격 command 상태를 확인해 처리하며 저장소 자체가 완료 명령 tombstone을 보관하지는 않는다.
+멱등 payload 비교는 기존 ISO8601 파일 표현의 날짜 정밀도를 기준으로 한다. 메모리의 소수 초가
+파일 왕복 후 달라졌다는 이유만으로 같은 요청을 충돌 처리하지 않으며 날짜 형식·schema는 바꾸지 않는다.
+
 ## 필수 테스트
 
 - 무료 우선, 구매 fallback, 양쪽 잔액 부족

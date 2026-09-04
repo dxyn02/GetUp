@@ -4,6 +4,126 @@ import Testing
 
 @Suite("Release exception repository", .serialized)
 struct ReleaseExceptionRepositoryTests {
+    @Test("Concurrent command inserts retain every occurrence across repository instances")
+    func concurrentCommandInserts() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let entries = try (0..<100).map { index in
+            try ReleaseException(commandID: UUID(), occurrenceID: "occurrence-\(index)", ruleID: UUID(),
+                ruleRevision: 4, effectiveAt: Self.now, expiresAt: Self.occurrence.endAt)
+        }
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            for entry in entries {
+                group.addTask {
+                    let repository = AppGroupReleaseExceptionRepository(containerURL: directory)
+                    _ = try await repository.insertReleaseException(entry)
+                }
+            }
+            try await group.waitForAll()
+        }
+        let stored = try await SharedSnapshotRepository(containerURL: directory).loadReleaseExceptions()
+        #expect(Set(stored) == Set(entries))
+    }
+
+    @Test("Repeated insertion is idempotent even if the writer would fail")
+    func idempotentCommandInsert() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let entry = try makeException()
+        _ = try await SharedSnapshotRepository(containerURL: directory).insertReleaseException(entry)
+        let failing = AppGroupReleaseExceptionRepository(containerURL: directory, fileWriter: FailingReleaseExceptionFileWriter())
+        #expect(try await failing.insertReleaseException(entry) == [entry])
+    }
+
+    @Test("Command or occurrence conflicts preserve the original entry", arguments: [true, false])
+    func conflictingCommandInsert(sameCommand: Bool) async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let repository = AppGroupReleaseExceptionRepository(containerURL: directory)
+        let original = try makeException()
+        _ = try await repository.insertReleaseException(original)
+        let conflicting = try ReleaseException(
+            commandID: sameCommand ? original.commandID : UUID(),
+            occurrenceID: sameCommand ? "other-occurrence" : original.occurrenceID,
+            ruleID: original.ruleID, ruleRevision: 4, effectiveAt: Self.now, expiresAt: original.expiresAt)
+        await #expect(throws: ReleaseExceptionRepositoryError.conflict) {
+            try await repository.insertReleaseException(conflicting)
+        }
+        #expect(try await repository.loadReleaseExceptions() == [original])
+    }
+
+    @Test("Removing one owner preserves concurrent success and late removal preserves the new owner")
+    func ownerScopedRemoval() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let repository = AppGroupReleaseExceptionRepository(containerURL: directory)
+        let shared = SharedSnapshotRepository(containerURL: directory)
+        let original = try makeException()
+        let other = try ReleaseException(commandID: UUID(), occurrenceID: "other", ruleID: UUID(),
+            ruleRevision: 4, effectiveAt: Self.now, expiresAt: original.expiresAt)
+        _ = try await repository.insertReleaseException(original)
+        async let remove = repository.removeReleaseException(commandID: original.commandID, occurrenceID: original.occurrenceID)
+        async let insert = shared.insertReleaseException(other)
+        _ = try await (remove, insert)
+        #expect(try await repository.loadReleaseExceptions() == [other])
+        let replacement = try ReleaseException(commandID: UUID(), occurrenceID: original.occurrenceID,
+            ruleID: original.ruleID, ruleRevision: 4, effectiveAt: Self.now, expiresAt: original.expiresAt)
+        _ = try await repository.insertReleaseException(replacement)
+        _ = try await shared.removeReleaseException(commandID: original.commandID, occurrenceID: original.occurrenceID)
+        #expect(try await Set(repository.loadReleaseExceptions()) == Set([other, replacement]))
+    }
+
+    @Test("Failed command mutations retain the previous collection")
+    func commandMutationFailure() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let repository = AppGroupReleaseExceptionRepository(containerURL: directory)
+        let original = try makeException()
+        _ = try await repository.insertReleaseException(original)
+        let failing = AppGroupReleaseExceptionRepository(containerURL: directory, fileWriter: FailingReleaseExceptionFileWriter())
+        await #expect(throws: ReleaseExceptionRepositoryError.writeFailed) {
+            try await failing.removeReleaseException(commandID: original.commandID, occurrenceID: original.occurrenceID)
+        }
+        #expect(try await failing.removeReleaseException(commandID: original.commandID, occurrenceID: "wrong") == [original])
+        let another = try ReleaseException(commandID: UUID(), occurrenceID: "another", ruleID: UUID(),
+            ruleRevision: 4, effectiveAt: Self.now, expiresAt: original.expiresAt)
+        await #expect(throws: ReleaseExceptionRepositoryError.writeFailed) {
+            try await failing.insertReleaseException(another)
+        }
+        #expect(try await repository.loadReleaseExceptions() == [original])
+    }
+
+    @Test("Subsecond request replay compares the existing on-disk timestamp representation")
+    func subsecondReplay() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let entry = try ReleaseException(commandID: UUID(), occurrenceID: "fractional", ruleID: UUID(),
+            ruleRevision: 4, effectiveAt: Self.now.addingTimeInterval(0.123), expiresAt: Self.occurrence.endAt)
+        _ = try await AppGroupReleaseExceptionRepository(containerURL: directory).insertReleaseException(entry)
+        let repository = AppGroupReleaseExceptionRepository(containerURL: directory, fileWriter: FailingReleaseExceptionFileWriter())
+        let result = try await repository.insertReleaseException(entry)
+        #expect(result.count == 1)
+        #expect(result.first?.commandID == entry.commandID)
+    }
+
+    @Test("Command mutations do not replace unreadable storage")
+    func corruptCommandMutation() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let url = directory.appendingPathComponent(SharedIdentifiers.releaseExceptionsFileName)
+        let original = Data("not-json".utf8)
+        try original.write(to: url)
+        let repository = AppGroupReleaseExceptionRepository(containerURL: directory)
+        let entry = try makeException()
+        await #expect(throws: ReleaseExceptionRepositoryError.readFailed) {
+            try await repository.insertReleaseException(entry)
+        }
+        await #expect(throws: ReleaseExceptionRepositoryError.readFailed) {
+            try await repository.removeReleaseException(commandID: entry.commandID, occurrenceID: entry.occurrenceID)
+        }
+        #expect(try Data(contentsOf: url) == original)
+    }
+
     @Test("Missing storage is empty and does not create an exception file")
     func missingStorage() async throws {
         let directory = try makeTemporaryDirectory()

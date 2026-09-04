@@ -18,6 +18,14 @@ actor AppGroupReleaseExceptionRepository: ReleaseExceptionRepository {
         catch { throw ReleaseExceptionRepositoryError.writeFailed }
     }
 
+    func insertReleaseException(_ exception: ReleaseException) async throws -> [ReleaseException] {
+        try store.insert(exception)
+    }
+
+    func removeReleaseException(commandID: UUID, occurrenceID: String) async throws -> [ReleaseException] {
+        try store.remove(commandID: commandID, occurrenceID: occurrenceID)
+    }
+
     /// Revisions must describe all saved rules, not only currently active rules.
     func loadApplicableReleaseExceptions(
         at date: Date,
@@ -83,6 +91,49 @@ struct ReleaseExceptionFileStore: Sendable {
             throw SharedSnapshotRepositoryError.atomicWriteFailed(fileName: fileName)
         }
         return try result.get()
+    }
+
+    func insert(_ exception: ReleaseException) throws -> [ReleaseException] {
+        try mutate { entries in
+            if let existing = entries.first(where: {
+                $0.commandID == exception.commandID || $0.occurrenceID == exception.occurrenceID
+            }) {
+                // Compare at the established ISO8601 snapshot precision after a disk round trip.
+                let encoder = JSONEncoder()
+                encoder.dateEncodingStrategy = .iso8601
+                encoder.outputFormatting = [.sortedKeys]
+                guard try encoder.encode(existing) == encoder.encode(exception) else {
+                    throw ReleaseExceptionRepositoryError.conflict
+                }
+                return entries
+            }
+            return entries + [exception]
+        }
+    }
+
+    func remove(commandID: UUID, occurrenceID: String) throws -> [ReleaseException] {
+        try mutate { entries in
+            entries.filter { !($0.commandID == commandID && $0.occurrenceID == occurrenceID) }
+        }
+    }
+
+    private func mutate(_ transform: ([ReleaseException]) throws -> [ReleaseException]) throws -> [ReleaseException] {
+        do {
+            return try withCoordinatedWrite { url in
+                let previous = try read(from: url)
+                let next = try transform(previous)
+                if next != previous { try write(next, to: url) }
+                return next
+            }
+        } catch let error as ReleaseExceptionRepositoryError {
+            throw error
+        } catch SharedSnapshotRepositoryError.atomicWriteFailed {
+            throw ReleaseExceptionRepositoryError.writeFailed
+        } catch SharedSnapshotRepositoryError.encodingFailed {
+            throw ReleaseExceptionRepositoryError.writeFailed
+        } catch {
+            throw ReleaseExceptionRepositoryError.readFailed
+        }
     }
 
     func read(from url: URL) throws -> [ReleaseException] {

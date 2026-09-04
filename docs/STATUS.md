@@ -7,22 +7,22 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 4 사용자 스토리 2 구현 진행 중
 
 ## 진행 중
-`codex/us2-reservation-tests`에서 T049 사전 검토 중 BLK-016으로 구현을 중단했다.
-명령별 예외 추가·조건부 제거와 보상 계약 보강에 대한 사용자 승인이 필요하다. T049는 미완료다.
+`codex/us2-reservation-tests`에서 BLK-016 사용자 승인을 반영해 T049를 재개했다.
+T049a 명령별 예외 추가·조건부 제거 구현·검증을 완료했다. 현재 진행 중인 구현은 없으며
+다음은 T049b다. coordinator 연결과 T049 전체는 미완료다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 앱·Shield의 최신 컨텍스트 provider 연결은 후속 통합에 남아 있다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T048 — App Group 해제 예외의 원자 저장·조회·정리와 공유 파일 조정
+T049a — 명령별 원자 예외 추가·조건부 제거와 소유권·동시성 회귀
 
 ## 다음 작업
-BLK-016 승인 후 T049 — 명령별 예외 저장·보상 계약 보강과 해제 coordinator 구현.
+T049b — 최신 상태 기반 해제 coordinator·실패 보상과 경합 검증.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
-BLK-016 열림: 전체 예외 목록 교체 API로는 다른 동시 해제·보상 결과를 보존할 수 없으므로
-명령별 원자 추가·조건부 제거 API와 최신 상태 재평가 계약 보강에 대한 승인이 필요하다.
+BLK-016 해결됨: 명령별 원자 추가·조건부 제거 API와 최신 상태 재평가 계약 보강을 사용자 승인받았다.
 BLK-015 해결됨: occurrence별 예약 소유권 계약·스키마 보강을 사용자 승인받았다.
 T045 보고서 접근 차단은 사용자 허용 후 같은 명령 재시도로 해결됐다.
 BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록과
@@ -37,6 +37,22 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-04 T049a: 새 insert·remove API와 conflict 오류 부재 compile RED 뒤 구현했다.
+회귀 7개(인자 포함 8회)를 추가해 독립 repository instance 100개의 동시 추가, 동일 요청의 무쓰기
+멱등 처리, command·occurrence 충돌 거부, 한쪽 제거와 다른 facade 추가의 경합, 새 소유자 획득 뒤
+이전 소유자의 지연 제거, 추가·제거 쓰기 실패의 기존 목록 보존, 소수 초 요청의 파일 왕복 재시도,
+손상 파일의 무변경 실패를 검증했다. 기존 schema 1·날짜 표현과 전체 목록 교체 API는 유지한다.
+최종 iPhone 17 Pro iOS 26.5 `GetUpTests` 412개(인자 포함 470회)가 실패·skip 없이 통과했다.
+미구현 타입의 `RuleReleaseCoordinatorTests.swift`, `ShieldCoinActionTests.swift`,
+`ShieldReleaseDeadlineTests.swift`는 명령행 `EXCLUDED_SOURCE_FILE_NAMES`로 제외했다. coordinator
+spy에는 새 protocol 준수 메서드를 추가했지만 해당 suite 본문 검증은 T049b에 남아 있다.
+T045 UI RED는 재실행하지 않았다. 앱·네 extension의 generic iOS Simulator Release 빌드와
+project plist·diff 검사도 통과했다. 기존 binary strip·다른 테스트의 불필요한 try 경고가 남아 있다.
+최종 결과: `/tmp/getup-t049a/Logs/Test/Test-GetUp-2026.09.04_22-35-33-+0900.xcresult`.
+실제 앱/extension 별도 프로세스·중단·잠금 검증과 최신 제한 적용 경합은 완료하지 않았다.
+파일 수정 결과만으로 제한 적용의 최신성이나 원격 command의 상태를 보장하지 않으며 T049b에서
+연결·검증한다. 운영 활성화·원격 데이터 변경은 없다.
+
 2026-09-04 T049 사전 검토: T042의 6개 단일 요청 테스트, 실제 저장 protocol·파일 조정 구현과
 DEC-089·해제 계약을 정적으로 대조했다. 분리된 load→save와 과거 목록 복원의 경합을 확인해
 BLK-016을 기록했다. 제품 코드·테스트는 변경하지 않았고 신규 테스트 실행은 하지 않았다.

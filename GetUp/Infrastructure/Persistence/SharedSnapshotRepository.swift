@@ -230,6 +230,15 @@ actor SharedSnapshotRepository: RuleRepository, SavedPlaceRepository, LocationCo
         try ReleaseExceptionFileStore(containerURL: containerURL, fileWriter: fileWriter).save(exceptions)
     }
 
+    func insertReleaseException(_ exception: ReleaseException) async throws -> [ReleaseException] {
+        try ReleaseExceptionFileStore(containerURL: containerURL, fileWriter: fileWriter).insert(exception)
+    }
+
+    func removeReleaseException(commandID: UUID, occurrenceID: String) async throws -> [ReleaseException] {
+        try ReleaseExceptionFileStore(containerURL: containerURL, fileWriter: fileWriter)
+            .remove(commandID: commandID, occurrenceID: occurrenceID)
+    }
+
     private func loadSnapshot<Snapshot: Decodable>(
         _ type: Snapshot.Type,
         fileName: String,
