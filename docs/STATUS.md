@@ -4,20 +4,20 @@
 001-location-app-restriction, 002-live-activity-coins
 
 ## 현재 단계
-001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 3 사용자 스토리 1 완료 및 Phase 4 준비 중
+001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 4 사용자 스토리 2 구현 진행 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T038 US1 target membership·빌드 검증을
-완료했다. US1 앱 source, 단위·통합·성능 테스트, Widget source·공유 model·String Catalog가 각 target의
-Sources 또는 Resources phase에 연결됐음을 확인했고, 지정 coordinator 테스트와 Widget을 포함한
-Debug·Release 빌드를 통과시켰다.
+`codex/shield-activitykit-probe`에서 002-live-activity-coins T039를 완료했다. iOS 26.6.1 실기기의
+Shield Action extension은 메인 앱이 만든 Live Activity를 직접 열거하지 못해 `unsupported`로
+확정했다. T055에는 직접 ActivityKit 조정을 연결하지 않고 iOS 26.5 이상 앱 진입 후 foreground,
+iOS 26.0~26.4 다음 foreground 재조정을 사용한다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T038 — US1 전체 target membership과 coordinator·Widget Extension 빌드를 최종 검증함
+T039 — Shield Action의 앱 생성 Live Activity 직접 조정이 실기기에서 미지원임을 확정함
 
 ## 다음 작업
-T039 — DEBUG 전용 Shield Action ActivityKit feasibility probe를 지원 OS 실기기에서 검증한다.
+T040 — 코인 reservation·해제 상태 머신의 정상·경계·실패 테스트를 먼저 작성한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -33,6 +33,18 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-04 002 구현 T039를 완료했다. `ActivityKitFeasibilityProbe.swift`를 Shield Action target에
+연결하고 `#if DEBUG`로 격리해 success·unsupported·failure·timeout과 조회·갱신·종료 단계를 App Group에
+기록했다. iPhone 17 iOS 26.6.1(23G83)에서 메인 앱의 Live Activity 표시 후 제한 앱 Shield primary
+action을 실행한 결과 extension의 `Activity<RestrictionLiveActivityAttributes>.activities`는 활동을
+찾지 못했고 `unsupported`, `activityFound=false`, `updateVerified=false`, `endRequested=false`로
+기록됐다. 따라서 T055 production에는 직접 ActivityKit adapter를 연결하지 않고 iOS 26.5 이상 앱 진입
+후 foreground 재조정, iOS 26.0~26.4 다음 foreground 재조정을 사용한다. generic iOS Simulator
+Debug·Release 빌드와 `ShieldActionResponsePolicyTests` 2개가 실패·skip 없이 통과했고, Debug binary의
+probe 표식 6건·Release 앱·extension binary 0건, iOS 26.6.1 실기기 Debug 서명 빌드·설치·실행도
+확인했다. 기존
+XCTest binary strip 및 signed extension strip 경고는 변동 없이 남아 있다.
+
 2026-09-04 002 구현 T038을 완료했다. `RestrictionOccurrenceEvaluator`, Live Activity content·time
 policy, coordinator·system adapter와 관련 테스트 7개, Widget bundle·UI·preview, 공유 model 2개,
 Widget String Catalog가 각각 앱·`GetUpTests`·`GetUpLiveActivity` target의 올바른 Sources·Resources

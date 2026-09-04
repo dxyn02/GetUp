@@ -113,7 +113,7 @@ occurrence만 예외 처리되는지, 중복 100회에서 최대 1회만 소모�
 
 ### 사용자 스토리 2 테스트
 
-- [ ] T039 [US2] T011·T032·T033 완료 후 DEBUG 전용 `GetUpShieldAction/ActivityKitFeasibilityProbe.swift`를 추가·target 연결해 Shield Action extension이 메인 앱에서 시작한 Live Activity를 직접 조회·갱신·종료할 수 있는지 지원 OS 실기기에서 실행하고 성공·미지원·실패·timeout 결과를 `specs/002-live-activity-coins/quickstart.md`, `docs/STATUS.md`에 기록해 직접 조정 또는 foreground fallback을 확정한다.
+- [X] T039 [US2] T011·T032·T033 완료 후 DEBUG 전용 `GetUpShieldAction/ActivityKitFeasibilityProbe.swift`를 추가·target 연결해 Shield Action extension이 메인 앱에서 시작한 Live Activity를 직접 조회·갱신·종료할 수 있는지 지원 OS 실기기에서 실행하고 성공·미지원·실패·timeout 결과를 `specs/002-live-activity-coins/quickstart.md`, `docs/STATUS.md`에 기록해 직접 조정 또는 foreground fallback을 확정한다.
 - [ ] T040 [P] [US2] 무료 우선·구매 fallback·잔액 부족·비`current`·epoch 불일치 reservation, 같은 occurrence 100회 요청과 requested→reserved→applied→committed·보상·결과 불명 전이 테스트를 `GetUpTests/Core/CoinReservationPolicyTests.swift`, `GetUpTests/Core/RuleReleaseServiceTests.swift`에 먼저 작성한다.
 - [ ] T041 [P] [US2] 예외의 재실행·재부팅 유지, 만료·revision 불일치 정리, 다음 occurrence 미적용 테스트를 `GetUpTests/Persistence/ReleaseExceptionRepositoryTests.swift`에 먼저 작성한다.
 - [ ] T042 [P] [US2] App Group write·Managed Settings write·CloudKit commit 각 실패 지점의 보상, 성공 직후 대표 Live Activity 갱신·종료와 ActivityKit 실패 비치명 처리를 `GetUpTests/Integration/RuleReleaseCoordinatorTests.swift`에 먼저 작성한다.

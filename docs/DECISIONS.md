@@ -1702,3 +1702,24 @@ Shield의 무료 해제는 allowance를 별도로 먼저 생성하지 않고 `Co
 
 **영향 범위**: `MonthlyAllowancePolicy`, `MonthlyAllowanceService`, `AppLifecycleCoordinator`,
 `DependencyContainer`와 T072 초기 설정 service에 적용한다.
+
+## DEC-086 — Shield Action의 Live Activity 조정은 foreground fallback 사용
+
+**날짜**: 2026-09-04
+
+**상태**: 승인됨
+
+**결정**: Shield Action extension의 production 해제 흐름에는 메인 앱이 만든 Live Activity를 직접
+조회·갱신·종료하는 adapter를 연결하지 않는다. 코인 해제가 성공하면 iOS 26.5 이상은
+`openParentalControlsApp`으로 앱을 열어 foreground coordinator가 대표 활동을 재조정하고,
+iOS 26.0~26.4는 다음 앱 foreground에서 재조정한다. DEBUG feasibility probe와 결과 exporter는 출시
+binary에서 제외한다.
+
+**근거**: iPhone 17 iOS 26.6.1(23G83) 실기기에서 메인 앱의 Live Activity가 표시된 상태로 Shield
+primary action을 실행했지만 `Activity<RestrictionLiveActivityAttributes>.activities`가 빈 배열을
+반환했다. probe 결과는 `unsupported`, `activityFound=false`, `updateVerified=false`,
+`endRequested=false`로 기록됐다. framework API의 컴파일 가능성만으로 서로 다른 process의 활동
+열거 가능성을 보장할 수 없으므로, 재현되지 않은 직접 조정 경로를 유료 재화 해제 흐름에 넣지 않는다.
+
+**영향 범위**: `ActivityKitFeasibilityProbe`, `ShieldActionExtension`, T055의 Live Activity 조정 분기,
+T096 실기기 회귀와 `quickstart.md`의 Shield 선행 게이트에 적용한다.
