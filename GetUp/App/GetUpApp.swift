@@ -45,11 +45,37 @@ final class LocationRegionAppDelegate: NSObject,
         didFinishLaunchingWithOptions launchOptions:
             [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+#if DEBUG
+        Self.exportActivityKitProbeResult()
+#endif
         // Creating a main-run-loop manager with a delegate at launch lets Core
         // Location deliver pending region events after a background relaunch.
         locationManager.delegate = self
         return true
     }
+
+#if DEBUG
+    private static func exportActivityKitProbeResult() {
+        let resultKey = "getup.debug.activitykit-feasibility-probe"
+        guard
+            let appGroupIdentifier = SharedIdentifiers.appGroupIdentifier(),
+            let data = UserDefaults(suiteName: appGroupIdentifier)?.data(forKey: resultKey),
+            let documentsURL = FileManager.default.urls(
+                for: .documentDirectory,
+                in: .userDomainMask
+            ).first
+        else {
+            return
+        }
+
+        try? data.write(
+            to: documentsURL.appendingPathComponent(
+                ActivityKitFeasibilityProbeExport.resultFileName
+            ),
+            options: .atomic
+        )
+    }
+#endif
 
     func locationManager(
         _ manager: CLLocationManager,
@@ -107,6 +133,12 @@ final class LocationRegionAppDelegate: NSObject,
         return try container.makeLocationRegionEventHandler()
     }
 }
+
+#if DEBUG
+private enum ActivityKitFeasibilityProbeExport {
+    static let resultFileName = "activitykit-feasibility-probe.json"
+}
+#endif
 
 @MainActor
 private extension DependencyContainer {

@@ -16,6 +16,7 @@
 		AA0000000000000000000001 /* GetUpDeviceActivityMonitor.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = BA0000000000000000000002 /* GetUpDeviceActivityMonitor.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AA0000000000000000000002 /* GetUpShieldConfiguration.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = BA0000000000000000000003 /* GetUpShieldConfiguration.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AA0000000000000000000003 /* GetUpShieldAction.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = BA0000000000000000000004 /* GetUpShieldAction.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AA0000000000000000000276 /* ActivityKitFeasibilityProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90000000000000000000002 /* ActivityKitFeasibilityProbe.swift */; };
 		DA0000000000000000000001 /* GetUpLiveActivity.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = DC0000000000000000000001 /* GetUpLiveActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AA0000000000000000000011 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000011 /* PrivacyInfo.xcprivacy */; };
 		AA0000000000000000000012 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000012 /* PrivacyInfo.xcprivacy */; };
@@ -372,6 +373,7 @@
 		B70000000000000000000001 /* DeviceActivityMonitorExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceActivityMonitorExtension.swift; sourceTree = "<group>"; };
 		B80000000000000000000001 /* ShieldConfigurationExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldConfigurationExtension.swift; sourceTree = "<group>"; };
 		B90000000000000000000001 /* ShieldActionExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldActionExtension.swift; sourceTree = "<group>"; };
+		B90000000000000000000002 /* ActivityKitFeasibilityProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityKitFeasibilityProbe.swift; sourceTree = "<group>"; };
 		BA0000000000000000000001 /* GetUp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GetUp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000002 /* GetUpDeviceActivityMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpDeviceActivityMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA0000000000000000000003 /* GetUpShieldConfiguration.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GetUpShieldConfiguration.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -840,6 +842,7 @@
 			isa = PBXGroup;
 			children = (
 				B90000000000000000000001 /* ShieldActionExtension.swift */,
+				B90000000000000000000002 /* ActivityKitFeasibilityProbe.swift */,
 				B20000000000000000000004 /* GetUpShieldAction.entitlements */,
 				B30000000000000000000004 /* Info.plist */,
 				B30000000000000000000014 /* PrivacyInfo.xcprivacy */,
@@ -1258,6 +1261,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000276 /* ActivityKitFeasibilityProbe.swift in Sources */,
 				AA0000000000000000000259 /* MonthlyAllowanceService.swift in Sources */,
 				AA0000000000000000000257 /* MonthlyAllowancePolicy.swift in Sources */,
 				AA0000000000000000000254 /* CoinLedgerSyncAdapter.swift in Sources */,

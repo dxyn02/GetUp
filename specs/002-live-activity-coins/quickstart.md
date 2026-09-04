@@ -189,6 +189,23 @@ xcodebuild test \
 3. 성공이 재현된 환경만 직접 조정 경로를 활성화하고, 그 밖에는 앱 진입 또는 다음 foreground
    재조정을 기본 경로로 선택한다.
 
+#### T039 실행 결과 (2026-09-04)
+
+| 항목 | 결과 |
+|------|------|
+| 기기 | iPhone 17 (`iPhone18,3`) |
+| OS | iOS 26.6.1 (23G83) |
+| 빌드 | Debug, Family Controls·App Group entitlement가 적용된 실기기 서명 빌드 |
+| 선행 상태 | 메인 앱이 만든 Live Activity 표시 후 제한 앱 Shield primary action 실행 |
+| 조회 | `Activity<RestrictionLiveActivityAttributes>.activities`에서 앱 활동을 찾지 못함 |
+| 갱신·종료 | 조회 실패로 실행하지 않음 |
+| 최종 결과 | `unsupported` (`activityFound=false`, `updateVerified=false`, `endRequested=false`) |
+
+Shield Action extension에서 앱이 만든 활동을 직접 열거하는 경로는 이 지원 OS 실기기에서 재현되지
+않았다. T055 production 흐름에는 직접 ActivityKit adapter를 연결하지 않는다. 해제·차감 성공은
+유지하고 iOS 26.5 이상에서는 `openParentalControlsApp`으로 앱에 진입한 뒤 foreground coordinator가
+재조정하며, iOS 26.0~26.4에서는 다음 앱 foreground에서 재조정한다.
+
 ### 무료분
 
 1. 당월 무료분이 아직 생성되지 않은 상태와 무료 해제권이 2회인 상태에서 각각 제한 앱 Shield를
