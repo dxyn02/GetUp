@@ -7,17 +7,17 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 3 사용자 스토리 1 구현 진행 중
 
 ## 진행 중
-`codex/live-activity-coins-setup`에서 002-live-activity-coins T036 Live Activity UI를 완료했다.
-Widget Extension은 실제 `WidgetBundle`과 `ActivityConfiguration`을 제공하며 Lock Screen과 Dynamic
-Island minimal·compact·expanded에 규칙명·동적 종료 카운트다운·거리·추가 제한 상태만 공간에 맞게
-표시한다. 카운트다운은 `endsAt`을 현재 시각 이상으로 clamp한 SwiftUI timer라 초 단위 update가 없다.
+`codex/live-activity-coins-setup`에서 002-live-activity-coins T037 Live Activity 지역화·VoiceOver를
+완료했다. 한국어 source 문구와 영어 번역을 앱·Widget String Catalog에 추가하고 Widget resource로
+연결했다. 규칙·동적 남은 시간·known 또는 확인 불가 거리·추가 제한을 의미별 VoiceOver 요소로 읽고,
+상태를 전달하지 않는 잠금·위치·물음표 아이콘은 접근성 트리에서 제외한다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T036 — Lock Screen과 Dynamic Island Live Activity UI를 구현함
+T037 — 한국어·영어 Live Activity 문자열과 VoiceOver label을 추가함
 
 ## 다음 작업
-T037 — 한국어·영어 Live Activity 문자열과 VoiceOver label을 추가한다.
+T038 — US1 파일·resource target membership과 coordinator·Widget Extension 빌드를 최종 검증한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -33,6 +33,18 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-04 002 구현 T037을 완료했다. Live Activity의 visible 거리·확인 불가·추가 제한 문구와
+VoiceOver용 규칙명·남은 시간·남은 거리·다중 제한 설명을 한국어 source language와 영어 번역으로
+앱 및 Widget String Catalog에 추가했다. `RestrictionRuleLabel`, `RestrictionCountdown`,
+`RestrictionDistanceLabel`, `AdditionalRestrictionsLabel`은 각각 명시적인 접근성 label/value를
+제공하고 장식 SF Symbol은 접근성 트리에서 숨긴다. Widget String Catalog를 extension resource에
+연결했으며 빌드된 `GetUpLiveActivity.appex/en.lproj/Localizable.strings`에서 8개 번역과 `%lld`·`%@`
+보간 형식을 확인했다. iPhone 17 Pro iOS 26.5 Simulator의 전체 `GetUpTests` 352개(동적 인자 실행
+포함 395회)를 실패·skip 없이 통과시켰고, 앱과 네 extension의 코드 서명 없는 generic iOS
+Simulator Debug·Release 빌드, 두 catalog JSON parse, project plist와 `git diff --check`도 통과했다.
+T038에는 US1 전체 source·resource membership과 coordinator·Widget Extension의 최종 회귀 검증이
+남아 있다. 기존 XCTest binary strip 및 불필요한 `try` 경고는 변동 없이 남아 있다.
+
 2026-09-03 002 구현 T036을 완료했다. 빈 extension bootstrap을 실제 `WidgetBundle`로 교체하고,
 `RestrictionLiveActivity`를 `ActivityConfiguration`에 연결했다. Lock Screen은 규칙명·종료 카운트다운·
 known 또는 확인 불가 거리·추가 제한을 한 화면에 표시하며, Dynamic Island expanded는 같은 정보를

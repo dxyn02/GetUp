@@ -88,11 +88,14 @@ private struct RestrictionRuleLabel: View {
         HStack(spacing: 6) {
             Image(systemName: "lock.fill")
                 .foregroundStyle(.mint)
+                .accessibilityHidden(true)
 
             Text(name)
                 .font(.headline)
                 .lineLimit(1)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("제한 규칙: \(name)"))
     }
 }
 
@@ -108,6 +111,15 @@ private struct RestrictionCountdown: View {
         )
         .lineLimit(1)
         .minimumScaleFactor(0.72)
+        .accessibilityElement()
+        .accessibilityLabel("남은 시간")
+        .accessibilityValue(
+            Text(
+                timerInterval: now...max(now, endsAt),
+                countsDown: true,
+                showsHours: true
+            )
+        )
     }
 }
 
@@ -119,6 +131,7 @@ private struct RestrictionDistanceLabel: View {
         HStack(spacing: compact ? 3 : 6) {
             Image(systemName: "location.fill")
                 .foregroundStyle(.mint)
+                .accessibilityHidden(true)
 
             switch distance {
             case .known(let meters):
@@ -127,12 +140,24 @@ private struct RestrictionDistanceLabel: View {
             case .unavailable:
                 if compact {
                     Image(systemName: "questionmark")
+                        .accessibilityHidden(true)
                 } else {
                     Text("거리 확인 불가")
                 }
             }
         }
         .lineLimit(1)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    private var accessibilityLabel: Text {
+        switch distance {
+        case .known(let meters):
+            Text("남은 거리 \(meters)미터")
+        case .unavailable:
+            Text("남은 거리 확인 불가")
+        }
     }
 }
 
@@ -140,6 +165,8 @@ private struct AdditionalRestrictionsLabel: View {
     var body: some View {
         Label("추가 제한 있음", systemImage: "square.stack.3d.up.fill")
             .lineLimit(1)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("다른 제한도 활성화되어 있어요")
     }
 }
 
