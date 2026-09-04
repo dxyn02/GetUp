@@ -7,17 +7,18 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 4 사용자 스토리 2 구현 진행 중
 
 ## 진행 중
-`codex/shield-activitykit-probe`에서 002-live-activity-coins T039를 완료했다. iOS 26.6.1 실기기의
-Shield Action extension은 메인 앱이 만든 Live Activity를 직접 열거하지 못해 `unsupported`로
-확정했다. T055에는 직접 ActivityKit 조정을 연결하지 않고 iOS 26.5 이상 앱 진입 후 foreground,
-iOS 26.0~26.4 다음 foreground 재조정을 사용한다.
+`codex/us2-reservation-tests`에서 002-live-activity-coins T040을 완료했다. 무료 우선·구매 fallback,
+잔액 부족, 비`current`·epoch 불일치 무변경, 같은 occurrence 동시 100회 중 단일 reservation과
+정상·보상·결과 불명 상태 전이 계약을 테스트로 고정했다. 테스트는 TDD RED 단계이며 T046의
+`CoinReservationPolicy`와 T047의 `RuleReleaseService`·요청·최신 컨텍스트 타입 구현 전까지 의도적으로
+컴파일 실패한다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T039 — Shield Action의 앱 생성 Live Activity 직접 조정이 실기기에서 미지원임을 확정함
+T040 — 코인 reservation 정책과 해제 서비스의 정상·경계·실패 테스트를 먼저 작성함
 
 ## 다음 작업
-T040 — 코인 reservation·해제 상태 머신의 정상·경계·실패 테스트를 먼저 작성한다.
+T041 — release exception의 영속·만료·revision·다음 occurrence 테스트를 먼저 작성한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -33,6 +34,15 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-04 002 구현 T040을 TDD RED 단계로 완료했다. `CoinReservationPolicyTests` 5개는 무료분 우선,
+구매 fallback, 양쪽 잔액 부족, 모든 비`current` 장부 상태, epoch 불일치를 정의했다.
+`RuleReleaseServiceTests` 8개는 매 요청의 최신 컨텍스트 fetch, repository 무변경 실패, 같은 occurrence
+동시 100회 중 단일 reservation, requested→reserved→applied→committed, compensating→compensated,
+`reconciliationRequired`의 committed·compensated 수렴을 정의했다. 두 파일의 `GetUpTests` target 연결,
+project plist와 `git diff --check`는 통과했다. 전용 `xcodebuild test`는 예상대로 아직 없는
+`CoinReservationPolicy`, `CoinReservationPolicyError`, `RuleReleaseService`, `RuleReleaseRequest`,
+`RuleReleaseReservationContext` 때문에 컴파일 실패했으며 T046·T047에서 GREEN으로 전환해야 한다.
+
 2026-09-04 002 구현 T039를 완료했다. `ActivityKitFeasibilityProbe.swift`를 Shield Action target에
 연결하고 `#if DEBUG`로 격리해 success·unsupported·failure·timeout과 조회·갱신·종료 단계를 App Group에
 기록했다. iPhone 17 iOS 26.6.1(23G83)에서 메인 앱의 Live Activity 표시 후 제한 앱 Shield primary
