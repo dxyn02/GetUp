@@ -7,20 +7,20 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 4 사용자 스토리 2 구현 진행 중
 
 ## 진행 중
-`codex/us2-reservation-tests`에서 002-live-activity-coins T044를 완료했다. Shield primary action 전달
-시점부터 monotonic strict 5초 deadline을 적용해 4.9초 확인만 해제를 적용하고, 정확히 5초 미확인·
-5.1초 late commit·extension 중단은 같은 command ID로 fail-closed 재조정하도록 테스트로 고정했다.
-테스트는 TDD RED 단계이며 T051의 `ShieldReleaseDeadlinePolicy` 구현 전까지 의도적으로 컴파일 실패한다.
+`codex/us2-reservation-tests`에서 T045의 UI 테스트 4개를 작성했다. Shield probe 안내·단일 사용/닫기
+버튼, 앱 별도 확인·취소 무차감, 앱·Shield 중복 tap을 다룬다. 기존 UI에 새 해제 진입점·대상 안내가
+없어 실패하는 RED 단계이며, T054~T058의 UI·fixture 연결 뒤 전체 assertion을 검증해야 한다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T044 — Shield release의 strict 5초 deadline·late commit·중단 복구 테스트를 먼저 작성함
+T045 — Shield·앱 내 해제 확인 UI 테스트 4개 작성과 요소 부재 RED 확인
 
 ## 다음 작업
-T045 — Shield와 앱 내 해제 확인 UI 테스트를 먼저 작성한다.
+T046 — 무료 우선 reservation 정책을 구현한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
+T045 보고서 접근 차단은 사용자 허용 후 같은 명령 재시도로 해결됐다.
 BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록과
 `group.com.dxyn02.GetUp` 할당, Family Controls Distribution `Assigned`와 갱신 profile을 사용한
 실기기 설치·실행은 사용자 확인됐으며, extension별 서명 entitlement와 archive 증적이 추가로 필요함.
@@ -33,6 +33,17 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-04 T045 전용 UI 실행: iPhone 17 Pro iOS 26.5, 4개 테스트 모두 실패. 선행 T040~T044의
+미구현 타입을 참조하는 단위 테스트 6개 파일만 명령행 `EXCLUDED_SOURCE_FILE_NAMES`로 임시 제외했다.
+새 UI 테스트의 컴파일과 project plist·diff 검사는 통과했다. 기존 binary strip·불필요한 try 경고와
+DebuggerVersionStore 경고가 출력됐다. 사용자 허용 후 보고서를 조회해 앱 테스트는 `coinRelease.open`,
+Shield 테스트는 `restrictionProbe.shield.release`·`restrictionProbe.shield.target` 부재가 실패 원인임을
+확인했다. 후속 잔액·취소·중복 차감 assertion에는 아직 도달하지 못했으므로 동작 통과가 아니다.
+최종 소스 재실행도 4개 실패·skip 0이며 같은 UI 요소 부재 RED를 확인했다.
+최종 결과: `/tmp/getup-t045-red/Logs/Test/Test-GetUp-2026.09.04_21-34-41-+0900.xcresult`.
+새 coin UI fixture 인자·진단 식별자는 T054~T058에서 실제 provider/model과 주입 장부에 연결할
+테스트 계약이다. Simulator probe는 실제 system Shield 검증을 대체하지 않는다.
+
 2026-09-04 002 구현 T044를 TDD RED 단계로 완료했다. `ShieldReleaseDeadlineTests` 4개는 주입한
 `LiveActivityCoinMonotonicClock`으로 primary action 전달 후 4.9초 CloudKit 확인은 해제를 적용하고,
 정확히 5초 미확인과 5.1초 late commit은 로컬 예외·제한을 적용하지 않는 strict deadline을 정의했다.

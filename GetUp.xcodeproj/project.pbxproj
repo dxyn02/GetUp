@@ -199,6 +199,7 @@
 		AA0000000000000000000281 /* RuleReleaseCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5000000000000000000004B /* RuleReleaseCoordinatorTests.swift */; };
 		AA0000000000000000000282 /* ShieldCoinActionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5000000000000000000004C /* ShieldCoinActionTests.swift */; };
 		AA0000000000000000000283 /* ShieldReleaseDeadlineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5000000000000000000004D /* ShieldReleaseDeadlineTests.swift */; };
+		AA0000000000000000000284 /* UserStory2CoinReleaseUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000006 /* UserStory2CoinReleaseUITests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -399,6 +400,7 @@
 		DL0000000000000000000002 /* RestrictionLiveActivityPreviews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionLiveActivityPreviews.swift; sourceTree = "<group>"; };
 		DL0000000000000000000003 /* RestrictionLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionLiveActivity.swift; sourceTree = "<group>"; };
 		DL0000000000000000000004 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Resources/Localizable.xcstrings; sourceTree = "<group>"; };
+		B60000000000000000000006 /* UserStory2CoinReleaseUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory2CoinReleaseUITests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -901,6 +903,7 @@
 				B60000000000000000000002 /* UserStory2RestrictionActivationUITests.swift */,
 				B60000000000000000000003 /* UserStory3AutoReleaseUITests.swift */,
 				B60000000000000000000004 /* UserStory4PermissionGuidanceUITests.swift */,
+				B60000000000000000000006 /* UserStory2CoinReleaseUITests.swift */,
 				B60000000000000000000005 /* AccessibilityUITests.swift */,
 			);
 			path = GetUpUITests;
@@ -1368,6 +1371,7 @@
 				AA0000000000000000000173 /* UserStory2RestrictionActivationUITests.swift in Sources */,
 				AA0000000000000000000204 /* UserStory3AutoReleaseUITests.swift in Sources */,
 				AA0000000000000000000207 /* UserStory4PermissionGuidanceUITests.swift in Sources */,
+				AA0000000000000000000284 /* UserStory2CoinReleaseUITests.swift in Sources */,
 				AA0000000000000000000211 /* AccessibilityUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
