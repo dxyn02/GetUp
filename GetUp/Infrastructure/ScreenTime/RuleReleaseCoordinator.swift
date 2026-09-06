@@ -1,41 +1,8 @@
-import Darwin
 import Foundation
-
-struct RuleReleaseApplication: Sendable {
-    let desiredLiveActivity: RestrictionLiveActivitySnapshot?
-}
 
 struct RuleReleaseCoordinationResult: Sendable {
     let committedCommand: ReleaseCommand
     let liveActivityResult: LiveActivityCoordinationResult
-}
-
-enum RuleReleaseCoordinationError: Error, Equatable {
-    case invalidReservation
-    case applicationFailed
-    case reconciliationRequired(commandID: UUID)
-}
-
-/// Cooperative lock for all local release writers sharing one App Group.
-/// A busy caller returns immediately; process exit closes the descriptor and releases ownership.
-final class RuleReleaseLocalLease: @unchecked Sendable {
-    private let descriptor: Int32
-
-    init(directory: URL) throws {
-        let path = directory.appendingPathComponent("release-coordination.lock").path
-        let descriptor = open(path, O_CREAT | O_RDWR | O_CLOEXEC | O_NOFOLLOW, S_IRUSR | S_IWUSR)
-        guard descriptor >= 0 else { throw RuleReleaseCoordinationError.applicationFailed }
-        guard flock(descriptor, LOCK_EX | LOCK_NB) == 0 else {
-            close(descriptor)
-            throw RuleReleaseCoordinationError.applicationFailed
-        }
-        self.descriptor = descriptor
-    }
-
-    deinit {
-        flock(descriptor, LOCK_UN)
-        close(descriptor)
-    }
 }
 
 struct RuleReleaseCoordinator: Sendable {
@@ -43,7 +10,7 @@ struct RuleReleaseCoordinator: Sendable {
     let ledgerRepository: any CoinLedgerRepository
     /// Reads current saved rules and current exceptions, reevaluates the union and verifies read-back.
     /// All participating restriction writers must use the same coordination directory.
-    let applyRestrictions: @Sendable () async throws -> RuleReleaseApplication
+    let applyRestrictions: @Sendable (RuleReleaseLocalLease) async throws -> RuleReleaseApplication
     let reconcileLiveActivity: @Sendable (RestrictionLiveActivitySnapshot?) async -> LiveActivityCoordinationResult
     let clock: any Clock
     let coordinationDirectory: URL
@@ -102,9 +69,9 @@ struct RuleReleaseCoordinator: Sendable {
         do {
             try Task.checkCancellation()
             guard clock.now < exception.expiresAt else { throw RuleReleaseCoordinationError.applicationFailed }
-            application = try await applyRestrictions()
+            application = try await applyRestrictions(lease)
         } catch {
-            try await rollback(exception)
+            try await rollback(exception, using: lease)
             throw RuleReleaseCoordinationError.applicationFailed
         }
 
@@ -117,19 +84,22 @@ struct RuleReleaseCoordinator: Sendable {
         } catch {
             // Only an explicitly definite server rejection permits undoing local application.
             guard case CoinLedgerRepositoryError.database(.serverUnavailable) = error else { throw unresolved }
-            try await rollback(exception)
+            try await rollback(exception, using: lease)
             throw RuleReleaseCoordinationError.applicationFailed
         }
         let activity = await reconcileLiveActivity(application.desiredLiveActivity)
         return RuleReleaseCoordinationResult(committedCommand: committed, liveActivityResult: activity)
     }
 
-    private func rollback(_ exception: ReleaseException) async throws {
+    private func rollback(
+        _ exception: ReleaseException,
+        using lease: RuleReleaseLocalLease
+    ) async throws {
         do {
             _ = try await exceptionRepository.removeReleaseException(
                 commandID: exception.commandID, occurrenceID: exception.occurrenceID
             )
-            _ = try await applyRestrictions()
+            _ = try await applyRestrictions(lease)
         } catch {
             throw RuleReleaseCoordinationError.reconciliationRequired(commandID: exception.commandID)
         }

@@ -4,6 +4,152 @@ import Testing
 
 @Suite("Restriction coordinator")
 struct RestrictionCoordinatorTests {
+    @Test("A release exception removes only its current occurrence from the union")
+    func releaseExceptionPreservesOtherRules() async throws {
+        let released = TestFixtures.makeRule()
+        let retained = TestFixtures.makeRule(
+            id: UUID(uuidString: "00000000-0000-4000-8000-000000000205")!,
+            revision: 2
+        )
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let exceptions = AppGroupReleaseExceptionRepository(containerURL: directory)
+        let occurrence = try currentOccurrence(for: released)
+        _ = try await exceptions.insertReleaseException(
+            try releaseException(for: occurrence)
+        )
+        let adapter = RecordingRestrictionAdapter(initialRules: [released, retained])
+        let snapshots = CoordinatorActiveRestrictionRepository()
+        let coordinator = makeCoordinator(
+            rules: [released, retained],
+            conditions: [
+                TestFixtures.makeLocationCondition(ruleID: released.id),
+                TestFixtures.makeLocationCondition(
+                    ruleID: retained.id,
+                    ruleRevision: retained.revision
+                ),
+            ],
+            adapter: adapter,
+            activeRestrictionSnapshotRepository: snapshots,
+            releaseExceptionRepository: exceptions,
+            coordinationDirectory: directory
+        )
+        let lease = try RuleReleaseLocalLease(directory: directory)
+
+        let application = try await coordinator.applyForRuleRelease(using: lease)
+
+        #expect(application.desiredLiveActivity == nil)
+        #expect(await adapter.appliedRuleIDs == [retained.id])
+        #expect(await adapter.applyCount == 1)
+        let snapshot = try #require(await snapshots.snapshot)
+        #expect(snapshot.occurrences.map(\.ruleID) == [retained.id])
+    }
+
+    @Test("The release provider reloads exceptions after construction")
+    func releaseProviderReadsLatestExceptions() async throws {
+        let rule = TestFixtures.makeRule()
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let exceptions = AppGroupReleaseExceptionRepository(containerURL: directory)
+        let adapter = RecordingRestrictionAdapter(initialRules: [rule])
+        let coordinator = makeCoordinator(
+            rules: [rule],
+            conditions: [TestFixtures.makeLocationCondition(ruleID: rule.id)],
+            adapter: adapter,
+            releaseExceptionRepository: exceptions,
+            coordinationDirectory: directory
+        )
+        _ = try await exceptions.insertReleaseException(
+            try releaseException(for: currentOccurrence(for: rule))
+        )
+        let lease = try RuleReleaseLocalLease(directory: directory)
+
+        _ = try await coordinator.applyForRuleRelease(using: lease)
+
+        #expect(await adapter.appliedRuleIDs.isEmpty)
+        #expect(await adapter.removeCount == 1)
+    }
+
+    @Test("Future, expired, mismatched revision and other occurrence exceptions do not release")
+    func inapplicableExceptionsPreserveRestriction() async throws {
+        let rule = TestFixtures.makeRule()
+        let current = try currentOccurrence(for: rule)
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let invalid = [
+            try ReleaseException(
+                commandID: UUID(), occurrenceID: current.id, ruleID: rule.id,
+                ruleRevision: rule.revision, effectiveAt: TestFixtures.now.addingTimeInterval(1),
+                expiresAt: current.endAt
+            ),
+            try ReleaseException(
+                commandID: UUID(), occurrenceID: current.id + "-other", ruleID: rule.id,
+                ruleRevision: rule.revision, effectiveAt: current.startAt,
+                expiresAt: current.endAt
+            ),
+            try ReleaseException(
+                commandID: UUID(), occurrenceID: current.id, ruleID: rule.id,
+                ruleRevision: rule.revision + 1, effectiveAt: current.startAt,
+                expiresAt: current.endAt
+            ),
+            try ReleaseException(
+                commandID: UUID(), occurrenceID: current.id, ruleID: rule.id,
+                ruleRevision: rule.revision, effectiveAt: current.startAt,
+                expiresAt: TestFixtures.now
+            ),
+        ]
+        let exceptions = CoordinatorReleaseExceptionRepository(exceptions: invalid)
+        let adapter = RecordingRestrictionAdapter(initialRules: [rule])
+        let coordinator = makeCoordinator(
+            rules: [rule],
+            conditions: [TestFixtures.makeLocationCondition(ruleID: rule.id)],
+            adapter: adapter,
+            releaseExceptionRepository: exceptions,
+            coordinationDirectory: directory
+        )
+        let lease = try RuleReleaseLocalLease(directory: directory)
+
+        _ = try await coordinator.applyForRuleRelease(using: lease)
+
+        #expect(await adapter.appliedRuleIDs == [rule.id])
+    }
+
+    @Test("Restriction read-back mismatch fails the release application")
+    func releaseApplicationRequiresReadBack() async throws {
+        let rule = TestFixtures.makeRule()
+        let adapter = RecordingRestrictionAdapter(updatesReadBack: false)
+        let coordinator = makeCoordinator(
+            rules: [rule],
+            conditions: [TestFixtures.makeLocationCondition(ruleID: rule.id)],
+            adapter: adapter
+        )
+
+        await #expect(throws: RestrictionCoordinatorError.restrictionReadBackMismatch) {
+            try await coordinator.handleTimeEvent()
+        }
+    }
+
+    @Test("A regular writer cannot overtake an active release lease")
+    func regularEvaluationUsesReleaseCoordinationLock() async throws {
+        let rule = TestFixtures.makeRule()
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let adapter = RecordingRestrictionAdapter()
+        let coordinator = makeCoordinator(
+            rules: [rule],
+            conditions: [TestFixtures.makeLocationCondition(ruleID: rule.id)],
+            adapter: adapter,
+            coordinationDirectory: directory
+        )
+        let lease = try RuleReleaseLocalLease(directory: directory)
+
+        await #expect(throws: RuleReleaseCoordinationError.applicationFailed) {
+            try await coordinator.handleTimeEvent()
+        }
+        withExtendedLifetime(lease) {}
+        #expect(await adapter.applyCount == 0)
+    }
+
     @Test("A time event applies every rule whose time and location are active")
     func timeEventAppliesAllSatisfiedRules() async throws {
         let first = TestFixtures.makeRule()
@@ -234,6 +380,8 @@ struct RestrictionCoordinatorTests {
         adapter: RecordingRestrictionAdapter,
         activeRestrictionSnapshotRepository: CoordinatorActiveRestrictionRepository =
             CoordinatorActiveRestrictionRepository(),
+        releaseExceptionRepository: (any ReleaseExceptionRepository)? = nil,
+        coordinationDirectory: URL? = nil,
         clock: any Clock = FixedClock(now: TestFixtures.now)
     ) -> RestrictionCoordinator {
         RestrictionCoordinator(
@@ -244,6 +392,8 @@ struct RestrictionCoordinatorTests {
             authorizationProvider: ApprovedAuthorizationProvider(),
             restrictionAdapter: adapter,
             activeRestrictionSnapshotRepository: activeRestrictionSnapshotRepository,
+            releaseExceptionRepository: releaseExceptionRepository,
+            coordinationDirectory: coordinationDirectory,
             clock: clock,
             calendar: TestFixtures.calendar,
             timeZone: TestFixtures.timeZone
@@ -263,6 +413,38 @@ struct RestrictionCoordinatorTests {
             second: 0,
             of: TestFixtures.now
         )!
+    }
+
+    private func currentOccurrence(for rule: RestrictionRuleSnapshot) throws
+        -> RestrictionOccurrence
+    {
+        try RestrictionOccurrence(
+            ruleID: rule.id,
+            ruleRevision: rule.revision,
+            startAt: date(hour: 6),
+            endAt: date(hour: 9),
+            activatedAt: TestFixtures.now
+        )
+    }
+
+    private func releaseException(for occurrence: RestrictionOccurrence) throws
+        -> ReleaseException
+    {
+        try ReleaseException(
+            commandID: UUID(),
+            occurrenceID: occurrence.id,
+            ruleID: occurrence.ruleID,
+            ruleRevision: occurrence.ruleRevision,
+            effectiveAt: occurrence.startAt,
+            expiresAt: occurrence.endAt
+        )
+    }
+
+    private func makeTemporaryDirectory() throws -> URL {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("restriction-release-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return directory
     }
 }
 
@@ -325,6 +507,27 @@ private actor CoordinatorLocationRepository: LocationConditionRepository {
     func deleteLocationConditions() { collection = nil }
 }
 
+private actor CoordinatorReleaseExceptionRepository: ReleaseExceptionRepository {
+    private var exceptions: [ReleaseException]
+
+    init(exceptions: [ReleaseException]) {
+        self.exceptions = exceptions
+    }
+
+    func loadReleaseExceptions() -> [ReleaseException] { exceptions }
+    func saveReleaseExceptions(_ exceptions: [ReleaseException]) { self.exceptions = exceptions }
+
+    func insertReleaseException(_ exception: ReleaseException) -> [ReleaseException] {
+        exceptions.append(exception)
+        return exceptions
+    }
+
+    func removeReleaseException(commandID: UUID, occurrenceID: String) -> [ReleaseException] {
+        exceptions.removeAll { $0.commandID == commandID && $0.occurrenceID == occurrenceID }
+        return exceptions
+    }
+}
+
 private struct ApprovedAuthorizationProvider: AuthorizationProviding {
     func authorizationSnapshot() -> AuthorizationSnapshot {
         TestFixtures.makeAuthorization()
@@ -337,10 +540,12 @@ private actor RecordingRestrictionAdapter: RestrictionApplying {
     private(set) var applyCount = 0
     private(set) var removeCount = 0
     private(set) var isShieldPresent: Bool
+    private let updatesReadBack: Bool
 
     init(
         initialRules: [RestrictionRuleSnapshot] = [],
-        isShieldPresent: Bool? = nil
+        isShieldPresent: Bool? = nil,
+        updatesReadBack: Bool = true
     ) {
         state = AppliedRestrictionState(
             activeRuleRevisions: Set(
@@ -351,6 +556,7 @@ private actor RecordingRestrictionAdapter: RestrictionApplying {
         )
         appliedRuleIDs = Set(initialRules.map(\.id))
         self.isShieldPresent = isShieldPresent ?? !initialRules.isEmpty
+        self.updatesReadBack = updatesReadBack
     }
 
     func currentAppliedState() -> AppliedRestrictionState { state }
@@ -359,6 +565,7 @@ private actor RecordingRestrictionAdapter: RestrictionApplying {
         applyCount += 1
         isShieldPresent = true
         appliedRuleIDs = Set(rules.map(\.id))
+        guard updatesReadBack else { return }
         state = AppliedRestrictionState(
             activeRuleRevisions: Set(
                 rules.map {
@@ -372,6 +579,7 @@ private actor RecordingRestrictionAdapter: RestrictionApplying {
         removeCount += 1
         isShieldPresent = false
         appliedRuleIDs = []
+        guard updatesReadBack else { return }
         state = AppliedRestrictionState(activeRuleRevisions: [])
     }
 }

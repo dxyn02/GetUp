@@ -7,17 +7,17 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 4 사용자 스토리 2 구현 진행 중
 
 ## 진행 중
-`codex/us2-reservation-tests`에서 T051 Shield 5초 deadline 정책 구현과 회귀를 완료했다.
-현재 진행 중인 구현은 없으며 다음은 T052이다.
+`codex/us2-reservation-tests`에서 T052 release exception 기반 제한 합집합 재평가와 실제 provider
+연결을 완료했다. 현재 진행 중인 구현은 없으며 다음은 T053이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 앱·Shield의 최신 컨텍스트 provider 연결은 후속 통합에 남아 있다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T051 — Shield strict monotonic 5초 deadline과 동일 command ID 재조정 경계
+T052 — 최신 release exception을 반영한 제한 합집합·공통 잠금·read-back provider 연결
 
 ## 다음 작업
-T052 — release exception을 제한 합집합에서 제외하고 다른 규칙 제한을 유지하는 실제 provider 연결.
+T053 — Device Activity interval 시작·종료에서 유효 예외 적용·만료 정리와 공통 잠금 참여.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -36,6 +36,21 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-06 T052: `RestrictionCoordinator`에 최신 release exception 조회와 현재 occurrence 식별자·
+rule revision·`effectiveAt <= now < expiresAt` 검증을 연결했다. 유효 예외가 있는 규칙만 제한 합집합에서
+제외하고 겹친 다른 규칙은 유지하며, 실제 `DependencyContainer` provider가 T049/T050에서 보유한
+동일 `RuleReleaseLocalLease`를 넘겨받아 재평가·Managed Settings read-back까지 마치도록 했다.
+일반 time·location·restore writer도 같은 App Group 비차단 잠금에 참여한다. 공통 잠금 타입을 앱,
+Device Activity Monitor, Shield Action target이 공유하도록 분리했다. 집중 테스트와 최종 iPhone 17 Pro
+iOS 26.5 `GetUpTests` 448개(동적 인자 포함 511회)가 실패·skip 없이 통과했다. 미구현
+`ShieldCoinActionTests.swift`만 명령행에서 제외했고 T045 UI RED는 재실행하지 않았다. 앱·네 extension의
+generic iOS Simulator Release 빌드도 통과했다. 기존 테스트의 불필요한 try·binary strip 경고는
+남아 있다. 최종 결과:
+`/tmp/getup-t052-full/Logs/Test/Test-GetUp-2026.09.06_15-59-42-+0900.xcresult`.
+interval callback의 예외 정리·잠금 연결은 T053, 실제 Shield action 조립은 T055 후속 범위다.
+실기기·실제 CloudKit은 미검증이며 운영 장부 활성화·schema 배포·원격 데이터 변경은 하지 않았다.
+새 차단은 없다.
+
 2026-09-06 T051: 기존 T044의 미구현 타입 compile RED를 확인한 뒤 strict monotonic deadline 정책을
 구현했다. 기존 4개 테스트와 반환하지 않는 CloudKit 시도의 실제 timeout race 회귀 1개를 통과해
 4.9초 성공만 적용하고 정확히 5초·5.1초 지연·extension 중단은 제한 유지, 동일 command ID 재조정,

@@ -1,5 +1,25 @@
 # 결정 사항
 
+## DEC-094 — release exception 제한 합집합의 동일 lease 재평가
+
+**날짜**: 2026-09-06
+
+**결정**: `RestrictionCoordinator`는 적용할 때마다 최신 규칙과 release exception을 조회한다.
+현재 일정으로 계산한 occurrence ID, rule ID·revision 및 `effectiveAt <= now < expiresAt`가 모두
+일치하는 예외만 해당 규칙을 제한 합집합에서 제외한다. 다른 활성 규칙은 그대로 유지하며 적용 뒤
+Managed Settings의 revision 집합이 기대값과 정확히 일치하고 reset이 필요하지 않아야 성공한다.
+
+T049 coordinator와 T050 reconciler는 자신이 획득한 `RuleReleaseLocalLease`를 실제 적용 provider에
+전달한다. provider는 App Group 조정 디렉터리가 같은지 확인하고 같은 lease 안에서 재평가하므로
+비차단 잠금을 중첩 획득하지 않는다. 일반 time·location·restore 제한 writer도 같은 고정 잠금에
+참여한다. 공통 잠금 구현은 앱·Device Activity Monitor·Shield Action target이 공유한다.
+
+**근거와 범위**: 예외 저장 직후 과거 규칙 목록이나 과거 예외 snapshot을 적용하면 다른 규칙의
+제한을 잃거나 방금 해제한 occurrence가 다시 포함될 수 있다. 잠금 token을 closure로 전달해야
+예외 쓰기부터 read-back까지 하나의 임계 구역을 유지하면서 자기 자신과 경합하지 않는다.
+T053의 interval 시작·종료 writer와 만료 정리는 같은 잠금 경계에 후속 연결한다. 이번 결정은 실제
+Shield action·CloudKit 운영 장부를 활성화하지 않고 schema 배포나 원격 데이터를 변경하지 않는다.
+
 ## DEC-093 — Shield 해제 확인의 strict monotonic 5초 경계
 
 **날짜**: 2026-09-06

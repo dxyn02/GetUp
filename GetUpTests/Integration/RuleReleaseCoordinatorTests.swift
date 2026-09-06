@@ -59,14 +59,14 @@ struct RuleReleaseCoordinatorTests {
         let firstLedger = ReleaseLedgerRepositorySpy(command: commands[0], recorder: recorder, commitFails: firstFails)
         let secondLedger = ReleaseLedgerRepositorySpy(command: commands[1], recorder: recorder, commitFails: false)
         let first = RuleReleaseCoordinator(exceptionRepository: firstStore, ledgerRepository: firstLedger,
-            applyRestrictions: {
+            applyRestrictions: { _ in
                 await gate.pauseFirstApplication()
                 let current = try await firstStore.loadReleaseExceptions()
                 await gate.record(current)
                 return RuleReleaseApplication(desiredLiveActivity: nil)
             }, reconcileLiveActivity: { _ in .noChange }, clock: FixedClock(now: Self.now), coordinationDirectory: directory)
         let second = RuleReleaseCoordinator(exceptionRepository: secondStore, ledgerRepository: secondLedger,
-            applyRestrictions: {
+            applyRestrictions: { _ in
                 let current = try await secondStore.loadReleaseExceptions()
                 await gate.record(current)
                 return RuleReleaseApplication(desiredLiveActivity: nil)
@@ -510,7 +510,7 @@ private final class CoordinatorFixture {
         self.coordinator = RuleReleaseCoordinator(
             exceptionRepository: exceptionRepository,
             ledgerRepository: ledger,
-            applyRestrictions: {
+            applyRestrictions: { _ in
                 try await restrictionWriter.apply(exceptions: exceptionRepository.exceptions)
             },
             reconcileLiveActivity: { desiredActivity in

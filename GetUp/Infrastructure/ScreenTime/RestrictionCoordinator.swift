@@ -32,6 +32,47 @@ struct RestrictionRuleSetEvaluation: Sendable {
     let desiredRules: [RestrictionRuleSnapshot]
 }
 
+enum RestrictionCoordinatorError: Error, Equatable, Sendable {
+    case invalidCoordinationLease
+    case restrictionReadBackMismatch
+}
+
+enum ReleaseExceptionRestrictionPolicy {
+    static func excludingReleasedOccurrences(
+        from rules: [RestrictionRuleSnapshot],
+        exceptions: [ReleaseException],
+        at date: Date,
+        calendar: Calendar,
+        timeZone: TimeZone
+    ) -> [RestrictionRuleSnapshot] {
+        rules.filter { rule in
+            guard let interval = ScheduleEvaluator.activeInterval(
+                weekdays: rule.weekdays,
+                startTime: rule.startTime,
+                endTime: rule.endTime,
+                at: date,
+                calendar: calendar,
+                timeZone: timeZone
+            ) else {
+                return true
+            }
+            let occurrenceID = RestrictionOccurrence.deterministicID(
+                ruleID: rule.id,
+                ruleRevision: rule.revision,
+                startAt: interval.lowerBound,
+                endAt: interval.upperBound
+            )
+            return !exceptions.contains {
+                $0.ruleID == rule.id
+                    && $0.ruleRevision == rule.revision
+                    && $0.occurrenceID == occurrenceID
+                    && $0.effectiveAt <= date
+                    && date < $0.expiresAt
+            }
+        }
+    }
+}
+
 enum ActiveRestrictionSnapshotPolicy {
     static func makeSnapshot(
         previous: ActiveRestrictionSnapshot?,
@@ -218,6 +259,8 @@ actor RestrictionCoordinator {
     private let restrictionAdapter: any RestrictionApplying
     private let activeRestrictionSnapshotRepository:
         (any ActiveRestrictionSnapshotRepository)?
+    private let releaseExceptionRepository: (any ReleaseExceptionRepository)?
+    private let coordinationDirectory: URL?
     private let clock: any Clock
     private let calendar: Calendar
     private let timeZone: TimeZone
@@ -229,6 +272,8 @@ actor RestrictionCoordinator {
         restrictionAdapter: any RestrictionApplying,
         activeRestrictionSnapshotRepository:
             (any ActiveRestrictionSnapshotRepository)? = nil,
+        releaseExceptionRepository: (any ReleaseExceptionRepository)? = nil,
+        coordinationDirectory: URL? = nil,
         clock: any Clock = SystemRestrictionClock(),
         calendar: Calendar = .current,
         timeZone: TimeZone = .current
@@ -239,6 +284,8 @@ actor RestrictionCoordinator {
         self.restrictionAdapter = restrictionAdapter
         self.activeRestrictionSnapshotRepository =
             activeRestrictionSnapshotRepository
+        self.releaseExceptionRepository = releaseExceptionRepository
+        self.coordinationDirectory = coordinationDirectory
         self.clock = clock
         self.calendar = calendar
         self.timeZone = timeZone
@@ -247,7 +294,7 @@ actor RestrictionCoordinator {
     func handleTimeEvent(
         confirmedAt: Date? = nil
     ) async throws -> RestrictionCoordinationResult {
-        try await evaluate(
+        try await evaluateWithCoordination(
             event: .timeChanged,
             eventConfirmedAt: confirmedAt ?? clock.now
         )
@@ -257,14 +304,39 @@ actor RestrictionCoordinator {
         ruleID: UUID,
         confirmedAt: Date? = nil
     ) async throws -> RestrictionCoordinationResult {
-        try await evaluate(
+        try await evaluateWithCoordination(
             event: .locationChanged(ruleID: ruleID),
             eventConfirmedAt: confirmedAt ?? clock.now
         )
     }
 
     func restore() async throws -> RestrictionCoordinationResult {
-        try await evaluate(event: .restoration, eventConfirmedAt: nil)
+        try await evaluateWithCoordination(event: .restoration, eventConfirmedAt: nil)
+    }
+
+    /// T049 owns the lease across exception mutation, this fresh evaluation and ledger commit.
+    func applyForRuleRelease(
+        using lease: RuleReleaseLocalLease
+    ) async throws -> RuleReleaseApplication {
+        guard let coordinationDirectory,
+              lease.coordinates(directory: coordinationDirectory) else {
+            throw RestrictionCoordinatorError.invalidCoordinationLease
+        }
+        _ = try await evaluate(event: .restoration, eventConfirmedAt: nil)
+        // Shield ActivityKit access is unsupported; foreground lifecycle performs reconciliation.
+        return RuleReleaseApplication(desiredLiveActivity: nil)
+    }
+
+    private func evaluateWithCoordination(
+        event: RestrictionEvaluationEvent,
+        eventConfirmedAt: Date?
+    ) async throws -> RestrictionCoordinationResult {
+        guard let coordinationDirectory else {
+            return try await evaluate(event: event, eventConfirmedAt: eventConfirmedAt)
+        }
+        let lease = try RuleReleaseLocalLease(directory: coordinationDirectory)
+        defer { withExtendedLifetime(lease) {} }
+        return try await evaluate(event: event, eventConfirmedAt: eventConfirmedAt)
     }
 
     private func evaluate(
@@ -288,7 +360,14 @@ actor RestrictionCoordinator {
             timeZone: timeZone
         )
         let decisions = evaluation.decisions
-        let desiredRules = evaluation.desiredRules
+        let exceptions = try await releaseExceptionRepository?.loadReleaseExceptions() ?? []
+        let desiredRules = ReleaseExceptionRestrictionPolicy.excludingReleasedOccurrences(
+            from: evaluation.desiredRules,
+            exceptions: exceptions,
+            at: evaluatedAt,
+            calendar: calendar,
+            timeZone: timeZone
+        )
 
         let desiredRuleRevisions = Set(
             desiredRules.map {
@@ -317,6 +396,10 @@ actor RestrictionCoordinator {
         }
 
         let appliedState = await restrictionAdapter.currentAppliedState()
+        guard !appliedState.requiresReset,
+              appliedState.activeRuleRevisions == desiredRuleRevisions else {
+            throw RestrictionCoordinatorError.restrictionReadBackMismatch
+        }
         try await saveActiveRestrictionSnapshot(
             desiredRules: desiredRules,
             appliedState: appliedState,
@@ -376,7 +459,22 @@ extension DependencyContainer {
             locationConditionRepository: locationConditionRepository,
             authorizationProvider: authorizationProvider,
             restrictionAdapter: try makeRestrictionAdapter(bundle: bundle),
-            activeRestrictionSnapshotRepository: sharedSnapshotRepository
+            activeRestrictionSnapshotRepository: sharedSnapshotRepository,
+            releaseExceptionRepository: sharedSnapshotRepository,
+            coordinationDirectory: coordinationDirectory
         )
+    }
+
+    func makeRuleReleaseApplicationProvider(
+        bundle: Bundle = .main,
+        authorizationProvider: any AuthorizationProviding = SystemAuthorizationProvider()
+    ) throws -> @Sendable (RuleReleaseLocalLease) async throws -> RuleReleaseApplication {
+        let coordinator = try makeRestrictionCoordinator(
+            bundle: bundle,
+            authorizationProvider: authorizationProvider
+        )
+        return { lease in
+            try await coordinator.applyForRuleRelease(using: lease)
+        }
     }
 }

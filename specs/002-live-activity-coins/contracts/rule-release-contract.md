@@ -64,8 +64,10 @@ T049b의 `RuleReleaseCoordinator`는 공통 App Group 디렉터리의 비차단 
 복구·활동 조정까지 유지한다. 잠금 경합은 해당 command의 재조정 필요 결과로 반환하며 자동 보상하지
 않는다. 입력 reservation만 신뢰하지 않고 원격 command를 재조회해 reserved 상태와 식별자를
 확인한다. 기존 예외 또는 원격 terminal 상태의 재시도는 새 예외를 만들거나 제거하지 않는다.
-필수 `applyRestrictions()` 주입 경계는 호출 때마다 최신 규칙·예외를 읽고 합집합 재평가·read-back을
-완료해야 한다. T052·T053 실제 writer도 동일한 로컬 조정 규칙을 사용해야 한다.
+필수 `applyRestrictions(lease)` 주입 경계는 호출 때마다 최신 규칙·예외를 읽고 합집합 재평가·
+read-back을 완료해야 한다. 전달된 lease가 실제 writer의 App Group 조정 디렉터리와 일치하지 않으면
+적용하지 않는다. T052의 time·location·restore writer도 동일한 로컬 조정 규칙을 사용하며 T053의
+interval writer도 여기에 참여해야 한다.
 applied·commit 결과 불명과 분류되지 않은 오류는 예외를 유지한 채 T050 재조정으로 넘긴다.
 
 | 실패 지점 | 결과 |
@@ -129,6 +131,13 @@ T051 Shield deadline 계약: primary action이 서비스에 전달된 monotonic 
 재조정하고 occurrence가 연결된 `.reconciliation` route를 저장한다. 지연 원격 작업을 취소해도
 이미 제출된 CloudKit 작업의 결과를 성공·실패로 추정하지 않으며, route를 통해 다음 앱 실행에서
 같은 command ID를 다시 확인한다. wall clock 변경은 deadline 판정에 영향을 주지 않는다.
+
+T052 제한 합집합 계약: `RestrictionCoordinator`는 적용 직전에 최신 release exception 목록을
+조회한다. `ruleID`, `ruleRevision`, 현재 일정에서 결정적으로 계산한 `occurrenceID`가 일치하고
+`effectiveAt <= now < expiresAt`인 예외만 해당 규칙을 제외한다. 미래·만료·다른 occurrence·revision
+불일치 예외는 제한을 해제하지 않는다. 제외 뒤 남은 모든 규칙의 token 합집합을 적용하고 adapter의
+현재 revision 집합을 read-back해 정확히 일치할 때만 성공한다. T049·T050은 자신이 획득한 lease를
+provider에 전달하고, provider는 같은 lease 안에서 전체 재평가를 수행해 중첩 잠금을 피한다.
 
 - 무료 우선, 구매 fallback, 양쪽 잔액 부족
 - 같은 occurrence 100회 동시 요청과 Shield·앱 교차 요청

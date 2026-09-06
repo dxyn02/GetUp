@@ -9,7 +9,7 @@ struct RuleReleaseReconciler: Sendable {
     let exceptionRepository: any ReleaseExceptionRepository
     let ledgerRepository: any CoinLedgerRepository
     /// Re-reads current rules and exceptions and verifies the applied restriction union.
-    let applyRestrictions: @Sendable () async throws -> RuleReleaseApplication
+    let applyRestrictions: @Sendable (RuleReleaseLocalLease) async throws -> RuleReleaseApplication
     let reconcileLiveActivity: @Sendable (RestrictionLiveActivitySnapshot?) async -> LiveActivityCoordinationResult
     let clock: any Clock
     let coordinationDirectory: URL
@@ -47,14 +47,14 @@ struct RuleReleaseReconciler: Sendable {
             switch command.state {
             case .committed:
                 // The interval may already have expired and been cleaned; never recreate an exception.
-                application = try await applyRestrictions()
+                application = try await applyRestrictions(lease)
                 terminal = command
             case .compensated, .compensating:
                 if evidence != nil {
                     _ = try await exceptionRepository.removeReleaseException(
                         commandID: commandID, occurrenceID: command.occurrenceID)
                 }
-                application = try await applyRestrictions()
+                application = try await applyRestrictions(lease)
                 terminal = command.state == .compensated ? command
                     : try await ledgerRepository.compensateRelease(commandID: commandID, at: clock.now)
                 try validate(terminal, against: command, expected: .compensated)
@@ -63,7 +63,7 @@ struct RuleReleaseReconciler: Sendable {
                 guard !exceptions.contains(where: {
                     $0.occurrenceID == command.occurrenceID && $0.commandID != commandID
                 }) else { throw unresolved }
-                application = try await applyRestrictions()
+                application = try await applyRestrictions(lease)
                 if evidence != nil {
                     if command.state == .reserved {
                         let applied = try await ledgerRepository.markReleaseApplied(commandID: commandID, at: clock.now)

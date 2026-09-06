@@ -214,6 +214,9 @@
 		AA0000000000000000000298 /* RuleReleaseReconciler.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000072 /* RuleReleaseReconciler.swift */; };
 		AA0000000000000000000299 /* ShieldReleaseDeadlinePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000073 /* ShieldReleaseDeadlinePolicy.swift */; };
 		AA0000000000000000000300 /* ShieldReleaseDeadlinePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000073 /* ShieldReleaseDeadlinePolicy.swift */; };
+		AA0000000000000000000301 /* RuleReleaseLocalLease.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000074 /* RuleReleaseLocalLease.swift */; };
+		AA0000000000000000000302 /* RuleReleaseLocalLease.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000074 /* RuleReleaseLocalLease.swift */; };
+		AA0000000000000000000303 /* RuleReleaseLocalLease.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000074 /* RuleReleaseLocalLease.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -421,6 +424,7 @@
 		B40000000000000000000071 /* RuleReleaseCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleReleaseCoordinator.swift; sourceTree = "<group>"; };
 		B40000000000000000000072 /* RuleReleaseReconciler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleReleaseReconciler.swift; sourceTree = "<group>"; };
 		B40000000000000000000073 /* ShieldReleaseDeadlinePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldReleaseDeadlinePolicy.swift; sourceTree = "<group>"; };
+		B40000000000000000000074 /* RuleReleaseLocalLease.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleReleaseLocalLease.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -666,6 +670,7 @@
 				B40000000000000000000045 /* RestrictionCoordinator.swift */,
 				B40000000000000000000071 /* RuleReleaseCoordinator.swift */,
 				B40000000000000000000073 /* ShieldReleaseDeadlinePolicy.swift */,
+				B40000000000000000000074 /* RuleReleaseLocalLease.swift */,
 				B40000000000000000000049 /* ShieldContentProvider.swift */,
 				B40000000000000000000050 /* ShieldActionResponsePolicy.swift */,
 			);
@@ -1200,6 +1205,7 @@
 				AA0000000000000000000295 /* RuleReleaseCoordinator.swift in Sources */,
 				AA0000000000000000000297 /* RuleReleaseReconciler.swift in Sources */,
 				AA0000000000000000000299 /* ShieldReleaseDeadlinePolicy.swift in Sources */,
+				AA0000000000000000000301 /* RuleReleaseLocalLease.swift in Sources */,
 				AA0000000000000000000256 /* MonthlyAllowancePolicy.swift in Sources */,
 				AA0000000000000000000285 /* CoinReservationPolicy.swift in Sources */,
 				AA0000000000000000000253 /* CoinLedgerSyncAdapter.swift in Sources */,
@@ -1276,6 +1282,7 @@
 				AA0000000000000000000175 /* DeviceActivityScheduleAdapter.swift in Sources */,
 				AA0000000000000000000179 /* ManagedSettingsRestrictionAdapter.swift in Sources */,
 				AA0000000000000000000181 /* RestrictionCoordinator.swift in Sources */,
+				AA0000000000000000000302 /* RuleReleaseLocalLease.swift in Sources */,
 				AA0000000000000000000184 /* AuthorizationAdapter.swift in Sources */,
 				AA0000000000000000000187 /* AppLifecycleCoordinator.swift in Sources */,
 				AA0000000000000000000188 /* DeviceActivityMonitorExtension.swift in Sources */,
@@ -1322,6 +1329,7 @@
 				AA0000000000000000000296 /* RuleReleaseCoordinator.swift in Sources */,
 				AA0000000000000000000298 /* RuleReleaseReconciler.swift in Sources */,
 				AA0000000000000000000300 /* ShieldReleaseDeadlinePolicy.swift in Sources */,
+				AA0000000000000000000303 /* RuleReleaseLocalLease.swift in Sources */,
 				AA0000000000000000000257 /* MonthlyAllowancePolicy.swift in Sources */,
 				AA0000000000000000000286 /* CoinReservationPolicy.swift in Sources */,
 				AA0000000000000000000254 /* CoinLedgerSyncAdapter.swift in Sources */,

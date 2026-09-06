@@ -354,6 +354,16 @@ struct LiveActivityCoordinationResult: Equatable, Sendable {
     static let noChange = LiveActivityCoordinationResult(actions: [], failureCodes: [])
 }
 
+struct RuleReleaseApplication: Sendable {
+    let desiredLiveActivity: RestrictionLiveActivitySnapshot?
+}
+
+enum RuleReleaseCoordinationError: Error, Equatable, Sendable {
+    case invalidReservation
+    case applicationFailed
+    case reconciliationRequired(commandID: UUID)
+}
+
 protocol ReleaseExceptionRepository: Sendable {
     func loadReleaseExceptions() async throws -> [ReleaseException]
     /// Full replacement only; never use a stale collection for command insertion or rollback.
