@@ -250,6 +250,9 @@ mirror·해제 예외를 보관한다. 별도 서버와 외부 패키지는 도�
   수행한다. 같은 영속 payload는 멱등 처리하며 다른 command·occurrence 소유권은 덮지 않는다.
   T049b는 과거 목록 복원을 사용하지 않고 최신 규칙·예외 재평가와 로컬 적용 경합을 검증한다.
   저장소 반환 snapshot은 적용 시점까지 최신이라는 보장이 아니며 원격 완료 상태 판정도 대체하지 않는다.
+- T049b coordinator는 App Group 고정 lock 파일의 비차단 배타 잠금을 await 구간에도 유지한다.
+  경합은 command 재조정으로 넘기며, 적용 closure는 최신 규칙·예외를 재조회한다. T052·T053의
+  실제 제한 writer도 같은 로컬 조정 규칙에 참여해야 한다. 실제 Shield·프로세스 중단 인수는 별도다.
 - BLK-015 승인에 따라 epoch·occurrence별 `ReleaseOccurrenceClaim`을 무료·구매 예약이 공유한다.
   claim 획득과 예약, claim 해제와 보상을 각각 같은 atomic modify로 처리한다. T047a 모델·codec,
   T047b 원자 저장·호환 gate, T047c 서비스 연결 순으로 검증한다. 기존 schema 데이터 삭제나

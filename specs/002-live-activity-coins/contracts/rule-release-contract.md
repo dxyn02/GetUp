@@ -60,6 +60,14 @@ BLK-015 승인 보강: 같은 epoch·occurrence의 명령은 공통 `ReleaseOccu
 
 ## 실패·재조정
 
+T049b의 `RuleReleaseCoordinator`는 공통 App Group 디렉터리의 비차단 로컬 잠금을 적용부터
+복구·활동 조정까지 유지한다. 잠금 경합은 해당 command의 재조정 필요 결과로 반환하며 자동 보상하지
+않는다. 입력 reservation만 신뢰하지 않고 원격 command를 재조회해 reserved 상태와 식별자를
+확인한다. 기존 예외 또는 원격 terminal 상태의 재시도는 새 예외를 만들거나 제거하지 않는다.
+필수 `applyRestrictions()` 주입 경계는 호출 때마다 최신 규칙·예외를 읽고 합집합 재평가·read-back을
+완료해야 한다. T052·T053 실제 writer도 동일한 로컬 조정 규칙을 사용해야 한다.
+applied·commit 결과 불명과 분류되지 않은 오류는 예외를 유지한 채 T050 재조정으로 넘긴다.
+
 | 실패 지점 | 결과 |
 |-----------|------|
 | reservation 전 | 무변경 실패 |

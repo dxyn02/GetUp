@@ -208,6 +208,8 @@
 		AA0000000000000000000286 /* CoinReservationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000068 /* CoinReservationPolicy.swift */; };
 		AA0000000000000000000287 /* RuleReleaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000069 /* RuleReleaseService.swift */; };
 		AA0000000000000000000288 /* RuleReleaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000069 /* RuleReleaseService.swift */; };
+		AA0000000000000000000295 /* RuleReleaseCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000071 /* RuleReleaseCoordinator.swift */; };
+		AA0000000000000000000296 /* RuleReleaseCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000071 /* RuleReleaseCoordinator.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -412,6 +414,7 @@
 		B60000000000000000000006 /* UserStory2CoinReleaseUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory2CoinReleaseUITests.swift; sourceTree = "<group>"; };
 		B40000000000000000000068 /* CoinReservationPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinReservationPolicy.swift; sourceTree = "<group>"; };
 		B40000000000000000000069 /* RuleReleaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleReleaseService.swift; sourceTree = "<group>"; };
+		B40000000000000000000071 /* RuleReleaseCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleReleaseCoordinator.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -654,6 +657,7 @@
 				B40000000000000000000028 /* FamilyActivitySelectionAdapter.swift */,
 				B40000000000000000000044 /* ManagedSettingsRestrictionAdapter.swift */,
 				B40000000000000000000045 /* RestrictionCoordinator.swift */,
+				B40000000000000000000071 /* RuleReleaseCoordinator.swift */,
 				B40000000000000000000049 /* ShieldContentProvider.swift */,
 				B40000000000000000000050 /* ShieldActionResponsePolicy.swift */,
 			);
@@ -1185,6 +1189,7 @@
 				AA0000000000000000000265 /* RestrictionOccurrenceEvaluator.swift in Sources */,
 				AA0000000000000000000258 /* MonthlyAllowanceService.swift in Sources */,
 				AA0000000000000000000287 /* RuleReleaseService.swift in Sources */,
+				AA0000000000000000000295 /* RuleReleaseCoordinator.swift in Sources */,
 				AA0000000000000000000256 /* MonthlyAllowancePolicy.swift in Sources */,
 				AA0000000000000000000285 /* CoinReservationPolicy.swift in Sources */,
 				AA0000000000000000000253 /* CoinLedgerSyncAdapter.swift in Sources */,
@@ -1304,6 +1309,7 @@
 				AA0000000000000000000276 /* ActivityKitFeasibilityProbe.swift in Sources */,
 				AA0000000000000000000259 /* MonthlyAllowanceService.swift in Sources */,
 				AA0000000000000000000288 /* RuleReleaseService.swift in Sources */,
+				AA0000000000000000000296 /* RuleReleaseCoordinator.swift in Sources */,
 				AA0000000000000000000257 /* MonthlyAllowancePolicy.swift in Sources */,
 				AA0000000000000000000286 /* CoinReservationPolicy.swift in Sources */,
 				AA0000000000000000000254 /* CoinLedgerSyncAdapter.swift in Sources */,

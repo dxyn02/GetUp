@@ -129,13 +129,13 @@ occurrence만 예외 처리되는지, 중복 100회에서 최대 1회만 소모�
   - [X] T047b [US2] 무료·구매 예약과 claim 획득, 보상과 claim 해제를 같은 atomic modify로 연결하고 실제 repository·공유 database fake에서 앱·Shield 동시 100회, 충돌·결과 불명·보상 재시도를 검증한다. 기존 command의 claim 부재와 구버전 writer 공존은 안전성이 검증되기 전 fail-closed하며 epoch 확인·무료 우선 충돌 재평가도 검증한다.
   - [X] T047c [US2] 최신 컨텍스트·월간 서비스·예약 repository를 `RuleReleaseService`에 연결하고 종료·revision·epoch·기존 예외 검증과 관련 회귀를 통과시켜 T047을 완료한다.
 - [X] T048 [P] [US2] release exception의 atomic 저장·조회·만료 정리를 `GetUp/Infrastructure/Persistence/ReleaseExceptionRepository.swift`에 구현한다.
-- [ ] T049 [US2] reservation→App Group 예외→제한 합집합 재평가→CloudKit commit→대표 Live Activity 조정 순서와 보상을 구현하고 ActivityKit 실패는 해제 성공을 되돌리지 않도록 `GetUp/Infrastructure/ScreenTime/RuleReleaseCoordinator.swift`를 구현한다.
+- [X] T049 [US2] reservation→App Group 예외→제한 합집합 재평가→CloudKit commit→대표 Live Activity 조정 순서와 보상을 구현하고 ActivityKit 실패는 해제 성공을 되돌리지 않도록 `GetUp/Infrastructure/ScreenTime/RuleReleaseCoordinator.swift`를 구현한다.
   - [X] T049a [US2] BLK-016 승인에 따라 명령별 원자 예외 추가·조건부 제거 API와 실제 파일 저장소 구현, 멱등·소유자 충돌·동시 추가·한쪽 제거·지연 재시도·실패 보존 테스트를 추가한다.
-  - [ ] T049b [US2] 새 예외 API를 사용하는 coordinator를 구현하고 최신 규칙·예외 기반 제한 재평가의 로컬 적용 경합, 확정 실패 보상·결과 불명 보존·ActivityKit 실패 격리를 검증해 T049를 완료한다.
+  - [X] T049b [US2] 새 예외 API를 사용하는 coordinator를 구현하고 최신 규칙·예외 기반 제한 재평가의 로컬 적용 경합, 확정 실패 보상·결과 불명 보존·ActivityKit 실패 격리를 검증해 T049를 완료한다.
 - [ ] T050 [US2] 결과 불명 command를 새 해제보다 먼저 조회해 committed 또는 compensated로 수렴시키는 `GetUp/Infrastructure/CloudKit/RuleReleaseReconciler.swift`를 구현한다.
 - [ ] T051 [US2] 주입 가능한 monotonic clock으로 Shield CloudKit 성공 확인을 5초로 제한하고 timeout 시 reconciliation route와 같은 command ID 재조정을 만드는 `GetUp/Infrastructure/ScreenTime/ShieldReleaseDeadlinePolicy.swift`를 구현한다.
-- [ ] T052 [US2] release exception occurrence를 제한 대상 합집합에서 제외하고 다른 규칙 제한은 유지하도록 `GetUp/Infrastructure/ScreenTime/RestrictionCoordinator.swift`를 확장한다.
-- [ ] T053 [US2] interval 시작·종료에서 유효 예외를 적용하고 만료 예외를 정리하도록 `GetUpDeviceActivityMonitor/DeviceActivityMonitorExtension.swift`를 확장한다.
+- [ ] T052 [US2] release exception occurrence를 제한 대상 합집합에서 제외하고 다른 규칙 제한은 유지하도록 `GetUp/Infrastructure/ScreenTime/RestrictionCoordinator.swift`를 확장한다. T049b의 최신 상태 적용 provider를 연결하고 공통 로컬 잠금 안에서 재평가·read-back을 검증한다.
+- [ ] T053 [US2] interval 시작·종료에서 유효 예외를 적용하고 만료 예외를 정리하도록 `GetUpDeviceActivityMonitor/DeviceActivityMonitorExtension.swift`를 확장한다. 해제 coordinator와 같은 App Group 로컬 잠금에 참여해 적용 경합을 검증한다.
 - [ ] T054 [US2] 현재 Shield 내용에 대표 규칙·종료·남을 제한, 무료 우선·구매 fallback에 동의하는 단일 `해제권 1회 사용` primary와 기존 `앱 닫기` secondary를 구성하도록 `GetUp/Infrastructure/ScreenTime/ShieldContentProvider.swift`를 확장한다.
 - [ ] T055 [US2] Shield primary action에서 최신 occurrence·장부를 검증해 무료 우선으로 안정 command를 실행하고, 성공·남은 제한·timeout과 coin store·iCloud recovery route를 기록하며 iOS 26.5 이상은 `.openParentalControlsApp`, 이전은 안내 후 `.close`로 응답하도록 `GetUpShieldAction/ShieldActionExtension.swift`, `GetUp/Infrastructure/ScreenTime/ShieldActionResponsePolicy.swift`를 구현한다. Live Activity 직접 조정은 T039에서 실기기 성공이 확인된 경로에만 production adapter로 연결하고 그 외에는 앱 진입·다음 foreground fallback을 사용하며 DEBUG feasibility probe가 release build에 포함되지 않음을 검증한다.
 - [ ] T056 [P] [US2] 앱 내 활성 occurrence·잔액·pending reconciliation 상태와 확인 action을 `GetUp/Features/Coins/ActiveRestrictionReleaseModel.swift`에 구현한다.

@@ -4,6 +4,157 @@ import Testing
 
 @Suite("Rule release coordinator")
 struct RuleReleaseCoordinatorTests {
+    @Test("Unknown applied write retains local evidence for reconciliation")
+    func unknownAppliedWrite() async throws {
+        let fixture = try CoordinatorFixture()
+        await fixture.ledger.failAppliedWrite()
+        await expectFailure {
+            try await fixture.coordinator.coordinate(reservation: fixture.reservation, exception: fixture.exception)
+        }
+        #expect(await fixture.exceptionRepository.exceptions == [fixture.exception])
+        #expect(await fixture.ledger.compensationCount == 0)
+        #expect(await fixture.recorder.operations.last == .markApplied)
+    }
+
+    @Test("Compensation failure is explicitly returned as reconciliation required")
+    func compensationFailure() async throws {
+        let fixture = try CoordinatorFixture(exceptionWriteFailsOnAttempt: 1)
+        await fixture.ledger.failCompensation()
+        do {
+            _ = try await fixture.coordinator.coordinate(reservation: fixture.reservation, exception: fixture.exception)
+            Issue.record("Expected reconciliation")
+        } catch {
+            #expect(error as? RuleReleaseCoordinationError == .reconciliationRequired(commandID: fixture.exception.commandID))
+        }
+        #expect(await fixture.ledger.command.state == .reserved)
+    }
+
+    @Test("An expired occurrence is compensated before writing any local exception")
+    func expiredReservation() async throws {
+        let fixture = try CoordinatorFixture(now: Self.now.addingTimeInterval(3600))
+        await expectFailure {
+            try await fixture.coordinator.coordinate(reservation: fixture.reservation, exception: fixture.exception)
+        }
+        #expect(await fixture.recorder.operations == [.loadExceptions, .compensate])
+        #expect(await fixture.ledger.command.state == .compensated)
+    }
+
+    @Test("Two coordinators sharing real storage preserve success across a busy retry and first-command rollback", arguments: [false, true])
+    func sharedStorageCoordination(firstFails: Bool) async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let firstStore = AppGroupReleaseExceptionRepository(containerURL: directory)
+        let secondStore = AppGroupReleaseExceptionRepository(containerURL: directory)
+        let gate = ReleaseApplicationGate()
+        let recorder = ReleaseOperationRecorder()
+        let commands = try (0..<2).map { index in
+            try ReleaseCommand.requested(commandID: UUID(), occurrenceID: "shared-\(index)", ruleID: UUID(),
+                requestedFrom: .app, at: Self.now).transitioning(to: .reserved, fundingSource: .monthlyFree, at: Self.now)
+        }
+        let exceptions = try commands.map {
+            try ReleaseException(commandID: $0.commandID, occurrenceID: $0.occurrenceID, ruleID: $0.ruleID,
+                ruleRevision: 1, effectiveAt: Self.now, expiresAt: Self.now.addingTimeInterval(3600))
+        }
+        let firstLedger = ReleaseLedgerRepositorySpy(command: commands[0], recorder: recorder, commitFails: firstFails)
+        let secondLedger = ReleaseLedgerRepositorySpy(command: commands[1], recorder: recorder, commitFails: false)
+        let first = RuleReleaseCoordinator(exceptionRepository: firstStore, ledgerRepository: firstLedger,
+            applyRestrictions: {
+                await gate.pauseFirstApplication()
+                let current = try await firstStore.loadReleaseExceptions()
+                await gate.record(current)
+                return RuleReleaseApplication(desiredLiveActivity: nil)
+            }, reconcileLiveActivity: { _ in .noChange }, clock: FixedClock(now: Self.now), coordinationDirectory: directory)
+        let second = RuleReleaseCoordinator(exceptionRepository: secondStore, ledgerRepository: secondLedger,
+            applyRestrictions: {
+                let current = try await secondStore.loadReleaseExceptions()
+                await gate.record(current)
+                return RuleReleaseApplication(desiredLiveActivity: nil)
+            }, reconcileLiveActivity: { _ in .noChange }, clock: FixedClock(now: Self.now), coordinationDirectory: directory)
+        let firstTask = Task {
+            try await first.coordinate(reservation: CoinReleaseReservation(command: commands[0], allowance: nil, account: nil),
+                exception: exceptions[0])
+        }
+        await gate.waitForApplication()
+        await expectFailure {
+            try await second.coordinate(reservation: CoinReleaseReservation(command: commands[1], allowance: nil, account: nil),
+                exception: exceptions[1])
+        }
+        #expect(await secondLedger.compensationCount == 0)
+        await gate.resume()
+        _ = await firstTask.result
+        let result = try await second.coordinate(
+            reservation: CoinReleaseReservation(command: commands[1], allowance: nil, account: nil), exception: exceptions[1])
+        let expected = firstFails ? [exceptions[1]] : exceptions
+        #expect(try await Set(secondStore.loadReleaseExceptions()) == Set(expected))
+        #expect(await gate.lastApplied == Set(expected.map(\.commandID)))
+        #expect(result.committedCommand.state == .committed)
+        #expect(await firstLedger.command.state == (firstFails ? .compensated : .committed))
+    }
+
+    @Test("Unknown commit preserves local release and does not compensate")
+    func unknownCommit() async throws {
+        let fixture = try CoordinatorFixture(commitError: .database(.resultUnknown))
+        await expectFailure {
+            try await fixture.coordinator.coordinate(reservation: fixture.reservation, exception: fixture.exception)
+        }
+        #expect(await fixture.exceptionRepository.exceptions == [fixture.exception])
+        #expect(await fixture.ledger.compensationCount == 0)
+        #expect(await fixture.ledger.command.state == .applied)
+    }
+
+    @Test("Failed local rollback leaves the reservation for reconciliation")
+    func rollbackFailure() async throws {
+        let fixture = try CoordinatorFixture(exceptionWriteFailsOnAttempt: 2, commitFails: true)
+        await expectFailure {
+            try await fixture.coordinator.coordinate(reservation: fixture.reservation, exception: fixture.exception)
+        }
+        #expect(await fixture.exceptionRepository.exceptions == [fixture.exception])
+        #expect(await fixture.ledger.compensationCount == 0)
+    }
+
+    @Test("A stale retry after commit or compensation cannot recreate or remove an exception", arguments: [true, false])
+    func terminalRetry(committed: Bool) async throws {
+        let fixture = try CoordinatorFixture(commitFails: !committed)
+        _ = try? await fixture.coordinator.coordinate(reservation: fixture.reservation, exception: fixture.exception)
+        let before = await fixture.recorder.operations
+        await expectFailure {
+            try await fixture.coordinator.coordinate(reservation: fixture.reservation, exception: fixture.exception)
+        }
+        #expect(await fixture.recorder.operations == before)
+        #expect(await fixture.exceptionRepository.exceptions == (committed ? [fixture.exception] : []))
+    }
+
+    @Test("Busy local lease causes no side effects and releasing it permits a retry")
+    func busyLease() async throws {
+        let fixture = try CoordinatorFixture()
+        do {
+            let lease = try RuleReleaseLocalLease(directory: fixture.directory)
+            await expectFailure {
+                try await fixture.coordinator.coordinate(reservation: fixture.reservation, exception: fixture.exception)
+            }
+            withExtendedLifetime(lease) {}
+            #expect(await fixture.recorder.operations.isEmpty)
+        }
+        let result = try await fixture.coordinator.coordinate(reservation: fixture.reservation, exception: fixture.exception)
+        #expect(result.committedCommand.state == .committed)
+    }
+
+    @Test("A failed release preserves another successful occurrence during owner-scoped rollback")
+    func preservesOtherOccurrence() async throws {
+        let fixture = try CoordinatorFixture(commitFails: true)
+        let other = try ReleaseException(commandID: UUID(), occurrenceID: "other", ruleID: UUID(),
+            ruleRevision: 1, effectiveAt: Self.now, expiresAt: Self.now.addingTimeInterval(3600))
+        _ = try await fixture.exceptionRepository.insertReleaseException(other)
+        await expectFailure {
+            try await fixture.coordinator.coordinate(reservation: fixture.reservation, exception: fixture.exception)
+        }
+        #expect(await fixture.exceptionRepository.exceptions == [other])
+        #expect(await fixture.recorder.operations.contains(.applyRestrictions(2)))
+        #expect(await fixture.recorder.operations.contains(.applyRestrictions(1)))
+        #expect(await fixture.ledger.command.state == .compensated)
+    }
+
     @Test("A successful release persists, applies, commits, then updates the representative activity")
     func successfulReleaseUpdatesRepresentativeActivity() async throws {
         let fixture = try CoordinatorFixture(desiredActivity: .activity(occurrenceID: "occurrence-2"))
@@ -149,7 +300,8 @@ private extension RuleReleaseCoordinatorTests {
     }
 }
 
-private struct CoordinatorFixture {
+private final class CoordinatorFixture {
+    let directory: URL
     let recorder: ReleaseOperationRecorder
     let exceptionRepository: ReleaseExceptionRepositorySpy
     let ledger: ReleaseLedgerRepositorySpy
@@ -161,6 +313,8 @@ private struct CoordinatorFixture {
         exceptionWriteFailsOnAttempt: Int? = nil,
         restrictionWriteFailsOnAttempt: Int? = nil,
         commitFails: Bool = false,
+        commitError: CoinLedgerRepositoryError? = nil,
+        now: Date = RuleReleaseCoordinatorTests.now,
         desiredActivity: RestrictionLiveActivitySnapshot? =
             RuleReleaseCoordinatorTests.representativeActivity,
         liveActivityResult: LiveActivityCoordinationResult = LiveActivityCoordinationResult(
@@ -168,6 +322,8 @@ private struct CoordinatorFixture {
             failureCodes: []
         )
     ) throws {
+        directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let recorder = ReleaseOperationRecorder()
         let reservedCommand = try ReleaseCommand.requested(
             commandID: RuleReleaseCoordinatorTests.commandID,
@@ -195,7 +351,8 @@ private struct CoordinatorFixture {
         let ledger = ReleaseLedgerRepositorySpy(
             command: reservedCommand,
             recorder: recorder,
-            commitFails: commitFails
+            commitFails: commitFails,
+            commitError: commitError
         )
         let restrictionWriter = ReleaseRestrictionWriterSpy(
             recorder: recorder,
@@ -224,15 +381,18 @@ private struct CoordinatorFixture {
         self.coordinator = RuleReleaseCoordinator(
             exceptionRepository: exceptionRepository,
             ledgerRepository: ledger,
-            applyRestrictions: { exceptions in
-                try await restrictionWriter.apply(exceptions: exceptions)
+            applyRestrictions: {
+                try await restrictionWriter.apply(exceptions: exceptionRepository.exceptions)
             },
             reconcileLiveActivity: { desiredActivity in
                 await activity.reconcile(desiredActivity: desiredActivity)
             },
-            clock: FixedClock(now: RuleReleaseCoordinatorTests.now)
+            clock: FixedClock(now: now),
+            coordinationDirectory: directory
         )
     }
+
+    deinit { try? FileManager.default.removeItem(at: directory) }
 }
 
 private enum ReleaseOperation: Equatable, Sendable {
@@ -277,10 +437,10 @@ private actor ReleaseExceptionRepositorySpy: ReleaseExceptionRepository {
             return exceptions
         }
         writeAttempt += 1
+        await recorder.record(.saveExceptions(exceptions.count + 1))
         guard writeFailsOnAttempt != writeAttempt else { throw ReleaseExceptionRepositoryError.writeFailed }
         exceptions.append(exception)
         let result = exceptions
-        await recorder.record(.saveExceptions(result.count))
         return result
     }
 
@@ -352,17 +512,25 @@ private actor ReleaseLiveActivitySpy {
 private actor ReleaseLedgerRepositorySpy: CoinLedgerRepository {
     private let recorder: ReleaseOperationRecorder
     private let commitFails: Bool
+    private let commitError: CoinLedgerRepositoryError?
     private(set) var command: ReleaseCommand
     private(set) var compensationCount = 0
+    private var appliedWriteFails = false
+    private var compensationFails = false
+
+    func failAppliedWrite() { appliedWriteFails = true }
+    func failCompensation() { compensationFails = true }
 
     init(
         command: ReleaseCommand,
         recorder: ReleaseOperationRecorder,
-        commitFails: Bool
+        commitFails: Bool,
+        commitError: CoinLedgerRepositoryError? = nil
     ) {
         self.command = command
         self.recorder = recorder
         self.commitFails = commitFails
+        self.commitError = commitError
     }
 
     func createAllowanceIfNeeded(
@@ -387,12 +555,14 @@ private actor ReleaseLedgerRepositorySpy: CoinLedgerRepository {
 
     func markReleaseApplied(commandID: UUID, at date: Date) async throws -> ReleaseCommand {
         await recorder.record(.markApplied)
+        if appliedWriteFails { throw CoinLedgerRepositoryError.database(.resultUnknown) }
         command = try command.transitioning(to: .applied, at: date)
         return command
     }
 
     func commitRelease(commandID: UUID, at date: Date) async throws -> ReleaseCommand {
         await recorder.record(.commit)
+        if let commitError { throw commitError }
         guard !commitFails else {
             throw CoinLedgerRepositoryError.database(.serverUnavailable)
         }
@@ -402,6 +572,7 @@ private actor ReleaseLedgerRepositorySpy: CoinLedgerRepository {
 
     func compensateRelease(commandID: UUID, at date: Date) async throws -> ReleaseCommand {
         await recorder.record(.compensate)
+        if compensationFails { throw CoinLedgerRepositoryError.database(.resultUnknown) }
         compensationCount += 1
         command = try command.transitioning(
             to: .compensating,
@@ -418,6 +589,31 @@ private actor ReleaseLedgerRepositorySpy: CoinLedgerRepository {
 
 private enum ReleaseCoordinatorFixtureError: Error {
     case restrictionWriteFailed
+}
+
+private actor ReleaseApplicationGate {
+    private var entered = false
+    private var pause: CheckedContinuation<Void, Never>?
+    private var observer: CheckedContinuation<Void, Never>?
+    private(set) var lastApplied: Set<UUID> = []
+
+    func pauseFirstApplication() async {
+        guard !entered else { return }
+        entered = true
+        await withCheckedContinuation { continuation in
+            pause = continuation
+            observer?.resume()
+            observer = nil
+        }
+    }
+
+    func waitForApplication() async {
+        if entered { return }
+        await withCheckedContinuation { observer = $0 }
+    }
+
+    func resume() { pause?.resume(); pause = nil }
+    func record(_ exceptions: [ReleaseException]) { lastApplied = Set(exceptions.map(\.commandID)) }
 }
 
 private extension RestrictionLiveActivitySnapshot {

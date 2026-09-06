@@ -1763,6 +1763,32 @@ requestedFrom은 최초 감사 정보를 보존한다.
 **영향 범위**: 공유 해제 모델·record ID·mapper, CloudKit 예약·보상 repository, T047 서비스와
 database fake 통합 테스트. T047a→T047b→T047c 순으로 구현하고 전체 연결 전 T047은 미완료로 둔다.
 
+## DEC-091 — 해제 coordinator의 공통 로컬 잠금과 재조정 경계
+
+**날짜**: 2026-09-06
+
+**결정**: T049b는 App Group의 고정 `release-coordination.lock`에 비차단 배타 flock을 획득한 뒤
+원격 command 재조회→명령별 예외 추가→최신 규칙·예외 재평가 및 read-back→applied→commit→활동
+조정을 수행한다. 동일 디렉터리의 coordinator 간 잠금은 await 중에도 유지하며 descriptor를 닫거나
+프로세스가 종료되면 해제된다. 잠금 파일은 실행마다 삭제하지 않는다. 잠금 경합은 기다리지 않고
+해당 command ID의 재조정 필요 결과를 반환한다.
+
+**실패 정책**: 기존 로컬 예외나 reserved 이외 원격 상태는 새 적용·삭제 없이 재조정에 넘긴다.
+확정 예외 쓰기 실패는 보상하고, 제한 적용 실패·명시적 서버 불가 거부는 해당 명령 예외만 제거한
+뒤 최신 상태로 제한을 다시 적용하고 보상한다. 로컬 복구 또는 보상이 실패하면 재조정이 필요하다.
+applied·commit의 결과 불명이나 분류되지 않은 오류는 로컬 예외를 유지한다. ActivityKit 결과의
+실패 코드는 이미 committed인 해제를 취소하지 않는다.
+
+**근거**: actor는 await에서 재진입하며 프로세스 간 배타성을 제공하지 않는다. 새 저장소 수정
+API만으로도 서로 다른 시각에 계산한 제한 합집합 적용 순서는 보장되지 않는다. coordinator의
+협력적 파일 잠금과 인자 없는 최신 상태 적용 closure를 함께 사용해 과거 목록 복원을 방지한다.
+
+**통합 조건**: `applyRestrictions`는 최신 전체 규칙·예외로 합집합을 계산하고 read-back을 완료해야
+성공을 반환한다. T052·T053의 실제 제한 writer 연결에도 같은 디렉터리·잠금 규칙을 적용한다.
+현재는 coordinator·실제 예외 파일과 적용 대역을 검증했으며 실제 Screen Time·다중 프로세스 중단
+인수는 후속 통합에 남아 있다. Shield 활동 조정은 DEC-086의 foreground fallback을 주입한다.
+Live Activity 결과 타입을 공통 계약으로 옮겨 Shield 타깃에서 앱 전용 coordinator 없이 사용한다.
+
 ## DEC-090 — 명령별 예외 수정·보상 계약 보강 승인
 
 **날짜**: 2026-09-04

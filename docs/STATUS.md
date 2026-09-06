@@ -8,17 +8,17 @@
 
 ## 진행 중
 `codex/us2-reservation-tests`에서 BLK-016 사용자 승인을 반영해 T049를 재개했다.
-T049a 명령별 예외 추가·조건부 제거 구현·검증을 완료했다. 현재 진행 중인 구현은 없으며
-다음은 T049b다. coordinator 연결과 T049 전체는 미완료다.
+T049b 해제 coordinator·보상 구현과 회귀를 완료해 T049 전체를 완료했다.
+현재 진행 중인 구현은 없으며 다음은 T050이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 앱·Shield의 최신 컨텍스트 provider 연결은 후속 통합에 남아 있다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T049a — 명령별 원자 예외 추가·조건부 제거와 소유권·동시성 회귀
+T049b 및 T049 — 해제 적용·장부 확정·실패 보상과 공통 로컬 잠금
 
 ## 다음 작업
-T049b — 최신 상태 기반 해제 coordinator·실패 보상과 경합 검증.
+T050 — 결과 불명 명령을 조회해 committed 또는 compensated로 수렴시키는 reconciler 구현.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -37,6 +37,25 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-06 T049b: coordinator·application 타입 부재 compile RED를 확인한 뒤 구현했다.
+기존 T042 6개 테스트를 명령별 저장·최신 상태 적용 계약에 연결했고 9개 회귀(인자 포함 11회)를
+추가했다. 실제 예외 파일을 공유하는 두 coordinator에서 적용을 중간 정지해 경합을 재현하고,
+첫 명령 성공·보상 각각 두 번째 요청의 무변경 경합 반환과 재시도 뒤 최종 예외·적용 집합을 검증했다.
+commit·applied 결과 불명 시 예외 유지, 로컬 복구 실패·보상 실패의 재조정 필요 결과,
+완료·보상된 명령의 지연 재시도 무변경, 다른 occurrence 보존, 정확한 만료 경계 거부와 lease 해제 후
+재시도도 확인했다. 원격 명령은 새 적용 전 다시 조회한다. 공유 결과 타입의 Shield target 누락으로
+한 번 compile 실패했고 결과 타입을 공통 계약으로 이동한 뒤 앱·Shield 컴파일을 통과했다.
+최종 iPhone 17 Pro iOS 26.5 `GetUpTests` 427개(인자 포함 487회)가 실패·skip 없이 통과했다.
+미구현 타입의 `ShieldCoinActionTests.swift`, `ShieldReleaseDeadlineTests.swift`는 명령행
+`EXCLUDED_SOURCE_FILE_NAMES`로 제외했다. T045 UI RED는 재실행하지 않았다. 앱·네 extension의
+generic iOS Simulator Release 빌드, project plist·diff 검사도 통과했다. 기존 binary strip·다른
+테스트의 불필요한 try 경고가 남아 있다.
+최종 결과: `/tmp/getup-t049b/Logs/Test/Test-GetUp-2026.09.06_15-22-45-+0900.xcresult`.
+실제 Screen Time 합집합 계산·read-back provider 연결은 T052, interval writer의 동일 잠금 참여는
+T053, Shield·앱 진입은 후속 통합에서 수행한다. 실제 별도 프로세스 종료·잠금·CloudKit·Shield
+인수는 수행하지 않았다. 결과 불명은 T050 재조정 대상으로 반환하며 이 단계가 재조정 완료는 아니다.
+운영 장부 활성화·원격 데이터 변경은 없다.
+
 2026-09-04 T049a: 새 insert·remove API와 conflict 오류 부재 compile RED 뒤 구현했다.
 회귀 7개(인자 포함 8회)를 추가해 독립 repository instance 100개의 동시 추가, 동일 요청의 무쓰기
 멱등 처리, command·occurrence 충돌 거부, 한쪽 제거와 다른 facade 추가의 경합, 새 소유자 획득 뒤

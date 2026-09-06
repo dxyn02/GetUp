@@ -342,6 +342,18 @@ protocol CoinBalanceSnapshotRepository: Sendable {
     func saveCoinBalanceSnapshot(_ snapshot: CoinBalanceSnapshot) async throws
 }
 
+enum LiveActivityCoordinationAction: Equatable, Sendable {
+    case request
+    case update(UUID)
+    case end(UUID)
+}
+
+struct LiveActivityCoordinationResult: Equatable, Sendable {
+    let actions: [LiveActivityCoordinationAction]
+    let failureCodes: [LiveActivityCoinErrorCode]
+    static let noChange = LiveActivityCoordinationResult(actions: [], failureCodes: [])
+}
+
 protocol ReleaseExceptionRepository: Sendable {
     func loadReleaseExceptions() async throws -> [ReleaseException]
     /// Full replacement only; never use a stale collection for command insertion or rollback.
