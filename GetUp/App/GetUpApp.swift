@@ -171,6 +171,7 @@ private struct GetUpRootView: View {
     private let familyControlsAuthorizationStatusOverride:
         (@MainActor () -> FamilyControlsAuthorizationStatus)?
     private let showsRestrictionProbe: Bool
+    private let releaseConfiguration: ActiveRestrictionReleaseConfiguration?
     private let permissionGuideRetryResult: String?
     private let permissionGuideActionUpdate: PermissionGuideUpdate?
     private let permissionOnboardingStateStore: PermissionOnboardingStateStore
@@ -185,6 +186,7 @@ private struct GetUpRootView: View {
         familyControlsAuthorizationStatusOverride =
             environment.familyControlsAuthorizationStatusOverride
         showsRestrictionProbe = environment.showsRestrictionProbe
+        releaseConfiguration = environment.releaseConfiguration
         permissionGuideRetryResult = environment.permissionGuideRetryResult
         permissionGuideActionUpdate = environment.permissionGuideActionUpdate
         permissionOnboardingStateStore = environment.permissionOnboardingStateStore
@@ -238,7 +240,8 @@ private struct GetUpRootView: View {
         case .loaded:
             HomeView(
                 model: model,
-                showsRestrictionProbe: showsRestrictionProbe
+                showsRestrictionProbe: showsRestrictionProbe,
+                releaseConfiguration: releaseConfiguration
             )
         case .failed:
             LoadFailureView {
@@ -452,6 +455,7 @@ private struct HomeView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Bindable var model: AppModel
     let showsRestrictionProbe: Bool
+    let releaseConfiguration: ActiveRestrictionReleaseConfiguration?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
@@ -472,11 +476,14 @@ private struct HomeView: View {
         .background(HomeColor.background.ignoresSafeArea())
         .foregroundStyle(HomeColor.textPrimary)
         .toolbarBackground(HomeColor.background, for: .navigationBar)
-        .safeAreaInset(edge: .bottom) {
+        .overlay(alignment: .bottom) {
             if showsRestrictionProbe {
                 RestrictionActivationProbeView(
-                    isRestrictionActive: model.restrictionStatus.hasActiveRestriction
+                    isRestrictionActive: model.restrictionStatus.hasActiveRestriction,
+                    releaseConfiguration: releaseConfiguration,
+                    ruleDisplayNames: releaseRuleDisplayNames
                 )
+                .zIndex(1)
             }
         }
     }
@@ -617,7 +624,9 @@ private struct HomeView: View {
             RestrictionStatusView(
                 item: item,
                 rulePosition: index + 1,
-                ruleCount: model.homeRules.count
+                ruleCount: model.homeRules.count,
+                releaseConfiguration: releaseConfiguration,
+                releaseRuleDisplayNames: releaseRuleDisplayNames
             )
         } else {
             HomeRuleCard(
@@ -647,6 +656,12 @@ private struct HomeView: View {
 
     private var rulePagerHeight: CGFloat {
         dynamicTypeSize.isAccessibilitySize ? 760 : 548
+    }
+
+    private var releaseRuleDisplayNames: [UUID: String] {
+        Dictionary(uniqueKeysWithValues: model.homeRules.map { item in
+            (item.id, item.rule.name ?? AppLocalizedCopy.savedPlaceName(item.savedPlace.name))
+        })
     }
 }
 
@@ -831,46 +846,39 @@ enum HomeColor {
 
 private struct RestrictionActivationProbeView: View {
     let isRestrictionActive: Bool
+    let releaseConfiguration: ActiveRestrictionReleaseConfiguration?
+    let ruleDisplayNames: [UUID: String]
     @State private var showsShield = false
     @State private var showsSelectedApplication = false
     @State private var showsUnselectedApplication = false
 
     var body: some View {
         VStack(spacing: 8) {
-            HStack(spacing: 8) {
-                Button("선택 앱 열기") {
-                    if isRestrictionActive {
-                        showsShield = true
-                        showsSelectedApplication = false
-                    } else {
-                        showsSelectedApplication = true
+            if !showsShield {
+                HStack(spacing: 8) {
+                    Button("선택 앱 열기") {
+                        if isRestrictionActive {
+                            showsShield = true
+                            showsSelectedApplication = false
+                        } else {
+                            showsSelectedApplication = true
+                        }
                     }
-                }
-                .accessibilityIdentifier("restrictionProbe.selectedApplication.open")
+                    .accessibilityIdentifier("restrictionProbe.selectedApplication.open")
 
-                Button("비대상 앱 열기") {
-                    showsUnselectedApplication = true
-                    showsShield = false
+                    Button("비대상 앱 열기") {
+                        showsUnselectedApplication = true
+                        showsShield = false
+                    }
+                    .accessibilityIdentifier("restrictionProbe.unselectedApplication.open")
                 }
-                .accessibilityIdentifier("restrictionProbe.unselectedApplication.open")
+                .buttonStyle(.bordered)
             }
-            .buttonStyle(.bordered)
 
             if showsShield {
-                HStack {
-                    Text("제한 적용 중")
-                    Spacer()
-                    Button {
-                        showsShield = false
-                    } label: {
-                        Text("앱 닫기")
-                            .frame(minWidth: 44, minHeight: 44)
-                            .contentShape(.rect)
-                    }
-                    .accessibilityIdentifier("restrictionProbe.shield.close")
-                }
-                .accessibilityElement(children: .contain)
-                .accessibilityIdentifier("restrictionProbe.shield")
+                shieldContent
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier("restrictionProbe.shield")
             }
 
             if showsSelectedApplication {
@@ -890,6 +898,129 @@ private struct RestrictionActivationProbeView: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 8)
         .background(HomeColor.background)
+    }
+
+    @ViewBuilder
+    private var shieldContent: some View {
+        if let releaseConfiguration,
+           let occurrence = releaseConfiguration.model.selectedOccurrence {
+            VStack(alignment: .leading, spacing: 8) {
+                releaseProbeStatus(configuration: releaseConfiguration)
+
+                Text(ruleDisplayNames[occurrence.ruleID] ?? "현재 제한")
+                    .accessibilityIdentifier("restrictionProbe.shield.target")
+                Text("이번 달 무료 해제권 우선 · 없으면 코인 1개")
+                    .accessibilityIdentifier("restrictionProbe.shield.cost")
+                Text(
+                    formattedReleaseTime(
+                        occurrence.endAt,
+                        timeZone: releaseConfiguration.timeZone
+                    )
+                )
+                .accessibilityIdentifier("restrictionProbe.shield.endsAt")
+                Text(
+                    releaseConfiguration.model.activeOccurrences.count > 1
+                        ? "다른 규칙의 제한은 계속 유지돼요"
+                        : "다른 규칙 제한은 없어요"
+                )
+                .accessibilityIdentifier("restrictionProbe.shield.remainingRestrictions")
+
+                HStack {
+                    Button("해제권 1회 사용") {
+                        guard releaseConfiguration.model.requestConfirmation() else {
+                            return
+                        }
+                        Task { await releaseConfiguration.model.confirmRelease() }
+                    }
+                    .disabled(releaseConfiguration.model.phase == .processing)
+                    .accessibilityIdentifier("restrictionProbe.shield.release")
+
+                    closeShieldButton
+                }
+            }
+        } else {
+            HStack {
+                Text("제한 적용 중")
+                Spacer()
+                closeShieldButton
+            }
+        }
+    }
+
+    private var closeShieldButton: some View {
+        Button {
+            showsShield = false
+        } label: {
+            Text("앱 닫기")
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(.rect)
+        }
+        .accessibilityIdentifier("restrictionProbe.shield.close")
+    }
+
+    @ViewBuilder
+    private func releaseProbeStatus(
+        configuration: ActiveRestrictionReleaseConfiguration
+    ) -> some View {
+        if configuration.model.phase == .processing {
+            Text("해제 상태를 확인하고 있어요")
+                .accessibilityIdentifier("coinRelease.processing")
+        }
+
+        Text(String(configuration.model.balance.freeAvailable))
+            .accessibilityIdentifier("coinRelease.balance.free")
+        Text(String(configuration.model.balance.purchasedAvailable))
+            .accessibilityIdentifier("coinRelease.balance.purchased")
+
+        if let instrumentation = configuration.instrumentation {
+            Text(String(instrumentation.reservationCount))
+                .accessibilityIdentifier("coinRelease.test.reservationCount")
+            Text(String(instrumentation.committedCount))
+                .accessibilityIdentifier("coinRelease.test.committedCount")
+            Text(String(instrumentation.remainingOccurrenceCount))
+                .accessibilityIdentifier("coinRelease.test.remainingOccurrenceCount")
+            if instrumentation.holdsExecution,
+               configuration.model.phase == .processing {
+                Button("테스트 해제 완료") {
+                    guard let balance = decrementedProbeBalance(
+                        configuration.model.balance
+                    ) else { return }
+                    instrumentation.complete(
+                        balance: balance,
+                        remainingOccurrences: Array(
+                            configuration.model.activeOccurrences.dropFirst()
+                        )
+                    )
+                }
+                .accessibilityIdentifier("coinRelease.test.complete")
+            }
+        }
+    }
+
+    private func decrementedProbeBalance(
+        _ balance: CoinBalanceSnapshot
+    ) -> CoinBalanceSnapshot? {
+        try? CoinBalanceSnapshot(
+            purchasedAvailable: balance.purchasedAvailable,
+            currentMonthID: balance.currentMonthID,
+            freeAvailable: max(0, balance.freeAvailable - 1),
+            syncState: balance.syncState,
+            syncedAt: balance.syncedAt,
+            ledgerEpochID: balance.ledgerEpochID,
+            hadConfirmedLedger: balance.hadConfirmedLedger
+        )
+    }
+
+    private func formattedReleaseTime(
+        _ date: Date,
+        timeZone: TimeZone
+    ) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = .autoupdatingCurrent
+        formatter.timeZone = timeZone
+        formatter.dateStyle = .none
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
     }
 }
 
@@ -996,6 +1127,7 @@ private struct AppEnvironment {
     let familyControlsAuthorizationStatusOverride:
         (@MainActor () -> FamilyControlsAuthorizationStatus)?
     let showsRestrictionProbe: Bool
+    let releaseConfiguration: ActiveRestrictionReleaseConfiguration?
     let permissionGuideModel: PermissionGuideModel?
     let permissionGuideRetryResult: String?
     let permissionGuideActionUpdate: PermissionGuideUpdate?
@@ -1029,17 +1161,70 @@ private struct AppEnvironment {
             }
         )
         let restrictionAdapter = try ManagedSettingsRestrictionAdapter.live()
+        let appModel = AppModel(
+            ruleRepository: container.ruleRepository,
+            savedPlaceRepository: container.savedPlaceRepository,
+            synchronizeRuntimeAfterSave: { _ in
+                _ = try await lifecycleCoordinator.restore()
+            },
+            loadAppliedRestrictionState: {
+                await restrictionAdapter.currentAppliedState()
+            }
+        )
+        let fallbackBalance = try CoinBalanceSnapshot(
+            purchasedAvailable: 0,
+            currentMonthID: MonthlyAllowancePolicy.monthID(containing: Date()),
+            freeAvailable: 0,
+            syncState: .unavailable,
+            syncedAt: Date(),
+            ledgerEpochID: nil,
+            hadConfirmedLedger: false
+        )
+        let releaseModel = ActiveRestrictionReleaseModel(
+            snapshot: nil,
+            currentRuleRevisions: [:],
+            balance: fallbackBalance,
+            hasPendingReconciliation: false,
+            executeRelease: { _ in .iCloudRecoveryRequired }
+        )
+        let pendingRouteRepository = PendingAppRouteRepository(
+            containerURL: container.coordinationDirectory
+        )
+        let releaseConfiguration = ActiveRestrictionReleaseConfiguration(
+            model: releaseModel,
+            router: ActiveRestrictionReleaseRouter { now, activeOccurrenceIDs in
+                try await pendingRouteRepository.consumeIfEligible(
+                    now: now,
+                    activeOccurrenceIDs: activeOccurrenceIDs
+                )
+            },
+            refresh: { [weak releaseModel] in
+                guard let releaseModel else { return }
+                let active = try? await container.sharedSnapshotRepository
+                    .loadActiveRestrictionSnapshot()
+                let rules = try? await container.ruleRepository.loadRuleCollection()
+                let balance = try? await container.sharedSnapshotRepository
+                    .loadCoinBalanceSnapshot()
+                let pendingRoute = try? await pendingRouteRepository.load()
+                releaseModel.refresh(
+                    snapshot: active,
+                    currentRuleRevisions: Dictionary(
+                        uniqueKeysWithValues: (rules?.rules ?? []).map {
+                            ($0.id, $0.revision)
+                        }
+                    ),
+                    balance: balance ?? fallbackBalance,
+                    hasPendingReconciliation: pendingRoute?.destination == .reconciliation,
+                    now: Date()
+                )
+            },
+            onReleaseCompleted: {
+                _ = try? await lifecycleCoordinator.restore()
+                await appModel.refreshRestrictionStatus()
+            }
+        )
         return AppEnvironment(
-            model: AppModel(
-                ruleRepository: container.ruleRepository,
-                savedPlaceRepository: container.savedPlaceRepository,
-                synchronizeRuntimeAfterSave: { _ in
-                    _ = try await lifecycleCoordinator.restore()
-                },
-                loadAppliedRestrictionState: {
-                    await restrictionAdapter.currentAppliedState()
-                }
-            ),
+            model: appModel,
             runtimeRecovery: {
                 try? await lifecycleCoordinator.restore()
             },
@@ -1048,6 +1233,7 @@ private struct AppEnvironment {
             applicationSelectionOverride: nil,
             familyControlsAuthorizationStatusOverride: nil,
             showsRestrictionProbe: false,
+            releaseConfiguration: releaseConfiguration,
             permissionGuideModel: nil,
             permissionGuideRetryResult: nil,
             permissionGuideActionUpdate: nil,
@@ -1088,6 +1274,8 @@ private enum UITestConfiguration {
         let permissionGuideRetryResult = value(
             after: "--ui-test-location-retry-result"
         )
+        let coinReleaseMode = value(after: "--ui-test-coin-release")
+        let coinReleaseResult = value(after: "--ui-test-coin-release-result")
         let permissionOnboardingStateStore = PermissionOnboardingStateStore(
             key: "permissionOnboarding.hasCompleted.uiTest.\(storeID)"
         )
@@ -1156,53 +1344,62 @@ private enum UITestConfiguration {
             ? { @MainActor in .notDetermined }
             : nil
 
-        return AppEnvironment(
-            model: AppModel(
-                ruleRepository: container.ruleRepository,
-                savedPlaceRepository: container.savedPlaceRepository,
-                now: { fixtureNow },
-                calendar: Fixtures.calendar,
-                timeZone: Fixtures.timeZone,
-                applicationTokenCounter: { selection in
-                    let targetCount = selection.restrictionTargetCount
-                    return targetCount > 0
-                        ? targetCount
-                        : (selection.includeEntireCategory ? 1 : 0)
-                },
-                applicationCountForRule: fixtures.applicationCount,
-                ruleAccessibilityID: fixtures.accessibilityID,
-                initialEditorDraft: initialDraft,
-                bootstrap: bootstrap,
-                loadAppliedRestrictionState: {
-                    let rule = restrictionActivationRule
-                    let scheduleIsActive = ScheduleEvaluator.isActive(
-                        weekdays: rule.weekdays,
-                        startTime: rule.startTime,
-                        endTime: rule.endTime,
-                        at: fixtureNow,
-                        calendar: Fixtures.calendar,
-                        timeZone: Fixtures.timeZone
+        let appModel = AppModel(
+            ruleRepository: container.ruleRepository,
+            savedPlaceRepository: container.savedPlaceRepository,
+            now: { fixtureNow },
+            calendar: Fixtures.calendar,
+            timeZone: Fixtures.timeZone,
+            applicationTokenCounter: { selection in
+                let targetCount = selection.restrictionTargetCount
+                return targetCount > 0
+                    ? targetCount
+                    : (selection.includeEntireCategory ? 1 : 0)
+            },
+            applicationCountForRule: fixtures.applicationCount,
+            ruleAccessibilityID: fixtures.accessibilityID,
+            initialEditorDraft: initialDraft,
+            bootstrap: bootstrap,
+            loadAppliedRestrictionState: {
+                let rule = restrictionActivationRule
+                let scheduleIsActive = ScheduleEvaluator.isActive(
+                    weekdays: rule.weekdays,
+                    startTime: rule.startTime,
+                    endTime: rule.endTime,
+                    at: fixtureNow,
+                    calendar: Fixtures.calendar,
+                    timeZone: Fixtures.timeZone
+                )
+                let shouldApply = locationState == "inside"
+                    || (
+                        scenario == "location-unavailable-active"
+                            && permissionGuideRetryResult == "inside"
                     )
-                    let shouldApply = locationState == "inside"
-                        || (
-                            scenario == "location-unavailable-active"
-                                && permissionGuideRetryResult == "inside"
-                        )
-                    let scheduleAllowsApplication = scheduleIsActive
-                        || scenario == "location-unavailable-active"
-                    let revisions: Set<ActiveRuleRevision> =
-                        scheduleAllowsApplication && shouldApply
-                        ? [ActiveRuleRevision(ruleID: rule.id, revision: rule.revision)]
-                        : []
-                    return AppliedRestrictionState(activeRuleRevisions: revisions)
-                }
-            ),
+                let scheduleAllowsApplication = scheduleIsActive
+                    || scenario == "location-unavailable-active"
+                let revisions: Set<ActiveRuleRevision> =
+                    scheduleAllowsApplication && shouldApply
+                    ? [ActiveRuleRevision(ruleID: rule.id, revision: rule.revision)]
+                    : []
+                return AppliedRestrictionState(activeRuleRevisions: revisions)
+            }
+        )
+        let releaseConfiguration = try makeCoinReleaseConfiguration(
+            mode: coinReleaseMode,
+            result: coinReleaseResult,
+            rule: restrictionActivationRule,
+            now: fixtureNow
+        )
+
+        return AppEnvironment(
+            model: appModel,
             runtimeRecovery: runtimeRecovery(for: scenario),
             currentLocationProvider: UITestCurrentLocationProvider(),
             defaultCoordinate: fixtures.home.coordinate,
             applicationSelectionOverride: selectionOverride,
             familyControlsAuthorizationStatusOverride: authorizationStatusOverride,
             showsRestrictionProbe: scenario == "restriction-activation",
+            releaseConfiguration: releaseConfiguration,
             permissionGuideModel: permissionGuideModel(
                 for: scenario,
                 onboardingStateStore: permissionOnboardingStateStore
@@ -1210,6 +1407,88 @@ private enum UITestConfiguration {
             permissionGuideRetryResult: permissionGuideRetryResult,
             permissionGuideActionUpdate: permissionGuideActionUpdate(for: scenario),
             permissionOnboardingStateStore: permissionOnboardingStateStore
+        )
+    }
+
+    private static func makeCoinReleaseConfiguration(
+        mode: String?,
+        result: String?,
+        rule: RestrictionRuleSnapshot,
+        now: Date
+    ) throws -> ActiveRestrictionReleaseConfiguration? {
+        guard mode == "single" || mode == "overlapping" else {
+            return nil
+        }
+
+        let primary = try RestrictionOccurrence(
+            ruleID: rule.id,
+            ruleRevision: rule.revision,
+            startAt: now.addingTimeInterval(-3_600),
+            endAt: now.addingTimeInterval(7_200),
+            activatedAt: now.addingTimeInterval(-1_800)
+        )
+        let overlapRuleID = UUID(
+            uuidString: "00000000-0000-4000-8000-000000000591"
+        )!
+        let overlap = try RestrictionOccurrence(
+            ruleID: overlapRuleID,
+            ruleRevision: 1,
+            startAt: now.addingTimeInterval(-1_800),
+            endAt: now.addingTimeInterval(9_000),
+            activatedAt: now.addingTimeInterval(-900)
+        )
+        let occurrences = mode == "overlapping" ? [primary, overlap] : [primary]
+        let remainingOccurrences = mode == "overlapping" ? [overlap] : []
+        let balance = try CoinBalanceSnapshot(
+            purchasedAvailable: 3,
+            currentMonthID: MonthlyAllowancePolicy.monthID(containing: now),
+            freeAvailable: 2,
+            syncState: .current,
+            syncedAt: now,
+            ledgerEpochID: UUID(
+                uuidString: "00000000-0000-4000-8000-000000000592"
+            ),
+            hadConfirmedLedger: true
+        )
+        let updatedBalance = try CoinBalanceSnapshot(
+            purchasedAvailable: 3,
+            currentMonthID: balance.currentMonthID,
+            freeAvailable: 1,
+            syncState: .current,
+            syncedAt: now,
+            ledgerEpochID: balance.ledgerEpochID,
+            hadConfirmedLedger: true
+        )
+        let instrumentation = ActiveRestrictionReleaseInstrumentation(
+            remainingOccurrenceCount: occurrences.count,
+            holdsExecution: result == "held-success"
+        )
+        let fixedNow = now
+        let releaseModel = ActiveRestrictionReleaseModel(
+            snapshot: try ActiveRestrictionSnapshot(
+                revision: 1,
+                occurrences: occurrences,
+                observedAt: now
+            ),
+            currentRuleRevisions: [rule.id: rule.revision, overlapRuleID: 1],
+            balance: balance,
+            hasPendingReconciliation: false,
+            now: { fixedNow },
+            executeRelease: { occurrence in
+                await instrumentation.execute(
+                    occurrence: occurrence,
+                    balance: updatedBalance,
+                    remainingOccurrences: remainingOccurrences
+                )
+            }
+        )
+
+        return ActiveRestrictionReleaseConfiguration(
+            model: releaseModel,
+            router: ActiveRestrictionReleaseRouter(),
+            now: { fixedNow },
+            timeZone: Fixtures.timeZone,
+            instrumentation: instrumentation
         )
     }
 

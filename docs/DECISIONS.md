@@ -1,5 +1,30 @@
 # 결정 사항
 
+## DEC-099 — 활성 제한 해제의 item-driven sheet와 route 소비 경계
+
+**날짜**: 2026-09-06
+
+**결정**: 활성 제한 카드는 해제 상세를 item-driven sheet로 열고, sheet가 대상·비용·종료 시각·
+겹친 제한과 무료·구매 잔액을 보여준 뒤 별도 alert에서만 `ActiveRestrictionReleaseModel`의 실행을
+확정한다. sheet가 처리 중이면 닫기와 추가 확인을 막고, 실행 결과의 확정 잔액과 남은 occurrence만
+화면에 반영한다.
+
+`ActiveRestrictionReleaseRouter`는 현재 활성 occurrence ID 집합과 주입 시각을
+`PendingAppRouteRepository.consumeIfEligible`에 그대로 전달한다. repository가 적격 route를 반환한
+경우에만 coin store, iCloud 복구, 장부 reset 안내 또는 재조정 상태로 이동하며 nil·오류에서는
+목적지를 추측하지 않는다. 앱 내 최신 실행이 차단 결과를 반환한 경우에도 같은 목적지 매핑을
+재사용한다. app launch·foreground에서 sheet를 자동 여는 전역 수명주기 연결은 T076 책임으로 남긴다.
+
+**범위 경계**: 코인 상품·결제와 장부 setup/reset action은 T072·T075 전에 구현하지 않고 목적지
+안내만 제공한다. 운영 reservation migration 호환성이 검증되기 전 live executor는
+`.iCloudRecoveryRequired`로 실패 닫힘을 유지하며 UI test seam만 fake 확정 잔액과 held completion을
+주입한다. 화면이나 test probe가 차감을 합성해 production 실행 경계를 우회하지 않는다.
+
+**근거**: 해제 상세와 확인 action을 sheet가 소유하면 홈 카드가 금융 상태를 중복 보유하지 않고,
+`PendingAppRouteRepository`의 5분·활성 occurrence·일회 소비 정책을 navigation 상태와 분리해 검증할
+수 있다. 구현되지 않은 구매·reset action을 임시로 연결하지 않아 장부 손실과 잘못된 결제 진입을
+막는다.
+
 ## DEC-098 — 앱 내 해제 모델의 표시 상태와 최신 실행 결과 분리
 
 **날짜**: 2026-09-06

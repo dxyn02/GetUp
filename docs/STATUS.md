@@ -7,18 +7,18 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 4 사용자 스토리 2 구현 진행 중
 
 ## 진행 중
-`codex/us2-reservation-tests`에서 T056 앱 내 활성 occurrence·잔액·pending reconciliation 상태와
-별도 확인 action 모델을 완료했다. 현재 진행 중인 구현은 없으며 다음은 T057이다.
+`codex/us2-reservation-tests`에서 T057 활성 제한 해제 화면·별도 확인 dialog와 pending route 목적지
+연결을 완료했다. 현재 진행 중인 구현은 없으며 다음은 T058이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T056 — 앱 내 활성 제한 해제 상태·확인·중복 실행 방지 모델
+T057 — 활성 제한 해제 화면·확인 dialog와 pending route 목적지 연결
 
 ## 다음 작업
-T057 — 활성 제한 해제 화면·확인 dialog와 PendingAppRoute 소비 결과별 앱 이동 연결.
+T058 — 앱·Shield의 한국어·영어 비용·대상·유효 기간·다중 규칙·처리 확인 문구와 US2 회귀 검증.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -37,6 +37,36 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-06 T057: 활성 제한 카드에 `해제권 1회 사용` 진입을 추가하고 item-driven sheet 안에서
+`ActiveRestrictionReleaseView`가 선택 occurrence, 무료·구매 잔액, 무료 우선·구매 코인 fallback,
+종료 시각과 겹친 제한 영향을 먼저 표시하도록 구현했다. 실제 사용은 별도 확인 alert 이후에만
+`ActiveRestrictionReleaseModel.confirmRelease()`로 전달하며 처리 중 sheet 닫기와 중복 확인을 막는다.
+성공 결과는 확정 funding source·잔액·남은 occurrence를 표시하고, 잔액 부족·iCloud 복구·장부 reset·
+재조정 결과는 각 목적지로 분리했다.
+
+`ActiveRestrictionReleaseRouter`는 주입한 `PendingAppRouteRepository.consumeIfEligible`에 현재
+occurrence ID 전체와 시각을 전달하고, repository가 반환한 적격 route만 자동 목적지로 사용한다.
+폐기된 route와 읽기 실패는 목적지를 추측하지 않는다. 수동 활성 카드 진입 안의 소비·목적지 화면은
+이번 task에서 연결했으며 app launch·foreground 직후의 자동 소비와 전역 화면 전환은 T076에 남겼다.
+코인 상품·결제, 최초 장부 setup과 삭제 reset action은 각각 T075·T072 전이므로 목적지 화면에서
+임의로 실행하지 않는다. 운영 migration 호환성 검증 전 live 해제 executor는 기존 결정대로
+`.iCloudRecoveryRequired` fail-closed를 유지한다.
+
+새 route 테스트 6개(동적 인자 포함 11회)에서 적격 route 전달, nil 폐기, repository 실패 무이동,
+활성 카드의 선택 규칙 전달, 네 차단 상태의 목적지 매핑과 비이동 상태를 검증했다. T045의 US2 UI
+테스트 4개는 별도 확인 취소 무차감, 앱·Shield 중복 탭의 예약·확정 각 1회, 무료 잔액 2→1,
+구매 잔액 유지와 겹친 제한 1개
+유지를 포함해 모두 통과했다. 기존 활성 제한 UI 회귀 3개도 함께 통과했다. 최종 iPhone 17 Pro
+iOS 26.5 `GetUpTests` 전체가 실패 없이 통과했고 앱·네 extension의 generic iOS Simulator Release
+빌드도 통과했다. 전체 테스트 결과:
+`/tmp/getup-t057-final/Logs/Test/Test-GetUp-2026.09.06_21-33-15-+0900.xcresult`.
+최종 UI 결과:
+`/tmp/getup-t057-ui-final/Logs/Test/Test-GetUp-2026.09.06_21-48-48-+0900.xcresult`.
+초기 UI 실행은 접근성 target 위치·fixture 시간대와 test probe의 화면 밖 버튼을 확인해 실패했으나,
+정보를 detail container 안으로 이동하고 주입 시간대·화면 overlay를 적용한 뒤 전체 4개를 재실행해
+통과했다. 기존 binary strip·불필요한 try 경고는 남아 있으며 새 차단은 없다. T058에서 현재 기본
+문구를 String Catalog의 한국어·영어 값과 접근성 문구로 마감한다.
+
 2026-09-06 T056: `ActiveRestrictionReleaseModel` 부재의 compile RED를 확인한 뒤 앱 전용 Coins feature
 group과 Observation 모델을 추가했다. 모델은 공통 `RestrictionOccurrenceEvaluator`로 현재 rule
 revision과 종료 시각이 유효한 occurrence만 정렬하고, 기본 대표 또는 사용자가 선택한 occurrence
