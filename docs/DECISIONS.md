@@ -1,5 +1,27 @@
 # 결정 사항
 
+## DEC-098 — 앱 내 해제 모델의 표시 상태와 최신 실행 결과 분리
+
+**날짜**: 2026-09-06
+
+**결정**: `ActiveRestrictionReleaseModel`은 활성 snapshot과 현재 rule revision을 공통 evaluator로
+재검증하고 가장 먼저 활성화된 occurrence를 기본 대표로 삼되, 앱에서 사용자가 다른 활성 occurrence를
+선택할 수 있게 한다. coin balance mirror는 무료분 우선·구매분 fallback 예상 표시와 진입 차단에만
+사용하고 실제 funding source와 차감 성공은 별도 확인 뒤 주입된 최신 release executor 결과로만
+확정한다.
+
+pending reconciliation은 잔액 부족이나 새 해제보다 우선한다. 확인은 `idle → confirmationRequested
+→ processing`으로 분리하고 processing 동안 추가 확인을 무시해 같은 모델 instance의 중복 실행을
+막는다. 성공 결과는 executor가 반환한 확정 balance와 남은 occurrence를 함께 반영한다. 실패는
+insufficient balance, iCloud recovery, ledger reset, reconciliation, 일반 release failure를 구분해
+T057 화면이 올바른 안내·route를 선택하게 한다. refresh는 진행 중 작업을 덮지 않으며 완료·차단 뒤
+최신 snapshot을 받아 다시 idle 상태로 만든다.
+
+**근거와 범위**: 화면이 local mirror를 직접 차감하거나 성공을 합성하면 T047~T055의 원격 멱등·
+보상 경계를 우회한다. 반대로 UI 상태와 실행 adapter를 분리하면 fake executor로 확인·중복 action을
+결정적으로 검증하면서 실제 `RuleReleaseService` 조립은 T057에서 수행할 수 있다. 이번 결정은 UI,
+CloudKit production adapter, schema·원격 데이터를 변경하지 않는다.
+
 ## DEC-097 — Shield primary action의 검증 경계와 route 선영속 fail-closed
 
 **날짜**: 2026-09-06

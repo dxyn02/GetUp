@@ -138,7 +138,7 @@ occurrence만 예외 처리되는지, 중복 100회에서 최대 1회만 소모�
 - [X] T053 [US2] interval 시작·종료에서 유효 예외를 적용하고 만료 예외를 정리하도록 `GetUpDeviceActivityMonitor/DeviceActivityMonitorExtension.swift`를 확장한다. 해제 coordinator와 같은 App Group 로컬 잠금에 참여해 적용 경합을 검증한다.
 - [X] T054 [US2] 현재 Shield 내용에 대표 규칙·종료·남을 제한, 무료 우선·구매 fallback에 동의하는 단일 `해제권 1회 사용` primary와 기존 `앱 닫기` secondary를 구성하도록 `GetUp/Infrastructure/ScreenTime/ShieldContentProvider.swift`를 확장한다.
 - [X] T055 [US2] Shield primary action에서 최신 occurrence·장부를 검증해 무료 우선으로 안정 command를 실행하고, 성공·남은 제한·timeout과 coin store·iCloud recovery route를 기록하며 iOS 26.5 이상은 `.openParentalControlsApp`, 이전은 안내 후 `.close`로 응답하도록 `GetUpShieldAction/ShieldActionExtension.swift`, `GetUp/Infrastructure/ScreenTime/ShieldActionResponsePolicy.swift`를 구현한다. Live Activity 직접 조정은 T039에서 실기기 성공이 확인된 경로에만 production adapter로 연결하고 그 외에는 앱 진입·다음 foreground fallback을 사용하며 DEBUG feasibility probe가 release build에 포함되지 않음을 검증한다.
-- [ ] T056 [P] [US2] 앱 내 활성 occurrence·잔액·pending reconciliation 상태와 확인 action을 `GetUp/Features/Coins/ActiveRestrictionReleaseModel.swift`에 구현한다.
+- [X] T056 [P] [US2] 앱 내 활성 occurrence·잔액·pending reconciliation 상태와 확인 action을 `GetUp/Features/Coins/ActiveRestrictionReleaseModel.swift`에 구현한다.
 - [ ] T057 [US2] 활성 제한 카드의 해제 확인 dialog와 `PendingAppRouteRepository.consumeIfEligible` 결과에 따른 잔액 부족 coin store·장부 복구 진입을 `GetUp/Features/RestrictionStatus/RestrictionStatusView.swift`, `GetUp/Features/Coins/ActiveRestrictionReleaseView.swift`에 구현한다.
 - [ ] T058 [US2] 한국어·영어 비용·대상·유효 기간·다중 규칙·처리 확인 문구를 `GetUp/Resources/Localizable.xcstrings`, `GetUpShieldConfiguration/Resources/Localizable.xcstrings`에 추가하고 US2 관련 자동 테스트를 통과시킨다.
 

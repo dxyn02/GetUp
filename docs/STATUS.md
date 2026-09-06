@@ -7,19 +7,18 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 4 사용자 스토리 2 구현 진행 중
 
 ## 진행 중
-`codex/us2-reservation-tests`에서 T055 Shield primary action의 occurrence·장부 상태 선검사,
-주입형 최신 해제 실행, route 영속화와 OS별 응답 연결을 완료했다. 현재 진행 중인 구현은 없으며
-다음은 T056이다.
+`codex/us2-reservation-tests`에서 T056 앱 내 활성 occurrence·잔액·pending reconciliation 상태와
+별도 확인 action 모델을 완료했다. 현재 진행 중인 구현은 없으며 다음은 T057이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T055 — Shield primary action 최신 컨텍스트·해제 결과·route·OS별 응답 조정
+T056 — 앱 내 활성 제한 해제 상태·확인·중복 실행 방지 모델
 
 ## 다음 작업
-T056 — 앱 내 활성 occurrence·잔액·pending reconciliation 상태와 확인 action 구현.
+T057 — 활성 제한 해제 화면·확인 dialog와 PendingAppRoute 소비 결과별 앱 이동 연결.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -38,6 +37,26 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-06 T056: `ActiveRestrictionReleaseModel` 부재의 compile RED를 확인한 뒤 앱 전용 Coins feature
+group과 Observation 모델을 추가했다. 모델은 공통 `RestrictionOccurrenceEvaluator`로 현재 rule
+revision과 종료 시각이 유효한 occurrence만 정렬하고, 기본 대표 또는 사용자가 선택한 occurrence
+하나를 해제 대상으로 유지한다. `current` mirror에서 무료분 우선·구매분 fallback을 표시용으로만
+예측하며, 실제 확정은 별도 confirmation 뒤 주입한 최신 release executor에 위임한다. pending
+reconciliation은 잔액보다 우선해 새 해제를 차단하고, 잔액 부족·iCloud 복구·장부 reset·일반 거부를
+서로 다른 availability와 phase로 제공한다. 처리 중 중복 확인은 무시하며 성공 때 executor가 반환한
+확정 잔액·남은 occurrence만 반영하고, 화면 재조회용 `refresh`는 처리 중 상태를 덮지 않는다.
+
+집중 테스트 10개(동적 인자 포함 15회)에서 occurrence revision·정렬·선택, 무료/구매 preview,
+잔액 0, 여섯 비현재 장부 상태, pending 우선, 확인 취소, 성공 상태 갱신과 처리 중 중복 요청 1회를
+검증했다. 첫 추가 회귀 재실행은 Simulator app preflight가 `Busy`로 거부해 실패했으나 기기가 이미
+shutdown 상태임을 확인한 뒤 boot 완료 및 별도 DerivedData에서 재실행해 통과했다. 최종 iPhone 17
+Pro iOS 26.5 `GetUpTests` 475개(동적 인자 포함 553회)가 실패·skip 없이 통과했고 앱·네 extension의
+generic iOS Simulator Release 빌드도 통과했다. 최종 결과:
+`/tmp/getup-t056-full/Logs/Test/Test-GetUp-2026.09.06_21-04-01-+0900.xcresult`.
+기존 binary strip·불필요한 try 경고는 남아 있다. T045 앱/Shield UI suite는 T057·T058 화면·지역화
+연결 전이므로 이번 작업에서 실행하지 않았고, 운영 CloudKit 장부·schema·원격 데이터는 변경하지
+않았다. 새 차단은 없다.
+
 2026-09-06 T055: 기존 `ShieldCoinActionTests`의 미구현 타입 compile RED를 확인한 뒤
 `ShieldCoinActionHandler`와 App Group `ShieldCoinActionContextReader`를 구현했다. primary action은
 현재 rule revision과 token에 맞는 가장 이른 활성 occurrence를 대표로 선택하고 pending
