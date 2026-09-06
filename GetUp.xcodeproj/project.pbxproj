@@ -226,6 +226,7 @@
 		AA000000000000000000030B /* CoinProductCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000050 /* CoinProductCatalogTests.swift */; };
 		AA000000000000000000030C /* CoinPurchaseServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000052 /* CoinPurchaseServiceTests.swift */; };
 		AA000000000000000000030D /* StoreKitTransactionObserverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000053 /* StoreKitTransactionObserverTests.swift */; };
+		AA000000000000000000030E /* PurchaseRefundReconcilerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000054 /* PurchaseRefundReconcilerTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -442,6 +443,7 @@
 		B50000000000000000000050 /* CoinProductCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinProductCatalogTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000052 /* CoinPurchaseServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinPurchaseServiceTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000053 /* StoreKitTransactionObserverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitTransactionObserverTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000054 /* PurchaseRefundReconcilerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseRefundReconcilerTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -771,6 +773,7 @@
 		B50000000000000000000011 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				B50000000000000000000054 /* PurchaseRefundReconcilerTests.swift */,
 				B5000000000000000000004F /* ActiveRestrictionReleaseRouterTests.swift */,
 				B5000000000000000000004E /* ActiveRestrictionReleaseModelTests.swift */,
 				B50000000000000000000049 /* RuleReleaseServiceTests.swift */,
@@ -1406,6 +1409,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA000000000000000000030E /* PurchaseRefundReconcilerTests.swift in Sources */,
 				AA000000000000000000030D /* StoreKitTransactionObserverTests.swift in Sources */,
 				AA000000000000000000030C /* CoinPurchaseServiceTests.swift in Sources */,
 				AA000000000000000000030B /* CoinProductCatalogTests.swift in Sources */,

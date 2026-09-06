@@ -7,19 +7,19 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 5 사용자 스토리 3 테스트 진행 중
 
 ## 진행 중
-`codex/us3-product-catalog-tests`에서 T061 StoreKit transaction 수명주기·복구 계약 테스트를 먼저
-작성했다. 현재 테스트 타깃은 후속 `CoinProductCatalog`·`CoinPurchaseService`·
-`StoreKitTransactionObserver` 구현 전의 의도된 TDD RED 상태이며 다음은 T062이다.
+`codex/us3-product-catalog-tests`에서 T062 구매 환불·철회·취소 reversal 계약 테스트를 먼저
+작성했다. 현재 테스트 타깃은 후속 US3 catalog·구매·observer·환불 구현 전의 의도된 TDD RED
+상태이며 다음은 T063이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T061 — StoreKit transaction commit·finish 순서와 unfinished·updates 복구 계약 테스트
+T062 — 구매 환불·철회·취소 reversal과 미사용분 한도·0 clamp 계약 테스트
 
 ## 다음 작업
-T062 — 환불·철회·취소 reversal과 미사용분 한도·0 clamp 테스트 작성.
+T063 — 비current 구매 API 차단과 장부 장애·삭제·reset lifecycle 테스트 작성.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -38,6 +38,20 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-06 T062: 검증 transaction에 `revocationDate`가 생기면 원 `PurchaseGrant`와 일치하는 경우에만
+`refundAdjustment`를 만들고, 현재 사용 가능한 구매 잔액과 해당 grant 수량 중 작은 값까지만
+회수하도록 계약을 추가했다. 전량 미사용·일부 사용·전량 예약 또는 이미 사용된 0 usable 사례에서
+`CoinAccount`가 0 아래로 내려가지 않고 예약 코인을 침범하지 않으며, 실제 변경 때만 revision과
+처리 시각이 갱신되는지 검증한다.
+
+같은 결정적 refund event 재처리는 무변경이고, 환불 취소가 확인되면 기존 adjustment 수량만
+`reversal`로 복원하며 같은 취소를 다시 받아도 한 번만 복원하도록 했다. 다른 transaction의 grant는
+거부하고, revocation과 기존 refund가 모두 없는 현재 transaction은 no-op이다. 총 8개 순수 상태 전이
+계약 테스트다. 이전 T059~T061 RED를 제외한 집중 컴파일은 계획된 T070의
+`PurchaseRefundReconciler`·`PurchaseRefundReconcilerError` 부재에서만 종료되어 TDD RED를 확인했다.
+앱과 네 extension의 generic iOS Simulator Release 빌드, project plist·diff 검사가 통과했다.
+운영 StoreKit 거래나 CloudKit 원격 데이터는 호출·변경하지 않았고 새 제품 차단은 없다.
+
 2026-09-06 T061: CloudKit `PurchaseGrant` commit 실패 시 transaction을 finish하지 않고 오류를
 전달하는 계약과, commit 성공 뒤 finish가 실패하면 다음 앱 실행의 unfinished transaction에서 같은
 지급 키를 재처리해 grant를 늘리지 않고 finish만 완료하는 계약을 추가했다. 앱 시작은
