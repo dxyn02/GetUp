@@ -122,6 +122,14 @@ T050 재조정 계약: 동일 로컬 잠금 아래 원격 명령의 식별자·�
 처리하고 첫 실패에 중단한다. 호출자는 영속 pending ID가 모두 종결됐음을 확인한 뒤 새 해제를
 시작해야 한다. 이 호출·영속 큐 연결은 후속 앱·Shield 통합에서 구현한다.
 
+T051 Shield deadline 계약: primary action이 서비스에 전달된 monotonic instant부터 5초를 잰다.
+확인된 reservation이 5초 미만에 반환되고 command ID·occurrence가 요청과 일치할 때만 로컬 해제를
+적용한다. 정확히 5초, 초과, 명시적 미확인, 호출 오류, 식별자 불일치는 제한을 유지한다. 반환하지
+않는 호출도 5초 대기와의 경쟁에서 빠져나와야 한다. 실패 경로는 같은 command ID를 T050 경계로
+재조정하고 occurrence가 연결된 `.reconciliation` route를 저장한다. 지연 원격 작업을 취소해도
+이미 제출된 CloudKit 작업의 결과를 성공·실패로 추정하지 않으며, route를 통해 다음 앱 실행에서
+같은 command ID를 다시 확인한다. wall clock 변경은 deadline 판정에 영향을 주지 않는다.
+
 - 무료 우선, 구매 fallback, 양쪽 잔액 부족
 - 같은 occurrence 100회 동시 요청과 Shield·앱 교차 요청
 - 사용 직전 occurrence 자동 종료

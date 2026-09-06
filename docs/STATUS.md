@@ -7,17 +7,17 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 4 사용자 스토리 2 구현 진행 중
 
 ## 진행 중
-`codex/us2-reservation-tests`에서 T050 결과 불명 명령 재조정 구현과 회귀를 완료했다.
-현재 진행 중인 구현은 없으며 다음은 T051이다.
+`codex/us2-reservation-tests`에서 T051 Shield 5초 deadline 정책 구현과 회귀를 완료했다.
+현재 진행 중인 구현은 없으며 다음은 T052이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 앱·Shield의 최신 컨텍스트 provider 연결은 후속 통합에 남아 있다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T050 — 원격 명령·로컬 예외 재조회에 따른 확정·보상 재조정
+T051 — Shield strict monotonic 5초 deadline과 동일 command ID 재조정 경계
 
 ## 다음 작업
-T051 — Shield의 5초 monotonic deadline과 timeout·늦은 응답 재조정 정책 구현.
+T052 — release exception을 제한 합집합에서 제외하고 다른 규칙 제한을 유지하는 실제 provider 연결.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -36,6 +36,19 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-06 T051: 기존 T044의 미구현 타입 compile RED를 확인한 뒤 strict monotonic deadline 정책을
+구현했다. 기존 4개 테스트와 반환하지 않는 CloudKit 시도의 실제 timeout race 회귀 1개를 통과해
+4.9초 성공만 적용하고 정확히 5초·5.1초 지연·extension 중단은 제한 유지, 동일 command ID 재조정,
+`.reconciliation` route, 미적용 차감 0으로 처리함을 확인했다. 초기 focused 재실행 2회는 Simulator가
+상태 전환 중 앱 preflight를 `Busy`로 거부했으며 새 DerivedData와 부팅 완료 확인 뒤 통과했다.
+최종 iPhone 17 Pro iOS 26.5 `GetUpTests` 443개(인자 포함 506회)가 실패·skip 없이 통과했다.
+미구현 `ShieldCoinActionTests.swift`만 명령행에서 제외했고 T045 UI RED는 재실행하지 않았다.
+앱·네 extension의 generic iOS Simulator Release 빌드와 project plist·diff 검사도 통과했다.
+기존 테스트의 불필요한 try·binary strip 경고는 남아 있다.
+최종 결과: `/tmp/getup-t051-full/Logs/Test/Test-GetUp-2026.09.06_15-46-16-+0900.xcresult`.
+실제 Shield primary action, T050 reconciler와 pending route 영속 연결은 T055·T076 후속 범위다.
+실기기·실제 CloudKit은 미검증이며 운영 장부 활성화·원격 데이터 변경은 하지 않았다. 새 차단은 없다.
+
 2026-09-06 T050: reconciler 타입 부재 compile RED 뒤 구현했다. 재조정 테스트 11개(인자 포함
 14회)를 추가해 예약·적용·결과 불명 상태의 예외 기반 확정, 예외 없는 예약의 보상, 보상 중 중단
 복구, 확정·보상 재시도 멱등성, commit·보상 결과 불명, 적용 실패, 잠금 경합, 잘못된 명령 ID,

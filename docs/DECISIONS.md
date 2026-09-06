@@ -1,5 +1,21 @@
 # 결정 사항
 
+## DEC-093 — Shield 해제 확인의 strict monotonic 5초 경계
+
+**날짜**: 2026-09-06
+
+**결정**: `ShieldReleaseDeadlinePolicy`는 해제 시도와 주입 가능한 deadline 대기를 경쟁시킨다.
+primary action 전달 뒤 monotonic 경과가 5초 미만이고 reservation의 command ID·occurrence가 요청과
+일치할 때만 로컬 해제를 적용한다. 정확히 5초와 이후 응답, 미확인·오류·불일치는 제한을 유지하고
+같은 command ID 재조정과 `.reconciliation` 앱 경로를 생성한다. extension 중단 복구도 새 command를
+만들지 않고 같은 fail-closed 경계를 사용한다.
+
+**근거와 한계**: 응답 뒤 시각만 비교하면 반환하지 않는 CloudKit 호출에서 5초 상한을 지킬 수
+없으므로 별도 timeout task가 필요하다. timeout 시 작업을 취소하지만 이미 제출된 원격 요청이 실제로
+취소됐다고 추정하지 않는다. 즉시 재조회에서 아직 명령이 없더라도 route를 보존해 다음 앱 실행이
+같은 ID를 다시 확인한다. wall clock은 route 생성 시각에만 사용한다. 실제 Shield primary action과
+T050 reconciler·영속 route 조립은 T055·T076 책임이며 이번 작업은 운영 장부를 활성화하지 않는다.
+
 ## DEC-092 — 결과 불명 해제 명령의 보수적 재조정
 
 **날짜**: 2026-09-06

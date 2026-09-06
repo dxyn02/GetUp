@@ -4,6 +4,36 @@ import Testing
 
 @Suite("Shield release deadline")
 struct ShieldReleaseDeadlineTests {
+    @Test("A nonreturning CloudKit attempt is cut off by the deadline")
+    func nonreturningAttemptTimesOut() async throws {
+        let clock = ContinuousClock()
+        let recovery = DeadlineRecoverySpy()
+        let routes = DeadlineRouteSpy()
+        let policy = ShieldReleaseDeadlinePolicy(
+            deadline: .seconds(5),
+            monotonicNow: { clock.now },
+            attemptRelease: { _ in
+                try await Task.sleep(for: .seconds(60))
+                return .unconfirmed(commandID: Self.commandID)
+            },
+            applyConfirmedRelease: { _ in Issue.record("A timed out release must not apply") },
+            reconcileUnapplied: { id in await recovery.reconcile(id); return nil },
+            savePendingRoute: { route in try await routes.save(route) },
+            makeRouteID: { Self.routeID },
+            wallNow: { Self.now },
+            waitForDeadline: { _ in }
+        )
+
+        let outcome = try await policy.perform(
+            commandID: Self.commandID,
+            occurrenceID: Self.occurrenceID
+        )
+
+        #expect(outcome == .reconciliationRequired(commandID: Self.commandID))
+        #expect(await recovery.commandIDs == [Self.commandID])
+        #expect(await routes.destinations == [.reconciliation])
+    }
+
     @Test("A CloudKit confirmation at 4.9 seconds can apply the release")
     func confirmationBeforeDeadlineAppliesRelease() async throws {
         let fixture = try DeadlineFixture(timing: .confirmedAtFourPointNineSeconds)
@@ -223,6 +253,14 @@ private actor DeadlineRouteSpy {
 
     func save(_ route: PendingAppRoute) throws {
         savedRoutes.append(route)
+    }
+}
+
+private actor DeadlineRecoverySpy {
+    private(set) var commandIDs: [UUID] = []
+
+    func reconcile(_ commandID: UUID) {
+        commandIDs.append(commandID)
     }
 }
 

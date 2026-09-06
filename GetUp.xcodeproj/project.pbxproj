@@ -212,6 +212,8 @@
 		AA0000000000000000000296 /* RuleReleaseCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000071 /* RuleReleaseCoordinator.swift */; };
 		AA0000000000000000000297 /* RuleReleaseReconciler.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000072 /* RuleReleaseReconciler.swift */; };
 		AA0000000000000000000298 /* RuleReleaseReconciler.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000072 /* RuleReleaseReconciler.swift */; };
+		AA0000000000000000000299 /* ShieldReleaseDeadlinePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000073 /* ShieldReleaseDeadlinePolicy.swift */; };
+		AA0000000000000000000300 /* ShieldReleaseDeadlinePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000073 /* ShieldReleaseDeadlinePolicy.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -418,6 +420,7 @@
 		B40000000000000000000069 /* RuleReleaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleReleaseService.swift; sourceTree = "<group>"; };
 		B40000000000000000000071 /* RuleReleaseCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleReleaseCoordinator.swift; sourceTree = "<group>"; };
 		B40000000000000000000072 /* RuleReleaseReconciler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleReleaseReconciler.swift; sourceTree = "<group>"; };
+		B40000000000000000000073 /* ShieldReleaseDeadlinePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldReleaseDeadlinePolicy.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -662,6 +665,7 @@
 				B40000000000000000000044 /* ManagedSettingsRestrictionAdapter.swift */,
 				B40000000000000000000045 /* RestrictionCoordinator.swift */,
 				B40000000000000000000071 /* RuleReleaseCoordinator.swift */,
+				B40000000000000000000073 /* ShieldReleaseDeadlinePolicy.swift */,
 				B40000000000000000000049 /* ShieldContentProvider.swift */,
 				B40000000000000000000050 /* ShieldActionResponsePolicy.swift */,
 			);
@@ -1195,6 +1199,7 @@
 				AA0000000000000000000287 /* RuleReleaseService.swift in Sources */,
 				AA0000000000000000000295 /* RuleReleaseCoordinator.swift in Sources */,
 				AA0000000000000000000297 /* RuleReleaseReconciler.swift in Sources */,
+				AA0000000000000000000299 /* ShieldReleaseDeadlinePolicy.swift in Sources */,
 				AA0000000000000000000256 /* MonthlyAllowancePolicy.swift in Sources */,
 				AA0000000000000000000285 /* CoinReservationPolicy.swift in Sources */,
 				AA0000000000000000000253 /* CoinLedgerSyncAdapter.swift in Sources */,
@@ -1316,6 +1321,7 @@
 				AA0000000000000000000288 /* RuleReleaseService.swift in Sources */,
 				AA0000000000000000000296 /* RuleReleaseCoordinator.swift in Sources */,
 				AA0000000000000000000298 /* RuleReleaseReconciler.swift in Sources */,
+				AA0000000000000000000300 /* ShieldReleaseDeadlinePolicy.swift in Sources */,
 				AA0000000000000000000257 /* MonthlyAllowancePolicy.swift in Sources */,
 				AA0000000000000000000286 /* CoinReservationPolicy.swift in Sources */,
 				AA0000000000000000000254 /* CoinLedgerSyncAdapter.swift in Sources */,

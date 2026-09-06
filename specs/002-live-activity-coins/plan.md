@@ -257,6 +257,11 @@ mirror·해제 예외를 보관한다. 별도 서버와 외부 패키지는 도�
   확인한 뒤 확정 또는 보상한다. `reconcilePending` 실패 시 호출자는 새 해제를 시작하지 않는다.
   pending ID의 영속 보관·제거와 앱·Shield 진입 연결은 후속 통합 책임이며 아직 활성화하지 않는다.
   완료 명령은 재차 차감하지 않고 만료되어 사라진 예외를 재생성하지 않는다.
+- T051 Shield deadline 정책은 primary action 전달 시 monotonic instant를 기록하고 CloudKit 시도와
+  주입 가능한 5초 대기를 경쟁시킨다. 성공 확인이 정확히 5초보다 빠르고 command·occurrence가
+  일치할 때만 로컬 해제를 적용한다. timeout·오류·식별자 불일치는 같은 command ID의 T050
+  재조정과 occurrence에 연결된 `.reconciliation` route로 fail-closed한다. wall clock은 route의
+  사용자 진입 유효 기간 기록에만 사용하며 deadline 판정에는 사용하지 않는다.
 - BLK-015 승인에 따라 epoch·occurrence별 `ReleaseOccurrenceClaim`을 무료·구매 예약이 공유한다.
   claim 획득과 예약, claim 해제와 보상을 각각 같은 atomic modify로 처리한다. T047a 모델·codec,
   T047b 원자 저장·호환 gate, T047c 서비스 연결 순으로 검증한다. 기존 schema 데이터 삭제나
