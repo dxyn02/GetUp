@@ -61,8 +61,13 @@ struct ShieldCoinActionTests {
     }
 
     @Test(
-        "Stale and unavailable ledgers route to iCloud recovery without attempting release",
-        arguments: [CoinBalanceSyncState.stale, .unavailable]
+        "A non-current recoverable ledger routes to iCloud recovery without attempting release",
+        arguments: [
+            CoinBalanceSyncState.setupRequired,
+            .syncing,
+            .stale,
+            .unavailable,
+        ]
     )
     func unavailableLedgerRoutesToICloudRecovery(syncState: CoinBalanceSyncState) async throws {
         let fixture = try Fixture(
@@ -173,6 +178,41 @@ struct ShieldCoinActionTests {
         #expect(await modern.routes.destinations == [.coinStore])
         #expect(await legacy.routes.destinations == [.coinStore])
     }
+
+    @Test("A timeout or unknown release result routes to reconciliation")
+    func unknownReleaseResultRoutesToReconciliation() async throws {
+        let fixture = try Fixture(
+            balance: .fixture(freeAvailable: 1, purchasedAvailable: 1),
+            releaseResult: .reconciliationRequired
+        )
+
+        let decision = await fixture.handler.handlePrimaryAction(
+            context: fixture.context,
+            operatingSystemVersion: Self.iOS26_5
+        )
+
+        expectOpenParentApp(decision.response)
+        #expect(decision.keepsShield)
+        #expect(await fixture.routes.destinations == [.reconciliation])
+    }
+
+    @Test("A route persistence failure stays fail-closed")
+    func routePersistenceFailureStaysFailClosed() async throws {
+        let fixture = try Fixture(
+            balance: .fixture(freeAvailable: 0, purchasedAvailable: 0),
+            releaseResult: .insufficientBalance,
+            shouldFailRouteSave: true
+        )
+
+        let decision = await fixture.handler.handlePrimaryAction(
+            context: fixture.context,
+            operatingSystemVersion: Self.iOS26_5
+        )
+
+        #expect(decision.response == .defer)
+        #expect(decision.keepsShield)
+        #expect(await fixture.routes.savedRoutes.isEmpty)
+    }
 }
 
 private extension ShieldCoinActionTests {
@@ -200,7 +240,8 @@ private struct Fixture {
         balance: CoinBalanceSnapshot,
         activeRestrictionCount: Int = 1,
         hasPendingReconciliation: Bool = false,
-        releaseResult: ShieldReleaseAttemptResult
+        releaseResult: ShieldReleaseAttemptResult,
+        shouldFailRouteSave: Bool = false
     ) throws {
         let representative = try RestrictionOccurrence(
             ruleID: UUID(uuidString: "00000000-0000-4000-8000-000000000702")!,
@@ -210,7 +251,7 @@ private struct Fixture {
             activatedAt: ShieldCoinActionTests.now.addingTimeInterval(-300)
         )
         let release = ShieldReleaseSpy(result: releaseResult)
-        let routes = PendingRouteSpy()
+        let routes = PendingRouteSpy(shouldFailSave: shouldFailRouteSave)
 
         self.context = ShieldCoinActionContext(
             representative: representative,
@@ -248,15 +289,27 @@ private actor ShieldReleaseSpy {
 }
 
 private actor PendingRouteSpy {
+    private let shouldFailSave: Bool
     private(set) var savedRoutes: [PendingAppRoute] = []
+
+    init(shouldFailSave: Bool = false) {
+        self.shouldFailSave = shouldFailSave
+    }
 
     var destinations: [PendingAppRouteDestination] {
         savedRoutes.map(\.destination)
     }
 
     func save(_ route: PendingAppRoute) throws {
+        if shouldFailSave {
+            throw PendingRouteSpyError.writeFailed
+        }
         savedRoutes.append(route)
     }
+}
+
+private enum PendingRouteSpyError: Error {
+    case writeFailed
 }
 
 private extension CoinBalanceSnapshot {

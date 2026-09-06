@@ -1,5 +1,31 @@
 # 결정 사항
 
+## DEC-097 — Shield primary action의 검증 경계와 route 선영속 fail-closed
+
+**날짜**: 2026-09-06
+
+**결정**: Shield Action은 App Group의 현재 규칙 revision·활성 occurrence·coin balance mirror와
+Shield token을 다시 대조해 가장 먼저 활성화된 일치 occurrence 하나만 최신 원격 해제 실행 경계에
+전달한다. mirror는 사용 권한의 근거로 쓰지 않으며, `current`에서만 주입형 representative가 서버의
+최신 장부·무료 우선·구매 fallback·안정 command·5초 deadline을 확정한다. pending reconciliation과
+비현재 장부는 새 해제보다 먼저 각각 reconciliation·복구 route로 전환한다.
+
+성공 후 같은 대상 제한이 없으면 `.none`, 다른 제한이 남으면 `.defer`를 반환한다. 잔액 부족·장부
+복구·삭제 reset·결과 불명은 대응 `PendingAppRoute` 저장이 성공한 뒤에만 iOS 26.5 이상의
+`.openParentalControlsApp`을 반환하고 iOS 26.0~26.4는 `.close`를 사용한다. route 쓰기 실패·중복
+callback·거부는 `.defer`로 Shield를 유지한다. snapshot 자체를 복구할 수 없으면 occurrence 없는
+iCloud 복구 route를 저장해 앱이 조건과 무관하게 복구 안내를 소비할 수 있게 한다.
+
+**운영 경계**: DEC-088의 CloudKit reservation 호환성 검증은 계속 기본 거부다. T097에서 production
+schema·migration 호환성이 확인되기 전 live representative는 `.iCloudRecovery`로 fail-closed하며,
+테스트는 fake 최신 장부 provider로 무료분·구매분·잔액 부족·timeout 계약을 검증한다. 이는 로컬
+mirror만으로 코인을 차감하거나 운영 schema를 암묵적으로 활성화하는 것보다 안전하다.
+
+**Live Activity**: DEC-086의 실기기 결과에 따라 production 직접 ActivityKit adapter를 연결하지
+않는다. 성공한 해제의 활동 재조정은 앱 foreground 또는 다음 foreground가 담당한다. DEBUG probe는
+primary 응답을 지연시키지 않게 병렬 실행하고 Release 실행 파일의 문자열·심볼 검사로 제외를
+확인한다.
+
 ## DEC-096 — Shield 표시의 활성 occurrence 권위와 funding source 비단정
 
 **날짜**: 2026-09-06

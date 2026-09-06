@@ -7,18 +7,19 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 4 사용자 스토리 2 구현 진행 중
 
 ## 진행 중
-`codex/us2-reservation-tests`에서 T054 Shield 대표 occurrence·해제 동의 콘텐츠와 secondary 닫기
-구성을 완료했다. 현재 진행 중인 구현은 없으며 다음은 T055이다.
+`codex/us2-reservation-tests`에서 T055 Shield primary action의 occurrence·장부 상태 선검사,
+주입형 최신 해제 실행, route 영속화와 OS별 응답 연결을 완료했다. 현재 진행 중인 구현은 없으며
+다음은 T056이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
-운영 활성화·migration은 수행하지 않았다. Shield primary action의 최신 컨텍스트 provider와 장부·
-route 연결은 후속 통합에 남아 있다.
+운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
+`.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T054 — Shield 대표 occurrence·종료·남을 제한·무료 우선 비용 안내와 해제/닫기 버튼 구성
+T055 — Shield primary action 최신 컨텍스트·해제 결과·route·OS별 응답 조정
 
 ## 다음 작업
-T055 — Shield primary action의 최신 occurrence·장부 검증, 해제·route·OS별 응답 연결.
+T056 — 앱 내 활성 occurrence·잔액·pending reconciliation 상태와 확인 action 구현.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -37,6 +38,28 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-06 T055: 기존 `ShieldCoinActionTests`의 미구현 타입 compile RED를 확인한 뒤
+`ShieldCoinActionHandler`와 App Group `ShieldCoinActionContextReader`를 구현했다. primary action은
+현재 rule revision과 token에 맞는 가장 이른 활성 occurrence를 대표로 선택하고 pending
+reconciliation을 새 해제보다 우선한다. `current`가 아닌 복구 가능 장부는 `.iCloudRecovery`, 삭제·
+reset 상태는 `.ledgerReset`으로 보내며, 최신 원격 검증을 담당하는 주입형 release representative의
+성공 결과는 무료분 또는 구매분 실제 funding source를 기록한다. 대상 제한이 하나면 `.none`, 다른
+제한이 남으면 `.defer`로 Shield를 유지한다. 잔액 부족은 `.coinStore`, timeout·결과 불명은
+`.reconciliation` route를 먼저 atomic 저장하고 iOS 26.5 이상은 `.openParentalControlsApp`, 이전은
+`.close`를 반환한다. route 쓰기 실패·중복 처리·거부는 `.defer` fail-closed다.
+
+Shield Action extension의 application·category·web domain callback을 비동기 runtime에 연결했고,
+snapshot을 읽지 못하면 occurrence 없는 iCloud 복구 route를 저장한다. DEC-086에 따라 production
+ActivityKit 직접 조정 adapter는 연결하지 않았다. 운영 CloudKit 호환성 gate는 계속 기본 거부이며,
+검증 전 live release adapter는 iCloud 복구로 fail-closed한다. 집중 테스트 10개(동적 인자 포함
+14회)와 최종 iPhone 17 Pro iOS 26.5 `GetUpTests` 465개(동적 인자 포함 538회)가 실패·skip 없이
+통과했다. 앱·네 extension의 generic iOS Simulator Release 빌드가 통과했고 생성된
+`GetUpShieldAction` 실행 파일의 문자열·심볼에서 `ActivityKitFeasibilityProbe`, 결과 파일명과 DEBUG
+defaults key가 없음을 확인했다. 최종 결과:
+`/Users/andy/Library/Developer/Xcode/DerivedData/GetUp-adhdrifivmjwlqcgyfrwxilepoks/Logs/Test/Test-GetUp-2026.09.06_16-40-02-+0900.xcresult`.
+실제 system Shield callback·프로세스 종료·App Group route와 운영 CloudKit 해제는 실기기·출시 인수
+전까지 미검증이다. 기존 테스트의 불필요한 try·binary strip 경고는 남아 있으며 새 차단은 없다.
+
 2026-09-06 T054: 기존 Shield 콘텐츠 테스트를 active rule revision 기반에서 활성 occurrence·잔액 mirror
 기반 계약으로 먼저 변경해 `now` 주입, secondary button과 새 snapshot 필드 부재의 compile RED를
 확인했다. `AppGroupShieldSnapshotReader`는 규칙·장소와 함께 `active-restrictions.json` 및

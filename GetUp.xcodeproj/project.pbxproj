@@ -218,6 +218,7 @@
 		AA0000000000000000000302 /* RuleReleaseLocalLease.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000074 /* RuleReleaseLocalLease.swift */; };
 		AA0000000000000000000303 /* RuleReleaseLocalLease.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000074 /* RuleReleaseLocalLease.swift */; };
 		AA0000000000000000000304 /* RestrictionOccurrenceEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000062 /* RestrictionOccurrenceEvaluator.swift */; };
+		AA0000000000000000000305 /* RestrictionOccurrenceEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000062 /* RestrictionOccurrenceEvaluator.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -1325,6 +1326,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000305 /* RestrictionOccurrenceEvaluator.swift in Sources */,
 				AA0000000000000000000276 /* ActivityKitFeasibilityProbe.swift in Sources */,
 				AA0000000000000000000259 /* MonthlyAllowanceService.swift in Sources */,
 				AA0000000000000000000288 /* RuleReleaseService.swift in Sources */,
