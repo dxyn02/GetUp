@@ -7,19 +7,19 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 5 사용자 스토리 3 테스트 진행 중
 
 ## 진행 중
-`codex/us3-product-catalog-tests`에서 T060 StoreKit 구매 결과와 지급 멱등 계약 테스트를 먼저
-작성했다. 현재 테스트 타깃은 후속 `CoinProductCatalog`·`CoinPurchaseService` 구현 전의 의도된
-TDD RED 상태이며 다음은 T061이다.
+`codex/us3-product-catalog-tests`에서 T061 StoreKit transaction 수명주기·복구 계약 테스트를 먼저
+작성했다. 현재 테스트 타깃은 후속 `CoinProductCatalog`·`CoinPurchaseService`·
+`StoreKitTransactionObserver` 구현 전의 의도된 TDD RED 상태이며 다음은 T062이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T060 — StoreKit 구매 결과와 동일 transaction 100회 멱등 지급 계약 테스트
+T061 — StoreKit transaction commit·finish 순서와 unfinished·updates 복구 계약 테스트
 
 ## 다음 작업
-T061 — CloudKit commit·transaction finish 순서와 unfinished·updates 복구 테스트 작성.
+T062 — 환불·철회·취소 reversal과 미사용분 한도·0 clamp 테스트 작성.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -38,6 +38,22 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-06 T061: CloudKit `PurchaseGrant` commit 실패 시 transaction을 finish하지 않고 오류를
+전달하는 계약과, commit 성공 뒤 finish가 실패하면 다음 앱 실행의 unfinished transaction에서 같은
+지급 키를 재처리해 grant를 늘리지 않고 finish만 완료하는 계약을 추가했다. 앱 시작은
+`Transaction.updates` listener를 unfinished 조회보다 먼저 열도록 순서를 기록해 검증한다.
+
+pending 구매가 나중에 verified update로 승인될 때 한 번 지급·finish되는 경로, unverified update는
+지급하지 않으면서 뒤의 verified update 처리를 계속하는 경로, 동일 transaction이 unfinished와
+updates 양쪽에서 전달돼도 실제 grant가 하나만 생성되는 경로를 포함했다. 모든 transaction에서
+finish 시도가 해당 grant commit 뒤에 발생하는지도 공유 수명주기 기록기로 확인한다. 총 7개 계약
+테스트이며 환불·철회는 T062 범위로 남겼다.
+
+T059·T060의 기존 RED 파일을 제외한 집중 테스트 컴파일은 계획된 T068·T069의
+`CoinPurchaseService`, `StoreKitTransactionObserver` 타입 부재에서만 종료되어 TDD RED를 확인했다.
+앱과 네 extension의 generic iOS Simulator Release 빌드는 통과했고 project plist·diff 검사도
+통과했다. 운영 StoreKit 거래나 CloudKit 원격 데이터는 호출·변경하지 않았으며 새 제품 차단은 없다.
+
 2026-09-06 T060: `verified` 구매만 승인 catalog의 1개·3개·5개 수량으로 `PurchaseGrant`를 만들고
 장부 반영 뒤 transaction을 finish하는 계약을 추가했다. `unverified`는 검증 오류로 거부하고,
 `pending`은 대기 상태, `userCancelled`는 취소 상태로 반환하며 둘 다 지급·finish하지 않는다.
