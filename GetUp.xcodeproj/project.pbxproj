@@ -210,6 +210,8 @@
 		AA0000000000000000000288 /* RuleReleaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000069 /* RuleReleaseService.swift */; };
 		AA0000000000000000000295 /* RuleReleaseCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000071 /* RuleReleaseCoordinator.swift */; };
 		AA0000000000000000000296 /* RuleReleaseCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000071 /* RuleReleaseCoordinator.swift */; };
+		AA0000000000000000000297 /* RuleReleaseReconciler.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000072 /* RuleReleaseReconciler.swift */; };
+		AA0000000000000000000298 /* RuleReleaseReconciler.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000072 /* RuleReleaseReconciler.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -415,6 +417,7 @@
 		B40000000000000000000068 /* CoinReservationPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinReservationPolicy.swift; sourceTree = "<group>"; };
 		B40000000000000000000069 /* RuleReleaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleReleaseService.swift; sourceTree = "<group>"; };
 		B40000000000000000000071 /* RuleReleaseCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleReleaseCoordinator.swift; sourceTree = "<group>"; };
+		B40000000000000000000072 /* RuleReleaseReconciler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleReleaseReconciler.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -589,6 +592,7 @@
 				B4000000000000000000005F /* CoinLedgerSyncAdapter.swift */,
 				B4000000000000000000005E /* CloudKitCoinLedgerRepository.swift */,
 				B4000000000000000000005C /* CoinLedgerRecordMapper.swift */,
+				B40000000000000000000072 /* RuleReleaseReconciler.swift */,
 			);
 			path = CloudKit;
 			sourceTree = "<group>";
@@ -1190,6 +1194,7 @@
 				AA0000000000000000000258 /* MonthlyAllowanceService.swift in Sources */,
 				AA0000000000000000000287 /* RuleReleaseService.swift in Sources */,
 				AA0000000000000000000295 /* RuleReleaseCoordinator.swift in Sources */,
+				AA0000000000000000000297 /* RuleReleaseReconciler.swift in Sources */,
 				AA0000000000000000000256 /* MonthlyAllowancePolicy.swift in Sources */,
 				AA0000000000000000000285 /* CoinReservationPolicy.swift in Sources */,
 				AA0000000000000000000253 /* CoinLedgerSyncAdapter.swift in Sources */,
@@ -1310,6 +1315,7 @@
 				AA0000000000000000000259 /* MonthlyAllowanceService.swift in Sources */,
 				AA0000000000000000000288 /* RuleReleaseService.swift in Sources */,
 				AA0000000000000000000296 /* RuleReleaseCoordinator.swift in Sources */,
+				AA0000000000000000000298 /* RuleReleaseReconciler.swift in Sources */,
 				AA0000000000000000000257 /* MonthlyAllowancePolicy.swift in Sources */,
 				AA0000000000000000000286 /* CoinReservationPolicy.swift in Sources */,
 				AA0000000000000000000254 /* CoinLedgerSyncAdapter.swift in Sources */,

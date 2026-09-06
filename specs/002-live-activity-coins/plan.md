@@ -253,6 +253,10 @@ mirror·해제 예외를 보관한다. 별도 서버와 외부 패키지는 도�
 - T049b coordinator는 App Group 고정 lock 파일의 비차단 배타 잠금을 await 구간에도 유지한다.
   경합은 command 재조정으로 넘기며, 적용 closure는 최신 규칙·예외를 재조회한다. T052·T053의
   실제 제한 writer도 같은 로컬 조정 규칙에 참여해야 한다. 실제 Shield·프로세스 중단 인수는 별도다.
+- T050 reconciler는 같은 로컬 잠금 아래 원격 명령과 로컬 예외를 다시 조회하고 최신 제한 적용을
+  확인한 뒤 확정 또는 보상한다. `reconcilePending` 실패 시 호출자는 새 해제를 시작하지 않는다.
+  pending ID의 영속 보관·제거와 앱·Shield 진입 연결은 후속 통합 책임이며 아직 활성화하지 않는다.
+  완료 명령은 재차 차감하지 않고 만료되어 사라진 예외를 재생성하지 않는다.
 - BLK-015 승인에 따라 epoch·occurrence별 `ReleaseOccurrenceClaim`을 무료·구매 예약이 공유한다.
   claim 획득과 예약, claim 해제와 보상을 각각 같은 atomic modify로 처리한다. T047a 모델·codec,
   T047b 원자 저장·호환 gate, T047c 서비스 연결 순으로 검증한다. 기존 schema 데이터 삭제나

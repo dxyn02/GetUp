@@ -279,6 +279,128 @@ struct RuleReleaseCoordinatorTests {
     }
 }
 
+@Suite("Rule release reconciliation")
+struct RuleReleaseReconcilerTests {
+    @Test("Explicit reconciliation state converges from local evidence", arguments: [false, true])
+    func explicitPending(hasEvidence: Bool) async throws {
+        let fixture = try CoordinatorFixture()
+        try await fixture.ledger.moveTo(.reconciliationRequired)
+        if hasEvidence {
+            _ = try await fixture.exceptionRepository.insertReleaseException(fixture.exception)
+        }
+        let result = try await fixture.reconciler.reconcile(commandID: fixture.exception.commandID)
+        #expect(result.command.state == (hasEvidence ? .committed : .compensated))
+    }
+
+    @Test("Interrupted compensation removes only its own evidence and finishes")
+    func interruptedCompensation() async throws {
+        let fixture = try CoordinatorFixture()
+        _ = try await fixture.exceptionRepository.insertReleaseException(fixture.exception)
+        try await fixture.ledger.moveTo(.compensating)
+        let result = try await fixture.reconciler.reconcile(commandID: fixture.exception.commandID)
+        #expect(result.command.state == .compensated)
+        #expect(await fixture.exceptionRepository.exceptions.isEmpty)
+        #expect(await fixture.ledger.compensationCount == 1)
+    }
+
+    @Test("Unknown compensation remains unresolved without committing")
+    func unknownCompensation() async throws {
+        let fixture = try CoordinatorFixture()
+        await fixture.ledger.failCompensation()
+        await #expect(throws: RuleReleaseCoordinationError.reconciliationRequired(commandID: fixture.exception.commandID)) {
+            try await fixture.reconciler.reconcile(commandID: fixture.exception.commandID)
+        }
+        #expect(await fixture.ledger.command.state == .reserved)
+        #expect(await fixture.recorder.operations.contains(.commit) == false)
+    }
+
+    @Test("Pending batch deduplicates command IDs")
+    func duplicateBatch() async throws {
+        let fixture = try CoordinatorFixture()
+        let results = try await fixture.reconciler.reconcilePending(
+            commandIDs: [fixture.exception.commandID, fixture.exception.commandID])
+        #expect(results.count == 1)
+        #expect(await fixture.ledger.compensationCount == 1)
+    }
+
+    @Test("An existing local exception converges to committed", arguments: [false, true])
+    func commitFromEvidence(applied: Bool) async throws {
+        let fixture = try CoordinatorFixture()
+        _ = try await fixture.exceptionRepository.insertReleaseException(fixture.exception)
+        if applied { _ = try await fixture.ledger.markReleaseApplied(commandID: fixture.exception.commandID, at: fixture.exception.effectiveAt) }
+        let result = try await fixture.reconciler.reconcile(commandID: fixture.exception.commandID)
+        #expect(result.command.state == .committed)
+        #expect(await fixture.ledger.compensationCount == 0)
+        #expect(await fixture.exceptionRepository.exceptions == [fixture.exception])
+    }
+
+    @Test("An unapplied reservation is compensated and repeat reconciliation is idempotent")
+    func compensateWithoutEvidence() async throws {
+        let fixture = try CoordinatorFixture()
+        for _ in 0..<2 {
+            let result = try await fixture.reconciler.reconcile(commandID: fixture.exception.commandID)
+            #expect(result.command.state == .compensated)
+        }
+        #expect(await fixture.ledger.compensationCount == 1)
+        #expect(await fixture.exceptionRepository.exceptions.isEmpty)
+    }
+
+    @Test("Unknown commit stays pending and preserves the release")
+    func unknownCommit() async throws {
+        let fixture = try CoordinatorFixture(commitError: .database(.resultUnknown))
+        _ = try await fixture.exceptionRepository.insertReleaseException(fixture.exception)
+        await #expect(throws: RuleReleaseCoordinationError.reconciliationRequired(commandID: fixture.exception.commandID)) {
+            try await fixture.reconciler.reconcile(commandID: fixture.exception.commandID)
+        }
+        #expect(await fixture.exceptionRepository.exceptions == [fixture.exception])
+        #expect(await fixture.ledger.compensationCount == 0)
+    }
+
+    @Test("A committed replay never spends or compensates twice")
+    func committedReplay() async throws {
+        let fixture = try CoordinatorFixture()
+        _ = try await fixture.coordinator.coordinate(reservation: fixture.reservation, exception: fixture.exception)
+        let previous = await fixture.recorder.operations
+        let result = try await fixture.reconciler.reconcile(commandID: fixture.exception.commandID)
+        #expect(result.command.state == .committed)
+        let after = await fixture.recorder.operations
+        #expect(after.filter { $0 == .commit }.count == previous.filter { $0 == .commit }.count)
+        #expect(await fixture.ledger.compensationCount == 0)
+    }
+
+    @Test("Busy or wrong-command reconciliation cannot mutate local or remote state", arguments: [false, true])
+    func unavailableContext(busy: Bool) async throws {
+        let fixture = try CoordinatorFixture()
+        let lease = busy ? try RuleReleaseLocalLease(directory: fixture.directory) : nil
+        let id = busy ? fixture.exception.commandID : UUID()
+        await #expect(throws: RuleReleaseCoordinationError.reconciliationRequired(commandID: id)) {
+            try await fixture.reconciler.reconcile(commandID: id)
+        }
+        withExtendedLifetime(lease) {}
+        #expect(await fixture.recorder.operations.isEmpty)
+    }
+
+    @Test("Local application failure cannot finalize an unconfirmed result")
+    func applicationFailure() async throws {
+        let fixture = try CoordinatorFixture(restrictionWriteFailsOnAttempt: 1)
+        _ = try await fixture.exceptionRepository.insertReleaseException(fixture.exception)
+        await #expect(throws: RuleReleaseCoordinationError.reconciliationRequired(commandID: fixture.exception.commandID)) {
+            try await fixture.reconciler.reconcile(commandID: fixture.exception.commandID)
+        }
+        #expect(await fixture.ledger.command.state == .reserved)
+        #expect(await fixture.ledger.compensationCount == 0)
+    }
+
+    @Test("A failed pending command stops the batch before the next command")
+    func pendingBatchStops() async throws {
+        let fixture = try CoordinatorFixture()
+        await #expect(throws: (any Error).self) {
+            try await fixture.reconciler.reconcilePending(commandIDs: [UUID(), fixture.exception.commandID])
+        }
+        #expect(await fixture.recorder.operations.isEmpty)
+    }
+}
+
 private extension RuleReleaseCoordinatorTests {
     static let now = Date(timeIntervalSince1970: 1_788_192_000)
     static let commandID = UUID(uuidString: "00000000-0000-4000-8000-000000000601")!
@@ -308,6 +430,13 @@ private final class CoordinatorFixture {
     let coordinator: RuleReleaseCoordinator
     let reservation: CoinReleaseReservation
     let exception: ReleaseException
+
+    var reconciler: RuleReleaseReconciler {
+        RuleReleaseReconciler(exceptionRepository: exceptionRepository, ledgerRepository: ledger,
+            applyRestrictions: coordinator.applyRestrictions,
+            reconcileLiveActivity: coordinator.reconcileLiveActivity,
+            clock: coordinator.clock, coordinationDirectory: directory)
+    }
 
     init(
         exceptionWriteFailsOnAttempt: Int? = nil,
@@ -520,6 +649,9 @@ private actor ReleaseLedgerRepositorySpy: CoinLedgerRepository {
 
     func failAppliedWrite() { appliedWriteFails = true }
     func failCompensation() { compensationFails = true }
+    func moveTo(_ state: ReleaseCommandState) throws {
+        command = try command.transitioning(to: state, at: RuleReleaseCoordinatorTests.now)
+    }
 
     init(
         command: ReleaseCommand,
@@ -574,6 +706,10 @@ private actor ReleaseLedgerRepositorySpy: CoinLedgerRepository {
         await recorder.record(.compensate)
         if compensationFails { throw CoinLedgerRepositoryError.database(.resultUnknown) }
         compensationCount += 1
+        if command.state == .reconciliationRequired || command.state == .compensating {
+            command = try command.transitioning(to: .compensated, at: date)
+            return command
+        }
         command = try command.transitioning(
             to: .compensating,
             failureCode: "release_coordination_failed",

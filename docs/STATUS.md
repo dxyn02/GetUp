@@ -7,18 +7,17 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 4 사용자 스토리 2 구현 진행 중
 
 ## 진행 중
-`codex/us2-reservation-tests`에서 BLK-016 사용자 승인을 반영해 T049를 재개했다.
-T049b 해제 coordinator·보상 구현과 회귀를 완료해 T049 전체를 완료했다.
-현재 진행 중인 구현은 없으며 다음은 T050이다.
+`codex/us2-reservation-tests`에서 T050 결과 불명 명령 재조정 구현과 회귀를 완료했다.
+현재 진행 중인 구현은 없으며 다음은 T051이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 앱·Shield의 최신 컨텍스트 provider 연결은 후속 통합에 남아 있다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T049b 및 T049 — 해제 적용·장부 확정·실패 보상과 공통 로컬 잠금
+T050 — 원격 명령·로컬 예외 재조회에 따른 확정·보상 재조정
 
 ## 다음 작업
-T050 — 결과 불명 명령을 조회해 committed 또는 compensated로 수렴시키는 reconciler 구현.
+T051 — Shield의 5초 monotonic deadline과 timeout·늦은 응답 재조정 정책 구현.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -37,6 +36,19 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-06 T050: reconciler 타입 부재 compile RED 뒤 구현했다. 재조정 테스트 11개(인자 포함
+14회)를 추가해 예약·적용·결과 불명 상태의 예외 기반 확정, 예외 없는 예약의 보상, 보상 중 중단
+복구, 확정·보상 재시도 멱등성, commit·보상 결과 불명, 적용 실패, 잠금 경합, 잘못된 명령 ID,
+pending batch 중복 제거와 첫 실패 중단을 검증했다.
+최종 iPhone 17 Pro iOS 26.5 `GetUpTests` 438개(인자 포함 501회)가 실패·skip 없이 통과했다.
+미구현 `ShieldCoinActionTests.swift`, `ShieldReleaseDeadlineTests.swift`는 명령행에서 제외했고
+T045 UI RED는 재실행하지 않았다. 앱·네 extension의 generic iOS Simulator Release 빌드와
+project plist·diff 검사가 통과했다. 기존 테스트의 불필요한 try·binary strip 경고는 남아 있다.
+최종 결과: `/tmp/getup-t050/Logs/Test/Test-GetUp-2026.09.06_15-33-19-+0900.xcresult`.
+실제 pending ID 영속 큐와 새 해제 전 호출, 최신 제한 provider·interval writer 잠금 연결은 후속
+통합 작업이다. 실기기·별도 프로세스 종료·실제 CloudKit 인수는 미검증이며 운영 장부 활성화와
+원격 데이터 변경은 하지 않았다. 새 차단 사항은 없다.
+
 2026-09-06 T049b: coordinator·application 타입 부재 compile RED를 확인한 뒤 구현했다.
 기존 T042 6개 테스트를 명령별 저장·최신 상태 적용 계약에 연결했고 9개 회귀(인자 포함 11회)를
 추가했다. 실제 예외 파일을 공유하는 두 coordinator에서 적용을 중간 정지해 경합을 재현하고,
