@@ -417,9 +417,14 @@ struct DeviceActivityAuthorizationSnapshotReader {
     }
 }
 
-struct DeviceActivityIntervalStartHandler {
+struct DeviceActivityIntervalRestrictionHandler {
     typealias SnapshotLoader = () throws -> DeviceActivityIntervalStartSnapshot
     typealias AuthorizationSnapshotLoader = () -> AuthorizationSnapshot
+    typealias ApplicableReleaseExceptionLoader = (
+        Date,
+        Set<String>,
+        [UUID: Int]
+    ) throws -> [ReleaseException]
     typealias ActiveRestrictionSnapshotLoader =
         () throws -> ActiveRestrictionSnapshot?
     typealias ActiveRestrictionSnapshotSaver =
@@ -429,6 +434,8 @@ struct DeviceActivityIntervalStartHandler {
     private let defaults: UserDefaults
     private let loadSnapshot: SnapshotLoader
     private let authorizationSnapshot: AuthorizationSnapshotLoader
+    private let loadApplicableReleaseExceptions: ApplicableReleaseExceptionLoader
+    private let coordinationDirectory: URL?
     private let loadActiveRestrictionSnapshot: ActiveRestrictionSnapshotLoader
     private let saveActiveRestrictionSnapshot: ActiveRestrictionSnapshotSaver
     private let now: () -> Date
@@ -440,6 +447,10 @@ struct DeviceActivityIntervalStartHandler {
         defaults: UserDefaults,
         loadSnapshot: @escaping SnapshotLoader,
         authorizationSnapshot: @escaping AuthorizationSnapshotLoader,
+        loadApplicableReleaseExceptions: @escaping ApplicableReleaseExceptionLoader = {
+            _, _, _ in []
+        },
+        coordinationDirectory: URL? = nil,
         loadActiveRestrictionSnapshot: @escaping ActiveRestrictionSnapshotLoader = { nil },
         saveActiveRestrictionSnapshot: @escaping ActiveRestrictionSnapshotSaver = { _ in },
         now: @escaping () -> Date = Date.init,
@@ -450,6 +461,8 @@ struct DeviceActivityIntervalStartHandler {
         self.defaults = defaults
         self.loadSnapshot = loadSnapshot
         self.authorizationSnapshot = authorizationSnapshot
+        self.loadApplicableReleaseExceptions = loadApplicableReleaseExceptions
+        self.coordinationDirectory = coordinationDirectory
         self.loadActiveRestrictionSnapshot = loadActiveRestrictionSnapshot
         self.saveActiveRestrictionSnapshot = saveActiveRestrictionSnapshot
         self.now = now
@@ -486,11 +499,17 @@ struct DeviceActivityIntervalStartHandler {
         let activeRestrictionStore = DeviceActivityActiveRestrictionSnapshotFileStore(
             containerURL: containerURL
         )
+        let releaseExceptionStore = ReleaseExceptionFileStore(
+            containerURL: containerURL,
+            fileWriter: AtomicSnapshotFileWriter()
+        )
         return Self(
             storeAccess: SystemManagedSettingsStoreAccess(),
             defaults: defaults,
             loadSnapshot: snapshotReader.load,
             authorizationSnapshot: authorizationReader.snapshot,
+            loadApplicableReleaseExceptions: releaseExceptionStore.loadApplicable,
+            coordinationDirectory: containerURL,
             loadActiveRestrictionSnapshot: activeRestrictionStore.load,
             saveActiveRestrictionSnapshot: activeRestrictionStore.save
         )
@@ -531,6 +550,10 @@ struct DeviceActivityIntervalStartHandler {
         }
 
         do {
+            let lease = try coordinationDirectory.map {
+                try RuleReleaseLocalLease(directory: $0)
+            }
+            defer { withExtendedLifetime(lease) {} }
             let snapshot = try loadSnapshot()
             guard snapshot.rules.contains(where: { $0.id == startedRuleID }) else {
                 saveDiagnostic(
@@ -548,7 +571,7 @@ struct DeviceActivityIntervalStartHandler {
                 from: defaults
             )
             let authorization = authorizationSnapshot()
-            let evaluation = RestrictionRuleSetEvaluator.evaluate(
+            let unfilteredEvaluation = RestrictionRuleSetEvaluator.evaluate(
                 rules: snapshot.rules,
                 locationConditions: snapshot.locationConditions,
                 authorization: authorization,
@@ -556,6 +579,44 @@ struct DeviceActivityIntervalStartHandler {
                 now: observedAt,
                 calendar: calendar,
                 timeZone: timeZone
+            )
+            let activeOccurrenceIDs = Set(
+                unfilteredEvaluation.desiredRules.compactMap { rule in
+                    ScheduleEvaluator.activeInterval(
+                        weekdays: rule.weekdays,
+                        startTime: rule.startTime,
+                        endTime: rule.endTime,
+                        at: observedAt,
+                        calendar: calendar,
+                        timeZone: timeZone
+                    ).map {
+                        RestrictionOccurrence.deterministicID(
+                            ruleID: rule.id,
+                            ruleRevision: rule.revision,
+                            startAt: $0.lowerBound,
+                            endAt: $0.upperBound
+                        )
+                    }
+                }
+            )
+            let ruleRevisions = snapshot.rules.reduce(into: [UUID: Int]()) {
+                $0[$1.id] = $1.revision
+            }
+            let exceptions = try loadApplicableReleaseExceptions(
+                observedAt,
+                activeOccurrenceIDs,
+                ruleRevisions
+            )
+            let evaluation = RestrictionRuleSetEvaluation(
+                decisions: unfilteredEvaluation.decisions,
+                desiredRules: ReleaseExceptionRestrictionPolicy
+                    .excludingReleasedOccurrences(
+                        from: unfilteredEvaluation.desiredRules,
+                        exceptions: exceptions,
+                        at: observedAt,
+                        calendar: calendar,
+                        timeZone: timeZone
+                    )
             )
             let desiredState = AppliedRestrictionState(
                 activeRuleRevisions: Set(
@@ -704,6 +765,9 @@ struct DeviceActivityIntervalStartHandler {
     }
 }
 
+/// Preserves the existing source/test name while start and end callbacks share one evaluator.
+typealias DeviceActivityIntervalStartHandler = DeviceActivityIntervalRestrictionHandler
+
 enum IntervalStartDiagnosticDefaultsCodec {
     static func load(
         from defaults: UserDefaults
@@ -745,17 +809,20 @@ struct DeviceActivityIntervalEndHandler {
     private let defaults: UserDefaults
     private let loadActiveRestrictionSnapshot: ActiveRestrictionSnapshotLoader
     private let saveActiveRestrictionSnapshot: ActiveRestrictionSnapshotSaver
+    private let coordinationDirectory: URL?
     private let now: () -> Date
 
     init(
         storeAccess: any ManagedSettingsStoreAccess,
         defaults: UserDefaults,
+        coordinationDirectory: URL? = nil,
         loadActiveRestrictionSnapshot: @escaping ActiveRestrictionSnapshotLoader = { nil },
         saveActiveRestrictionSnapshot: @escaping ActiveRestrictionSnapshotSaver = { _ in },
         now: @escaping () -> Date = Date.init
     ) {
         self.storeAccess = storeAccess
         self.defaults = defaults
+        self.coordinationDirectory = coordinationDirectory
         self.loadActiveRestrictionSnapshot = loadActiveRestrictionSnapshot
         self.saveActiveRestrictionSnapshot = saveActiveRestrictionSnapshot
         self.now = now
@@ -786,6 +853,7 @@ struct DeviceActivityIntervalEndHandler {
         return Self(
             storeAccess: SystemManagedSettingsStoreAccess(),
             defaults: defaults,
+            coordinationDirectory: containerURL,
             loadActiveRestrictionSnapshot: activeRestrictionStore.load,
             saveActiveRestrictionSnapshot: activeRestrictionStore.save
         )
@@ -800,6 +868,16 @@ struct DeviceActivityIntervalEndHandler {
         else {
             return false
         }
+
+        let lease: RuleReleaseLocalLease?
+        do {
+            lease = try coordinationDirectory.map {
+                try RuleReleaseLocalLease(directory: $0)
+            }
+        } catch {
+            return false
+        }
+        defer { withExtendedLifetime(lease) {} }
 
         let currentState = RestrictionApplicationStateDefaultsCodec.load(
             from: defaults

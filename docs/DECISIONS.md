@@ -1,5 +1,26 @@
 # 결정 사항
 
+## DEC-095 — Device Activity interval의 동기 예외 정리와 공통 잠금
+
+**날짜**: 2026-09-06
+
+**결정**: `intervalDidStart`와 `intervalDidEnd`는 callback 반환 전에 공통
+`DeviceActivityIntervalRestrictionHandler`로 최신 규칙·위치·release exception을 동기 평가한다.
+현재 occurrence·rule revision·유효 기간이 일치하는 예외만 제한 합집합에서 제외하며, 다른 활성
+규칙은 유지한다. 만료·삭제 규칙·revision 불일치 예외는 기존 `NSFileCoordinator` 파일 조정 안에서
+atomic 정리하고, 위치만 일시적으로 비활성인 유효 예외는 보존한다.
+
+동기 evaluator는 T049·T050과 같은 App Group `RuleReleaseLocalLease`를 먼저 획득해 예외 정리부터
+Managed Settings write·read-back과 활성 occurrence snapshot 저장까지 유지한다. 잠금 경합은 기다리지
+않고 기존 Shield와 적용 상태를 보존한다. 전체 snapshot을 읽지 못했을 때 마지막 활성 규칙만 비우는
+기존 종료 fallback도 같은 잠금을 획득한다.
+
+**근거와 범위**: callback에서 비동기 `Task`만 예약하면 extension이 적용·정리 전에 종료될 수 있고,
+해제 coordinator와 경합하면 오래된 합집합이 다시 쓰일 수 있다. 시작과 종료가 같은 전체 평가기를
+사용해야 겹친 규칙과 현재 예외를 동일하게 처리한다. Apple의 callback 전달 시점 자체는 기기 사용에
+의존하므로 정각 실행을 보장하지 않으며, 실제 별도 프로세스 Shield 반영은 실기기 인수에 남긴다.
+이번 작업은 CloudKit 운영 장부·호환성 gate를 활성화하거나 schema·원격 데이터를 변경하지 않는다.
+
 ## DEC-094 — release exception 제한 합집합의 동일 lease 재평가
 
 **날짜**: 2026-09-06

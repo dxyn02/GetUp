@@ -266,7 +266,11 @@ mirror·해제 예외를 보관한다. 별도 서버와 외부 패키지는 도�
   occurrence ID·revision·유효 구간이 일치하는 규칙만 합집합에서 제외한다. 다른 활성 규칙은
   유지하고 Managed Settings read-back이 정확한 revision 집합과 일치해야 성공한다. T049·T050의
   적용 provider는 coordinator가 획득한 같은 lease를 전달받아 잠금을 중첩 획득하지 않으며,
-  일반 제한 writer도 같은 App Group 고정 잠금에 참여한다. interval 정리 writer 연결은 T053이다.
+  일반 제한 writer도 같은 App Group 고정 잠금에 참여한다.
+- T053의 Device Activity 시작·종료 callback은 반환 전 공통 동기 evaluator로 최신 규칙·위치·예외를
+  재평가한다. 현재 occurrence의 유효 예외를 제외하고 만료·삭제 규칙·revision 불일치 예외를 atomic
+  정리하며, 정리부터 제한 read-back과 occurrence 저장까지 T049·T050과 같은 lease를 유지한다.
+  snapshot read 실패 시 마지막 규칙만 안전하게 비우는 기존 종료 fallback도 동일 잠금에 참여한다.
 - BLK-015 승인에 따라 epoch·occurrence별 `ReleaseOccurrenceClaim`을 무료·구매 예약이 공유한다.
   claim 획득과 예약, claim 해제와 보상을 각각 같은 atomic modify로 처리한다. T047a 모델·codec,
   T047b 원자 저장·호환 gate, T047c 서비스 연결 순으로 검증한다. 기존 schema 데이터 삭제나

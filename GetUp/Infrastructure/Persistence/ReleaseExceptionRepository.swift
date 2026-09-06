@@ -36,17 +36,11 @@ actor AppGroupReleaseExceptionRepository: ReleaseExceptionRepository {
             throw ReleaseExceptionRepositoryError.readFailed
         }
         do {
-            return try store.withCoordinatedWrite { url in
-                let stored = try store.read(from: url)
-                let retained = stored.filter {
-                    date < $0.expiresAt && currentRuleRevisions[$0.ruleID] == $0.ruleRevision
-                }
-                // Inactivity alone is not expiration: location can change again in this interval.
-                if retained != stored { try store.write(retained, to: url) }
-                return retained.filter {
-                    $0.effectiveAt <= date && activeOccurrenceIDs.contains($0.occurrenceID)
-                }
-            }
+            return try store.loadApplicable(
+                at: date,
+                activeOccurrenceIDs: activeOccurrenceIDs,
+                currentRuleRevisions: currentRuleRevisions
+            )
         } catch SharedSnapshotRepositoryError.atomicWriteFailed {
             throw ReleaseExceptionRepositoryError.writeFailed
         } catch SharedSnapshotRepositoryError.encodingFailed {
@@ -114,6 +108,30 @@ struct ReleaseExceptionFileStore: Sendable {
     func remove(commandID: UUID, occurrenceID: String) throws -> [ReleaseException] {
         try mutate { entries in
             entries.filter { !($0.commandID == commandID && $0.occurrenceID == occurrenceID) }
+        }
+    }
+
+    /// Synchronous interval callbacks use this while holding the shared release lease.
+    func loadApplicable(
+        at date: Date,
+        activeOccurrenceIDs: Set<String>,
+        currentRuleRevisions: [UUID: Int]
+    ) throws -> [ReleaseException] {
+        guard date.timeIntervalSince1970.isFinite else {
+            throw ReleaseExceptionRepositoryError.readFailed
+        }
+        return try withCoordinatedWrite { url in
+            let stored = try read(from: url)
+            let retained = stored.filter {
+                date < $0.expiresAt
+                    && currentRuleRevisions[$0.ruleID] == $0.ruleRevision
+            }
+            // Inactivity alone is not expiration: location can change again in this interval.
+            if retained != stored { try write(retained, to: url) }
+            return retained.filter {
+                $0.effectiveAt <= date
+                    && activeOccurrenceIDs.contains($0.occurrenceID)
+            }
         }
     }
 

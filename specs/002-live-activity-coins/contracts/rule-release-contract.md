@@ -139,6 +139,14 @@ T052 제한 합집합 계약: `RestrictionCoordinator`는 적용 직전에 최�
 현재 revision 집합을 read-back해 정확히 일치할 때만 성공한다. T049·T050은 자신이 획득한 lease를
 provider에 전달하고, provider는 같은 lease 안에서 전체 재평가를 수행해 중첩 잠금을 피한다.
 
+T053 interval callback 계약: `intervalDidStart`와 `intervalDidEnd`는 callback 반환 전에 같은 동기
+evaluator를 사용한다. App Group 공통 lease를 먼저 획득하고 최신 규칙·위치와 예외 파일을 읽은 뒤,
+현재 active occurrence에 적용 가능한 예외만 제외한다. 만료됐거나 저장 규칙이 삭제됐거나 revision이
+달라진 예외는 예외 파일의 조정된 read-modify-write로 정리한다. 일시적으로 위치가 비활성인 유효
+예외는 다음 재진입 가능성이 있으므로 만료 전 삭제하지 않는다. 잠금 획득·snapshot 읽기·예외 정리·
+Managed Settings read-back 중 하나라도 실패하면 새 적용 상태를 성공으로 저장하지 않는다. 종료
+fallback이 마지막 적용 규칙을 비우는 경우에도 같은 lease를 획득해야 한다.
+
 - 무료 우선, 구매 fallback, 양쪽 잔액 부족
 - 같은 occurrence 100회 동시 요청과 Shield·앱 교차 요청
 - 사용 직전 occurrence 자동 종료
