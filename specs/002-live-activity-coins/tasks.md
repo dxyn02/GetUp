@@ -156,7 +156,7 @@ occurrence만 예외 처리되는지, 중복 100회에서 최대 1회만 소모�
 
 ### 사용자 스토리 3 테스트
 
-- [ ] T059 [P] [US3] 1개·3개·5개 product ID·수량 매핑, 현지 가격, 판매 불가·로드 실패 테스트를 `GetUpTests/StoreKit/CoinProductCatalogTests.swift`에 먼저 작성한다.
+- [x] T059 [P] [US3] 1개·3개·5개 product ID·수량 매핑, 현지 가격, 판매 불가·로드 실패 테스트를 `GetUpTests/StoreKit/CoinProductCatalogTests.swift`에 먼저 작성한다.
 - [ ] T060 [P] [US3] verified·unverified·pending·cancel·error와 같은 transaction 100회 멱등 지급 테스트를 `GetUpTests/StoreKit/CoinPurchaseServiceTests.swift`에 먼저 작성한다.
 - [ ] T061 [P] [US3] CloudKit commit 전 미finish, commit 후 finish 실패, 재실행 unfinished·updates 복구 테스트를 `GetUpTests/StoreKit/StoreKitTransactionObserverTests.swift`에 먼저 작성한다.
 - [ ] T062 [P] [US3] 환불·철회·취소 reversal, 미사용분 한도와 0 clamp 테스트를 `GetUpTests/Core/PurchaseRefundReconcilerTests.swift`에 먼저 작성한다.

@@ -4,21 +4,21 @@
 001-location-app-restriction, 002-live-activity-coins
 
 ## 현재 단계
-001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 5 사용자 스토리 3 테스트 진행 예정
+001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 5 사용자 스토리 3 테스트 진행 중
 
 ## 진행 중
-`codex/us2-reservation-tests`에서 T058 한국어·영어 해제 문구와 US2 자동 회귀를 완료해 사용자
-스토리 2 체크포인트를 통과했다. 현재 진행 중인 구현은 없으며 다음은 T059이다.
+`codex/us3-product-catalog-tests`에서 T059 StoreKit 상품 catalog 계약 테스트를 먼저 작성했다.
+현재 테스트 타깃은 후속 `CoinProductCatalog` 구현 전의 의도된 TDD RED 상태이며 다음은 T060이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T058 — 앱·Shield 한국어·영어 해제 문구와 US2 자동 회귀
+T059 — StoreKit 상품 ID·수량·현지 가격·판매 불가·로드 실패 계약 테스트
 
 ## 다음 작업
-T059 — StoreKit 코인 상품 ID·수량·현지 가격·판매 불가·로드 실패 테스트 작성.
+T060 — StoreKit 성공·취소·pending·unverified·중복 transaction 구매 테스트 작성.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -37,6 +37,19 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-06 T059: bundle `GetUpCoinProductCatalog`가 승인된 product ID
+`com.dxyn02.GetUp.coin.1`·`.3`·`.5`만 각각 1·3·5개에 정확히 매핑하는지와 누락·중복·수량 변조
+설정을 거부하는 계약 테스트를 추가했다. StoreKit이 반환한 현지화 이름·설명·가격 문자열을 그대로
+유지하면서 수량순으로 정렬하고, 일부 상품 미반환은 가격을 만들지 않은 판매 불가 ID로 분리하며,
+catalog 밖 상품은 노출하지 않도록 고정했다. 첫 로드 성공 뒤 재로드가 실패하면 이전 가격을 현재
+가격처럼 반환하지 않고 오류를 전달하는 회귀도 포함했다.
+
+집중 테스트 컴파일은 예상대로 후속 T066의 `CoinProductCatalog` 타입 부재 한 지점에서 종료되어
+TDD RED를 확인했다. 앱과 네 extension의 generic iOS Simulator Release 빌드는 통과했다. 최초
+Release 빌드는 sandbox의 CoreSimulatorService 연결 거부로 실패했으나 승인된 동일 명령을 재실행해
+통과했다. project plist·diff 검사도 통과했으며, T059 테스트는 T066 구현 뒤 GREEN으로 전환한다.
+운영 App Store Connect 상품·가격과 결제는 변경하거나 호출하지 않았고 새 제품 차단은 없다.
+
 2026-09-06 T058: 앱의 해제 상세·확인·처리·결과·복구 목적지 문구를 의미 기반
 `coinRelease.*` 키로 `GetUp/Resources/Localizable.xcstrings`에 추가하고 한국어·영어 값을 모두
 명시했다. 동적으로 조합되는 대상, 다른 규칙 수, 확인 문구도 `AppLocalizedCopy`를 거치게 해 영어
