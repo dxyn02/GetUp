@@ -243,6 +243,7 @@ protocol CoinLedgerRepository: MonthlyAllowanceRepository, Sendable {
         _ request: MonthlyFreeReservationRequest
     ) async throws -> CoinReleaseReservation
 
+    /// Rechecks free allowance atomically; may return monthlyFree if free funds are now available.
     func reservePurchasedCoin(
         _ request: PurchasedCoinReservationRequest
     ) async throws -> CoinReleaseReservation
@@ -341,9 +342,36 @@ protocol CoinBalanceSnapshotRepository: Sendable {
     func saveCoinBalanceSnapshot(_ snapshot: CoinBalanceSnapshot) async throws
 }
 
+enum LiveActivityCoordinationAction: Equatable, Sendable {
+    case request
+    case update(UUID)
+    case end(UUID)
+}
+
+struct LiveActivityCoordinationResult: Equatable, Sendable {
+    let actions: [LiveActivityCoordinationAction]
+    let failureCodes: [LiveActivityCoinErrorCode]
+    static let noChange = LiveActivityCoordinationResult(actions: [], failureCodes: [])
+}
+
+struct RuleReleaseApplication: Sendable {
+    let desiredLiveActivity: RestrictionLiveActivitySnapshot?
+}
+
+enum RuleReleaseCoordinationError: Error, Equatable, Sendable {
+    case invalidReservation
+    case applicationFailed
+    case reconciliationRequired(commandID: UUID)
+}
+
 protocol ReleaseExceptionRepository: Sendable {
     func loadReleaseExceptions() async throws -> [ReleaseException]
+    /// Full replacement only; never use a stale collection for command insertion or rollback.
     func saveReleaseExceptions(_ exceptions: [ReleaseException]) async throws
+    /// Atomic insert; identical persisted payload is idempotent, conflicting owner/content fails.
+    func insertReleaseException(_ exception: ReleaseException) async throws -> [ReleaseException]
+    /// Atomic removal matching both identifiers; unrelated owners and missing records are untouched.
+    func removeReleaseException(commandID: UUID, occurrenceID: String) async throws -> [ReleaseException]
 }
 
 protocol PendingAppRoutePersisting: Sendable {
@@ -357,12 +385,14 @@ enum ReleaseExceptionRepositoryError: Error, Equatable, Sendable,
     case readFailed
     case writeFailed
     case deletionFailed
+    case conflict
 
     var errorCode: LiveActivityCoinErrorCode {
         switch self {
         case .readFailed: .releaseExceptionReadFailed
         case .writeFailed: .releaseExceptionWriteFailed
         case .deletionFailed: .releaseExceptionDeleteFailed
+        case .conflict: .releaseExceptionWriteFailed
         }
     }
 }

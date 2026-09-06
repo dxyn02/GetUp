@@ -11,7 +11,8 @@ struct CloudKitMonthlyAllowanceTests {
             modifyResults: [.success([])]
         )
         let mapper = CoinLedgerRecordMapper()
-        let repository = CloudKitCoinLedgerRepository(database: database, mapper: mapper)
+        let repository = CloudKitCoinLedgerRepository(database: database, mapper: mapper,
+            verifyReservationCompatibility: { _ in true })
         let request = CloudKitLedgerTestFixtures.reservationRequest()
 
         _ = try await repository.reserveMonthlyFree(request)
@@ -22,6 +23,10 @@ struct CloudKitMonthlyAllowanceTests {
         #expect(modify.isAtomic)
         #expect(modify.savePolicy == .ifServerRecordUnchanged)
         #expect(names == [
+            CoinLedgerRecordID.ledgerEpoch,
+            CoinLedgerRecordID.releaseOccurrenceClaim(
+                ledgerEpochID: request.ledgerEpochID, occurrenceID: request.occurrenceID
+            ),
             CoinLedgerRecordID.allowance(monthID: request.monthID),
             CoinLedgerDeterministicID.freeGrant(monthID: request.monthID),
             CoinLedgerDeterministicID.reservation(commandID: request.commandID),
@@ -101,7 +106,8 @@ struct CloudKitMonthlyAllowanceTests {
         let repository = CloudKitCoinLedgerRepository(
             database: database,
             mapper: mapper,
-            conflictRetryLimit: 1
+            conflictRetryLimit: 1,
+            verifyReservationCompatibility: { _ in true }
         )
 
         _ = try await repository.reserveMonthlyFree(
@@ -145,7 +151,8 @@ struct CloudKitMonthlyAllowanceTests {
             fetchResults: [.success([exhausted])],
             modifyResults: []
         )
-        let repository = CloudKitCoinLedgerRepository(database: database, mapper: mapper)
+        let repository = CloudKitCoinLedgerRepository(database: database, mapper: mapper,
+            verifyReservationCompatibility: { _ in true })
 
         await #expect(throws: CoinLedgerRepositoryError.insufficientMonthlyAllowance) {
             _ = try await repository.reserveMonthlyFree(

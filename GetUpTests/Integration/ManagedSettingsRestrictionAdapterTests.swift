@@ -354,6 +354,193 @@ struct ManagedSettingsRestrictionAdapterTests {
         defaults.removePersistentDomain(forName: suiteName)
     }
 
+    @Test("The interval writer excludes a released occurrence and preserves another rule")
+    func intervalWriterAppliesCurrentReleaseException() throws {
+        let releasedApplication = try applicationToken(seed: 31)
+        let retainedApplication = try applicationToken(seed: 32)
+        let released = TestFixtures.makeRule(
+            activitySelection: selection(applicationTokens: [releasedApplication])
+        )
+        let retained = TestFixtures.makeRule(
+            id: UUID(uuidString: "00000000-0000-4000-8000-000000000231")!,
+            revision: 2,
+            activitySelection: selection(applicationTokens: [retainedApplication])
+        )
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let releaseStore = ReleaseExceptionFileStore(
+            containerURL: directory,
+            fileWriter: AtomicSnapshotFileWriter()
+        )
+        try releaseStore.save([
+            try makeReleaseException(for: released, at: TestFixtures.now),
+        ])
+        let store = RecordingManagedSettingsStoreAccess()
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        var persistedSnapshot: ActiveRestrictionSnapshot?
+        let handler = DeviceActivityIntervalRestrictionHandler(
+            storeAccess: store,
+            defaults: defaults,
+            loadSnapshot: {
+                DeviceActivityIntervalStartSnapshot(
+                    rules: [released, retained],
+                    locationConditions: [
+                        TestFixtures.makeLocationCondition(ruleID: released.id),
+                        TestFixtures.makeLocationCondition(
+                            ruleID: retained.id,
+                            ruleRevision: retained.revision
+                        ),
+                    ]
+                )
+            },
+            authorizationSnapshot: { TestFixtures.makeAuthorization() },
+            loadApplicableReleaseExceptions: releaseStore.loadApplicable,
+            coordinationDirectory: directory,
+            loadActiveRestrictionSnapshot: { nil },
+            saveActiveRestrictionSnapshot: { persistedSnapshot = $0 },
+            now: { TestFixtures.now },
+            calendar: TestFixtures.calendar,
+            timeZone: TestFixtures.timeZone
+        )
+
+        let didHandle = handler.handle(
+            activityName: "\(SharedIdentifiers.deviceActivityNamePrefix)."
+                + "\(released.id.uuidString.lowercased()).monday"
+        )
+
+        #expect(didHandle)
+        #expect(
+            store.shieldSelection(
+                named: SharedIdentifiers.managedSettingsStoreName
+            ).applications == [retainedApplication]
+        )
+        #expect(
+            RestrictionApplicationStateDefaultsCodec.load(from: defaults)
+                == AppliedRestrictionState(activeRuleRevisions: [
+                    ActiveRuleRevision(
+                        ruleID: retained.id,
+                        revision: retained.revision
+                    ),
+                ])
+        )
+        #expect(persistedSnapshot?.occurrences.map(\.ruleID) == [retained.id])
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    @Test("The interval end reevaluation removes an expired exception and its final shield")
+    func intervalEndReevaluationCleansExpiredException() throws {
+        let application = try applicationToken(seed: 33)
+        let rule = TestFixtures.makeRule(
+            activitySelection: selection(applicationTokens: [application])
+        )
+        let interval = try #require(
+            ScheduleEvaluator.activeInterval(
+                weekdays: rule.weekdays,
+                startTime: rule.startTime,
+                endTime: rule.endTime,
+                at: TestFixtures.now,
+                calendar: TestFixtures.calendar,
+                timeZone: TestFixtures.timeZone
+            )
+        )
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let releaseStore = ReleaseExceptionFileStore(
+            containerURL: directory,
+            fileWriter: AtomicSnapshotFileWriter()
+        )
+        try releaseStore.save([
+            try makeReleaseException(for: rule, at: TestFixtures.now),
+        ])
+        let storeName = SharedIdentifiers.managedSettingsStoreName
+        let store = RecordingManagedSettingsStoreAccess(stores: [
+            storeName: ManagedSettingsShieldSelection(rules: [rule]),
+        ])
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        RestrictionApplicationStateDefaultsCodec.save(
+            AppliedRestrictionState(activeRuleRevisions: [
+                ActiveRuleRevision(ruleID: rule.id, revision: rule.revision),
+            ]),
+            to: defaults
+        )
+        let handler = DeviceActivityIntervalRestrictionHandler(
+            storeAccess: store,
+            defaults: defaults,
+            loadSnapshot: {
+                DeviceActivityIntervalStartSnapshot(
+                    rules: [rule],
+                    locationConditions: [
+                        TestFixtures.makeLocationCondition(ruleID: rule.id),
+                    ]
+                )
+            },
+            authorizationSnapshot: { TestFixtures.makeAuthorization() },
+            loadApplicableReleaseExceptions: releaseStore.loadApplicable,
+            coordinationDirectory: directory,
+            now: { interval.upperBound },
+            calendar: TestFixtures.calendar,
+            timeZone: TestFixtures.timeZone
+        )
+
+        let didHandle = handler.handle(
+            activityName: "\(SharedIdentifiers.deviceActivityNamePrefix)."
+                + "\(rule.id.uuidString.lowercased()).monday"
+        )
+
+        #expect(didHandle)
+        #expect(store.shieldSelection(named: storeName) == .empty)
+        #expect(try releaseStore.load().isEmpty)
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    @Test("The interval writer preserves the shield while the release lease is busy")
+    func intervalWriterRespectsReleaseCoordinationLease() throws {
+        let rule = TestFixtures.makeRule(
+            activitySelection: selection(
+                applicationTokens: [try applicationToken(seed: 34)]
+            )
+        )
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let lease = try RuleReleaseLocalLease(directory: directory)
+        let store = RecordingManagedSettingsStoreAccess()
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        let handler = DeviceActivityIntervalRestrictionHandler(
+            storeAccess: store,
+            defaults: defaults,
+            loadSnapshot: {
+                DeviceActivityIntervalStartSnapshot(
+                    rules: [rule],
+                    locationConditions: [
+                        TestFixtures.makeLocationCondition(ruleID: rule.id),
+                    ]
+                )
+            },
+            authorizationSnapshot: { TestFixtures.makeAuthorization() },
+            coordinationDirectory: directory,
+            now: { TestFixtures.now },
+            calendar: TestFixtures.calendar,
+            timeZone: TestFixtures.timeZone
+        )
+
+        let didHandle = handler.handle(
+            activityName: "\(SharedIdentifiers.deviceActivityNamePrefix)."
+                + "\(rule.id.uuidString.lowercased()).monday"
+        )
+
+        withExtendedLifetime(lease) {}
+        #expect(!didHandle)
+        #expect(store.writeCount == 0)
+        #expect(store.shieldSelection(named: SharedIdentifiers.managedSettingsStoreName) == .empty)
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
     @Test("The interval start handler does not apply an outside rule")
     func intervalStartDoesNotApplyOutsideRule() throws {
         let rule = TestFixtures.makeRule(
@@ -613,6 +800,45 @@ struct ManagedSettingsRestrictionAdapterTests {
             RestrictionApplicationStateDefaultsCodec.load(from: defaults)
                 == AppliedRestrictionState(activeRuleRevisions: [])
         )
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    @Test("The interval end fallback preserves the final shield while the release lease is busy")
+    func intervalEndFallbackRespectsReleaseCoordinationLease() throws {
+        let rule = TestFixtures.makeRule(
+            activitySelection: selection(
+                applicationTokens: [try applicationToken(seed: 35)]
+            )
+        )
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let lease = try RuleReleaseLocalLease(directory: directory)
+        let storeName = SharedIdentifiers.managedSettingsStoreName
+        let shield = ManagedSettingsShieldSelection(rules: [rule])
+        let store = RecordingManagedSettingsStoreAccess(stores: [storeName: shield])
+        let suiteName = "ManagedSettingsRestrictionAdapterTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        let initialState = AppliedRestrictionState(activeRuleRevisions: [
+            ActiveRuleRevision(ruleID: rule.id, revision: rule.revision),
+        ])
+        RestrictionApplicationStateDefaultsCodec.save(initialState, to: defaults)
+        let handler = DeviceActivityIntervalEndHandler(
+            storeAccess: store,
+            defaults: defaults,
+            coordinationDirectory: directory
+        )
+
+        let didHandle = handler.handle(
+            activityName: "\(SharedIdentifiers.deviceActivityNamePrefix)."
+                + "\(rule.id.uuidString.lowercased()).monday"
+        )
+
+        withExtendedLifetime(lease) {}
+        #expect(!didHandle)
+        #expect(store.writeCount == 0)
+        #expect(store.shieldSelection(named: storeName) == shield)
+        #expect(RestrictionApplicationStateDefaultsCodec.load(from: defaults) == initialState)
         defaults.removePersistentDomain(forName: suiteName)
     }
 
@@ -992,6 +1218,45 @@ struct ManagedSettingsRestrictionAdapterTests {
         return try JSONDecoder().decode(
             ApplicationToken.self,
             from: encodedData
+        )
+    }
+
+    private func makeTemporaryDirectory() throws -> URL {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("interval-release-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+        return directory
+    }
+
+    private func makeReleaseException(
+        for rule: RestrictionRuleSnapshot,
+        at date: Date
+    ) throws -> ReleaseException {
+        let interval = try #require(
+            ScheduleEvaluator.activeInterval(
+                weekdays: rule.weekdays,
+                startTime: rule.startTime,
+                endTime: rule.endTime,
+                at: date,
+                calendar: TestFixtures.calendar,
+                timeZone: TestFixtures.timeZone
+            )
+        )
+        return try ReleaseException(
+            commandID: UUID(),
+            occurrenceID: RestrictionOccurrence.deterministicID(
+                ruleID: rule.id,
+                ruleRevision: rule.revision,
+                startAt: interval.lowerBound,
+                endAt: interval.upperBound
+            ),
+            ruleID: rule.id,
+            ruleRevision: rule.revision,
+            effectiveAt: interval.lowerBound,
+            expiresAt: interval.upperBound
         )
     }
 

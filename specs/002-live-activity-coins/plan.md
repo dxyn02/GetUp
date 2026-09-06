@@ -246,6 +246,39 @@ mirror·해제 예외를 보관한다. 별도 서버와 외부 패키지는 도�
   미지원·실패·timeout이면 앱 진입 또는 다음 foreground 재조정을 기본 경로로 확정한다. 이 게이트를
   통과하기 전에는 직접 ActivityKit 조정 코드를 제품 흐름에 연결하지 않는다.
 - Shield와 앱의 해제 요청을 동일한 command service에 전달한다.
+- BLK-016 승인에 따라 T049a에서 명령별 예외 추가·조건부 제거를 기존 파일 조정 경계 안에서
+  수행한다. 같은 영속 payload는 멱등 처리하며 다른 command·occurrence 소유권은 덮지 않는다.
+  T049b는 과거 목록 복원을 사용하지 않고 최신 규칙·예외 재평가와 로컬 적용 경합을 검증한다.
+  저장소 반환 snapshot은 적용 시점까지 최신이라는 보장이 아니며 원격 완료 상태 판정도 대체하지 않는다.
+- T049b coordinator는 App Group 고정 lock 파일의 비차단 배타 잠금을 await 구간에도 유지한다.
+  경합은 command 재조정으로 넘기며, 적용 closure는 최신 규칙·예외를 재조회한다. T052·T053의
+  실제 제한 writer도 같은 로컬 조정 규칙에 참여해야 한다. 실제 Shield·프로세스 중단 인수는 별도다.
+- T050 reconciler는 같은 로컬 잠금 아래 원격 명령과 로컬 예외를 다시 조회하고 최신 제한 적용을
+  확인한 뒤 확정 또는 보상한다. `reconcilePending` 실패 시 호출자는 새 해제를 시작하지 않는다.
+  pending ID의 영속 보관·제거와 앱·Shield 진입 연결은 후속 통합 책임이며 아직 활성화하지 않는다.
+  완료 명령은 재차 차감하지 않고 만료되어 사라진 예외를 재생성하지 않는다.
+- T051 Shield deadline 정책은 primary action 전달 시 monotonic instant를 기록하고 CloudKit 시도와
+  주입 가능한 5초 대기를 경쟁시킨다. 성공 확인이 정확히 5초보다 빠르고 command·occurrence가
+  일치할 때만 로컬 해제를 적용한다. timeout·오류·식별자 불일치는 같은 command ID의 T050
+  재조정과 occurrence에 연결된 `.reconciliation` route로 fail-closed한다. wall clock은 route의
+  사용자 진입 유효 기간 기록에만 사용하며 deadline 판정에는 사용하지 않는다.
+- T052 `RestrictionCoordinator`는 매 적용마다 최신 규칙과 release exception을 읽고 현재
+  occurrence ID·revision·유효 구간이 일치하는 규칙만 합집합에서 제외한다. 다른 활성 규칙은
+  유지하고 Managed Settings read-back이 정확한 revision 집합과 일치해야 성공한다. T049·T050의
+  적용 provider는 coordinator가 획득한 같은 lease를 전달받아 잠금을 중첩 획득하지 않으며,
+  일반 제한 writer도 같은 App Group 고정 잠금에 참여한다.
+- T053의 Device Activity 시작·종료 callback은 반환 전 공통 동기 evaluator로 최신 규칙·위치·예외를
+  재평가한다. 현재 occurrence의 유효 예외를 제외하고 만료·삭제 규칙·revision 불일치 예외를 atomic
+  정리하며, 정리부터 제한 read-back과 occurrence 저장까지 T049·T050과 같은 lease를 유지한다.
+  snapshot read 실패 시 마지막 규칙만 안전하게 비우는 기존 종료 fallback도 동일 잠금에 참여한다.
+- BLK-015 승인에 따라 epoch·occurrence별 `ReleaseOccurrenceClaim`을 무료·구매 예약이 공유한다.
+  claim 획득과 예약, claim 해제와 보상을 각각 같은 atomic modify로 처리한다. T047a 모델·codec,
+  T047b 원자 저장·호환 gate, T047c 서비스 연결 순으로 검증한다. 기존 schema 데이터 삭제나
+  자동 reset은 하지 않으며 claim 없는 기존 command와 구버전 writer 공존은 전환 안전성 검증 전
+  새 예약을 허용하지 않는다.
+- T047b의 호환성 주입 경계는 기본 거부이며 실제 migration provider는 아직 없다. T047c 서비스
+  조립은 이를 임의 허용하지 않고, 격리 테스트만 명시적으로 허용한다. epoch와 소진 allowance도
+  예약 CAS에 포함해 reset 경쟁·무료분 복구 충돌을 재평가한다.
 - Shield에는 기존 제한 정보·닫기 행동과 `해제권 1회 사용` 버튼을 제공한다. 이 버튼은 최신 장부에서
   현재 월 무료분을 확인·생성한 뒤 무료분을 우선 사용하고, 없을 때 구매 코인 1개를 사용하는 데 대한
   명시적 확정이다.

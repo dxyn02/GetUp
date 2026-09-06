@@ -5,7 +5,8 @@ import Foundation
 struct ShieldContentSnapshot: Equatable, @unchecked Sendable {
     let rules: RestrictionRuleCollectionSnapshot
     let savedPlaces: SavedPlaceCollectionSnapshot
-    let activeRuleRevisions: Set<ActiveRuleRevision>
+    let activeRestrictions: ActiveRestrictionSnapshot
+    let coinBalance: CoinBalanceSnapshot
 }
 
 protocol ShieldSnapshotReading {
@@ -15,10 +16,8 @@ protocol ShieldSnapshotReading {
 enum ShieldSnapshotReaderError: Error, Equatable, Sendable {
     case missingAppGroupIdentifier
     case appGroupContainerUnavailable
-    case sharedDefaultsUnavailable
     case snapshotUnavailable
     case unsupportedSchema
-    case appliedStateUnavailable
 }
 
 struct AppGroupShieldSnapshotReader: ShieldSnapshotReading {
@@ -44,10 +43,6 @@ struct AppGroupShieldSnapshotReader: ShieldSnapshotReading {
         else {
             throw ShieldSnapshotReaderError.appGroupContainerUnavailable
         }
-        guard let defaults = UserDefaults(suiteName: identifier) else {
-            throw ShieldSnapshotReaderError.sharedDefaultsUnavailable
-        }
-
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let rules: RestrictionRuleCollectionSnapshot = try decode(
@@ -64,28 +59,34 @@ struct AppGroupShieldSnapshotReader: ShieldSnapshotReading {
             ),
             using: decoder
         )
+        let activeRestrictions: ActiveRestrictionSnapshot = try decode(
+            ActiveRestrictionSnapshot.self,
+            from: containerURL.appendingPathComponent(
+                SharedIdentifiers.activeRestrictionSnapshotFileName
+            ),
+            using: decoder
+        )
+        let coinBalance: CoinBalanceSnapshot = try decode(
+            CoinBalanceSnapshot.self,
+            from: containerURL.appendingPathComponent(
+                SharedIdentifiers.coinBalanceSnapshotFileName
+            ),
+            using: decoder
+        )
         guard
             rules.schemaVersion == RestrictionRuleCollectionSnapshot.currentSchemaVersion,
-            places.schemaVersion == SavedPlaceCollectionSnapshot.currentSchemaVersion
+            places.schemaVersion == SavedPlaceCollectionSnapshot.currentSchemaVersion,
+            activeRestrictions.schemaVersion == ActiveRestrictionSnapshot.currentSchemaVersion,
+            coinBalance.schemaVersion == CoinBalanceSnapshot.currentSchemaVersion
         else {
             throw ShieldSnapshotReaderError.unsupportedSchema
-        }
-        guard
-            let appliedData = defaults.data(
-                forKey: SharedIdentifiers.activeRuleRevisionsDefaultsKey
-            ),
-            let activeRuleRevisions = try? decoder.decode(
-                Set<ActiveRuleRevision>.self,
-                from: appliedData
-            )
-        else {
-            throw ShieldSnapshotReaderError.appliedStateUnavailable
         }
 
         return ShieldContentSnapshot(
             rules: rules,
             savedPlaces: places,
-            activeRuleRevisions: activeRuleRevisions
+            activeRestrictions: activeRestrictions,
+            coinBalance: coinBalance
         )
     }
 
@@ -108,18 +109,25 @@ struct ShieldContent: Equatable, Sendable {
     let title: String
     let subtitle: String
     let primaryButtonLabel: String
+    let secondaryButtonLabel: String?
 }
 
 struct ShieldContentProvider {
     private let snapshotReader: any ShieldSnapshotReading
     private let bundle: Bundle
+    private let now: () -> Date
+    private let calendar: Calendar
 
     init(
         snapshotReader: any ShieldSnapshotReading,
-        bundle: Bundle = .main
+        bundle: Bundle = .main,
+        now: @escaping () -> Date = Date.init,
+        calendar: Calendar = .current
     ) {
         self.snapshotReader = snapshotReader
         self.bundle = bundle
+        self.now = now
+        self.calendar = calendar
     }
 
     func content(
@@ -129,38 +137,54 @@ struct ShieldContentProvider {
     ) -> ShieldContent {
         guard
             applicationToken != nil || categoryToken != nil || webDomainToken != nil,
-            let snapshot = try? snapshotReader.readSnapshot()
+            let snapshot = try? snapshotReader.readSnapshot(),
+            hasValidCollectionIdentity(snapshot),
+            snapshot.coinBalance.schemaVersion == CoinBalanceSnapshot.currentSchemaVersion
         else {
             return fallbackContent
         }
 
-        let matchingRules = snapshot.rules.rules.filter { rule in
-            snapshot.activeRuleRevisions.contains(
-                ActiveRuleRevision(ruleID: rule.id, revision: rule.revision)
-            ) && matches(
+        let rulesByID = Dictionary(uniqueKeysWithValues: snapshot.rules.rules.map { ($0.id, $0) })
+        let evaluation = RestrictionOccurrenceEvaluator.evaluate(
+            snapshot: snapshot.activeRestrictions,
+            currentRuleRevisions: Dictionary(
+                uniqueKeysWithValues: snapshot.rules.rules.map { ($0.id, $0.revision) }
+            ),
+            now: now()
+        )
+        let matchingOccurrences: [(
+            occurrence: RestrictionOccurrence,
+            rule: RestrictionRuleSnapshot
+        )] = evaluation.orderedOccurrences.compactMap { occurrence in
+            guard
+                let rule = rulesByID[occurrence.ruleID],
+                matches(
                 rule.activitySelection,
                 applicationToken: applicationToken,
                 categoryToken: categoryToken,
                 webDomainToken: webDomainToken
-            )
+                )
+            else {
+                return nil
+            }
+            return (occurrence: occurrence, rule: rule)
         }
 
-        switch matchingRules.count {
-        case 1:
-            guard
-                let rule = matchingRules.first,
-                let place = snapshot.savedPlaces.places.first(where: {
-                    $0.id == rule.savedPlaceID
-                })
-            else {
-                return fallbackContent
-            }
-            return detailedContent(rule: rule, place: place)
-        case 2...:
-            return multipleRulesContent(count: matchingRules.count)
-        default:
+        guard
+            let representativeMatch = matchingOccurrences.first,
+            let place = snapshot.savedPlaces.places.first(where: {
+                $0.id == representativeMatch.rule.savedPlaceID
+            })
+        else {
             return fallbackContent
         }
+
+        return releaseContent(
+            occurrence: representativeMatch.occurrence,
+            rule: representativeMatch.rule,
+            place: place,
+            additionalRestrictionCount: matchingOccurrences.count - 1
+        )
     }
 
     private func matches(
@@ -184,48 +208,50 @@ struct ShieldContentProvider {
         return false
     }
 
-    private func detailedContent(
+    private func releaseContent(
+        occurrence: RestrictionOccurrence,
         rule: RestrictionRuleSnapshot,
-        place: SavedPlaceSnapshot
+        place: SavedPlaceSnapshot,
+        additionalRestrictionCount: Int
     ) -> ShieldContent {
         let radius = radiusLabel(rule.radius)
-        let endTime = timeLabel(rule.endTime)
+        let endTime = timeLabel(occurrence.endAt)
         let placeName = localizedPresetPlaceName(place.name)
+        let representativeName = rule.name.flatMap { name in
+            let normalized = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            return normalized.isEmpty ? nil : normalized
+        } ?? placeName
         let titleFormat = localized(
             "shield.title.outside_radius",
             value: "%@에서 %@ 밖으로 나서세요"
         )
-        let subtitleFormat = localized(
-            "shield.subtitle.release_condition",
-            value: "현재 ‘%@’의 %@ 범위 안에 있어요. %@의 중심에서 %@ 밖으로 이동하거나 %@이 되면 자동으로 다시 사용할 수 있어요."
-        )
+        let subtitle: String
+        if additionalRestrictionCount == 0 {
+            subtitle = String(
+                format: localized(
+                    "shield.subtitle.release_confirmation.single",
+                    value: "대표 규칙 ‘%@’ · %@까지 적용돼요. 무료 해제권을 먼저 사용하고, 없으면 구매 코인 1개를 사용해 이번 구간만 해제해요. 다른 규칙의 제한은 남지 않아요."
+                ),
+                representativeName,
+                endTime
+            )
+        } else {
+            subtitle = String(
+                format: localized(
+                    "shield.subtitle.release_confirmation.multiple",
+                    value: "대표 규칙 ‘%@’ · %@까지 적용돼요. 무료 해제권을 먼저 사용하고, 없으면 구매 코인 1개를 사용해 이번 구간만 해제해요. 다른 규칙 %d개의 제한은 남아요."
+                ),
+                representativeName,
+                endTime,
+                additionalRestrictionCount
+            )
+        }
 
         return ShieldContent(
             title: String(format: titleFormat, placeName, radius),
-            subtitle: String(
-                format: subtitleFormat,
-                placeName,
-                radius,
-                placeName,
-                radius,
-                endTime
-            ),
-            primaryButtonLabel: primaryButtonLabel
-        )
-    }
-
-    private func multipleRulesContent(count: Int) -> ShieldContent {
-        let titleFormat = localized(
-            "shield.title.multiple_rules",
-            value: "%d개 제한 규칙이 활성화 중이에요"
-        )
-        return ShieldContent(
-            title: String(format: titleFormat, count),
-            subtitle: localized(
-                "shield.subtitle.multiple_rules",
-                value: "각 규칙의 위치 또는 시간이 모두 끝나면 다시 사용할 수 있어요."
-            ),
-            primaryButtonLabel: primaryButtonLabel
+            subtitle: subtitle,
+            primaryButtonLabel: releaseButtonLabel,
+            secondaryButtonLabel: closeButtonLabel
         )
     }
 
@@ -239,11 +265,26 @@ struct ShieldContentProvider {
                 "shield.subtitle.fallback",
                 value: "설정한 위치에서 벗어나거나 시간이 끝나면 자동으로 다시 사용할 수 있어요."
             ),
-            primaryButtonLabel: primaryButtonLabel
+            primaryButtonLabel: closeButtonLabel,
+            secondaryButtonLabel: nil
         )
     }
 
-    private var primaryButtonLabel: String {
+    private func hasValidCollectionIdentity(_ snapshot: ShieldContentSnapshot) -> Bool {
+        let ruleIDs = snapshot.rules.rules.map(\.id)
+        let placeIDs = snapshot.savedPlaces.places.map(\.id)
+        return Set(ruleIDs).count == ruleIDs.count
+            && Set(placeIDs).count == placeIDs.count
+            && snapshot.rules.rules.allSatisfy {
+                $0.schemaVersion == RestrictionRuleSnapshot.currentSchemaVersion
+            }
+    }
+
+    private var releaseButtonLabel: String {
+        localized("shield.primary.release", value: "해제권 1회 사용")
+    }
+
+    private var closeButtonLabel: String {
         localized("shield.primary.close", value: "앱 닫기")
     }
 
@@ -267,9 +308,12 @@ struct ShieldContentProvider {
         return "\(radius.rawValue / 1_000)km"
     }
 
-    private func timeLabel(_ time: TimeOfDay) -> String {
-        let period = time.hour < 12 ? "AM" : "PM"
-        let hour = time.hour % 12 == 0 ? 12 : time.hour % 12
-        return String(format: "%02d:%02d %@", hour, time.minute, period)
+    private func timeLabel(_ date: Date) -> String {
+        let components = calendar.dateComponents([.hour, .minute], from: date)
+        let hour = components.hour ?? 0
+        let minute = components.minute ?? 0
+        let period = hour < 12 ? "AM" : "PM"
+        let twelveHour = hour % 12 == 0 ? 12 : hour % 12
+        return String(format: "%02d:%02d %@", twelveHour, minute, period)
     }
 }

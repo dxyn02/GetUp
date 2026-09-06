@@ -38,6 +38,26 @@
 
 ## 원자성·충돌
 
+- 예약 repository의 `verifyReservationCompatibility(epochID)`는 기본 false다. 이 경계는 freshness와
+  별개이며 기존 장부 전환·구버전 writer 배제가 검증되지 않으면 true를 공급하지 않는다. 이번 단계의
+  허용 provider는 격리 테스트 전용이고 실제 migration·운영 활성화는 완료하지 않는다.
+- 무료·구매 예약은 읽은 `LedgerEpoch`도 같은 CAS modify에 넣어 reset 경쟁을 막는다. 구매 fallback은
+  소진된 allowance를 함께 CAS해 충돌 시 무료 우선 정책을 다시 평가한다. `reservePurchasedCoin`도
+  최신 무료분이 있으면 monthlyFree reservation을 반환할 수 있다.
+- 같은 command의 진입 표면이 달라져도 최초 감사 정보를 유지한다. claim·reservation event가 없는
+  기존 command는 성공으로 재사용하지 않는다. 결과 불명 예약 재조회가 실패하면 새 쓰기 없이
+  reconciliationRequired로 남기며, 성공 확인에는 제안 값이 아니라 재조회한 잔액을 사용한다.
+
+- `ReleaseOccurrenceClaim`은 epoch·occurrence별 고유 record로 무료·구매 경로가 공유한다.
+  schema 1 필드는 `schemaVersion`, `epochID`, `occurrenceID`, `commandID`, `state`, `updatedAt`이며
+  record name은 `release-claim:{소문자 epoch UUID}:{occurrenceID UTF-8 SHA-256 소문자 hex}`다.
+- claim의 `held` 획득을 reservation·command·잔액 변경과 같은 atomic modify에 포함한다.
+  `committed`와 결과 불명에서는 held를 유지하며, `compensated`·잔액 보상과 같은 atomic modify에서만
+  `released`로 바꾼다. 삭제하지 않고 CAS로 재획득하며 시간만으로 해제하지 않는다.
+- 기존 여섯 record type의 schema 1은 그대로 읽는다. claim 없는 기존 진행·완료 command를
+  새 예약 가능으로 간주하지 않는다. 구버전 writer 공존·기존 장부 전환의 안전성 검증 전 새 예약을
+  차단하며 데이터 삭제·자동 reset을 migration 수단으로 사용하지 않는다.
+
 - mutable record는 `ifServerRecordUnchanged`로 저장한다.
 - balance 또는 allowance 변경과 대응 ledger event·command 변경은 같은 atomic modify operation에
   포함한다.

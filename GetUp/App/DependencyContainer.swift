@@ -13,6 +13,7 @@ struct DependencyContainer: Sendable {
     let diagnostics: any DiagnosticsLogging
     let monthlyAllowanceService: MonthlyAllowanceService?
     let ensureMonthlyAllowanceOnForeground: @Sendable () async throws -> Void
+    let coordinationDirectory: URL
 
     var ruleRepository: any RuleRepository {
         sharedSnapshotRepository
@@ -34,6 +35,7 @@ struct DependencyContainer: Sendable {
         monthlyAllowanceForegroundContextProvider:
             MonthlyAllowanceForegroundContextProvider? = nil
     ) {
+        coordinationDirectory = containerURL
         sharedSnapshotRepository = SharedSnapshotRepository(
             containerURL: containerURL,
             fileWriter: fileWriter

@@ -114,28 +114,33 @@ occurrence만 예외 처리되는지, 중복 100회에서 최대 1회만 소모�
 ### 사용자 스토리 2 테스트
 
 - [X] T039 [US2] T011·T032·T033 완료 후 DEBUG 전용 `GetUpShieldAction/ActivityKitFeasibilityProbe.swift`를 추가·target 연결해 Shield Action extension이 메인 앱에서 시작한 Live Activity를 직접 조회·갱신·종료할 수 있는지 지원 OS 실기기에서 실행하고 성공·미지원·실패·timeout 결과를 `specs/002-live-activity-coins/quickstart.md`, `docs/STATUS.md`에 기록해 직접 조정 또는 foreground fallback을 확정한다.
-- [ ] T040 [P] [US2] 무료 우선·구매 fallback·잔액 부족·비`current`·epoch 불일치 reservation, 같은 occurrence 100회 요청과 requested→reserved→applied→committed·보상·결과 불명 전이 테스트를 `GetUpTests/Core/CoinReservationPolicyTests.swift`, `GetUpTests/Core/RuleReleaseServiceTests.swift`에 먼저 작성한다.
-- [ ] T041 [P] [US2] 예외의 재실행·재부팅 유지, 만료·revision 불일치 정리, 다음 occurrence 미적용 테스트를 `GetUpTests/Persistence/ReleaseExceptionRepositoryTests.swift`에 먼저 작성한다.
-- [ ] T042 [P] [US2] App Group write·Managed Settings write·CloudKit commit 각 실패 지점의 보상, 성공 직후 대표 Live Activity 갱신·종료와 ActivityKit 실패 비치명 처리를 `GetUpTests/Integration/RuleReleaseCoordinatorTests.swift`에 먼저 작성한다.
-- [ ] T043 [P] [US2] 단일 `해제권 1회 사용` 버튼의 무료 우선·구매 fallback, 잔액 부족 coin store route, stale·삭제·조정 중 장부의 recovery route, 다중 규칙과 iOS 26.5·이전 호환 응답 테스트를 `GetUpTests/Integration/ShieldCoinActionTests.swift`에 먼저 작성한다.
-- [ ] T044 [P] [US2] primary action 전달부터 4.9초 성공, 5초 성공 미확인, late commit·extension 종료의 fail-closed와 최종 미적용 차감 0을 `GetUpTests/Integration/ShieldReleaseDeadlineTests.swift`에 먼저 작성한다.
-- [ ] T045 [P] [US2] 현재 Shield 요소·`해제권 1회 사용`·`앱 닫기` 구성과 앱 내 대상·비용·종료·남을 제한 확인 및 중복 tap UI 테스트를 `GetUpUITests/UserStory2CoinReleaseUITests.swift`에 먼저 작성한다.
+- [X] T040 [P] [US2] 무료 우선·구매 fallback·잔액 부족·비`current`·epoch 불일치 reservation, 같은 occurrence 100회 요청과 requested→reserved→applied→committed·보상·결과 불명 전이 테스트를 `GetUpTests/Core/CoinReservationPolicyTests.swift`, `GetUpTests/Core/RuleReleaseServiceTests.swift`에 먼저 작성한다.
+- [X] T041 [P] [US2] 예외의 재실행·재부팅 유지, 만료·revision 불일치 정리, 다음 occurrence 미적용 테스트를 `GetUpTests/Persistence/ReleaseExceptionRepositoryTests.swift`에 먼저 작성한다.
+- [X] T042 [P] [US2] App Group write·Managed Settings write·CloudKit commit 각 실패 지점의 보상, 성공 직후 대표 Live Activity 갱신·종료와 ActivityKit 실패 비치명 처리를 `GetUpTests/Integration/RuleReleaseCoordinatorTests.swift`에 먼저 작성한다.
+- [X] T043 [P] [US2] 단일 `해제권 1회 사용` 버튼의 무료 우선·구매 fallback, 잔액 부족 coin store route, stale·삭제·조정 중 장부의 recovery route, 다중 규칙과 iOS 26.5·이전 호환 응답 테스트를 `GetUpTests/Integration/ShieldCoinActionTests.swift`에 먼저 작성한다.
+- [X] T044 [P] [US2] primary action 전달부터 4.9초 성공, 5초 성공 미확인, late commit·extension 종료의 fail-closed와 최종 미적용 차감 0을 `GetUpTests/Integration/ShieldReleaseDeadlineTests.swift`에 먼저 작성한다.
+- [X] T045 [P] [US2] 현재 Shield 요소·`해제권 1회 사용`·`앱 닫기` 구성과 앱 내 대상·비용·종료·남을 제한 확인 및 중복 tap UI 테스트를 `GetUpUITests/UserStory2CoinReleaseUITests.swift`에 먼저 작성한다.
 
 ### 사용자 스토리 2 구현
 
-- [ ] T046 [P] [US2] 무료 우선 funding source 선택과 사용 가능 잔액 검증을 `GetUp/Core/Evaluation/CoinReservationPolicy.swift`에 구현한다.
-- [ ] T047 [US2] 최신 occurrence·epoch·잔액을 fetch하고 Phase 2 `MonthlyAllowanceService`로 allowance 생성+무료 예약 또는 구매 fallback을 결정적 command ID의 atomic reservation으로 실행하는 `GetUp/Core/StateMachine/RuleReleaseService.swift`를 구현한다.
-- [ ] T048 [P] [US2] release exception의 atomic 저장·조회·만료 정리를 `GetUp/Infrastructure/Persistence/ReleaseExceptionRepository.swift`에 구현한다.
-- [ ] T049 [US2] reservation→App Group 예외→제한 합집합 재평가→CloudKit commit→대표 Live Activity 조정 순서와 보상을 구현하고 ActivityKit 실패는 해제 성공을 되돌리지 않도록 `GetUp/Infrastructure/ScreenTime/RuleReleaseCoordinator.swift`를 구현한다.
-- [ ] T050 [US2] 결과 불명 command를 새 해제보다 먼저 조회해 committed 또는 compensated로 수렴시키는 `GetUp/Infrastructure/CloudKit/RuleReleaseReconciler.swift`를 구현한다.
-- [ ] T051 [US2] 주입 가능한 monotonic clock으로 Shield CloudKit 성공 확인을 5초로 제한하고 timeout 시 reconciliation route와 같은 command ID 재조정을 만드는 `GetUp/Infrastructure/ScreenTime/ShieldReleaseDeadlinePolicy.swift`를 구현한다.
-- [ ] T052 [US2] release exception occurrence를 제한 대상 합집합에서 제외하고 다른 규칙 제한은 유지하도록 `GetUp/Infrastructure/ScreenTime/RestrictionCoordinator.swift`를 확장한다.
-- [ ] T053 [US2] interval 시작·종료에서 유효 예외를 적용하고 만료 예외를 정리하도록 `GetUpDeviceActivityMonitor/DeviceActivityMonitorExtension.swift`를 확장한다.
-- [ ] T054 [US2] 현재 Shield 내용에 대표 규칙·종료·남을 제한, 무료 우선·구매 fallback에 동의하는 단일 `해제권 1회 사용` primary와 기존 `앱 닫기` secondary를 구성하도록 `GetUp/Infrastructure/ScreenTime/ShieldContentProvider.swift`를 확장한다.
-- [ ] T055 [US2] Shield primary action에서 최신 occurrence·장부를 검증해 무료 우선으로 안정 command를 실행하고, 성공·남은 제한·timeout과 coin store·iCloud recovery route를 기록하며 iOS 26.5 이상은 `.openParentalControlsApp`, 이전은 안내 후 `.close`로 응답하도록 `GetUpShieldAction/ShieldActionExtension.swift`, `GetUp/Infrastructure/ScreenTime/ShieldActionResponsePolicy.swift`를 구현한다. Live Activity 직접 조정은 T039에서 실기기 성공이 확인된 경로에만 production adapter로 연결하고 그 외에는 앱 진입·다음 foreground fallback을 사용하며 DEBUG feasibility probe가 release build에 포함되지 않음을 검증한다.
-- [ ] T056 [P] [US2] 앱 내 활성 occurrence·잔액·pending reconciliation 상태와 확인 action을 `GetUp/Features/Coins/ActiveRestrictionReleaseModel.swift`에 구현한다.
-- [ ] T057 [US2] 활성 제한 카드의 해제 확인 dialog와 `PendingAppRouteRepository.consumeIfEligible` 결과에 따른 잔액 부족 coin store·장부 복구 진입을 `GetUp/Features/RestrictionStatus/RestrictionStatusView.swift`, `GetUp/Features/Coins/ActiveRestrictionReleaseView.swift`에 구현한다.
-- [ ] T058 [US2] 한국어·영어 비용·대상·유효 기간·다중 규칙·처리 확인 문구를 `GetUp/Resources/Localizable.xcstrings`, `GetUpShieldConfiguration/Resources/Localizable.xcstrings`에 추가하고 US2 관련 자동 테스트를 통과시킨다.
+- [X] T046 [P] [US2] 무료 우선 funding source 선택과 사용 가능 잔액 검증을 `GetUp/Core/Evaluation/CoinReservationPolicy.swift`에 구현한다.
+- [X] T047 [US2] 최신 occurrence·epoch·잔액을 fetch하고 Phase 2 `MonthlyAllowanceService`로 allowance 생성+무료 예약 또는 구매 fallback을 결정적 command ID의 atomic reservation으로 실행하는 `GetUp/Core/StateMachine/RuleReleaseService.swift`를 구현한다.
+  - [X] T047a [US2] BLK-015 승인에 따라 epoch·occurrence별 `ReleaseOccurrenceClaim` 모델, 결정적 record ID, 엄격한 codec과 호환 정책·테스트를 추가한다.
+  - [X] T047b [US2] 무료·구매 예약과 claim 획득, 보상과 claim 해제를 같은 atomic modify로 연결하고 실제 repository·공유 database fake에서 앱·Shield 동시 100회, 충돌·결과 불명·보상 재시도를 검증한다. 기존 command의 claim 부재와 구버전 writer 공존은 안전성이 검증되기 전 fail-closed하며 epoch 확인·무료 우선 충돌 재평가도 검증한다.
+  - [X] T047c [US2] 최신 컨텍스트·월간 서비스·예약 repository를 `RuleReleaseService`에 연결하고 종료·revision·epoch·기존 예외 검증과 관련 회귀를 통과시켜 T047을 완료한다.
+- [X] T048 [P] [US2] release exception의 atomic 저장·조회·만료 정리를 `GetUp/Infrastructure/Persistence/ReleaseExceptionRepository.swift`에 구현한다.
+- [X] T049 [US2] reservation→App Group 예외→제한 합집합 재평가→CloudKit commit→대표 Live Activity 조정 순서와 보상을 구현하고 ActivityKit 실패는 해제 성공을 되돌리지 않도록 `GetUp/Infrastructure/ScreenTime/RuleReleaseCoordinator.swift`를 구현한다.
+  - [X] T049a [US2] BLK-016 승인에 따라 명령별 원자 예외 추가·조건부 제거 API와 실제 파일 저장소 구현, 멱등·소유자 충돌·동시 추가·한쪽 제거·지연 재시도·실패 보존 테스트를 추가한다.
+  - [X] T049b [US2] 새 예외 API를 사용하는 coordinator를 구현하고 최신 규칙·예외 기반 제한 재평가의 로컬 적용 경합, 확정 실패 보상·결과 불명 보존·ActivityKit 실패 격리를 검증해 T049를 완료한다.
+- [X] T050 [US2] 결과 불명 command를 새 해제보다 먼저 조회해 committed 또는 compensated로 수렴시키는 `GetUp/Infrastructure/CloudKit/RuleReleaseReconciler.swift`를 구현한다.
+- [X] T051 [US2] 주입 가능한 monotonic clock으로 Shield CloudKit 성공 확인을 5초로 제한하고 timeout 시 reconciliation route와 같은 command ID 재조정을 만드는 `GetUp/Infrastructure/ScreenTime/ShieldReleaseDeadlinePolicy.swift`를 구현한다.
+- [X] T052 [US2] release exception occurrence를 제한 대상 합집합에서 제외하고 다른 규칙 제한은 유지하도록 `GetUp/Infrastructure/ScreenTime/RestrictionCoordinator.swift`를 확장한다. T049b의 최신 상태 적용 provider를 연결하고 공통 로컬 잠금 안에서 재평가·read-back을 검증한다.
+- [X] T053 [US2] interval 시작·종료에서 유효 예외를 적용하고 만료 예외를 정리하도록 `GetUpDeviceActivityMonitor/DeviceActivityMonitorExtension.swift`를 확장한다. 해제 coordinator와 같은 App Group 로컬 잠금에 참여해 적용 경합을 검증한다.
+- [X] T054 [US2] 현재 Shield 내용에 대표 규칙·종료·남을 제한, 무료 우선·구매 fallback에 동의하는 단일 `해제권 1회 사용` primary와 기존 `앱 닫기` secondary를 구성하도록 `GetUp/Infrastructure/ScreenTime/ShieldContentProvider.swift`를 확장한다.
+- [X] T055 [US2] Shield primary action에서 최신 occurrence·장부를 검증해 무료 우선으로 안정 command를 실행하고, 성공·남은 제한·timeout과 coin store·iCloud recovery route를 기록하며 iOS 26.5 이상은 `.openParentalControlsApp`, 이전은 안내 후 `.close`로 응답하도록 `GetUpShieldAction/ShieldActionExtension.swift`, `GetUp/Infrastructure/ScreenTime/ShieldActionResponsePolicy.swift`를 구현한다. Live Activity 직접 조정은 T039에서 실기기 성공이 확인된 경로에만 production adapter로 연결하고 그 외에는 앱 진입·다음 foreground fallback을 사용하며 DEBUG feasibility probe가 release build에 포함되지 않음을 검증한다.
+- [X] T056 [P] [US2] 앱 내 활성 occurrence·잔액·pending reconciliation 상태와 확인 action을 `GetUp/Features/Coins/ActiveRestrictionReleaseModel.swift`에 구현한다.
+- [X] T057 [US2] 활성 제한 카드의 해제 확인 dialog와 `PendingAppRouteRepository.consumeIfEligible` 결과에 따른 잔액 부족 coin store·장부 복구 진입을 `GetUp/Features/RestrictionStatus/RestrictionStatusView.swift`, `GetUp/Features/Coins/ActiveRestrictionReleaseView.swift`에 구현한다.
+- [X] T058 [US2] 한국어·영어 비용·대상·유효 기간·다중 규칙·처리 확인 문구를 `GetUp/Resources/Localizable.xcstrings`, `GetUpShieldConfiguration/Resources/Localizable.xcstrings`에 추가하고 US2 관련 자동 테스트를 통과시킨다.
 
 **체크포인트**: fake 장부 잔액만으로 Shield·앱의 현재 구간 1회 해제와 모든 실패 보상을 검증할 수 있다.
 

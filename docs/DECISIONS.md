@@ -1,5 +1,189 @@
 # 결정 사항
 
+## DEC-100 — 앱과 Shield 확장의 해제 문구 catalog 소유권 분리
+
+**날짜**: 2026-09-06
+
+**결정**: 앱의 해제 화면은 의미 기반 `coinRelease.*` 키를 앱 String Catalog가 소유하고 정적·동적
+문구 모두 `AppLocalizedCopy`로 해석한다. Shield Configuration은 앱 catalog 파일을 target resource로
+재사용하지 않고 `GetUpShieldConfiguration/Resources/Localizable.xcstrings`에 실제 표시하는
+`shield.*` 키와 preset 장소명만 독립적으로 보유한다.
+
+**근거**: 앱 target의 큰 catalog를 extension에 통째로 포함하면 Shield가 사용하지 않는 문구까지
+배포되며 target별 번역 누락을 가린다. 반대로 각 실행 bundle이 사용하는 키를 직접 소유하면 앱과
+Shield의 한국어·영어 의미 동등성을 빌드 산출물에서 독립적으로 확인할 수 있다. 도메인 데이터와
+사용자 지정 규칙명은 번역하지 않으며 `집`·`회사`만 기존 preset 표시 경계를 유지한다.
+
+**검증 경계**: 앱 UI 자동 테스트는 한국어·영어의 대상·비용·종료·다중 규칙·확인·처리를 검증하고,
+Shield provider 단위 테스트는 같은 의미의 한국어·영어 포맷을 검증한다. system Shield 자체의 실제
+렌더링은 실기기 인수 범위이며 이번 결정은 장부·해제 동작을 변경하지 않는다.
+
+## DEC-099 — 활성 제한 해제의 item-driven sheet와 route 소비 경계
+
+**날짜**: 2026-09-06
+
+**결정**: 활성 제한 카드는 해제 상세를 item-driven sheet로 열고, sheet가 대상·비용·종료 시각·
+겹친 제한과 무료·구매 잔액을 보여준 뒤 별도 alert에서만 `ActiveRestrictionReleaseModel`의 실행을
+확정한다. sheet가 처리 중이면 닫기와 추가 확인을 막고, 실행 결과의 확정 잔액과 남은 occurrence만
+화면에 반영한다.
+
+`ActiveRestrictionReleaseRouter`는 현재 활성 occurrence ID 집합과 주입 시각을
+`PendingAppRouteRepository.consumeIfEligible`에 그대로 전달한다. repository가 적격 route를 반환한
+경우에만 coin store, iCloud 복구, 장부 reset 안내 또는 재조정 상태로 이동하며 nil·오류에서는
+목적지를 추측하지 않는다. 앱 내 최신 실행이 차단 결과를 반환한 경우에도 같은 목적지 매핑을
+재사용한다. app launch·foreground에서 sheet를 자동 여는 전역 수명주기 연결은 T076 책임으로 남긴다.
+
+**범위 경계**: 코인 상품·결제와 장부 setup/reset action은 T072·T075 전에 구현하지 않고 목적지
+안내만 제공한다. 운영 reservation migration 호환성이 검증되기 전 live executor는
+`.iCloudRecoveryRequired`로 실패 닫힘을 유지하며 UI test seam만 fake 확정 잔액과 held completion을
+주입한다. 화면이나 test probe가 차감을 합성해 production 실행 경계를 우회하지 않는다.
+
+**근거**: 해제 상세와 확인 action을 sheet가 소유하면 홈 카드가 금융 상태를 중복 보유하지 않고,
+`PendingAppRouteRepository`의 5분·활성 occurrence·일회 소비 정책을 navigation 상태와 분리해 검증할
+수 있다. 구현되지 않은 구매·reset action을 임시로 연결하지 않아 장부 손실과 잘못된 결제 진입을
+막는다.
+
+## DEC-098 — 앱 내 해제 모델의 표시 상태와 최신 실행 결과 분리
+
+**날짜**: 2026-09-06
+
+**결정**: `ActiveRestrictionReleaseModel`은 활성 snapshot과 현재 rule revision을 공통 evaluator로
+재검증하고 가장 먼저 활성화된 occurrence를 기본 대표로 삼되, 앱에서 사용자가 다른 활성 occurrence를
+선택할 수 있게 한다. coin balance mirror는 무료분 우선·구매분 fallback 예상 표시와 진입 차단에만
+사용하고 실제 funding source와 차감 성공은 별도 확인 뒤 주입된 최신 release executor 결과로만
+확정한다.
+
+pending reconciliation은 잔액 부족이나 새 해제보다 우선한다. 확인은 `idle → confirmationRequested
+→ processing`으로 분리하고 processing 동안 추가 확인을 무시해 같은 모델 instance의 중복 실행을
+막는다. 성공 결과는 executor가 반환한 확정 balance와 남은 occurrence를 함께 반영한다. 실패는
+insufficient balance, iCloud recovery, ledger reset, reconciliation, 일반 release failure를 구분해
+T057 화면이 올바른 안내·route를 선택하게 한다. refresh는 진행 중 작업을 덮지 않으며 완료·차단 뒤
+최신 snapshot을 받아 다시 idle 상태로 만든다.
+
+**근거와 범위**: 화면이 local mirror를 직접 차감하거나 성공을 합성하면 T047~T055의 원격 멱등·
+보상 경계를 우회한다. 반대로 UI 상태와 실행 adapter를 분리하면 fake executor로 확인·중복 action을
+결정적으로 검증하면서 실제 `RuleReleaseService` 조립은 T057에서 수행할 수 있다. 이번 결정은 UI,
+CloudKit production adapter, schema·원격 데이터를 변경하지 않는다.
+
+## DEC-097 — Shield primary action의 검증 경계와 route 선영속 fail-closed
+
+**날짜**: 2026-09-06
+
+**결정**: Shield Action은 App Group의 현재 규칙 revision·활성 occurrence·coin balance mirror와
+Shield token을 다시 대조해 가장 먼저 활성화된 일치 occurrence 하나만 최신 원격 해제 실행 경계에
+전달한다. mirror는 사용 권한의 근거로 쓰지 않으며, `current`에서만 주입형 representative가 서버의
+최신 장부·무료 우선·구매 fallback·안정 command·5초 deadline을 확정한다. pending reconciliation과
+비현재 장부는 새 해제보다 먼저 각각 reconciliation·복구 route로 전환한다.
+
+성공 후 같은 대상 제한이 없으면 `.none`, 다른 제한이 남으면 `.defer`를 반환한다. 잔액 부족·장부
+복구·삭제 reset·결과 불명은 대응 `PendingAppRoute` 저장이 성공한 뒤에만 iOS 26.5 이상의
+`.openParentalControlsApp`을 반환하고 iOS 26.0~26.4는 `.close`를 사용한다. route 쓰기 실패·중복
+callback·거부는 `.defer`로 Shield를 유지한다. snapshot 자체를 복구할 수 없으면 occurrence 없는
+iCloud 복구 route를 저장해 앱이 조건과 무관하게 복구 안내를 소비할 수 있게 한다.
+
+**운영 경계**: DEC-088의 CloudKit reservation 호환성 검증은 계속 기본 거부다. T097에서 production
+schema·migration 호환성이 확인되기 전 live representative는 `.iCloudRecovery`로 fail-closed하며,
+테스트는 fake 최신 장부 provider로 무료분·구매분·잔액 부족·timeout 계약을 검증한다. 이는 로컬
+mirror만으로 코인을 차감하거나 운영 schema를 암묵적으로 활성화하는 것보다 안전하다.
+
+**Live Activity**: DEC-086의 실기기 결과에 따라 production 직접 ActivityKit adapter를 연결하지
+않는다. 성공한 해제의 활동 재조정은 앱 foreground 또는 다음 foreground가 담당한다. DEBUG probe는
+primary 응답을 지연시키지 않게 병렬 실행하고 Release 실행 파일의 문자열·심볼 검사로 제외를
+확인한다.
+
+## DEC-096 — Shield 표시의 활성 occurrence 권위와 funding source 비단정
+
+**날짜**: 2026-09-06
+
+**결정**: Shield Configuration은 App Group의 규칙·장소뿐 아니라 활성 occurrence snapshot과
+coin balance mirror를 네트워크 없이 동기적으로 읽는다. 현재 rule revision과 일치하고 아직 끝나지
+않았으며 Shield token 대상과 일치하는 occurrence를 공통 `RestrictionOccurrenceEvaluator` 순서로
+정렬해 가장 먼저 활성화된 하나를 대표로 표시한다. 종료 안내는 규칙의 반복 시각이 아니라 선택된
+occurrence의 `endAt`을 사용하며, 같은 대상에 남는 다른 occurrence 수만 별도로 안내한다.
+
+읽을 수 있는 balance mirror의 `syncState`나 표시 잔액으로 실제 funding source를 미리 선택하지
+않는다. 모든 상태에서 `해제권 1회 사용`은 최신 장부의 무료분 우선·없으면 구매 코인 1개 fallback에
+대한 같은 동의이며, `앱 닫기`를 secondary로 둔다. snapshot 손상, schema 불일치, 만료 또는 대표
+occurrence 부재에서는 코인 action을 노출하지 않고 기존 일반 안내와 닫기 primary만 제공한다.
+
+**근거와 범위**: applied rule revision 집합만으로는 정확한 반복 구간 ID와 종료 시각을 알 수 없어
+잘못된 구간을 확인시킬 수 있다. balance mirror는 표시·route 힌트일 뿐 사용 권한이 아니므로 stale
+값으로 무료분 또는 구매분을 확정하면 안 된다. 실제 최신 occurrence·CloudKit 검증, 차감, 제한 해제,
+실패 route와 iOS 버전별 응답은 T055에서 연결한다. 이번 작업은 운영 CloudKit 장부를 활성화하거나
+schema·원격 데이터를 변경하지 않는다.
+
+## DEC-095 — Device Activity interval의 동기 예외 정리와 공통 잠금
+
+**날짜**: 2026-09-06
+
+**결정**: `intervalDidStart`와 `intervalDidEnd`는 callback 반환 전에 공통
+`DeviceActivityIntervalRestrictionHandler`로 최신 규칙·위치·release exception을 동기 평가한다.
+현재 occurrence·rule revision·유효 기간이 일치하는 예외만 제한 합집합에서 제외하며, 다른 활성
+규칙은 유지한다. 만료·삭제 규칙·revision 불일치 예외는 기존 `NSFileCoordinator` 파일 조정 안에서
+atomic 정리하고, 위치만 일시적으로 비활성인 유효 예외는 보존한다.
+
+동기 evaluator는 T049·T050과 같은 App Group `RuleReleaseLocalLease`를 먼저 획득해 예외 정리부터
+Managed Settings write·read-back과 활성 occurrence snapshot 저장까지 유지한다. 잠금 경합은 기다리지
+않고 기존 Shield와 적용 상태를 보존한다. 전체 snapshot을 읽지 못했을 때 마지막 활성 규칙만 비우는
+기존 종료 fallback도 같은 잠금을 획득한다.
+
+**근거와 범위**: callback에서 비동기 `Task`만 예약하면 extension이 적용·정리 전에 종료될 수 있고,
+해제 coordinator와 경합하면 오래된 합집합이 다시 쓰일 수 있다. 시작과 종료가 같은 전체 평가기를
+사용해야 겹친 규칙과 현재 예외를 동일하게 처리한다. Apple의 callback 전달 시점 자체는 기기 사용에
+의존하므로 정각 실행을 보장하지 않으며, 실제 별도 프로세스 Shield 반영은 실기기 인수에 남긴다.
+이번 작업은 CloudKit 운영 장부·호환성 gate를 활성화하거나 schema·원격 데이터를 변경하지 않는다.
+
+## DEC-094 — release exception 제한 합집합의 동일 lease 재평가
+
+**날짜**: 2026-09-06
+
+**결정**: `RestrictionCoordinator`는 적용할 때마다 최신 규칙과 release exception을 조회한다.
+현재 일정으로 계산한 occurrence ID, rule ID·revision 및 `effectiveAt <= now < expiresAt`가 모두
+일치하는 예외만 해당 규칙을 제한 합집합에서 제외한다. 다른 활성 규칙은 그대로 유지하며 적용 뒤
+Managed Settings의 revision 집합이 기대값과 정확히 일치하고 reset이 필요하지 않아야 성공한다.
+
+T049 coordinator와 T050 reconciler는 자신이 획득한 `RuleReleaseLocalLease`를 실제 적용 provider에
+전달한다. provider는 App Group 조정 디렉터리가 같은지 확인하고 같은 lease 안에서 재평가하므로
+비차단 잠금을 중첩 획득하지 않는다. 일반 time·location·restore 제한 writer도 같은 고정 잠금에
+참여한다. 공통 잠금 구현은 앱·Device Activity Monitor·Shield Action target이 공유한다.
+
+**근거와 범위**: 예외 저장 직후 과거 규칙 목록이나 과거 예외 snapshot을 적용하면 다른 규칙의
+제한을 잃거나 방금 해제한 occurrence가 다시 포함될 수 있다. 잠금 token을 closure로 전달해야
+예외 쓰기부터 read-back까지 하나의 임계 구역을 유지하면서 자기 자신과 경합하지 않는다.
+T053의 interval 시작·종료 writer와 만료 정리는 같은 잠금 경계에 후속 연결한다. 이번 결정은 실제
+Shield action·CloudKit 운영 장부를 활성화하지 않고 schema 배포나 원격 데이터를 변경하지 않는다.
+
+## DEC-093 — Shield 해제 확인의 strict monotonic 5초 경계
+
+**날짜**: 2026-09-06
+
+**결정**: `ShieldReleaseDeadlinePolicy`는 해제 시도와 주입 가능한 deadline 대기를 경쟁시킨다.
+primary action 전달 뒤 monotonic 경과가 5초 미만이고 reservation의 command ID·occurrence가 요청과
+일치할 때만 로컬 해제를 적용한다. 정확히 5초와 이후 응답, 미확인·오류·불일치는 제한을 유지하고
+같은 command ID 재조정과 `.reconciliation` 앱 경로를 생성한다. extension 중단 복구도 새 command를
+만들지 않고 같은 fail-closed 경계를 사용한다.
+
+**근거와 한계**: 응답 뒤 시각만 비교하면 반환하지 않는 CloudKit 호출에서 5초 상한을 지킬 수
+없으므로 별도 timeout task가 필요하다. timeout 시 작업을 취소하지만 이미 제출된 원격 요청이 실제로
+취소됐다고 추정하지 않는다. 즉시 재조회에서 아직 명령이 없더라도 route를 보존해 다음 앱 실행이
+같은 ID를 다시 확인한다. wall clock은 route 생성 시각에만 사용한다. 실제 Shield primary action과
+T050 reconciler·영속 route 조립은 T055·T076 책임이며 이번 작업은 운영 장부를 활성화하지 않는다.
+
+## DEC-092 — 결과 불명 해제 명령의 보수적 재조정
+
+**날짜**: 2026-09-06
+
+**결정**: T050은 T049의 로컬 잠금을 공유하며 원격 명령과 현재 로컬 예외를 재조회한다.
+예약·적용·결과 불명 명령은 최신 제한 적용 확인 뒤 자기 예외가 있으면 확정, 없으면 보상한다.
+보상 중 명령은 자기 예외만 제거하고 제한을 재평가한다. 종결 명령은 금융 연산을 반복하지 않으며
+만료·정리된 예외를 재생성하지 않는다. 소유권 불일치·조회 실패·적용 실패·확정 결과 불명은
+재조정 필요로 반환하며 반대 금융 연산을 추측하지 않는다.
+
+**통합 경계**: `reconcilePending`은 중복 ID를 제거하고 첫 실패에 중단한다. 호출자는 pending ID를
+영속 보관하고 모든 종결 결과 확인 전 새 해제를 금지해야 한다. 실제 큐·앱·Shield 진입 연결,
+최신 제한 provider와 다른 writer의 잠금 참여는 후속 통합에서 수행한다. 이번 작업은 CloudKit
+스키마·운영 호환성 gate를 변경하거나 실제 운영 장부를 활성화하지 않는다.
+
 ## DEC-001 — 사용자 지정 일정 최소 길이
 
 **날짜**: 2026-08-20
@@ -1702,6 +1886,137 @@ Shield의 무료 해제는 allowance를 별도로 먼저 생성하지 않고 `Co
 
 **영향 범위**: `MonthlyAllowancePolicy`, `MonthlyAllowanceService`, `AppLifecycleCoordinator`,
 `DependencyContainer`와 T072 초기 설정 service에 적용한다.
+
+## DEC-088 — claim 예약의 epoch CAS와 기본 거부 호환성 경계
+
+**날짜**: 2026-09-04
+
+**결정**: T047b의 무료·구매 예약은 공통 내부 경로에서 최신 epoch·allowance·account·command·event·
+claim을 조회한다. claim 획득, 잔액 reservation, command·event와 읽은 epoch의 change tag를 같은
+atomic modify에 포함한다. 구매 fallback은 소진된 allowance도 CAS해 다른 요청의 보상으로 무료분이
+복구되면 충돌 재시도에서 무료분을 우선한다. epoch 교체는 기존 요청의 CAS 또는 재조회에서 거부한다.
+
+`verifyReservationCompatibility(epochID)`는 현재 장부 freshness와 별개인 호환성 주입 경계다.
+기본값은 false로 새 예약을 거부하며 이번 구현에는 운영 환경에서 true를 반환하는 provider를 넣지
+않는다. 격리된 database fake에서만 명시적으로 허용한다. 이 closure 자체가 구버전 writer를
+탐지하거나 원격 migration을 완료한 것은 아니다. 실제 활성화 전 구버전 writer 부재·기존 command
+전환을 검증한 provider가 필요하며, T047c도 임의로 true를 주입해서는 안 된다.
+
+같은 command의 표면 간 재시도는 최초 `requestedFrom`을 보존한다. command가 존재하더라도 claim·
+reservation event가 없거나 소유자가 불일치하면 새 예약이나 성공 응답 대신 재조정으로 보낸다.
+결과 불명 예약은 동일 record 집합을 재조회해 확인된 잔액만 반환하고, 재조회 실패도
+`reconciliationRequired`로 남긴다. applied·commit·보상 쓰기도 epoch·현재 소유권을 CAS하며,
+보상 완료 command의 재호출은 새 owner를 수정하지 않는다.
+
+**근거**: claim만 저장하면 장부 reset과 경쟁할 수 있고, 구매 잔액만 CAS하면 충돌 중 복구된 무료분을
+건너뛸 수 있다. 호환성을 record 부재에서 추정하거나 기존 테스트의 허용 값을 운영 조립에 사용하면
+구버전 writer의 중복 예약 위험이 재발한다.
+
+**영향 범위**: `CloudKitCoinLedgerRepository`, 실제 repository를 사용하는 공유 CAS database fake,
+후속 T047c 서비스 및 운영 장부 활성화·migration 검증. 원격 쓰기·schema 배포·데이터 삭제는 없다.
+
+## DEC-087 — occurrence 소유권과 해제 명령 멱등성 분리
+
+**날짜**: 2026-09-04
+
+**상태**: 승인됨 — BLK-015에 대한 사용자 승인
+
+**결정**: 같은 epoch·occurrence의 해제 요청은 `ReleaseOccurrenceClaim` 하나를 공유한다.
+새 record type의 schema version은 1이며 기존 여섯 record type의 필드와 version은 변경하지 않는다.
+record ID는 `release-claim:{소문자 epoch UUID}:{occurrenceID UTF-8 SHA-256 소문자 hex}`다.
+해시를 사용해 record name 길이를 고정하고, payload의 원래 occurrence·epoch를 읽기 때 다시 검사한다.
+이는 식별자 구성이지 민감 정보를 익명화하는 보안 경계가 아니다.
+
+claim은 `held | released`와 소유 command ID를 갖는다. 무료·구매 reservation과 `held` 획득은 같은
+CAS atomic modify로 처리하고, committed·결과 불명에서는 held를 유지한다. 잔액 보상·command의
+compensated 확정과 released 전환도 같은 modify로 처리한다. released record는 삭제하지 않고 기존
+change tag를 사용해 새 소유자를 기록하므로 이전 소유자의 지연 응답이 새 소유권을 지울 수 없다.
+시간 경과만으로 소유권을 해제하지 않는다. command ID는 시도별로 만들고 재시도에는 유지하며,
+requestedFrom은 최초 감사 정보를 보존한다.
+
+**대안**: occurrence에서 command ID 하나만 파생하는 방식은 보상 완료 후 새 시도와 감사 이력을
+혼합한다. 프로세스 내 Set·actor만 사용하는 방식은 앱·extension·다기기 공통 배타성을 제공하지 않는다.
+
+**호환·출시 조건**: T047a는 모델·codec 기반만 추가하며 원격 쓰기나 운영 schema 배포를 하지 않는다.
+새 record type을 모르는 구버전 codec은 이를 거부하지만, 구버전 writer가 claim을 무시하는 경우까지
+차단한다고 간주하지 않는다. claim 없는 기존 진행·완료 command가 있는 장부와 구버전 writer 공존은
+검증된 전환 절차 전에는 새 예약을 허용하지 않는 fail-closed 연결이 T047b에 필요하다.
+기존 잔액·command 삭제나 자동 reset으로 migration하지 않는다. 원격 데이터·배포 상태 확인과
+혼합 버전 안전성 검증은 실제 코인 해제 활성화 전 필수이며, 기존 schema 1 읽기 자체는 유지한다.
+
+**영향 범위**: 공유 해제 모델·record ID·mapper, CloudKit 예약·보상 repository, T047 서비스와
+database fake 통합 테스트. T047a→T047b→T047c 순으로 구현하고 전체 연결 전 T047은 미완료로 둔다.
+
+## DEC-091 — 해제 coordinator의 공통 로컬 잠금과 재조정 경계
+
+**날짜**: 2026-09-06
+
+**결정**: T049b는 App Group의 고정 `release-coordination.lock`에 비차단 배타 flock을 획득한 뒤
+원격 command 재조회→명령별 예외 추가→최신 규칙·예외 재평가 및 read-back→applied→commit→활동
+조정을 수행한다. 동일 디렉터리의 coordinator 간 잠금은 await 중에도 유지하며 descriptor를 닫거나
+프로세스가 종료되면 해제된다. 잠금 파일은 실행마다 삭제하지 않는다. 잠금 경합은 기다리지 않고
+해당 command ID의 재조정 필요 결과를 반환한다.
+
+**실패 정책**: 기존 로컬 예외나 reserved 이외 원격 상태는 새 적용·삭제 없이 재조정에 넘긴다.
+확정 예외 쓰기 실패는 보상하고, 제한 적용 실패·명시적 서버 불가 거부는 해당 명령 예외만 제거한
+뒤 최신 상태로 제한을 다시 적용하고 보상한다. 로컬 복구 또는 보상이 실패하면 재조정이 필요하다.
+applied·commit의 결과 불명이나 분류되지 않은 오류는 로컬 예외를 유지한다. ActivityKit 결과의
+실패 코드는 이미 committed인 해제를 취소하지 않는다.
+
+**근거**: actor는 await에서 재진입하며 프로세스 간 배타성을 제공하지 않는다. 새 저장소 수정
+API만으로도 서로 다른 시각에 계산한 제한 합집합 적용 순서는 보장되지 않는다. coordinator의
+협력적 파일 잠금과 인자 없는 최신 상태 적용 closure를 함께 사용해 과거 목록 복원을 방지한다.
+
+**통합 조건**: `applyRestrictions`는 최신 전체 규칙·예외로 합집합을 계산하고 read-back을 완료해야
+성공을 반환한다. T052·T053의 실제 제한 writer 연결에도 같은 디렉터리·잠금 규칙을 적용한다.
+현재는 coordinator·실제 예외 파일과 적용 대역을 검증했으며 실제 Screen Time·다중 프로세스 중단
+인수는 후속 통합에 남아 있다. Shield 활동 조정은 DEC-086의 foreground fallback을 주입한다.
+Live Activity 결과 타입을 공통 계약으로 옮겨 Shield 타깃에서 앱 전용 coordinator 없이 사용한다.
+
+## DEC-090 — 명령별 예외 수정·보상 계약 보강 승인
+
+**날짜**: 2026-09-04
+
+**상태**: 승인됨 — BLK-016 사용자 승인
+
+**결정**: 전체 목록 교체 대신 명령별 원자 추가·조건부 제거를 해제 흐름에 사용한다. 같은 내용의
+추가는 멱등이며 command 또는 occurrence가 기존 다른 내용과 충돌하면 덮지 않는다. 제거는
+command ID와 occurrence ID가 모두 일치할 때만 수행한다. 두 연산은 최신 파일 조회부터 atomic
+교체까지 기존 파일 조정 경계를 공유하고 다른 항목을 보존한다. 기존 schema 1과 파일명은 유지한다.
+충돌은 명시적 `conflict` 오류이며 기존 안정 write failure 코드에 대응한다.
+
+**근거·대안**: 전체 과거 목록 복원은 다른 성공 명령을 지울 수 있다. actor 또는 파일 교체만의
+직렬화는 분리된 load→save를 안전한 병합으로 만들지 못한다. 명령별 수정은 필요한 항목만 변경한다.
+
+**영향 범위**: T049a에서 저장 protocol·두 facade·파일 store·관련 테스트를 보강하고 T049b에서
+coordinator와 보상을 연결한다. 수정 결과 snapshot만으로 제한 적용까지 직렬화됐다고 간주하지
+않으며 T049b는 최신 상태 재평가와 적용 경합을 검증해야 한다. 저장소는 제거된 명령의 이력을
+보관하지 않으므로 지연 재시도의 원격 상태 판정은 coordinator·reconciler가 담당한다.
+원격 데이터 삭제·schema 배포·운영 활성화는 수행하지 않는다.
+
+## DEC-089 — 해제 예외 정리의 공유 파일 조정 경계
+
+**날짜**: 2026-09-04
+
+**결정**: T048의 `AppGroupReleaseExceptionRepository`와 기존 `SharedSnapshotRepository`는
+`ReleaseExceptionFileStore`를 공유한다. schema 1·기존 파일명·ISO8601·보호된 atomic write는 유지한다.
+`NSFileCoordinator`로 모든 예외 파일 접근을 조정하며 정리의 읽기·필터·저장을 하나의 동기 접근
+블록으로 수행한다. coordinator 블록 안에서는 await하지 않는다. 전용 facade는 읽기·쓰기 실패를
+기존 안정 오류 코드로 전달하고, 공통 snapshot facade의 schema 오류 경계는 유지한다.
+
+**근거**: atomic 파일 교체만으로는 서로 다른 repository instance의 정리가 중간에 저장된 최신
+예외를 덮는 읽기·쓰기 경합을 막지 못한다. actor만 추가하는 대안도 다른 instance·프로세스를
+직렬화하지 못한다. 두 facade가 같은 조정 경계를 사용해 기존 쓰기 경로의 우회를 방지한다.
+
+**정리 기준**: 전체 저장 규칙 revision 사전을 받아 만료·삭제 규칙·revision 불일치만 영속 정리한다.
+일시적 위치 이탈 등으로 inactive가 된 예외와 미래 effectiveAt 예외는 적용하지 않되 만료 전에는
+보존한다. 정리가 필요 없으면 파일을 다시 쓰지 않는다. decode·정리 쓰기 실패는 빈 상태로 숨기거나
+파일을 삭제하지 않는다.
+
+**범위와 한계**: 새 스키마·migration은 없다. 전체 collection 저장 API는 병합·CAS가 아니므로
+별도 load→save를 원자적 수정으로 간주하지 않는다. 후속 coordinator의 명령별 수정·보상 연결과
+실제 앱/extension 중단·재부팅·잠금 인수는 별도 검증한다. T048은 같은 프로세스의 독립 instance
+50회 경합을 확인했으며 실기기 교차 프로세스 검증 완료를 주장하지 않는다.
 
 ## DEC-086 — Shield Action의 Live Activity 조정은 foreground fallback 사용
 

@@ -4,23 +4,27 @@
 001-location-app-restriction, 002-live-activity-coins
 
 ## 현재 단계
-001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 4 사용자 스토리 2 구현 진행 중
+001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 5 사용자 스토리 3 테스트 진행 예정
 
 ## 진행 중
-`codex/shield-activitykit-probe`에서 002-live-activity-coins T039를 완료했다. iOS 26.6.1 실기기의
-Shield Action extension은 메인 앱이 만든 Live Activity를 직접 열거하지 못해 `unsupported`로
-확정했다. T055에는 직접 ActivityKit 조정을 연결하지 않고 iOS 26.5 이상 앱 진입 후 foreground,
-iOS 26.0~26.4 다음 foreground 재조정을 사용한다.
+`codex/us2-reservation-tests`에서 T058 한국어·영어 해제 문구와 US2 자동 회귀를 완료해 사용자
+스토리 2 체크포인트를 통과했다. 현재 진행 중인 구현은 없으며 다음은 T059이다.
+T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
+운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
+`.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T039 — Shield Action의 앱 생성 Live Activity 직접 조정이 실기기에서 미지원임을 확정함
+T058 — 앱·Shield 한국어·영어 해제 문구와 US2 자동 회귀
 
 ## 다음 작업
-T040 — 코인 reservation·해제 상태 머신의 정상·경계·실패 테스트를 먼저 작성한다.
+T059 — StoreKit 코인 상품 ID·수량·현지 가격·판매 불가·로드 실패 테스트 작성.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
+BLK-016 해결됨: 명령별 원자 추가·조건부 제거 API와 최신 상태 재평가 계약 보강을 사용자 승인받았다.
+BLK-015 해결됨: occurrence별 예약 소유권 계약·스키마 보강을 사용자 승인받았다.
+T045 보고서 접근 차단은 사용자 허용 후 같은 명령 재시도로 해결됐다.
 BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 네 App ID 등록과
 `group.com.dxyn02.GetUp` 할당, Family Controls Distribution `Assigned`와 갱신 profile을 사용한
 실기기 설치·실행은 사용자 확인됐으며, extension별 서명 entitlement와 archive 증적이 추가로 필요함.
@@ -33,6 +37,363 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-06 T058: 앱의 해제 상세·확인·처리·결과·복구 목적지 문구를 의미 기반
+`coinRelease.*` 키로 `GetUp/Resources/Localizable.xcstrings`에 추가하고 한국어·영어 값을 모두
+명시했다. 동적으로 조합되는 대상, 다른 규칙 수, 확인 문구도 `AppLocalizedCopy`를 거치게 해 영어
+환경에서 한국어 문장이 섞이지 않도록 했다. 테스트용 Shield 표면도 같은 앱 지역화 경계를 사용한다.
+
+`GetUpShieldConfiguration/Resources/Localizable.xcstrings`를 새로 만들고 Shield Configuration
+target의 전용 리소스로 연결했다. 대표 규칙·종료 시각·무료 우선·구매 코인 1개 fallback·다른 규칙
+유지, `해제권 1회 사용`, `앱 닫기`, fallback과 `집`·`회사`를 한국어·영어로 포함한다. Release
+산출물의 앱과 Shield extension 각각에서 `en.lproj`·`ko.lproj/Localizable.strings` 및 핵심 키를
+확인했다.
+
+기존 한국어 4개에 영어 대상·비용·종료·다중 규칙·확인·처리 상태 검증 1개를 추가한 T045 US2 UI
+테스트 5개가 모두 통과했다. 최초 영어 실행은 `DateFormatter`의 공백 표현 차이 때문에 시각 suffix
+assertion 한 건이 실패했으며, 언어별 의미와 무관한 숫자 시각 검증으로 수정한 뒤 단독 및 전체
+suite를 재실행해 통과했다. iPhone 17 Pro iOS 26.5 `GetUpTests` 481개(동적 인자 포함 564회)가
+실패·skip 없이 통과했고 앱·네 extension의 generic iOS Simulator Release 빌드도 통과했다.
+전체 테스트 결과:
+`/tmp/getup-t058-full/Logs/Test/Test-GetUp-2026.09.06_22-13-40-+0900.xcresult`.
+최종 UI 결과:
+`/tmp/getup-t058-ui-final/Logs/Test/Test-GetUp-2026.09.06_22-12-21-+0900.xcresult`.
+기존 binary strip·불필요한 try 경고는 남아 있으며 새 차단은 없다.
+
+2026-09-06 T057: 활성 제한 카드에 `해제권 1회 사용` 진입을 추가하고 item-driven sheet 안에서
+`ActiveRestrictionReleaseView`가 선택 occurrence, 무료·구매 잔액, 무료 우선·구매 코인 fallback,
+종료 시각과 겹친 제한 영향을 먼저 표시하도록 구현했다. 실제 사용은 별도 확인 alert 이후에만
+`ActiveRestrictionReleaseModel.confirmRelease()`로 전달하며 처리 중 sheet 닫기와 중복 확인을 막는다.
+성공 결과는 확정 funding source·잔액·남은 occurrence를 표시하고, 잔액 부족·iCloud 복구·장부 reset·
+재조정 결과는 각 목적지로 분리했다.
+
+`ActiveRestrictionReleaseRouter`는 주입한 `PendingAppRouteRepository.consumeIfEligible`에 현재
+occurrence ID 전체와 시각을 전달하고, repository가 반환한 적격 route만 자동 목적지로 사용한다.
+폐기된 route와 읽기 실패는 목적지를 추측하지 않는다. 수동 활성 카드 진입 안의 소비·목적지 화면은
+이번 task에서 연결했으며 app launch·foreground 직후의 자동 소비와 전역 화면 전환은 T076에 남겼다.
+코인 상품·결제, 최초 장부 setup과 삭제 reset action은 각각 T075·T072 전이므로 목적지 화면에서
+임의로 실행하지 않는다. 운영 migration 호환성 검증 전 live 해제 executor는 기존 결정대로
+`.iCloudRecoveryRequired` fail-closed를 유지한다.
+
+새 route 테스트 6개(동적 인자 포함 11회)에서 적격 route 전달, nil 폐기, repository 실패 무이동,
+활성 카드의 선택 규칙 전달, 네 차단 상태의 목적지 매핑과 비이동 상태를 검증했다. T045의 US2 UI
+테스트 4개는 별도 확인 취소 무차감, 앱·Shield 중복 탭의 예약·확정 각 1회, 무료 잔액 2→1,
+구매 잔액 유지와 겹친 제한 1개
+유지를 포함해 모두 통과했다. 기존 활성 제한 UI 회귀 3개도 함께 통과했다. 최종 iPhone 17 Pro
+iOS 26.5 `GetUpTests` 전체가 실패 없이 통과했고 앱·네 extension의 generic iOS Simulator Release
+빌드도 통과했다. 전체 테스트 결과:
+`/tmp/getup-t057-final/Logs/Test/Test-GetUp-2026.09.06_21-33-15-+0900.xcresult`.
+최종 UI 결과:
+`/tmp/getup-t057-ui-final/Logs/Test/Test-GetUp-2026.09.06_21-48-48-+0900.xcresult`.
+초기 UI 실행은 접근성 target 위치·fixture 시간대와 test probe의 화면 밖 버튼을 확인해 실패했으나,
+정보를 detail container 안으로 이동하고 주입 시간대·화면 overlay를 적용한 뒤 전체 4개를 재실행해
+통과했다. 기존 binary strip·불필요한 try 경고는 남아 있으며 새 차단은 없다. T058에서 현재 기본
+문구를 String Catalog의 한국어·영어 값과 접근성 문구로 마감한다.
+
+2026-09-06 T056: `ActiveRestrictionReleaseModel` 부재의 compile RED를 확인한 뒤 앱 전용 Coins feature
+group과 Observation 모델을 추가했다. 모델은 공통 `RestrictionOccurrenceEvaluator`로 현재 rule
+revision과 종료 시각이 유효한 occurrence만 정렬하고, 기본 대표 또는 사용자가 선택한 occurrence
+하나를 해제 대상으로 유지한다. `current` mirror에서 무료분 우선·구매분 fallback을 표시용으로만
+예측하며, 실제 확정은 별도 confirmation 뒤 주입한 최신 release executor에 위임한다. pending
+reconciliation은 잔액보다 우선해 새 해제를 차단하고, 잔액 부족·iCloud 복구·장부 reset·일반 거부를
+서로 다른 availability와 phase로 제공한다. 처리 중 중복 확인은 무시하며 성공 때 executor가 반환한
+확정 잔액·남은 occurrence만 반영하고, 화면 재조회용 `refresh`는 처리 중 상태를 덮지 않는다.
+
+집중 테스트 10개(동적 인자 포함 15회)에서 occurrence revision·정렬·선택, 무료/구매 preview,
+잔액 0, 여섯 비현재 장부 상태, pending 우선, 확인 취소, 성공 상태 갱신과 처리 중 중복 요청 1회를
+검증했다. 첫 추가 회귀 재실행은 Simulator app preflight가 `Busy`로 거부해 실패했으나 기기가 이미
+shutdown 상태임을 확인한 뒤 boot 완료 및 별도 DerivedData에서 재실행해 통과했다. 최종 iPhone 17
+Pro iOS 26.5 `GetUpTests` 475개(동적 인자 포함 553회)가 실패·skip 없이 통과했고 앱·네 extension의
+generic iOS Simulator Release 빌드도 통과했다. 최종 결과:
+`/tmp/getup-t056-full/Logs/Test/Test-GetUp-2026.09.06_21-04-01-+0900.xcresult`.
+기존 binary strip·불필요한 try 경고는 남아 있다. T045 앱/Shield UI suite는 T057·T058 화면·지역화
+연결 전이므로 이번 작업에서 실행하지 않았고, 운영 CloudKit 장부·schema·원격 데이터는 변경하지
+않았다. 새 차단은 없다.
+
+2026-09-06 T055: 기존 `ShieldCoinActionTests`의 미구현 타입 compile RED를 확인한 뒤
+`ShieldCoinActionHandler`와 App Group `ShieldCoinActionContextReader`를 구현했다. primary action은
+현재 rule revision과 token에 맞는 가장 이른 활성 occurrence를 대표로 선택하고 pending
+reconciliation을 새 해제보다 우선한다. `current`가 아닌 복구 가능 장부는 `.iCloudRecovery`, 삭제·
+reset 상태는 `.ledgerReset`으로 보내며, 최신 원격 검증을 담당하는 주입형 release representative의
+성공 결과는 무료분 또는 구매분 실제 funding source를 기록한다. 대상 제한이 하나면 `.none`, 다른
+제한이 남으면 `.defer`로 Shield를 유지한다. 잔액 부족은 `.coinStore`, timeout·결과 불명은
+`.reconciliation` route를 먼저 atomic 저장하고 iOS 26.5 이상은 `.openParentalControlsApp`, 이전은
+`.close`를 반환한다. route 쓰기 실패·중복 처리·거부는 `.defer` fail-closed다.
+
+Shield Action extension의 application·category·web domain callback을 비동기 runtime에 연결했고,
+snapshot을 읽지 못하면 occurrence 없는 iCloud 복구 route를 저장한다. DEC-086에 따라 production
+ActivityKit 직접 조정 adapter는 연결하지 않았다. 운영 CloudKit 호환성 gate는 계속 기본 거부이며,
+검증 전 live release adapter는 iCloud 복구로 fail-closed한다. 집중 테스트 10개(동적 인자 포함
+14회)와 최종 iPhone 17 Pro iOS 26.5 `GetUpTests` 465개(동적 인자 포함 538회)가 실패·skip 없이
+통과했다. 앱·네 extension의 generic iOS Simulator Release 빌드가 통과했고 생성된
+`GetUpShieldAction` 실행 파일의 문자열·심볼에서 `ActivityKitFeasibilityProbe`, 결과 파일명과 DEBUG
+defaults key가 없음을 확인했다. 최종 결과:
+`/Users/andy/Library/Developer/Xcode/DerivedData/GetUp-adhdrifivmjwlqcgyfrwxilepoks/Logs/Test/Test-GetUp-2026.09.06_16-40-02-+0900.xcresult`.
+실제 system Shield callback·프로세스 종료·App Group route와 운영 CloudKit 해제는 실기기·출시 인수
+전까지 미검증이다. 기존 테스트의 불필요한 try·binary strip 경고는 남아 있으며 새 차단은 없다.
+
+2026-09-06 T054: 기존 Shield 콘텐츠 테스트를 active rule revision 기반에서 활성 occurrence·잔액 mirror
+기반 계약으로 먼저 변경해 `now` 주입, secondary button과 새 snapshot 필드 부재의 compile RED를
+확인했다. `AppGroupShieldSnapshotReader`는 규칙·장소와 함께 `active-restrictions.json` 및
+`coin-balance.json`을 동기적으로 읽고 schema를 검증한다. `ShieldContentProvider`는 공통
+`RestrictionOccurrenceEvaluator`로 아직 유효하고 현재 rule revision과 일치하는 occurrence를 정렬한
+뒤 Shield token과 실제로 일치하는 가장 이른 occurrence를 대표로 선택한다. 기존 장소·반경 제목은
+유지하면서 대표 규칙명, occurrence 종료 시각, 이번 구간만 해제, 무료 우선·구매 코인 1개 fallback,
+다른 일치 규칙으로 남을 제한을 subtitle에 표시한다. 읽을 수 있는 모든 balance sync 상태는 실제
+funding source를 미리 단정하지 않고 같은 `해제권 1회 사용` primary와 `앱 닫기` secondary를 사용한다.
+snapshot 손상·만료·대표 occurrence 부재는 기존 일반 문구와 `앱 닫기` primary만 제공한다.
+한국어·영어 기본 문구와 Shield Configuration secondary label을 연결했고 focused suite를 통과했다.
+최종 iPhone 17 Pro iOS 26.5 `GetUpTests` 455개(동적 인자 포함 524회)가 실패·skip 없이 통과했다.
+미구현 `ShieldCoinActionTests.swift`만 명령행에서 제외했고 T045 UI RED는 재실행하지 않았다. 앱·네
+extension의 generic iOS Simulator Release 빌드도 통과했다. 기존 테스트의 불필요한 try·binary strip
+경고는 남아 있다. 최종 결과:
+`/Users/andy/Library/Developer/Xcode/DerivedData/GetUp-adhdrifivmjwlqcgyfrwxilepoks/Logs/Test/Test-GetUp-2026.09.06_16-26-45-+0900.xcresult`.
+현재 primary action은 T055 전까지 기존 fail-closed `.close` 응답을 유지하므로 코인 차감·제한 해제·
+앱 route는 아직 실행하지 않는다. 실제 system Shield layout·VoiceOver·Dynamic Type과 별도 프로세스
+snapshot 읽기는 실기기 인수 전까지 미검증이다. 운영 장부 활성화·schema 배포·원격 데이터 변경은
+하지 않았고 새 차단은 없다.
+
+2026-09-06 T053: 구현 전 공통 interval evaluator와 동기 예외 정리 API 부재의 compile RED를 확인한
+뒤, 시작·종료 callback이 `DeviceActivityIntervalRestrictionHandler`로 최신 규칙·위치·예외를 함께
+동기 재평가하도록 연결했다. 현재 occurrence·revision·유효 기간이 일치하는 예외만 해당 규칙을
+제외하고 다른 규칙 제한을 유지하며, 만료·삭제 규칙·revision 불일치 예외는 같은 callback에서
+atomic 정리한다. 예외 정리부터 Managed Settings write·read-back·활성 occurrence 저장까지 T049/T050과
+같은 App Group `RuleReleaseLocalLease` 안에서 수행하고, snapshot read 실패 시 마지막 규칙만 해제하는
+기존 종료 fallback도 같은 잠금에 참여한다. release exception 적용·다른 규칙 보존, 정확한 종료
+경계 정리, 일반 interval writer와 종료 fallback의 잠금 경합 무변경 회귀 4개를 추가했다.
+최종 iPhone 17 Pro iOS 26.5 `GetUpTests` 452개(동적 인자 포함 515회)가 실패·skip 없이 통과했다.
+미구현 `ShieldCoinActionTests.swift`만 명령행에서 제외했고 T045 UI RED는 재실행하지 않았다.
+앱·네 extension의 generic iOS Simulator Release 빌드도 통과했다. 기존 테스트의 불필요한 try·
+binary strip 경고는 남아 있다. 최종 결과:
+`/tmp/getup-t053-full/Logs/Test/Test-GetUp-2026.09.06_16-11-11-+0900.xcresult`.
+실제 callback 전달 시점과 별도 프로세스의 system Shield 반영은 실기기 인수 전까지 미검증이다.
+운영 장부 활성화·schema 배포·원격 데이터 변경은 하지 않았고 새 차단은 없다.
+
+2026-09-06 T052: `RestrictionCoordinator`에 최신 release exception 조회와 현재 occurrence 식별자·
+rule revision·`effectiveAt <= now < expiresAt` 검증을 연결했다. 유효 예외가 있는 규칙만 제한 합집합에서
+제외하고 겹친 다른 규칙은 유지하며, 실제 `DependencyContainer` provider가 T049/T050에서 보유한
+동일 `RuleReleaseLocalLease`를 넘겨받아 재평가·Managed Settings read-back까지 마치도록 했다.
+일반 time·location·restore writer도 같은 App Group 비차단 잠금에 참여한다. 공통 잠금 타입을 앱,
+Device Activity Monitor, Shield Action target이 공유하도록 분리했다. 집중 테스트와 최종 iPhone 17 Pro
+iOS 26.5 `GetUpTests` 448개(동적 인자 포함 511회)가 실패·skip 없이 통과했다. 미구현
+`ShieldCoinActionTests.swift`만 명령행에서 제외했고 T045 UI RED는 재실행하지 않았다. 앱·네 extension의
+generic iOS Simulator Release 빌드도 통과했다. 기존 테스트의 불필요한 try·binary strip 경고는
+남아 있다. 최종 결과:
+`/tmp/getup-t052-full/Logs/Test/Test-GetUp-2026.09.06_15-59-42-+0900.xcresult`.
+interval callback의 예외 정리·잠금 연결은 T053, 실제 Shield action 조립은 T055 후속 범위다.
+실기기·실제 CloudKit은 미검증이며 운영 장부 활성화·schema 배포·원격 데이터 변경은 하지 않았다.
+새 차단은 없다.
+
+2026-09-06 T051: 기존 T044의 미구현 타입 compile RED를 확인한 뒤 strict monotonic deadline 정책을
+구현했다. 기존 4개 테스트와 반환하지 않는 CloudKit 시도의 실제 timeout race 회귀 1개를 통과해
+4.9초 성공만 적용하고 정확히 5초·5.1초 지연·extension 중단은 제한 유지, 동일 command ID 재조정,
+`.reconciliation` route, 미적용 차감 0으로 처리함을 확인했다. 초기 focused 재실행 2회는 Simulator가
+상태 전환 중 앱 preflight를 `Busy`로 거부했으며 새 DerivedData와 부팅 완료 확인 뒤 통과했다.
+최종 iPhone 17 Pro iOS 26.5 `GetUpTests` 443개(인자 포함 506회)가 실패·skip 없이 통과했다.
+미구현 `ShieldCoinActionTests.swift`만 명령행에서 제외했고 T045 UI RED는 재실행하지 않았다.
+앱·네 extension의 generic iOS Simulator Release 빌드와 project plist·diff 검사도 통과했다.
+기존 테스트의 불필요한 try·binary strip 경고는 남아 있다.
+최종 결과: `/tmp/getup-t051-full/Logs/Test/Test-GetUp-2026.09.06_15-46-16-+0900.xcresult`.
+실제 Shield primary action, T050 reconciler와 pending route 영속 연결은 T055·T076 후속 범위다.
+실기기·실제 CloudKit은 미검증이며 운영 장부 활성화·원격 데이터 변경은 하지 않았다. 새 차단은 없다.
+
+2026-09-06 T050: reconciler 타입 부재 compile RED 뒤 구현했다. 재조정 테스트 11개(인자 포함
+14회)를 추가해 예약·적용·결과 불명 상태의 예외 기반 확정, 예외 없는 예약의 보상, 보상 중 중단
+복구, 확정·보상 재시도 멱등성, commit·보상 결과 불명, 적용 실패, 잠금 경합, 잘못된 명령 ID,
+pending batch 중복 제거와 첫 실패 중단을 검증했다.
+최종 iPhone 17 Pro iOS 26.5 `GetUpTests` 438개(인자 포함 501회)가 실패·skip 없이 통과했다.
+미구현 `ShieldCoinActionTests.swift`, `ShieldReleaseDeadlineTests.swift`는 명령행에서 제외했고
+T045 UI RED는 재실행하지 않았다. 앱·네 extension의 generic iOS Simulator Release 빌드와
+project plist·diff 검사가 통과했다. 기존 테스트의 불필요한 try·binary strip 경고는 남아 있다.
+최종 결과: `/tmp/getup-t050/Logs/Test/Test-GetUp-2026.09.06_15-33-19-+0900.xcresult`.
+실제 pending ID 영속 큐와 새 해제 전 호출, 최신 제한 provider·interval writer 잠금 연결은 후속
+통합 작업이다. 실기기·별도 프로세스 종료·실제 CloudKit 인수는 미검증이며 운영 장부 활성화와
+원격 데이터 변경은 하지 않았다. 새 차단 사항은 없다.
+
+2026-09-06 T049b: coordinator·application 타입 부재 compile RED를 확인한 뒤 구현했다.
+기존 T042 6개 테스트를 명령별 저장·최신 상태 적용 계약에 연결했고 9개 회귀(인자 포함 11회)를
+추가했다. 실제 예외 파일을 공유하는 두 coordinator에서 적용을 중간 정지해 경합을 재현하고,
+첫 명령 성공·보상 각각 두 번째 요청의 무변경 경합 반환과 재시도 뒤 최종 예외·적용 집합을 검증했다.
+commit·applied 결과 불명 시 예외 유지, 로컬 복구 실패·보상 실패의 재조정 필요 결과,
+완료·보상된 명령의 지연 재시도 무변경, 다른 occurrence 보존, 정확한 만료 경계 거부와 lease 해제 후
+재시도도 확인했다. 원격 명령은 새 적용 전 다시 조회한다. 공유 결과 타입의 Shield target 누락으로
+한 번 compile 실패했고 결과 타입을 공통 계약으로 이동한 뒤 앱·Shield 컴파일을 통과했다.
+최종 iPhone 17 Pro iOS 26.5 `GetUpTests` 427개(인자 포함 487회)가 실패·skip 없이 통과했다.
+미구현 타입의 `ShieldCoinActionTests.swift`, `ShieldReleaseDeadlineTests.swift`는 명령행
+`EXCLUDED_SOURCE_FILE_NAMES`로 제외했다. T045 UI RED는 재실행하지 않았다. 앱·네 extension의
+generic iOS Simulator Release 빌드, project plist·diff 검사도 통과했다. 기존 binary strip·다른
+테스트의 불필요한 try 경고가 남아 있다.
+최종 결과: `/tmp/getup-t049b/Logs/Test/Test-GetUp-2026.09.06_15-22-45-+0900.xcresult`.
+실제 Screen Time 합집합 계산·read-back provider 연결은 T052, interval writer의 동일 잠금 참여는
+T053, Shield·앱 진입은 후속 통합에서 수행한다. 실제 별도 프로세스 종료·잠금·CloudKit·Shield
+인수는 수행하지 않았다. 결과 불명은 T050 재조정 대상으로 반환하며 이 단계가 재조정 완료는 아니다.
+운영 장부 활성화·원격 데이터 변경은 없다.
+
+2026-09-04 T049a: 새 insert·remove API와 conflict 오류 부재 compile RED 뒤 구현했다.
+회귀 7개(인자 포함 8회)를 추가해 독립 repository instance 100개의 동시 추가, 동일 요청의 무쓰기
+멱등 처리, command·occurrence 충돌 거부, 한쪽 제거와 다른 facade 추가의 경합, 새 소유자 획득 뒤
+이전 소유자의 지연 제거, 추가·제거 쓰기 실패의 기존 목록 보존, 소수 초 요청의 파일 왕복 재시도,
+손상 파일의 무변경 실패를 검증했다. 기존 schema 1·날짜 표현과 전체 목록 교체 API는 유지한다.
+최종 iPhone 17 Pro iOS 26.5 `GetUpTests` 412개(인자 포함 470회)가 실패·skip 없이 통과했다.
+미구현 타입의 `RuleReleaseCoordinatorTests.swift`, `ShieldCoinActionTests.swift`,
+`ShieldReleaseDeadlineTests.swift`는 명령행 `EXCLUDED_SOURCE_FILE_NAMES`로 제외했다. coordinator
+spy에는 새 protocol 준수 메서드를 추가했지만 해당 suite 본문 검증은 T049b에 남아 있다.
+T045 UI RED는 재실행하지 않았다. 앱·네 extension의 generic iOS Simulator Release 빌드와
+project plist·diff 검사도 통과했다. 기존 binary strip·다른 테스트의 불필요한 try 경고가 남아 있다.
+최종 결과: `/tmp/getup-t049a/Logs/Test/Test-GetUp-2026.09.04_22-35-33-+0900.xcresult`.
+실제 앱/extension 별도 프로세스·중단·잠금 검증과 최신 제한 적용 경합은 완료하지 않았다.
+파일 수정 결과만으로 제한 적용의 최신성이나 원격 command의 상태를 보장하지 않으며 T049b에서
+연결·검증한다. 운영 활성화·원격 데이터 변경은 없다.
+
+2026-09-04 T049 사전 검토: T042의 6개 단일 요청 테스트, 실제 저장 protocol·파일 조정 구현과
+DEC-089·해제 계약을 정적으로 대조했다. 분리된 load→save와 과거 목록 복원의 경합을 확인해
+BLK-016을 기록했다. 제품 코드·테스트는 변경하지 않았고 신규 테스트 실행은 하지 않았다.
+T049 타입 부재 RED와 T043~T045의 미구현·미검증 상태는 유지한다. 마지막 검증은 아래 T048 결과다.
+
+2026-09-04 T048: `AppGroupReleaseExceptionRepository` 타입 부재 compile RED를 확인한 뒤 구현했다.
+기존 T041 테스트 6개를 GREEN으로 전환하고 회귀 7개(인자 포함 8회)를 추가했다. 파일 부재의 빈 상태,
+effectiveAt 경계, 유효하지만 비활성인 예외 보존, 만료·revision 불일치·삭제 규칙 정리, 정리 쓰기 실패의
+기존 데이터 보존, 손상·지원하지 않는 schema 거부, 중복 collection 저장 거부, 기존 snapshot facade
+호환과 50회 동시 정리·저장 경합을 검증했다. 저장은 기존 schema 1·ISO8601·보호된 atomic JSON을
+유지하며 양쪽 facade가 같은 `NSFileCoordinator` 경계를 사용한다(DEC-089).
+최종 iPhone 17 Pro iOS 26.5 `GetUpTests` 405개(인자 포함 462회)가 실패·skip 없이 통과했다.
+미구현 타입의 `RuleReleaseCoordinatorTests.swift`, `ShieldCoinActionTests.swift`,
+`ShieldReleaseDeadlineTests.swift`는 명령행 `EXCLUDED_SOURCE_FILE_NAMES`로 제외했다.
+T045 UI RED는 재실행하지 않았으며 전체 기능 완료가 아니다. 앱·네 extension의 generic iOS Simulator
+Release 빌드, project plist와 diff 검사도 통과했다. 기존 binary strip·다른 테스트의 불필요한 try
+경고가 남아 있다. 최종 결과: `/tmp/getup-t048/Logs/Test/Test-GetUp-2026.09.04_22-22-12-+0900.xcresult`.
+재실행·재부팅 테스트는 새 repository instance로 파일 영속을 확인한 것이며 실제 재부팅·잠금·
+앱/extension 별도 프로세스 중단 검증은 후속 실기기 인수에 남아 있다. 제한 평가 연결은 T052·T053에
+남겨 두었고 실제 장부·운영 데이터는 변경하지 않았다.
+
+2026-09-04 T047c: 서비스·요청·컨텍스트 타입 부재 compile RED 뒤 `RuleReleaseService`를 구현했다.
+기존 T040 서비스 테스트 8개를 GREEN으로 전환하고 회귀 9개(인자 포함 15회)를 추가했다.
+최신 컨텍스트 조회 후 종료·식별자·저장 규칙 revision·epoch·기존 예외·서울 월을 검증하며,
+없는 월간 레코드는 별도 지급 없이 생성·예약을 요청한다. 무료 예약의 확정 잔액 충돌만 같은
+command ID로 컨텍스트를 한 번 더 조회하고, 결과 불명·조회 실패는 구매 fallback하지 않는다.
+조회 중 occurrence 종료, 충돌 재시도 시 stale 전환, reset 당월 무료 억제, 기본 호환성 거부 유지도 검증했다.
+최종 iPhone 17 Pro iOS 26.5 `GetUpTests` 392개(인자 포함 448회)가 실패·skip 없이 통과했다.
+미구현 타입을 참조하는 `ReleaseExceptionRepositoryTests.swift`, `RuleReleaseCoordinatorTests.swift`,
+`ShieldCoinActionTests.swift`, `ShieldReleaseDeadlineTests.swift`는 명령행
+`EXCLUDED_SOURCE_FILE_NAMES`로 제외했다. T045 UI RED는 재실행하지 않았고 전체 기능 완료가 아니다.
+최종 결과: `/tmp/getup-t047c/Logs/Test/Test-GetUp-2026.09.04_22-15-45-+0900.xcresult`.
+앱·네 extension의 generic iOS Simulator Release 빌드도 통과했다. 기존 binary strip·다른 테스트의
+불필요한 try 경고가 남아 있다. 실제 CloudKit·다기기·Shield 해제는 검증하지 않았다.
+서비스의 필수 주입 provider는 fresh fetch·monotonic current 증명을 담당하며, UI 통합과 별도
+운영 호환 provider는 아직 미구현이다. `verifyReservationCompatibility` 기본 false는 유지했다.
+
+2026-09-04 T047b: 실제 `CloudKitCoinLedgerRepository`와 공유 CAS database fake의 테스트 12개
+(인자 포함 13회)를 추가했다. 무료분 보유·소진 각각 앱·Shield/무료·구매 경로 100개 동시 요청에서
+하나의 command·reservation만 생성됐고, 무료 우선 충돌 재평가, epoch 교체 거부, 보상과 released
+원자 전환, 보상 실패 시 held·잔액 보존, 이전 보상 재시도의 새 owner 보호, committed 중복 차단,
+표면 간 멱등 감사 정보 보존, 결과 불명 후 조회·조회 실패·미반영, 기본 호환 거부·claim 없는 기존
+command 거부, 다른 occurrence 독립 예약을 검증했다. 처음에는 호환성 initializer 부재 compile
+RED를 확인했다. 기존 월간·장부 script 테스트도 epoch·claim 계약에 맞게 보강했다.
+최종 iPhone 17 Pro iOS 26.5 `GetUpTests` 375개(인자 포함 425회)가 실패·skip 없이 통과했다.
+중간 최종 재실행 한 번은 Simulator `Busy / Application failed preflight checks`로 runner를
+실행하지 못했으나 같은 명령 재시도는 통과했다. 기존 binary strip·불필요한 try 경고가 남아 있다.
+미구현 타입을 참조하는 `RuleReleaseServiceTests.swift`, `ReleaseExceptionRepositoryTests.swift`,
+`RuleReleaseCoordinatorTests.swift`, `ShieldCoinActionTests.swift`, `ShieldReleaseDeadlineTests.swift`는
+명령행 `EXCLUDED_SOURCE_FILE_NAMES`로 제외했다. T045 UI RED는 재실행하지 않았다.
+최종 결과: `/tmp/getup-t047b/Logs/Test/Test-GetUp-2026.09.04_22-06-38-+0900.xcresult`.
+앱·네 extension의 generic iOS Simulator Release 빌드와 project plist·diff 검사도 통과했다.
+현재 `verifyReservationCompatibility`의 운영 provider는 없으며 기본값 false로 신규 예약을 막는다.
+이는 구버전 writer 탐지·기존 장부 migration·실기기 CloudKit 다기기 검증 완료를 뜻하지 않는다.
+운영 활성화 전에 별도 호환 검증 provider가 필요하고 T047c에서 임의로 true를 공급하지 않는다.
+실제 CloudKit schema 배포·원격 데이터 수정·데이터 삭제는 수행하지 않았다.
+
+2026-09-04 T047a: 모델·codec 부재 compile RED 뒤 `ReleaseOccurrenceClaim`의 held/released 왕복,
+epoch·occurrence별 고정 SHA-256 record ID, 필수 필드 누락·미지 필드·잘못된 상태·schema·record name,
+빈 occurrence·비유한 시각 거부 테스트 4개(상태 인자 포함 5회)를 추가했다.
+관련 장부·모델 테스트 35개(36회)가 통과했고, 고정 ID 기대값·비유한 원격 날짜 검증을 보강한
+최종 `GetUpTests` 실행은 363개(동적 인자 포함 412회)가 실패·skip 없이 통과했다.
+`RuleReleaseServiceTests.swift`, `ReleaseExceptionRepositoryTests.swift`, `RuleReleaseCoordinatorTests.swift`,
+`ShieldCoinActionTests.swift`, `ShieldReleaseDeadlineTests.swift`는 미구현 RED 타입 때문에 명령행
+`EXCLUDED_SOURCE_FILE_NAMES`로 이번 실행에서 제외했다. T045 UI 테스트는 재실행하지 않았다.
+일반 sandbox 실행은 Simulator 접근 제한으로 실패했으나 허용된 환경에서 재실행했다. 기존
+binary strip·불필요한 try 경고가 남아 있다. project plist·`git diff --check`도 통과했다.
+최종 결과: `/tmp/getup-t047a/Logs/Test/Test-GetUp-2026.09.04_21-55-17-+0900.xcresult`.
+실제 CloudKit schema 배포·원격 데이터 변경·다기기 검증은 수행하지 않았다. claim 획득·해제의
+원자성과 혼합 버전 차단은 아직 구현·검증 전이며 T047b에서 진행한다.
+
+2026-09-04 T047 검토: 계약·실제 repository·T040 대역을 정적으로 대조했다. 제품 코드와 테스트는
+변경하지 않았고 신규 테스트 실행도 하지 않았다. T047은 완료 표시하지 않았으며 T040 service
+테스트의 미구현 타입 RED와 T041~T045의 미검증 상태는 유지한다. BLK-015 해결 뒤 실제 repository
+경계의 앱·Shield 교차 동시 예약 회귀를 추가해야 한다.
+
+2026-09-04 T046: `CoinReservationPolicy`·오류 타입 부재의 compile RED를 확인한 뒤 구현했다.
+예약된 무료분의 구매 fallback과 전액 예약된 구매 잔액 거부 테스트 2개를 추가했다.
+iPhone 17 Pro iOS 26.5에서 `CoinReservationPolicyTests`와 `MonthlyAllowancePolicyTests`
+12개(동적 인자 포함 17회)가 실패·skip 없이 통과했다. 미구현 타입을 참조하는
+`RuleReleaseServiceTests.swift`, `ReleaseExceptionRepositoryTests.swift`,
+`RuleReleaseCoordinatorTests.swift`, `ShieldCoinActionTests.swift`, `ShieldReleaseDeadlineTests.swift`는
+명령행 `EXCLUDED_SOURCE_FILE_NAMES`로 이번 실행에서만 제외했다. 전체 테스트 통과를 의미하지 않으며
+T040의 service 테스트·T041~T045의 RED와 실제 해제 흐름 검증은 후속 구현에 남아 있다.
+project plist·`git diff --check`도 통과했다. 기존 binary strip·불필요한 try 경고가 남아 있다.
+결과: `/tmp/getup-t046/Logs/Test/Test-GetUp-2026.09.04_21-38-48-+0900.xcresult`.
+
+2026-09-04 T045 전용 UI 실행: iPhone 17 Pro iOS 26.5, 4개 테스트 모두 실패. 선행 T040~T044의
+미구현 타입을 참조하는 단위 테스트 6개 파일만 명령행 `EXCLUDED_SOURCE_FILE_NAMES`로 임시 제외했다.
+새 UI 테스트의 컴파일과 project plist·diff 검사는 통과했다. 기존 binary strip·불필요한 try 경고와
+DebuggerVersionStore 경고가 출력됐다. 사용자 허용 후 보고서를 조회해 앱 테스트는 `coinRelease.open`,
+Shield 테스트는 `restrictionProbe.shield.release`·`restrictionProbe.shield.target` 부재가 실패 원인임을
+확인했다. 후속 잔액·취소·중복 차감 assertion에는 아직 도달하지 못했으므로 동작 통과가 아니다.
+최종 소스 재실행도 4개 실패·skip 0이며 같은 UI 요소 부재 RED를 확인했다.
+최종 결과: `/tmp/getup-t045-red/Logs/Test/Test-GetUp-2026.09.04_21-34-41-+0900.xcresult`.
+새 coin UI fixture 인자·진단 식별자는 T054~T058에서 실제 provider/model과 주입 장부에 연결할
+테스트 계약이다. Simulator probe는 실제 system Shield 검증을 대체하지 않는다.
+
+2026-09-04 002 구현 T044를 TDD RED 단계로 완료했다. `ShieldReleaseDeadlineTests` 4개는 주입한
+`LiveActivityCoinMonotonicClock`으로 primary action 전달 후 4.9초 CloudKit 확인은 해제를 적용하고,
+정확히 5초 미확인과 5.1초 late commit은 로컬 예외·제한을 적용하지 않는 strict deadline을 정의했다.
+deadline 실패는 occurrence와 연결된 `.reconciliation` route를 저장하고 같은 command ID를 재조정하며,
+late reservation과 extension 중단 뒤 발견된 reservation은 `compensated`로 수렴해 최종 미적용 차감이
+0임을 검증한다. T040~T043 RED 소스를 `EXCLUDED_SOURCE_FILE_NAMES`로 임시 제외한 T044 독립
+`xcodebuild test`는 예상대로 아직 없는 `ShieldReleaseDeadlinePolicy`, `ShieldReleaseConfirmation`
+때문에 컴파일 실패했으며 T051에서 GREEN으로 전환해야 한다. 새 파일의 `GetUpTests` Integration
+group·Sources 연결, project plist와 `git diff --check`는 통과했다.
+재개 후 테스트 대역의 성공 처리에서 미적용 차감을 이중으로 빼던 계산을 수정하고 같은 전용 빌드를
+재실행했다. 컴파일은 위 미구현 타입 때문에 다시 실패했으며 테스트 본문 실행·실제 5초 대기 상한과
+프로세스 종료 복구의 통합 검증은 아직 완료되지 않았다.
+
+2026-09-04 002 구현 T043을 TDD RED 단계로 완료했다. `ShieldCoinActionTests` 8개(동적 상태 인자 포함
+10회)는 단일 primary action의 무료분 우선·구매 코인 fallback, 현재 장부 잔액 부족의 `.coinStore`,
+stale·unavailable의 `.iCloudRecovery`, deletionConfirmed·resetRequired의 `.ledgerReset`, pending
+reconciliation의 `.reconciliation` route를 정의했다. 복구 route에서는 새 release를 호출하지 않고
+Shield를 유지하며, 대표 occurrence 하나만 해제한 뒤 다른 규칙이 남으면 `.defer`, 마지막 제한이면
+`.none`을 반환하도록 고정했다. 같은 route를 저장하되 iOS 26.5는 `.openParentalControlsApp`, iOS
+26.4는 `.close`를 반환하는 호환 경계도 검증한다. T040~T042 RED 소스를
+`EXCLUDED_SOURCE_FILE_NAMES`로 임시 제외한 T043 독립 `xcodebuild test`는 예상대로 아직 없는
+`ShieldCoinActionContext`, `ShieldCoinActionHandler`, `ShieldReleaseAttemptResult` 때문에 컴파일
+실패했으며 T055에서 GREEN으로 전환해야 한다. 새 파일의 `GetUpTests` Integration group·Sources 연결,
+project plist와 `git diff --check`는 통과했다.
+
+2026-09-04 002 구현 T042를 TDD RED 단계로 완료했다. `RuleReleaseCoordinatorTests` 6개는 성공 시
+App Group 예외 저장→제한 합집합 재적용→CloudKit applied·commit→대표 Live Activity 갱신 또는 종료
+순서를 검증한다. App Group write 실패는 제한 변경 없이, Managed Settings write와 확정적 CloudKit
+commit 실패는 예외·제한을 역순 복구한 뒤 reservation을 `compensated`로 수렴하도록 정의했다.
+ActivityKit 실패는 committed 해제와 예외를 유지한 채 안정 failure code만 반환하도록 고정했다.
+T040·T041 RED 소스를 `EXCLUDED_SOURCE_FILE_NAMES`로 임시 제외한 T042 독립 `xcodebuild test`는 예상대로
+아직 없는 `RuleReleaseCoordinator`, `RuleReleaseApplication`과 연쇄 타입 추론 오류 때문에 컴파일
+실패했으며 T049에서 GREEN으로 전환해야 한다. 새 파일의 `GetUpTests` Integration group·Sources 연결,
+project plist와 `git diff --check`는 통과했다.
+
+2026-09-04 002 구현 T041을 TDD RED 단계로 완료했다. `ReleaseExceptionRepositoryTests` 6개는 새
+repository instance를 통한 재실행·재부팅 영속, `expiresAt` 직전 적용과 정확한 경계 정리, rule
+revision 불일치의 영속 데이터 정리, 다음 반복 occurrence 미적용, atomic write 실패 시 기존 collection
+보존을 정의했다. 새 파일의 `GetUpTests` target 연결, project plist와 `git diff --check`는 통과했다.
+일반 전용 `xcodebuild test`는 T040의 선행 RED 타입 부재로 먼저 실패했다. T040 두 테스트 파일을
+`EXCLUDED_SOURCE_FILE_NAMES`로 임시 제외한 T041 독립 빌드는 예상대로 아직 없는
+`AppGroupReleaseExceptionRepository` 때문에 컴파일 실패했으며 T048에서 GREEN으로 전환해야 한다.
+
+2026-09-04 002 구현 T040을 TDD RED 단계로 완료했다. `CoinReservationPolicyTests` 5개는 무료분 우선,
+구매 fallback, 양쪽 잔액 부족, 모든 비`current` 장부 상태, epoch 불일치를 정의했다.
+`RuleReleaseServiceTests` 8개는 매 요청의 최신 컨텍스트 fetch, repository 무변경 실패, 같은 occurrence
+동시 100회 중 단일 reservation, requested→reserved→applied→committed, compensating→compensated,
+`reconciliationRequired`의 committed·compensated 수렴을 정의했다. 두 파일의 `GetUpTests` target 연결,
+project plist와 `git diff --check`는 통과했다. 전용 `xcodebuild test`는 예상대로 아직 없는
+`CoinReservationPolicy`, `CoinReservationPolicyError`, `RuleReleaseService`, `RuleReleaseRequest`,
+`RuleReleaseReservationContext` 때문에 컴파일 실패했으며 T046·T047에서 GREEN으로 전환해야 한다.
+
 2026-09-04 002 구현 T039를 완료했다. `ActivityKitFeasibilityProbe.swift`를 Shield Action target에
 연결하고 `#if DEBUG`로 격리해 success·unsupported·failure·timeout과 조회·갱신·종료 단계를 App Group에
 기록했다. iPhone 17 iOS 26.6.1(23G83)에서 메인 앱의 Live Activity 표시 후 제한 앱 Shield primary

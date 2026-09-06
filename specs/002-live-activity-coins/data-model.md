@@ -198,6 +198,26 @@ Shield 실행의 5초 deadline은 서버 시각 필드가 아니라 primary acti
 적용하지 않고 `reconciliationRequired`로 조회하며, 늦은 reservation이 확인되면 제한 미적용 상태에서
 `compensated`로 수렴한다.
 
+### ReleaseOccurrenceClaim
+
+같은 epoch·occurrence의 무료·구매 예약이 공유하는 원격 소유권이다. schema version 1의 새 record
+type이며 기존 `ReleaseCommand` 필드는 바꾸지 않는다.
+
+| 필드 | 형식 | 규칙 |
+|------|------|------|
+| `schemaVersion` | 정수 | 1만 지원한다. |
+| `ledgerEpochID` | UUID | 원격 필드명은 `epochID`이며 현재 장부 세대다. |
+| `occurrenceID` | 비어 있지 않은 문자열 | 소유권의 대상 구간이다. |
+| `commandID` | UUID | 현재 또는 마지막 소유 명령이다. |
+| `state` | `held` / `released` | 결과 불명·완료는 held, 보상 완료만 released다. |
+| `updatedAt` | Date | 유한한 갱신 시각이며 만료·잠금 자동 해제 근거가 아니다. |
+
+record name은 `release-claim:{소문자 epoch UUID}:{occurrenceID UTF-8 SHA-256 소문자 hex}`다.
+command·funding source·진입 표면이 달라도 같은 구간은 같은 claim을 사용한다. 다른 epoch는 분리한다.
+decode 시 명시적 필드 whitelist, 필수 값·상태·version·record name 일치를 검증한다.
+held 획득은 잔액 reservation과, released 전환은 잔액 보상·compensated와 같은 atomic modify다.
+released 레코드는 삭제하지 않고 change tag를 유지해 새 command의 재획득 CAS에 사용한다.
+
 ### ReleaseException
 
 App Group에 저장해 Device Activity·Shield·앱이 공통으로 읽는 현재 구간 예외다.
@@ -332,6 +352,12 @@ ActiveRestrictionSnapshot 1 ── 0..1 RestrictionLiveActivityAttributes.Conten
 | StoreKit 거래 | App Store | 앱 StoreKit adapter | StoreKit |
 
 ## 마이그레이션
+
+- BLK-015의 `ReleaseOccurrenceClaim`은 schema 1 새 record type이며 기존 여섯 record type은 그대로
+  읽는다. T047a는 codec만 추가하고 원격 migration은 수행하지 않는다. 기존 진행·완료 command에
+  claim이 없으면 신규 예약 가능으로 해석하지 않는다. 구버전 writer가 claim을 무시할 수 있으므로
+  혼합 버전·기존 장부 전환 안전성 검증 전 새 예약을 허용하지 않는 gate가 T047b에 필요하다.
+  데이터 삭제·자동 reset 없이 전환하며 실제 운영 schema 배포는 별도 검증·승인 대상으로 남긴다.
 
 - 기존 규칙·장소·위치 snapshot schema와 파일은 유지한다.
 - 활성 occurrence, release exception, coin balance mirror는 새 파일로 추가해 기존 설치에서 파일 없음이

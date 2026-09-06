@@ -7,7 +7,7 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
 
         // 이 동기 경로는 Shield와 App Group occurrence만 갱신한다.
         // ActivityKit 시작·조정은 메인 앱 foreground 수명주기에만 맡긴다.
-        if let handler = try? DeviceActivityIntervalStartHandler.live(),
+        if let handler = try? DeviceActivityIntervalRestrictionHandler.live(),
            handler.handle(activityName: activity.rawValue)
         {
             return
@@ -32,7 +32,16 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     override func intervalDidEnd(for activity: DeviceActivityName) {
         super.intervalDidEnd(for: activity)
 
-        // 종료 callback도 occurrence를 동기화하되 ActivityKit에는 접근하지 않는다.
+        // 종료 callback도 최신 규칙·예외 전체를 동기 재평가하고 만료 예외를 정리한다.
+        // ActivityKit에는 접근하지 않는다.
+        if let handler = try? DeviceActivityIntervalRestrictionHandler.live(),
+           handler.handle(activityName: activity.rawValue)
+        {
+            return
+        }
+
+        // 보호 snapshot을 읽지 못한 경우에만 마지막 규칙의 기존 안전 해제를 시도한다.
+        // 이 fallback도 같은 App Group 잠금에 참여한다.
         if let handler = try? DeviceActivityIntervalEndHandler.live(),
            handler.handle(activityName: activity.rawValue)
         {

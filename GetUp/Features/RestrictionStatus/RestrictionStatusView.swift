@@ -4,8 +4,25 @@ struct RestrictionStatusView: View {
     let item: HomeRuleItem
     let rulePosition: Int
     let ruleCount: Int
+    let releaseConfiguration: ActiveRestrictionReleaseConfiguration?
+    let releaseRuleDisplayNames: [UUID: String]
 
     @State private var isGuardAlertPresented = false
+    @State private var presentedSheet: RestrictionStatusSheet?
+
+    init(
+        item: HomeRuleItem,
+        rulePosition: Int,
+        ruleCount: Int,
+        releaseConfiguration: ActiveRestrictionReleaseConfiguration? = nil,
+        releaseRuleDisplayNames: [UUID: String] = [:]
+    ) {
+        self.item = item
+        self.rulePosition = rulePosition
+        self.ruleCount = ruleCount
+        self.releaseConfiguration = releaseConfiguration
+        self.releaseRuleDisplayNames = releaseRuleDisplayNames
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -61,6 +78,24 @@ struct RestrictionStatusView: View {
                 )
                 Spacer(minLength: 0)
 
+                if releaseConfiguration != nil {
+                    Button(AppLocalizedCopy.string("coinRelease.action.release")) {
+                        releaseConfiguration?.router.prefer(ruleID: item.id)
+                        presentedSheet = .release
+                    }
+                    .font(.subheadline)
+                    .fontWeight(.bold)
+                    .foregroundStyle(HomeColor.background)
+                    .frame(maxWidth: .infinity, minHeight: 48)
+                    .background(HomeColor.accent, in: .rect(cornerRadius: 14))
+                    .contentShape(.rect)
+                    .buttonStyle(.plain)
+                    .accessibilityHint(
+                        AppLocalizedCopy.string("coinRelease.open.hint")
+                    )
+                    .accessibilityIdentifier("coinRelease.open")
+                }
+
                 Button {
                     isGuardAlertPresented = true
                 } label: {
@@ -94,6 +129,20 @@ struct RestrictionStatusView: View {
             Button(RestrictionCopy.guardConfirm, role: .cancel) {}
         } message: {
             Text(modificationGuard.message)
+        }
+        .sheet(item: $presentedSheet) { sheet in
+            switch sheet {
+            case .release:
+                if let releaseConfiguration {
+                    NavigationStack {
+                        ActiveRestrictionReleaseView(
+                            configuration: releaseConfiguration,
+                            ruleDisplayNames: releaseRuleDisplayNames
+                        )
+                    }
+                    .preferredColorScheme(.dark)
+                }
+            }
         }
     }
 
@@ -148,6 +197,12 @@ struct RestrictionStatusView: View {
     }
 
     private static func period(_ time: TimeOfDay) -> String { time.hour < 12 ? "AM" : "PM" }
+}
+
+private enum RestrictionStatusSheet: String, Identifiable {
+    case release
+
+    var id: String { rawValue }
 }
 
 extension HomeRuleItem {

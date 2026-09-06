@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 enum SharedIdentifiers {
@@ -79,6 +80,7 @@ enum CoinLedgerRecordType {
     static let purchaseGrant = "PurchaseGrant"
     static let event = "CoinLedgerEvent"
     static let releaseCommand = "ReleaseCommand"
+    static let releaseOccurrenceClaim = "ReleaseOccurrenceClaim"
 }
 
 enum CoinLedgerRecordID {
@@ -102,6 +104,12 @@ enum CoinLedgerRecordID {
 
     static func releaseCommand(commandID: UUID) -> String {
         "release-command:\(normalized(commandID))"
+    }
+
+    static func releaseOccurrenceClaim(ledgerEpochID: UUID, occurrenceID: String) -> String {
+        let digest = SHA256.hash(data: Data(occurrenceID.utf8))
+            .map { String(format: "%02x", $0) }.joined()
+        return "release-claim:\(normalized(ledgerEpochID)):\(digest)"
     }
 
     private static func normalized(_ identifier: UUID) -> String {

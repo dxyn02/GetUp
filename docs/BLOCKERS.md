@@ -1,5 +1,62 @@
 # 차단 사항
 
+## BLK-016 — T049 명령별 해제 예외 수정·보상의 저장 계약
+
+**상태**: 해결됨(RESOLVED) — 2026-09-04
+
+T049 구현 전 실제 `ReleaseExceptionRepository`와 T042 테스트를 대조했다. 현재 protocol은 전체
+목록 조회와 전체 교체만 제공하며, DEC-089와 해제 계약도 분리된 load→save의 병합·CAS를 보장하지
+않는다고 명시한다. T042의 단일 요청 spy는 이전 목록을 읽고 저장·복구하는 호출 순서만 검증한다.
+
+가능한 경합: A와 B가 빈 목록을 읽고 각각 [A], [B]를 저장하면 최종 목록에는 하나만 남는다.
+또한 A가 저장 전 읽은 빈 목록으로 실패 보상하면 그사이에 성공한 B의 예외까지 삭제할 수 있다.
+개별 파일 저장의 atomic 교체·NSFileCoordinator와 단일 coordinator actor만으로 서로 다른 호출·
+앱/extension 사이의 분리된 읽기·쓰기를 하나의 명령으로 만들 수 없다. 이는 코인을 사용한 구간의
+예외 유지(FR-016)와 다른 규칙 보존 계약을 위반할 위험이다.
+
+**권장안**: T049 범위에 명령별 원자 추가·조건부 제거 API와 실제 파일 저장소 구현을 포함한다.
+같은 명령 재시도는 멱등 처리하고 다른 명령이 소유한 예외는 덮거나 제거하지 않는다. 보상은 전체
+과거 목록 복원이 아니라 해당 명령의 예외만 제거한 뒤 최신 규칙·예외로 제한 합집합을 재평가한다.
+로컬 적용 경합도 고려한 조정 경계를 정의하고, 서로 다른 occurrence의 동시 성공·한쪽 보상·지연
+재시도에서 다른 성공 예외와 제한 결과가 보존되는 회귀를 추가한다. 기존 schema 1은 유지하며
+CloudKit 운영 활성화·원격 데이터 변경은 포함하지 않는다.
+
+**승인 필요 이유**: `ReleaseExceptionRepository` API 계약과 coordinator 테스트 계약을 함께 바꿔야
+한다. AGENTS.md의 API 계약 변경 승인 규칙에 따라 임의로 확장하지 않는다. T049는 미완료로 두며
+승인 뒤 계약·작업 분해·결정 기록을 갱신하고 구현을 재개한다.
+
+**해결**: 사용자가 명령별 원자 추가·조건부 제거 API, 최신 상태 재평가와 동시 처리·실패 보상
+회귀를 T049에 포함하도록 승인했다. T049a 저장 계약·구현, T049b coordinator·보상 연결로 나누어
+진행한다. 기존 schema 1 유지, 원격 데이터 변경·운영 활성화 제외는 그대로다.
+
+## BLK-015 — T047 occurrence 단위 중복 예약의 원자적 저장 계약
+
+**상태**: 해결됨(RESOLVED) — 2026-09-04
+
+`rule-release-contract.md`는 같은 occurrence의 진행·완료 command가 있으면 새 예약을 금지한다.
+`data-model.md`는 command ID를 최초 시도에 만들고 재시도에 유지하며, `requestedFrom`은 감사용으로
+정의한다. 그러나 `CloudKitCoinLedgerRepository.reserveMonthlyFree`·`reservePurchasedCoin`은 요청
+command ID의 레코드만 조회하고 occurrence 단위 고유성은 검사하거나 atomic하게 저장하지 않는다.
+따라서 서로 다른 command ID를 가진 앱·Shield 요청은 같은 occurrence에 잔액을 두 번 예약할 수 있다.
+잔액 CAS는 초과 사용은 방지하지만 같은 occurrence의 중복 예약을 방지하지 않는다.
+
+T040의 `AtomicOccurrenceReservationRepository` 대역은 `Set<String>`으로 occurrence를 별도 차단하므로
+현재 100회 동시 요청 테스트만 통과시켜서는 실제 저장소의 보장을 입증할 수 없다. 기존 저장소는
+같은 command의 `requestedFrom`까지 일치를 요구하며 `compensated` command를 재예약할 수 없다.
+단순히 occurrence에서 command ID를 하나로 고정하면 표면 간 요청 및 보상 완료 후 새 시도 처리도
+함께 결정해야 하므로 내부 helper 변경만으로 해결하지 않는다.
+
+**권장안**: T047 범위를 확장해 epoch·occurrence별 예약 소유권 레코드를 도입한다. 무료·구매 예약과
+소유권 획득을 같은 atomic modify에 넣고, 진행·완료 command가 있으면 새 예약을 거부한다.
+보상 완료 때만 소유권을 원자적으로 해제해 새 사용자 시도를 허용하고, 결과 불명에서는 유지한다.
+기존 command ID는 재시도 동안 유지하고 진입 표면은 최초 요청의 감사 정보로 보존한다.
+저장 계약·record codec·schema 호환 전략·관련 테스트를 같은 변경에서 갱신하며, 실제 repository와
+공유 상태를 갖는 database fake로 서로 다른 command ID의 앱·Shield 동시 요청을 검증한다.
+
+**해결**: 사용자가 occurrence 소유권 저장 계약·CloudKit 스키마 보강과 실제 repository 경계 검증을
+T047에 포함하도록 승인했다. T047a 모델·codec, T047b 원자 예약·보상, T047c 서비스 연결로 나누어
+진행한다. 운영 스키마 배포와 기존 데이터 삭제는 승인 범위에 포함하지 않는다.
+
 ## BLK-014 — Live Activity background 시작·거리 갱신·결제 서버·월 경계
 
 **상태**: 해결됨(RESOLVED) — 2026-09-01

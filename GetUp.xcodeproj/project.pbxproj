@@ -62,6 +62,10 @@
 		AA0000000000000000000102 /* SharedSnapshotRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000007 /* SharedSnapshotRepository.swift */; };
 		AA0000000000000000000103 /* SharedSnapshotRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000007 /* SharedSnapshotRepository.swift */; };
 		AA0000000000000000000104 /* SharedSnapshotRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000007 /* SharedSnapshotRepository.swift */; };
+		AA0000000000000000000291 /* ReleaseExceptionRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000070 /* ReleaseExceptionRepository.swift */; };
+		AA0000000000000000000292 /* ReleaseExceptionRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000070 /* ReleaseExceptionRepository.swift */; };
+		AA0000000000000000000293 /* ReleaseExceptionRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000070 /* ReleaseExceptionRepository.swift */; };
+		AA0000000000000000000294 /* ReleaseExceptionRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000070 /* ReleaseExceptionRepository.swift */; };
 		AA0000000000000000000111 /* DependencyContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000008 /* DependencyContainer.swift */; };
 		AA0000000000000000000112 /* DependencyContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000008 /* DependencyContainer.swift */; };
 		AA0000000000000000000113 /* DependencyContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000008 /* DependencyContainer.swift */; };
@@ -118,7 +122,6 @@
 		AA0000000000000000000192 /* ShieldContentProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000049 /* ShieldContentProvider.swift */; };
 		AA0000000000000000000193 /* ShieldContentProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000049 /* ShieldContentProvider.swift */; };
 		AA0000000000000000000194 /* ShieldConfigurationExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = B80000000000000000000001 /* ShieldConfigurationExtension.swift */; };
-		AA0000000000000000000195 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000022 /* Localizable.xcstrings */; };
 		AA0000000000000000000196 /* ShieldActionResponsePolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000024 /* ShieldActionResponsePolicyTests.swift */; };
 		AA0000000000000000000197 /* ShieldActionResponsePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000050 /* ShieldActionResponsePolicy.swift */; };
 		AA0000000000000000000198 /* ShieldActionResponsePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000050 /* ShieldActionResponsePolicy.swift */; };
@@ -193,6 +196,33 @@
 		AA0000000000000000000273 /* LiveActivityLocationBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000046 /* LiveActivityLocationBridgeTests.swift */; };
 		AA0000000000000000000274 /* SystemLiveActivityAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000067 /* SystemLiveActivityAdapter.swift */; };
 		AA0000000000000000000275 /* SystemLiveActivityAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000047 /* SystemLiveActivityAdapterTests.swift */; };
+		AA0000000000000000000278 /* CoinReservationPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000048 /* CoinReservationPolicyTests.swift */; };
+		AA0000000000000000000279 /* RuleReleaseServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000049 /* RuleReleaseServiceTests.swift */; };
+		AA0000000000000000000280 /* ReleaseExceptionRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5000000000000000000004A /* ReleaseExceptionRepositoryTests.swift */; };
+		AA0000000000000000000281 /* RuleReleaseCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5000000000000000000004B /* RuleReleaseCoordinatorTests.swift */; };
+		AA0000000000000000000282 /* ShieldCoinActionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5000000000000000000004C /* ShieldCoinActionTests.swift */; };
+		AA0000000000000000000283 /* ShieldReleaseDeadlineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5000000000000000000004D /* ShieldReleaseDeadlineTests.swift */; };
+		AA0000000000000000000284 /* UserStory2CoinReleaseUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000006 /* UserStory2CoinReleaseUITests.swift */; };
+		AA0000000000000000000285 /* CoinReservationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000068 /* CoinReservationPolicy.swift */; };
+		AA0000000000000000000286 /* CoinReservationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000068 /* CoinReservationPolicy.swift */; };
+		AA0000000000000000000287 /* RuleReleaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000069 /* RuleReleaseService.swift */; };
+		AA0000000000000000000288 /* RuleReleaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000069 /* RuleReleaseService.swift */; };
+		AA0000000000000000000295 /* RuleReleaseCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000071 /* RuleReleaseCoordinator.swift */; };
+		AA0000000000000000000296 /* RuleReleaseCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000071 /* RuleReleaseCoordinator.swift */; };
+		AA0000000000000000000297 /* RuleReleaseReconciler.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000072 /* RuleReleaseReconciler.swift */; };
+		AA0000000000000000000298 /* RuleReleaseReconciler.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000072 /* RuleReleaseReconciler.swift */; };
+		AA0000000000000000000299 /* ShieldReleaseDeadlinePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000073 /* ShieldReleaseDeadlinePolicy.swift */; };
+		AA0000000000000000000300 /* ShieldReleaseDeadlinePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000073 /* ShieldReleaseDeadlinePolicy.swift */; };
+		AA0000000000000000000301 /* RuleReleaseLocalLease.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000074 /* RuleReleaseLocalLease.swift */; };
+		AA0000000000000000000302 /* RuleReleaseLocalLease.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000074 /* RuleReleaseLocalLease.swift */; };
+		AA0000000000000000000303 /* RuleReleaseLocalLease.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000074 /* RuleReleaseLocalLease.swift */; };
+		AA0000000000000000000304 /* RestrictionOccurrenceEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000062 /* RestrictionOccurrenceEvaluator.swift */; };
+		AA0000000000000000000305 /* RestrictionOccurrenceEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000062 /* RestrictionOccurrenceEvaluator.swift */; };
+		AA0000000000000000000306 /* ActiveRestrictionReleaseModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000075 /* ActiveRestrictionReleaseModel.swift */; };
+		AA0000000000000000000307 /* ActiveRestrictionReleaseModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5000000000000000000004E /* ActiveRestrictionReleaseModelTests.swift */; };
+		AA0000000000000000000308 /* ActiveRestrictionReleaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000077 /* ActiveRestrictionReleaseView.swift */; };
+		AA0000000000000000000309 /* ActiveRestrictionReleaseRouterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5000000000000000000004F /* ActiveRestrictionReleaseRouterTests.swift */; };
+		AA000000000000000000030A /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000023 /* Localizable.xcstrings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -273,6 +303,7 @@
 		B30000000000000000000014 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		B30000000000000000000021 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B30000000000000000000022 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		B30000000000000000000023 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Resources/Localizable.xcstrings; sourceTree = "<group>"; };
 		B40000000000000000000001 /* SharedIdentifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedIdentifiers.swift; sourceTree = "<group>"; };
 		B40000000000000000000002 /* RestrictionRuleModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionRuleModels.swift; sourceTree = "<group>"; };
 		B40000000000000000000003 /* RuntimeStateModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuntimeStateModels.swift; sourceTree = "<group>"; };
@@ -280,6 +311,7 @@
 		B40000000000000000000005 /* RestrictionEvaluationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionEvaluationModels.swift; sourceTree = "<group>"; };
 		B40000000000000000000006 /* RestrictionStateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStateMachine.swift; sourceTree = "<group>"; };
 		B40000000000000000000007 /* SharedSnapshotRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSnapshotRepository.swift; sourceTree = "<group>"; };
+		B40000000000000000000070 /* ReleaseExceptionRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseExceptionRepository.swift; sourceTree = "<group>"; };
 		B40000000000000000000008 /* DependencyContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DependencyContainer.swift; sourceTree = "<group>"; };
 		B40000000000000000000009 /* DiagnosticsLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsLogger.swift; sourceTree = "<group>"; };
 		B40000000000000000000020 /* ScheduleEvaluator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleEvaluator.swift; sourceTree = "<group>"; };
@@ -364,6 +396,12 @@
 		B50000000000000000000045 /* LiveActivityStartMeasurementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityStartMeasurementTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000046 /* LiveActivityLocationBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityLocationBridgeTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000047 /* SystemLiveActivityAdapterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemLiveActivityAdapterTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000048 /* CoinReservationPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinReservationPolicyTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000049 /* RuleReleaseServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleReleaseServiceTests.swift; sourceTree = "<group>"; };
+		B5000000000000000000004A /* ReleaseExceptionRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseExceptionRepositoryTests.swift; sourceTree = "<group>"; };
+		B5000000000000000000004B /* RuleReleaseCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleReleaseCoordinatorTests.swift; sourceTree = "<group>"; };
+		B5000000000000000000004C /* ShieldCoinActionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldCoinActionTests.swift; sourceTree = "<group>"; };
+		B5000000000000000000004D /* ShieldReleaseDeadlineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldReleaseDeadlineTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000040 /* LiveActivityCoinFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityCoinFixtures.swift; sourceTree = "<group>"; };
 		B60000000000000000000001 /* UserStory1RuleConfigurationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory1RuleConfigurationUITests.swift; sourceTree = "<group>"; };
 		B60000000000000000000002 /* UserStory2RestrictionActivationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory2RestrictionActivationUITests.swift; sourceTree = "<group>"; };
@@ -387,6 +425,17 @@
 		DL0000000000000000000002 /* RestrictionLiveActivityPreviews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionLiveActivityPreviews.swift; sourceTree = "<group>"; };
 		DL0000000000000000000003 /* RestrictionLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionLiveActivity.swift; sourceTree = "<group>"; };
 		DL0000000000000000000004 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Resources/Localizable.xcstrings; sourceTree = "<group>"; };
+		B60000000000000000000006 /* UserStory2CoinReleaseUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory2CoinReleaseUITests.swift; sourceTree = "<group>"; };
+		B40000000000000000000068 /* CoinReservationPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinReservationPolicy.swift; sourceTree = "<group>"; };
+		B40000000000000000000069 /* RuleReleaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleReleaseService.swift; sourceTree = "<group>"; };
+		B40000000000000000000071 /* RuleReleaseCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleReleaseCoordinator.swift; sourceTree = "<group>"; };
+		B40000000000000000000072 /* RuleReleaseReconciler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleReleaseReconciler.swift; sourceTree = "<group>"; };
+		B40000000000000000000073 /* ShieldReleaseDeadlinePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldReleaseDeadlinePolicy.swift; sourceTree = "<group>"; };
+		B40000000000000000000074 /* RuleReleaseLocalLease.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleReleaseLocalLease.swift; sourceTree = "<group>"; };
+		B40000000000000000000075 /* ActiveRestrictionReleaseModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveRestrictionReleaseModel.swift; sourceTree = "<group>"; };
+		B40000000000000000000077 /* ActiveRestrictionReleaseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveRestrictionReleaseView.swift; sourceTree = "<group>"; };
+		B5000000000000000000004E /* ActiveRestrictionReleaseModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveRestrictionReleaseModelTests.swift; sourceTree = "<group>"; };
+		B5000000000000000000004F /* ActiveRestrictionReleaseRouterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveRestrictionReleaseRouterTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -513,6 +562,7 @@
 				B40000000000000000000063 /* LiveActivityContentPolicy.swift */,
 				B40000000000000000000062 /* RestrictionOccurrenceEvaluator.swift */,
 				B40000000000000000000060 /* MonthlyAllowancePolicy.swift */,
+				B40000000000000000000068 /* CoinReservationPolicy.swift */,
 				B40000000000000000000005 /* RestrictionEvaluationModels.swift */,
 				B40000000000000000000020 /* ScheduleEvaluator.swift */,
 				B40000000000000000000021 /* RestrictionRuleValidator.swift */,
@@ -524,6 +574,7 @@
 			isa = PBXGroup;
 			children = (
 				B40000000000000000000061 /* MonthlyAllowanceService.swift */,
+				B40000000000000000000069 /* RuleReleaseService.swift */,
 				B40000000000000000000006 /* RestrictionStateMachine.swift */,
 			);
 			path = StateMachine;
@@ -559,6 +610,7 @@
 				B4000000000000000000005F /* CoinLedgerSyncAdapter.swift */,
 				B4000000000000000000005E /* CloudKitCoinLedgerRepository.swift */,
 				B4000000000000000000005C /* CoinLedgerRecordMapper.swift */,
+				B40000000000000000000072 /* RuleReleaseReconciler.swift */,
 			);
 			path = CloudKit;
 			sourceTree = "<group>";
@@ -567,6 +619,7 @@
 			isa = PBXGroup;
 			children = (
 				B40000000000000000000007 /* SharedSnapshotRepository.swift */,
+				B40000000000000000000070 /* ReleaseExceptionRepository.swift */,
 			);
 			path = Persistence;
 			sourceTree = "<group>";
@@ -593,12 +646,22 @@
 		B40000000000000000000024 /* Features */ = {
 			isa = PBXGroup;
 			children = (
+				B40000000000000000000076 /* Coins */,
 				B40000000000000000000025 /* LocationPicker */,
 				B40000000000000000000030 /* RuleEditor */,
 				B40000000000000000000052 /* RestrictionStatus */,
 				B40000000000000000000055 /* PermissionGuide */,
 			);
 			path = Features;
+			sourceTree = "<group>";
+		};
+		B40000000000000000000076 /* Coins */ = {
+			isa = PBXGroup;
+			children = (
+				B40000000000000000000075 /* ActiveRestrictionReleaseModel.swift */,
+				B40000000000000000000077 /* ActiveRestrictionReleaseView.swift */,
+			);
+			path = Coins;
 			sourceTree = "<group>";
 		};
 		B40000000000000000000025 /* LocationPicker */ = {
@@ -626,6 +689,9 @@
 				B40000000000000000000028 /* FamilyActivitySelectionAdapter.swift */,
 				B40000000000000000000044 /* ManagedSettingsRestrictionAdapter.swift */,
 				B40000000000000000000045 /* RestrictionCoordinator.swift */,
+				B40000000000000000000071 /* RuleReleaseCoordinator.swift */,
+				B40000000000000000000073 /* ShieldReleaseDeadlinePolicy.swift */,
+				B40000000000000000000074 /* RuleReleaseLocalLease.swift */,
 				B40000000000000000000049 /* ShieldContentProvider.swift */,
 				B40000000000000000000050 /* ShieldActionResponsePolicy.swift */,
 			);
@@ -699,6 +765,10 @@
 		B50000000000000000000011 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				B5000000000000000000004F /* ActiveRestrictionReleaseRouterTests.swift */,
+				B5000000000000000000004E /* ActiveRestrictionReleaseModelTests.swift */,
+				B50000000000000000000049 /* RuleReleaseServiceTests.swift */,
+				B50000000000000000000048 /* CoinReservationPolicyTests.swift */,
 				B50000000000000000000043 /* LiveActivityTimePolicyTests.swift */,
 				B50000000000000000000042 /* LiveActivityDistancePolicyTests.swift */,
 				B50000000000000000000041 /* RestrictionOccurrenceEvaluatorTests.swift */,
@@ -723,6 +793,7 @@
 		B50000000000000000000012 /* Persistence */ = {
 			isa = PBXGroup;
 			children = (
+				B5000000000000000000004A /* ReleaseExceptionRepositoryTests.swift */,
 				B50000000000000000000036 /* LiveActivityCoinSnapshotRepositoryTests.swift */,
 				B50000000000000000000037 /* PendingAppRouteRepositoryTests.swift */,
 				B50000000000000000000003 /* SharedSnapshotRepositoryTests.swift */,
@@ -741,6 +812,9 @@
 		B50000000000000000000014 /* Integration */ = {
 			isa = PBXGroup;
 			children = (
+				B5000000000000000000004D /* ShieldReleaseDeadlineTests.swift */,
+				B5000000000000000000004C /* ShieldCoinActionTests.swift */,
+				B5000000000000000000004B /* RuleReleaseCoordinatorTests.swift */,
 				B50000000000000000000047 /* SystemLiveActivityAdapterTests.swift */,
 				B50000000000000000000046 /* LiveActivityLocationBridgeTests.swift */,
 				B50000000000000000000044 /* LiveActivityCoordinatorTests.swift */,
@@ -831,6 +905,7 @@
 			children = (
 				B80000000000000000000001 /* ShieldConfigurationExtension.swift */,
 				B10400000000000000000001 /* Resources/Assets.xcassets */,
+				B30000000000000000000023 /* Localizable.xcstrings */,
 				B20000000000000000000003 /* GetUpShieldConfiguration.entitlements */,
 				B30000000000000000000003 /* Info.plist */,
 				B30000000000000000000013 /* PrivacyInfo.xcprivacy */,
@@ -883,6 +958,7 @@
 				B60000000000000000000002 /* UserStory2RestrictionActivationUITests.swift */,
 				B60000000000000000000003 /* UserStory3AutoReleaseUITests.swift */,
 				B60000000000000000000004 /* UserStory4PermissionGuidanceUITests.swift */,
+				B60000000000000000000006 /* UserStory2CoinReleaseUITests.swift */,
 				B60000000000000000000005 /* AccessibilityUITests.swift */,
 			);
 			path = GetUpUITests;
@@ -1101,7 +1177,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA0000000000000000000013 /* PrivacyInfo.xcprivacy in Resources */,
-				AA0000000000000000000195 /* Localizable.xcstrings in Resources */,
+				AA000000000000000000030A /* Localizable.xcstrings in Resources */,
 				A10400000000000000000001 /* Resources/Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1143,13 +1219,21 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000308 /* ActiveRestrictionReleaseView.swift in Sources */,
+				AA0000000000000000000306 /* ActiveRestrictionReleaseModel.swift in Sources */,
 				AA0000000000000000000274 /* SystemLiveActivityAdapter.swift in Sources */,
 				AA0000000000000000000271 /* LiveActivityCoordinator.swift in Sources */,
 				AA0000000000000000000270 /* LiveActivityTimePolicy.swift in Sources */,
 				AA0000000000000000000267 /* LiveActivityContentPolicy.swift in Sources */,
 				AA0000000000000000000265 /* RestrictionOccurrenceEvaluator.swift in Sources */,
 				AA0000000000000000000258 /* MonthlyAllowanceService.swift in Sources */,
+				AA0000000000000000000287 /* RuleReleaseService.swift in Sources */,
+				AA0000000000000000000295 /* RuleReleaseCoordinator.swift in Sources */,
+				AA0000000000000000000297 /* RuleReleaseReconciler.swift in Sources */,
+				AA0000000000000000000299 /* ShieldReleaseDeadlinePolicy.swift in Sources */,
+				AA0000000000000000000301 /* RuleReleaseLocalLease.swift in Sources */,
 				AA0000000000000000000256 /* MonthlyAllowancePolicy.swift in Sources */,
+				AA0000000000000000000285 /* CoinReservationPolicy.swift in Sources */,
 				AA0000000000000000000253 /* CoinLedgerSyncAdapter.swift in Sources */,
 				AA0000000000000000000251 /* CloudKitCoinLedgerRepository.swift in Sources */,
 				AA0000000000000000000249 /* CoinLedgerRecordMapper.swift in Sources */,
@@ -1165,6 +1249,7 @@
 				AA0000000000000000000071 /* RestrictionEvaluationModels.swift in Sources */,
 				AA0000000000000000000091 /* RestrictionStateMachine.swift in Sources */,
 				AA0000000000000000000101 /* SharedSnapshotRepository.swift in Sources */,
+				AA0000000000000000000291 /* ReleaseExceptionRepository.swift in Sources */,
 				AA0000000000000000000111 /* DependencyContainer.swift in Sources */,
 				AA0000000000000000000121 /* DiagnosticsLogger.swift in Sources */,
 				AA0000000000000000000131 /* ScheduleEvaluator.swift in Sources */,
@@ -1215,6 +1300,7 @@
 				AA0000000000000000000072 /* RestrictionEvaluationModels.swift in Sources */,
 				AA0000000000000000000092 /* RestrictionStateMachine.swift in Sources */,
 				AA0000000000000000000102 /* SharedSnapshotRepository.swift in Sources */,
+				AA0000000000000000000292 /* ReleaseExceptionRepository.swift in Sources */,
 				AA0000000000000000000112 /* DependencyContainer.swift in Sources */,
 				AA0000000000000000000122 /* DiagnosticsLogger.swift in Sources */,
 				AA0000000000000000000132 /* ScheduleEvaluator.swift in Sources */,
@@ -1222,6 +1308,7 @@
 				AA0000000000000000000175 /* DeviceActivityScheduleAdapter.swift in Sources */,
 				AA0000000000000000000179 /* ManagedSettingsRestrictionAdapter.swift in Sources */,
 				AA0000000000000000000181 /* RestrictionCoordinator.swift in Sources */,
+				AA0000000000000000000302 /* RuleReleaseLocalLease.swift in Sources */,
 				AA0000000000000000000184 /* AuthorizationAdapter.swift in Sources */,
 				AA0000000000000000000187 /* AppLifecycleCoordinator.swift in Sources */,
 				AA0000000000000000000188 /* DeviceActivityMonitorExtension.swift in Sources */,
@@ -1234,6 +1321,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000304 /* RestrictionOccurrenceEvaluator.swift in Sources */,
 				AA0000000000000000000263 /* MonthlyAllowanceService.swift in Sources */,
 				AA0000000000000000000261 /* MonthlyAllowancePolicy.swift in Sources */,
 				AA0000000000000000000244 /* LiveActivityCoinContracts.swift in Sources */,
@@ -1248,6 +1336,7 @@
 				AA0000000000000000000073 /* RestrictionEvaluationModels.swift in Sources */,
 				AA0000000000000000000093 /* RestrictionStateMachine.swift in Sources */,
 				AA0000000000000000000103 /* SharedSnapshotRepository.swift in Sources */,
+				AA0000000000000000000293 /* ReleaseExceptionRepository.swift in Sources */,
 				AA0000000000000000000113 /* DependencyContainer.swift in Sources */,
 				AA0000000000000000000123 /* DiagnosticsLogger.swift in Sources */,
 				AA0000000000000000000133 /* ScheduleEvaluator.swift in Sources */,
@@ -1261,9 +1350,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000305 /* RestrictionOccurrenceEvaluator.swift in Sources */,
 				AA0000000000000000000276 /* ActivityKitFeasibilityProbe.swift in Sources */,
 				AA0000000000000000000259 /* MonthlyAllowanceService.swift in Sources */,
+				AA0000000000000000000288 /* RuleReleaseService.swift in Sources */,
+				AA0000000000000000000296 /* RuleReleaseCoordinator.swift in Sources */,
+				AA0000000000000000000298 /* RuleReleaseReconciler.swift in Sources */,
+				AA0000000000000000000300 /* ShieldReleaseDeadlinePolicy.swift in Sources */,
+				AA0000000000000000000303 /* RuleReleaseLocalLease.swift in Sources */,
 				AA0000000000000000000257 /* MonthlyAllowancePolicy.swift in Sources */,
+				AA0000000000000000000286 /* CoinReservationPolicy.swift in Sources */,
 				AA0000000000000000000254 /* CoinLedgerSyncAdapter.swift in Sources */,
 				AA0000000000000000000252 /* CloudKitCoinLedgerRepository.swift in Sources */,
 				AA0000000000000000000250 /* CoinLedgerRecordMapper.swift in Sources */,
@@ -1279,6 +1375,7 @@
 				AA0000000000000000000074 /* RestrictionEvaluationModels.swift in Sources */,
 				AA0000000000000000000094 /* RestrictionStateMachine.swift in Sources */,
 				AA0000000000000000000104 /* SharedSnapshotRepository.swift in Sources */,
+				AA0000000000000000000294 /* ReleaseExceptionRepository.swift in Sources */,
 				AA0000000000000000000114 /* DependencyContainer.swift in Sources */,
 				AA0000000000000000000124 /* DiagnosticsLogger.swift in Sources */,
 				AA0000000000000000000134 /* ScheduleEvaluator.swift in Sources */,
@@ -1292,6 +1389,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000309 /* ActiveRestrictionReleaseRouterTests.swift in Sources */,
+				AA0000000000000000000307 /* ActiveRestrictionReleaseModelTests.swift in Sources */,
+				AA0000000000000000000283 /* ShieldReleaseDeadlineTests.swift in Sources */,
+				AA0000000000000000000282 /* ShieldCoinActionTests.swift in Sources */,
+				AA0000000000000000000281 /* RuleReleaseCoordinatorTests.swift in Sources */,
+				AA0000000000000000000280 /* ReleaseExceptionRepositoryTests.swift in Sources */,
+				AA0000000000000000000279 /* RuleReleaseServiceTests.swift in Sources */,
+				AA0000000000000000000278 /* CoinReservationPolicyTests.swift in Sources */,
 				AA0000000000000000000275 /* SystemLiveActivityAdapterTests.swift in Sources */,
 				AA0000000000000000000273 /* LiveActivityLocationBridgeTests.swift in Sources */,
 				AA0000000000000000000272 /* LiveActivityStartMeasurementTests.swift in Sources */,
@@ -1344,6 +1449,7 @@
 				AA0000000000000000000173 /* UserStory2RestrictionActivationUITests.swift in Sources */,
 				AA0000000000000000000204 /* UserStory3AutoReleaseUITests.swift in Sources */,
 				AA0000000000000000000207 /* UserStory4PermissionGuidanceUITests.swift in Sources */,
+				AA0000000000000000000284 /* UserStory2CoinReleaseUITests.swift in Sources */,
 				AA0000000000000000000211 /* AccessibilityUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

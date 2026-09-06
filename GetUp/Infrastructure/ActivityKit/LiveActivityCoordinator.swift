@@ -5,22 +5,6 @@ enum LiveActivityAdjustmentContext: Equatable, Sendable {
     case background
 }
 
-enum LiveActivityCoordinationAction: Equatable, Sendable {
-    case request
-    case update(UUID)
-    case end(UUID)
-}
-
-struct LiveActivityCoordinationResult: Equatable, Sendable {
-    let actions: [LiveActivityCoordinationAction]
-    let failureCodes: [LiveActivityCoinErrorCode]
-
-    static let noChange = LiveActivityCoordinationResult(
-        actions: [],
-        failureCodes: []
-    )
-}
-
 private struct SystemLiveActivityClock: Clock {
     var now: Date { Date() }
 }
