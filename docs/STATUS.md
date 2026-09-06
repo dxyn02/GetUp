@@ -7,18 +7,19 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 5 사용자 스토리 3 테스트 진행 중
 
 ## 진행 중
-`codex/us3-product-catalog-tests`에서 T059 StoreKit 상품 catalog 계약 테스트를 먼저 작성했다.
-현재 테스트 타깃은 후속 `CoinProductCatalog` 구현 전의 의도된 TDD RED 상태이며 다음은 T060이다.
+`codex/us3-product-catalog-tests`에서 T060 StoreKit 구매 결과와 지급 멱등 계약 테스트를 먼저
+작성했다. 현재 테스트 타깃은 후속 `CoinProductCatalog`·`CoinPurchaseService` 구현 전의 의도된
+TDD RED 상태이며 다음은 T061이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T059 — StoreKit 상품 ID·수량·현지 가격·판매 불가·로드 실패 계약 테스트
+T060 — StoreKit 구매 결과와 동일 transaction 100회 멱등 지급 계약 테스트
 
 ## 다음 작업
-T060 — StoreKit 성공·취소·pending·unverified·중복 transaction 구매 테스트 작성.
+T061 — CloudKit commit·transaction finish 순서와 unfinished·updates 복구 테스트 작성.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -37,6 +38,21 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-06 T060: `verified` 구매만 승인 catalog의 1개·3개·5개 수량으로 `PurchaseGrant`를 만들고
+장부 반영 뒤 transaction을 finish하는 계약을 추가했다. `unverified`는 검증 오류로 거부하고,
+`pending`은 대기 상태, `userCancelled`는 취소 상태로 반환하며 둘 다 지급·finish하지 않는다.
+StoreKit 오류도 기존 장부를 변경하지 않고 그대로 전달하며, 사용자가 선택한 product ID와 검증
+transaction의 product ID가 다르면 지급하지 않도록 고정했다.
+
+동일 sandbox transaction을 100개 동시 경로로 재처리하는 테스트는 모든 호출이 같은 3개 grant로
+수렴하고 결정적 `environment + transaction.id` 지급 키에서 실제 grant가 한 번만 생성되는지
+검증한다. commit 전 미finish, commit 뒤 finish 실패와 앱 재실행의 unfinished·updates 복구는 계획대로
+T061에 남겼다. 이전 T059 RED를 제외한 집중 테스트 컴파일은 후속 T068의 `CoinPurchaseService` 타입
+부재 한 지점에서 종료되어 이번 TDD RED를 확인했다. 앱과 네 extension의 generic iOS Simulator
+Release 빌드는 승인된 동일 명령 재실행에서 통과했으며 project plist·diff 검사도 통과했다. 최초
+Release 시도는 sandbox의 CoreSimulatorService 연결 거부로 실패했다. 운영 StoreKit 구매나 CloudKit
+원격 데이터는 호출·변경하지 않았고 새 제품 차단은 없다.
+
 2026-09-06 T059: bundle `GetUpCoinProductCatalog`가 승인된 product ID
 `com.dxyn02.GetUp.coin.1`·`.3`·`.5`만 각각 1·3·5개에 정확히 매핑하는지와 누락·중복·수량 변조
 설정을 거부하는 계약 테스트를 추가했다. StoreKit이 반환한 현지화 이름·설명·가격 문자열을 그대로
