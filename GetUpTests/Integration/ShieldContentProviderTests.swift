@@ -6,8 +6,8 @@ import Testing
 
 @Suite("Shield content provider")
 struct ShieldContentProviderTests {
-    @Test("A single matching active rule shows its place, radius, and end time")
-    func singleRuleShowsApprovedDetailedCopy() throws {
+    @Test("A single matching occurrence explains the representative, deadline, cost, and result")
+    func singleOccurrenceShowsReleaseConfirmationCopy() throws {
         let token = try applicationToken(seed: 1)
         let rule = TestFixtures.makeRule(
             activitySelection: selection(tokens: [token])
@@ -15,7 +15,9 @@ struct ShieldContentProviderTests {
         let provider = ShieldContentProvider(
             snapshotReader: FixedShieldSnapshotReader(
                 snapshot: snapshot(rules: [rule])
-            )
+            ),
+            now: { TestFixtures.now },
+            calendar: TestFixtures.calendar
         )
 
         let content = provider.content(for: token)
@@ -23,9 +25,10 @@ struct ShieldContentProviderTests {
         #expect(content.title == "집에서 500m 밖으로 나서세요")
         #expect(
             content.subtitle
-                == "현재 ‘집’의 500m 범위 안에 있어요. 집의 중심에서 500m 밖으로 이동하거나 09:00 AM이 되면 자동으로 다시 사용할 수 있어요."
+                == "대표 규칙 ‘테스트 규칙’ · 07:50 AM까지 적용돼요. 무료 해제권을 먼저 사용하고, 없으면 구매 코인 1개를 사용해 이번 구간만 해제해요. 다른 규칙의 제한은 남지 않아요."
         )
-        #expect(content.primaryButtonLabel == "앱 닫기")
+        #expect(content.primaryButtonLabel == "해제권 1회 사용")
+        #expect(content.secondaryButtonLabel == "앱 닫기")
     }
 
     @Test("English shield content localizes the Home preset name")
@@ -38,7 +41,9 @@ struct ShieldContentProviderTests {
             snapshotReader: FixedShieldSnapshotReader(
                 snapshot: snapshot(rules: [rule])
             ),
-            bundle: englishLocalizationBundle
+            bundle: englishLocalizationBundle,
+            now: { TestFixtures.now },
+            calendar: TestFixtures.calendar
         )
 
         let content = provider.content(for: token)
@@ -46,9 +51,10 @@ struct ShieldContentProviderTests {
         #expect(content.title == "Step 500m away from Home")
         #expect(
             content.subtitle
-                == "You’re currently within the 500m radius of ‘Home’. Move 500m away from the center of Home or wait until 09:00 AM to use the app again automatically."
+                == "Representative rule: ‘테스트 규칙’. It applies until 07:50 AM. Use a monthly free release first, or one purchased coin if none remain, to release only this interval. No other rule restriction will remain."
         )
-        #expect(content.primaryButtonLabel == "Close App")
+        #expect(content.primaryButtonLabel == "Use 1 Release")
+        #expect(content.secondaryButtonLabel == "Close App")
     }
 
     @Test("English shield content localizes the Work preset name")
@@ -61,20 +67,19 @@ struct ShieldContentProviderTests {
             snapshotReader: FixedShieldSnapshotReader(
                 snapshot: snapshot(rules: [rule], placeName: "회사")
             ),
-            bundle: englishLocalizationBundle
+            bundle: englishLocalizationBundle,
+            now: { TestFixtures.now },
+            calendar: TestFixtures.calendar
         )
 
         let content = provider.content(for: token)
 
         #expect(content.title == "Step 500m away from Work")
-        #expect(
-            content.subtitle
-                == "You’re currently within the 500m radius of ‘Work’. Move 500m away from the center of Work or wait until 09:00 AM to use the app again automatically."
-        )
+        #expect(content.subtitle.contains("Representative rule: ‘테스트 규칙’. It applies until 07:50 AM."))
     }
 
-    @Test("Multiple matching active rules use the short accurate summary")
-    func multipleRulesUseSummary() throws {
+    @Test("Multiple matching occurrences select the earliest representative and warn what remains")
+    func multipleOccurrencesSelectRepresentativeAndWarn() throws {
         let token = try applicationToken(seed: 2)
         let first = TestFixtures.makeRule(
             activitySelection: selection(tokens: [token])
@@ -82,18 +87,30 @@ struct ShieldContentProviderTests {
         let second = TestFixtures.makeRule(
             id: UUID(uuidString: "00000000-0000-4000-8000-000000000401")!,
             revision: 3,
+            name: "두 번째 규칙",
             activitySelection: selection(tokens: [token])
         )
         let provider = ShieldContentProvider(
             snapshotReader: FixedShieldSnapshotReader(
-                snapshot: snapshot(rules: [first, second])
-            )
+                snapshot: snapshot(
+                    rules: [second, first],
+                    occurrences: [
+                        try occurrence(for: second, activatedAt: TestFixtures.now.addingTimeInterval(-60)),
+                        try occurrence(for: first, activatedAt: TestFixtures.now.addingTimeInterval(-120)),
+                    ]
+                )
+            ),
+            now: { TestFixtures.now },
+            calendar: TestFixtures.calendar
         )
 
         let content = provider.content(for: token)
 
-        #expect(content.title == "2개 제한 규칙이 활성화 중이에요")
-        #expect(content.subtitle == "각 규칙의 위치 또는 시간이 모두 끝나면 다시 사용할 수 있어요.")
+        #expect(content.title == "집에서 500m 밖으로 나서세요")
+        #expect(content.subtitle.contains("대표 규칙 ‘테스트 규칙’ · 07:50 AM까지 적용돼요."))
+        #expect(content.subtitle.hasSuffix("다른 규칙 1개의 제한은 남아요."))
+        #expect(content.primaryButtonLabel == "해제권 1회 사용")
+        #expect(content.secondaryButtonLabel == "앱 닫기")
     }
 
     @Test("A category shield for a custom saved place shows detailed content")
@@ -105,7 +122,9 @@ struct ShieldContentProviderTests {
         let provider = ShieldContentProvider(
             snapshotReader: FixedShieldSnapshotReader(
                 snapshot: snapshot(rules: [rule], placeName: "도서관")
-            )
+            ),
+            now: { TestFixtures.now },
+            calendar: TestFixtures.calendar
         )
 
         let content = provider.content(
@@ -116,7 +135,7 @@ struct ShieldContentProviderTests {
         #expect(content.title == "도서관에서 500m 밖으로 나서세요")
         #expect(
             content.subtitle
-                == "현재 ‘도서관’의 500m 범위 안에 있어요. 도서관의 중심에서 500m 밖으로 이동하거나 09:00 AM이 되면 자동으로 다시 사용할 수 있어요."
+                == "대표 규칙 ‘테스트 규칙’ · 07:50 AM까지 적용돼요. 무료 해제권을 먼저 사용하고, 없으면 구매 코인 1개를 사용해 이번 구간만 해제해요. 다른 규칙의 제한은 남지 않아요."
         )
     }
 
@@ -129,7 +148,9 @@ struct ShieldContentProviderTests {
         let provider = ShieldContentProvider(
             snapshotReader: FixedShieldSnapshotReader(
                 snapshot: snapshot(rules: [rule], placeName: "스터디 카페")
-            )
+            ),
+            now: { TestFixtures.now },
+            calendar: TestFixtures.calendar
         )
 
         let content = provider.content(
@@ -138,6 +159,31 @@ struct ShieldContentProviderTests {
         )
 
         #expect(content.title == "스터디 카페에서 500m 밖으로 나서세요")
+    }
+
+    @Test(
+        "Every readable balance state presents the same free-first release agreement",
+        arguments: CoinBalanceSyncState.allCasesForShieldPresentation
+    )
+    func balanceStateDoesNotPreselectFundingSource(syncState: CoinBalanceSyncState) throws {
+        let token = try applicationToken(seed: 5)
+        let rule = TestFixtures.makeRule(activitySelection: selection(tokens: [token]))
+        let provider = ShieldContentProvider(
+            snapshotReader: FixedShieldSnapshotReader(
+                snapshot: snapshot(
+                    rules: [rule],
+                    balance: try balance(syncState: syncState)
+                )
+            ),
+            now: { TestFixtures.now },
+            calendar: TestFixtures.calendar
+        )
+
+        let content = provider.content(for: token)
+
+        #expect(content.primaryButtonLabel == "해제권 1회 사용")
+        #expect(content.secondaryButtonLabel == "앱 닫기")
+        #expect(content.subtitle.contains("무료 해제권을 먼저 사용하고, 없으면 구매 코인 1개"))
     }
 
     @Test("A missing token or unreadable snapshot uses privacy-safe fallback copy")
@@ -149,17 +195,69 @@ struct ShieldContentProviderTests {
         let content = provider.content(for: nil)
 
         #expect(content.title == "밖으로 나설 시간이에요")
-        #expect(
-            content.subtitle
-                == "설정한 위치에서 벗어나거나 시간이 끝나면 자동으로 다시 사용할 수 있어요."
+        #expect(content.subtitle == "설정한 위치에서 벗어나거나 시간이 끝나면 자동으로 다시 사용할 수 있어요.")
+        #expect(content.primaryButtonLabel == "앱 닫기")
+        #expect(content.secondaryButtonLabel == nil)
+    }
+
+    @Test("An expired or missing representative occurrence uses the close-only fallback")
+    func missingRepresentativeUsesCloseOnlyFallback() throws {
+        let token = try applicationToken(seed: 6)
+        let rule = TestFixtures.makeRule(activitySelection: selection(tokens: [token]))
+        let expired = try occurrence(
+            for: rule,
+            endAt: TestFixtures.now,
+            activatedAt: TestFixtures.now.addingTimeInterval(-600)
         )
+        let provider = ShieldContentProvider(
+            snapshotReader: FixedShieldSnapshotReader(
+                snapshot: snapshot(rules: [rule], occurrences: [expired])
+            ),
+            now: { TestFixtures.now },
+            calendar: TestFixtures.calendar
+        )
+
+        let content = provider.content(for: token)
+
+        #expect(content.primaryButtonLabel == "앱 닫기")
+        #expect(content.secondaryButtonLabel == nil)
+    }
+
+    @Test("Duplicate rule identities are treated as a corrupt close-only snapshot")
+    func duplicateRuleIdentityUsesCloseOnlyFallback() throws {
+        let token = try applicationToken(seed: 7)
+        let first = TestFixtures.makeRule(activitySelection: selection(tokens: [token]))
+        let duplicate = TestFixtures.makeRule(
+            id: first.id,
+            revision: first.revision,
+            name: "중복 규칙",
+            activitySelection: selection(tokens: [token])
+        )
+        let provider = ShieldContentProvider(
+            snapshotReader: FixedShieldSnapshotReader(
+                snapshot: snapshot(
+                    rules: [first, duplicate],
+                    occurrences: [try occurrence(for: first)]
+                )
+            ),
+            now: { TestFixtures.now },
+            calendar: TestFixtures.calendar
+        )
+
+        let content = provider.content(for: token)
+
+        #expect(content.primaryButtonLabel == "앱 닫기")
+        #expect(content.secondaryButtonLabel == nil)
     }
 
     private func snapshot(
         rules: [RestrictionRuleSnapshot],
-        placeName: String = "집"
+        placeName: String = "집",
+        occurrences: [RestrictionOccurrence]? = nil,
+        balance: CoinBalanceSnapshot? = nil
     ) -> ShieldContentSnapshot {
-        ShieldContentSnapshot(
+        let resolvedOccurrences = occurrences ?? rules.map { try! occurrence(for: $0) }
+        return ShieldContentSnapshot(
             rules: RestrictionRuleCollectionSnapshot(revision: 1, rules: rules),
             savedPlaces: SavedPlaceCollectionSnapshot(
                 revision: 1,
@@ -173,11 +271,40 @@ struct ShieldContentProviderTests {
                     ),
                 ]
             ),
-            activeRuleRevisions: Set(
-                rules.map {
-                    ActiveRuleRevision(ruleID: $0.id, revision: $0.revision)
-                }
-            )
+            activeRestrictions: try! ActiveRestrictionSnapshot(
+                revision: 1,
+                occurrences: resolvedOccurrences,
+                observedAt: TestFixtures.now
+            ),
+            coinBalance: balance ?? (try! self.balance(syncState: .current))
+        )
+    }
+
+    private func occurrence(
+        for rule: RestrictionRuleSnapshot,
+        endAt: Date = TestFixtures.now.addingTimeInterval(3_000),
+        activatedAt: Date = TestFixtures.now.addingTimeInterval(-300)
+    ) throws -> RestrictionOccurrence {
+        try RestrictionOccurrence(
+            ruleID: rule.id,
+            ruleRevision: rule.revision,
+            startAt: TestFixtures.now.addingTimeInterval(-600),
+            endAt: endAt,
+            activatedAt: activatedAt
+        )
+    }
+
+    private func balance(syncState: CoinBalanceSyncState) throws -> CoinBalanceSnapshot {
+        try CoinBalanceSnapshot(
+            purchasedAvailable: syncState == .current ? 3 : 0,
+            currentMonthID: "2026-09",
+            freeAvailable: syncState == .current ? 1 : 0,
+            syncState: syncState,
+            syncedAt: TestFixtures.now,
+            ledgerEpochID: syncState == .current
+                ? UUID(uuidString: "00000000-0000-4000-8000-000000000501")!
+                : nil,
+            hadConfirmedLedger: syncState == .current
         )
     }
 
@@ -202,6 +329,18 @@ struct ShieldContentProviderTests {
         let path = Bundle.main.path(forResource: "en", ofType: "lproj")!
         return Bundle(path: path)!
     }
+}
+
+private extension CoinBalanceSyncState {
+    static let allCasesForShieldPresentation: [Self] = [
+        .setupRequired,
+        .current,
+        .syncing,
+        .stale,
+        .unavailable,
+        .deletionConfirmed,
+        .resetRequired,
+    ]
 }
 
 private struct FixedShieldSnapshotReader: ShieldSnapshotReading {

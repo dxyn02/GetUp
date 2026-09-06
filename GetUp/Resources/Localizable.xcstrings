@@ -636,6 +636,23 @@
         }
       }
     },
+    "shield.primary.release" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use 1 Release"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "해제권 1회 사용"
+          }
+        }
+      }
+    },
     "shield.subtitle.fallback" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -649,6 +666,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "설정한 위치에서 벗어나거나 시간이 끝나면 자동으로 다시 사용할 수 있어요."
+          }
+        }
+      }
+    },
+    "shield.subtitle.release_confirmation.multiple" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Representative rule: ‘%1$@’. It applies until %2$@. Use a monthly free release first, or one purchased coin if none remain, to release only this interval. %3$d other rule restrictions will remain."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "대표 규칙 ‘%1$@’ · %2$@까지 적용돼요. 무료 해제권을 먼저 사용하고, 없으면 구매 코인 1개를 사용해 이번 구간만 해제해요. 다른 규칙 %3$d개의 제한은 남아요."
+          }
+        }
+      }
+    },
+    "shield.subtitle.release_confirmation.single" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Representative rule: ‘%1$@’. It applies until %2$@. Use a monthly free release first, or one purchased coin if none remain, to release only this interval. No other rule restriction will remain."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "대표 규칙 ‘%1$@’ · %2$@까지 적용돼요. 무료 해제권을 먼저 사용하고, 없으면 구매 코인 1개를 사용해 이번 구간만 해제해요. 다른 규칙의 제한은 남지 않아요."
           }
         }
       }

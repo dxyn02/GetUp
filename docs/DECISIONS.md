@@ -1,5 +1,26 @@
 # 결정 사항
 
+## DEC-096 — Shield 표시의 활성 occurrence 권위와 funding source 비단정
+
+**날짜**: 2026-09-06
+
+**결정**: Shield Configuration은 App Group의 규칙·장소뿐 아니라 활성 occurrence snapshot과
+coin balance mirror를 네트워크 없이 동기적으로 읽는다. 현재 rule revision과 일치하고 아직 끝나지
+않았으며 Shield token 대상과 일치하는 occurrence를 공통 `RestrictionOccurrenceEvaluator` 순서로
+정렬해 가장 먼저 활성화된 하나를 대표로 표시한다. 종료 안내는 규칙의 반복 시각이 아니라 선택된
+occurrence의 `endAt`을 사용하며, 같은 대상에 남는 다른 occurrence 수만 별도로 안내한다.
+
+읽을 수 있는 balance mirror의 `syncState`나 표시 잔액으로 실제 funding source를 미리 선택하지
+않는다. 모든 상태에서 `해제권 1회 사용`은 최신 장부의 무료분 우선·없으면 구매 코인 1개 fallback에
+대한 같은 동의이며, `앱 닫기`를 secondary로 둔다. snapshot 손상, schema 불일치, 만료 또는 대표
+occurrence 부재에서는 코인 action을 노출하지 않고 기존 일반 안내와 닫기 primary만 제공한다.
+
+**근거와 범위**: applied rule revision 집합만으로는 정확한 반복 구간 ID와 종료 시각을 알 수 없어
+잘못된 구간을 확인시킬 수 있다. balance mirror는 표시·route 힌트일 뿐 사용 권한이 아니므로 stale
+값으로 무료분 또는 구매분을 확정하면 안 된다. 실제 최신 occurrence·CloudKit 검증, 차감, 제한 해제,
+실패 route와 iOS 버전별 응답은 T055에서 연결한다. 이번 작업은 운영 CloudKit 장부를 활성화하거나
+schema·원격 데이터를 변경하지 않는다.
+
 ## DEC-095 — Device Activity interval의 동기 예외 정리와 공통 잠금
 
 **날짜**: 2026-09-06

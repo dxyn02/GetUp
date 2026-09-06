@@ -75,7 +75,13 @@ final class ShieldConfigurationExtension: ShieldConfigurationDataSource {
                 text: content.primaryButtonLabel,
                 color: ShieldPalette.primaryButtonText
             ),
-            primaryButtonBackgroundColor: ShieldPalette.accent
+            primaryButtonBackgroundColor: ShieldPalette.accent,
+            secondaryButtonLabel: content.secondaryButtonLabel.map {
+                ShieldConfiguration.Label(
+                    text: $0,
+                    color: ShieldPalette.primaryText
+                )
+            }
         )
     }
 }

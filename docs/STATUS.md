@@ -7,17 +7,18 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 4 사용자 스토리 2 구현 진행 중
 
 ## 진행 중
-`codex/us2-reservation-tests`에서 T053 Device Activity interval 예외 적용·정리와 공통 잠금 연결을
-완료했다. 현재 진행 중인 구현은 없으며 다음은 T054이다.
+`codex/us2-reservation-tests`에서 T054 Shield 대표 occurrence·해제 동의 콘텐츠와 secondary 닫기
+구성을 완료했다. 현재 진행 중인 구현은 없으며 다음은 T055이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
-운영 활성화·migration은 수행하지 않았다. 앱·Shield의 최신 컨텍스트 provider 연결은 후속 통합에 남아 있다.
+운영 활성화·migration은 수행하지 않았다. Shield primary action의 최신 컨텍스트 provider와 장부·
+route 연결은 후속 통합에 남아 있다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T053 — interval 시작·종료의 동기 예외 적용·만료 정리·공통 잠금 참여
+T054 — Shield 대표 occurrence·종료·남을 제한·무료 우선 비용 안내와 해제/닫기 버튼 구성
 
 ## 다음 작업
-T054 — Shield에 대표 규칙·종료·남을 제한과 단일 해제권 primary action 구성.
+T055 — Shield primary action의 최신 occurrence·장부 검증, 해제·route·OS별 응답 연결.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -36,6 +37,27 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-06 T054: 기존 Shield 콘텐츠 테스트를 active rule revision 기반에서 활성 occurrence·잔액 mirror
+기반 계약으로 먼저 변경해 `now` 주입, secondary button과 새 snapshot 필드 부재의 compile RED를
+확인했다. `AppGroupShieldSnapshotReader`는 규칙·장소와 함께 `active-restrictions.json` 및
+`coin-balance.json`을 동기적으로 읽고 schema를 검증한다. `ShieldContentProvider`는 공통
+`RestrictionOccurrenceEvaluator`로 아직 유효하고 현재 rule revision과 일치하는 occurrence를 정렬한
+뒤 Shield token과 실제로 일치하는 가장 이른 occurrence를 대표로 선택한다. 기존 장소·반경 제목은
+유지하면서 대표 규칙명, occurrence 종료 시각, 이번 구간만 해제, 무료 우선·구매 코인 1개 fallback,
+다른 일치 규칙으로 남을 제한을 subtitle에 표시한다. 읽을 수 있는 모든 balance sync 상태는 실제
+funding source를 미리 단정하지 않고 같은 `해제권 1회 사용` primary와 `앱 닫기` secondary를 사용한다.
+snapshot 손상·만료·대표 occurrence 부재는 기존 일반 문구와 `앱 닫기` primary만 제공한다.
+한국어·영어 기본 문구와 Shield Configuration secondary label을 연결했고 focused suite를 통과했다.
+최종 iPhone 17 Pro iOS 26.5 `GetUpTests` 455개(동적 인자 포함 524회)가 실패·skip 없이 통과했다.
+미구현 `ShieldCoinActionTests.swift`만 명령행에서 제외했고 T045 UI RED는 재실행하지 않았다. 앱·네
+extension의 generic iOS Simulator Release 빌드도 통과했다. 기존 테스트의 불필요한 try·binary strip
+경고는 남아 있다. 최종 결과:
+`/Users/andy/Library/Developer/Xcode/DerivedData/GetUp-adhdrifivmjwlqcgyfrwxilepoks/Logs/Test/Test-GetUp-2026.09.06_16-26-45-+0900.xcresult`.
+현재 primary action은 T055 전까지 기존 fail-closed `.close` 응답을 유지하므로 코인 차감·제한 해제·
+앱 route는 아직 실행하지 않는다. 실제 system Shield layout·VoiceOver·Dynamic Type과 별도 프로세스
+snapshot 읽기는 실기기 인수 전까지 미검증이다. 운영 장부 활성화·schema 배포·원격 데이터 변경은
+하지 않았고 새 차단은 없다.
+
 2026-09-06 T053: 구현 전 공통 interval evaluator와 동기 예외 정리 API 부재의 compile RED를 확인한
 뒤, 시작·종료 callback이 `DeviceActivityIntervalRestrictionHandler`로 최신 규칙·위치·예외를 함께
 동기 재평가하도록 연결했다. 현재 occurrence·revision·유효 기간이 일치하는 예외만 해당 규칙을
