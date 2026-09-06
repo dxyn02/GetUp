@@ -42,7 +42,7 @@ final class UserStory2CoinReleaseUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["coinRelease.test.reservationCount"].label, "0")
 
         app.buttons["coinRelease.requestConfirmation"].tap()
-        let dialog = app.alerts["coinRelease.confirmation"]
+        let dialog = app.alerts["해제권을 사용할까요?"]
         XCTAssertTrue(dialog.waitForExistence(timeout: 2))
         XCTAssertTrue(dialog.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "출근 준비")).firstMatch.exists)
         XCTAssertEqual(app.staticTexts["coinRelease.test.reservationCount"].label, "0")
@@ -58,7 +58,7 @@ final class UserStory2CoinReleaseUITests: XCTestCase {
         let app = launchApp(storeID: #function, overlap: true, holdRelease: true)
         openRelease(in: app)
         app.buttons["coinRelease.requestConfirmation"].tap()
-        let dialog = app.alerts["coinRelease.confirmation"]
+        let dialog = app.alerts["해제권을 사용할까요?"]
         XCTAssertTrue(dialog.waitForExistence(timeout: 2))
         dialog.buttons["해제권 1회 사용"].doubleTap()
         XCTAssertTrue(app.staticTexts["coinRelease.processing"].waitForExistence(timeout: 2))
@@ -78,7 +78,7 @@ final class UserStory2CoinReleaseUITests: XCTestCase {
         let release = app.buttons["restrictionProbe.shield.release"]
         XCTAssertTrue(release.waitForExistence(timeout: 2))
         release.doubleTap()
-        XCTAssertFalse(app.alerts["coinRelease.confirmation"].exists)
+        XCTAssertFalse(app.alerts["해제권을 사용할까요?"].exists)
         XCTAssertTrue(app.staticTexts["coinRelease.processing"].waitForExistence(timeout: 2))
         app.buttons["coinRelease.test.complete"].tap()
         assertOneSpend(in: app)
@@ -87,10 +87,85 @@ final class UserStory2CoinReleaseUITests: XCTestCase {
     }
 
     @MainActor
+    func testEnglishAppAndShieldExplainReleaseBeforeProcessing() {
+        let app = launchApp(
+            storeID: #function,
+            overlap: true,
+            holdRelease: true,
+            language: "en",
+            locale: "en_US"
+        )
+        let openRestrictedApp = app.buttons["restrictionProbe.selectedApplication.open"]
+        XCTAssertTrue(openRestrictedApp.waitForExistence(timeout: 5))
+        openRestrictedApp.tap()
+
+        let shield = app.otherElements["restrictionProbe.shield"]
+        XCTAssertTrue(shield.waitForExistence(timeout: 2))
+        XCTAssertTrue(
+            shield.staticTexts["restrictionProbe.shield.target"].label.contains("출근 준비")
+        )
+        XCTAssertEqual(
+            shield.staticTexts["restrictionProbe.shield.cost"].label,
+            "Monthly free release first · otherwise 1 purchased coin"
+        )
+        XCTAssertTrue(
+            shield.staticTexts["restrictionProbe.shield.endsAt"].label.contains("9:00")
+        )
+        XCTAssertEqual(
+            shield.staticTexts["restrictionProbe.shield.remainingRestrictions"].label,
+            "Restrictions from other rules will remain."
+        )
+        XCTAssertEqual(
+            shield.buttons["restrictionProbe.shield.release"].label,
+            "Use 1 Release"
+        )
+        XCTAssertEqual(
+            shield.buttons["restrictionProbe.shield.close"].label,
+            "Close App"
+        )
+        shield.buttons["restrictionProbe.shield.close"].tap()
+
+        openRelease(in: app)
+        let details = app.otherElements["coinRelease.details"]
+        XCTAssertTrue(details.waitForExistence(timeout: 2))
+        XCTAssertTrue(details.staticTexts["coinRelease.target"].label.contains("출근 준비"))
+        XCTAssertEqual(
+            details.staticTexts["coinRelease.cost"].label,
+            "Monthly free release first · otherwise 1 purchased coin"
+        )
+        XCTAssertTrue(details.staticTexts["coinRelease.endsAt"].label.contains("9:00"))
+        XCTAssertEqual(
+            details.staticTexts["coinRelease.remainingRestrictions"].label,
+            "1 other rule restrictions will remain."
+        )
+
+        let request = app.buttons["coinRelease.requestConfirmation"]
+        XCTAssertEqual(request.label, "Use 1 Release")
+        request.tap()
+        let dialog = app.alerts["Use a release?"]
+        XCTAssertTrue(dialog.waitForExistence(timeout: 2))
+        XCTAssertTrue(
+            dialog.staticTexts.containing(
+                NSPredicate(format: "label CONTAINS %@", "Release ‘출근 준비’")
+            ).firstMatch.exists
+        )
+        XCTAssertTrue(dialog.buttons["Cancel"].exists)
+        dialog.buttons["Use 1 Release"].tap()
+
+        let processing = app.staticTexts["coinRelease.processing"]
+        XCTAssertTrue(processing.waitForExistence(timeout: 2))
+        XCTAssertEqual(processing.label, "Checking release status…")
+        app.buttons["coinRelease.test.complete"].tap()
+        assertOneSpend(in: app)
+    }
+
+    @MainActor
     private func launchApp(
         storeID: String,
         overlap: Bool,
-        holdRelease: Bool = false
+        holdRelease: Bool = false,
+        language: String = "ko",
+        locale: String = "ko_KR"
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [
@@ -100,7 +175,7 @@ final class UserStory2CoinReleaseUITests: XCTestCase {
             "--ui-test-location-state", "inside",
             "--ui-test-coin-release", overlap ? "overlapping" : "single",
             "--ui-test-coin-release-result", holdRelease ? "held-success" : "success",
-            "-AppleLanguages", "(ko)", "-AppleLocale", "ko_KR",
+            "-AppleLanguages", "(\(language))", "-AppleLocale", locale,
         ]
         app.launch()
         return app

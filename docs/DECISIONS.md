@@ -1,5 +1,23 @@
 # 결정 사항
 
+## DEC-100 — 앱과 Shield 확장의 해제 문구 catalog 소유권 분리
+
+**날짜**: 2026-09-06
+
+**결정**: 앱의 해제 화면은 의미 기반 `coinRelease.*` 키를 앱 String Catalog가 소유하고 정적·동적
+문구 모두 `AppLocalizedCopy`로 해석한다. Shield Configuration은 앱 catalog 파일을 target resource로
+재사용하지 않고 `GetUpShieldConfiguration/Resources/Localizable.xcstrings`에 실제 표시하는
+`shield.*` 키와 preset 장소명만 독립적으로 보유한다.
+
+**근거**: 앱 target의 큰 catalog를 extension에 통째로 포함하면 Shield가 사용하지 않는 문구까지
+배포되며 target별 번역 누락을 가린다. 반대로 각 실행 bundle이 사용하는 키를 직접 소유하면 앱과
+Shield의 한국어·영어 의미 동등성을 빌드 산출물에서 독립적으로 확인할 수 있다. 도메인 데이터와
+사용자 지정 규칙명은 번역하지 않으며 `집`·`회사`만 기존 preset 표시 경계를 유지한다.
+
+**검증 경계**: 앱 UI 자동 테스트는 한국어·영어의 대상·비용·종료·다중 규칙·확인·처리를 검증하고,
+Shield provider 단위 테스트는 같은 의미의 한국어·영어 포맷을 검증한다. system Shield 자체의 실제
+렌더링은 실기기 인수 범위이며 이번 결정은 장부·해제 동작을 변경하지 않는다.
+
 ## DEC-099 — 활성 제한 해제의 item-driven sheet와 route 소비 경계
 
 **날짜**: 2026-09-06

@@ -122,7 +122,6 @@
 		AA0000000000000000000192 /* ShieldContentProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000049 /* ShieldContentProvider.swift */; };
 		AA0000000000000000000193 /* ShieldContentProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000049 /* ShieldContentProvider.swift */; };
 		AA0000000000000000000194 /* ShieldConfigurationExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = B80000000000000000000001 /* ShieldConfigurationExtension.swift */; };
-		AA0000000000000000000195 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000022 /* Localizable.xcstrings */; };
 		AA0000000000000000000196 /* ShieldActionResponsePolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000024 /* ShieldActionResponsePolicyTests.swift */; };
 		AA0000000000000000000197 /* ShieldActionResponsePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000050 /* ShieldActionResponsePolicy.swift */; };
 		AA0000000000000000000198 /* ShieldActionResponsePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000050 /* ShieldActionResponsePolicy.swift */; };
@@ -223,6 +222,7 @@
 		AA0000000000000000000307 /* ActiveRestrictionReleaseModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5000000000000000000004E /* ActiveRestrictionReleaseModelTests.swift */; };
 		AA0000000000000000000308 /* ActiveRestrictionReleaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000077 /* ActiveRestrictionReleaseView.swift */; };
 		AA0000000000000000000309 /* ActiveRestrictionReleaseRouterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5000000000000000000004F /* ActiveRestrictionReleaseRouterTests.swift */; };
+		AA000000000000000000030A /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000023 /* Localizable.xcstrings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -303,6 +303,7 @@
 		B30000000000000000000014 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		B30000000000000000000021 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B30000000000000000000022 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		B30000000000000000000023 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Resources/Localizable.xcstrings; sourceTree = "<group>"; };
 		B40000000000000000000001 /* SharedIdentifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedIdentifiers.swift; sourceTree = "<group>"; };
 		B40000000000000000000002 /* RestrictionRuleModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionRuleModels.swift; sourceTree = "<group>"; };
 		B40000000000000000000003 /* RuntimeStateModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuntimeStateModels.swift; sourceTree = "<group>"; };
@@ -904,6 +905,7 @@
 			children = (
 				B80000000000000000000001 /* ShieldConfigurationExtension.swift */,
 				B10400000000000000000001 /* Resources/Assets.xcassets */,
+				B30000000000000000000023 /* Localizable.xcstrings */,
 				B20000000000000000000003 /* GetUpShieldConfiguration.entitlements */,
 				B30000000000000000000003 /* Info.plist */,
 				B30000000000000000000013 /* PrivacyInfo.xcprivacy */,
@@ -1175,7 +1177,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA0000000000000000000013 /* PrivacyInfo.xcprivacy in Resources */,
-				AA0000000000000000000195 /* Localizable.xcstrings in Resources */,
+				AA000000000000000000030A /* Localizable.xcstrings in Resources */,
 				A10400000000000000000001 /* Resources/Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

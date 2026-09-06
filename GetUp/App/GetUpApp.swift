@@ -907,9 +907,12 @@ private struct RestrictionActivationProbeView: View {
             VStack(alignment: .leading, spacing: 8) {
                 releaseProbeStatus(configuration: releaseConfiguration)
 
-                Text(ruleDisplayNames[occurrence.ruleID] ?? "현재 제한")
+                Text(
+                    ruleDisplayNames[occurrence.ruleID]
+                        ?? AppLocalizedCopy.string("coinRelease.target.fallback")
+                )
                     .accessibilityIdentifier("restrictionProbe.shield.target")
-                Text("이번 달 무료 해제권 우선 · 없으면 코인 1개")
+                Text(AppLocalizedCopy.string("coinRelease.cost.value"))
                     .accessibilityIdentifier("restrictionProbe.shield.cost")
                 Text(
                     formattedReleaseTime(
@@ -920,13 +923,13 @@ private struct RestrictionActivationProbeView: View {
                 .accessibilityIdentifier("restrictionProbe.shield.endsAt")
                 Text(
                     releaseConfiguration.model.activeOccurrences.count > 1
-                        ? "다른 규칙의 제한은 계속 유지돼요"
-                        : "다른 규칙 제한은 없어요"
+                        ? AppLocalizedCopy.string("coinRelease.probe.remaining.multiple")
+                        : AppLocalizedCopy.string("coinRelease.probe.remaining.single")
                 )
                 .accessibilityIdentifier("restrictionProbe.shield.remainingRestrictions")
 
                 HStack {
-                    Button("해제권 1회 사용") {
+                    Button(AppLocalizedCopy.string("coinRelease.action.release")) {
                         guard releaseConfiguration.model.requestConfirmation() else {
                             return
                         }
@@ -963,7 +966,7 @@ private struct RestrictionActivationProbeView: View {
         configuration: ActiveRestrictionReleaseConfiguration
     ) -> some View {
         if configuration.model.phase == .processing {
-            Text("해제 상태를 확인하고 있어요")
+            Text(AppLocalizedCopy.string("coinRelease.processing"))
                 .accessibilityIdentifier("coinRelease.processing")
         }
 
@@ -981,7 +984,7 @@ private struct RestrictionActivationProbeView: View {
                 .accessibilityIdentifier("coinRelease.test.remainingOccurrenceCount")
             if instrumentation.holdsExecution,
                configuration.model.phase == .processing {
-                Button("테스트 해제 완료") {
+                Button(AppLocalizedCopy.string("coinRelease.test.complete")) {
                     guard let balance = decrementedProbeBalance(
                         configuration.model.balance
                     ) else { return }

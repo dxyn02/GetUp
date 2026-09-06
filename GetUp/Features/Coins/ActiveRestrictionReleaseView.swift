@@ -213,11 +213,11 @@ struct ActiveRestrictionReleaseView: View {
         }
         .background(HomeColor.background.ignoresSafeArea())
         .foregroundStyle(HomeColor.textPrimary)
-        .navigationTitle("현재 제한 해제")
+        .navigationTitle(AppLocalizedCopy.string("coinRelease.title"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
-                Button("닫기") {
+                Button(AppLocalizedCopy.string("coinRelease.action.close")) {
                     router.clearPreferredRule()
                     dismiss()
                 }
@@ -226,13 +226,13 @@ struct ActiveRestrictionReleaseView: View {
         }
         .interactiveDismissDisabled(model.phase == .processing)
         .alert(
-            instrumentation == nil ? "해제권을 사용할까요?" : "coinRelease.confirmation",
+            AppLocalizedCopy.string("coinRelease.confirmation.title"),
             isPresented: confirmationBinding
         ) {
-            Button("취소", role: .cancel) {
+            Button(AppLocalizedCopy.string("coinRelease.action.cancel"), role: .cancel) {
                 model.cancelConfirmation()
             }
-            Button("해제권 1회 사용") {
+            Button(AppLocalizedCopy.string("coinRelease.action.release")) {
                 Task { await model.confirmRelease() }
             }
         } message: {
@@ -272,7 +272,7 @@ struct ActiveRestrictionReleaseView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("이번 구간만 해제해요")
+            Text(AppLocalizedCopy.string("coinRelease.eyebrow"))
                 .font(.caption)
                 .fontWeight(.bold)
                 .foregroundStyle(HomeColor.accent)
@@ -292,19 +292,19 @@ struct ActiveRestrictionReleaseView: View {
             }
             detailRow(
                 icon: "ticket",
-                title: "사용 비용",
-                value: "이번 달 무료 해제권 우선 · 없으면 코인 1개",
+                title: AppLocalizedCopy.string("coinRelease.cost.title"),
+                value: AppLocalizedCopy.string("coinRelease.cost.value"),
                 identifier: "coinRelease.cost"
             )
             detailRow(
                 icon: "clock",
-                title: "해제 종료",
+                title: AppLocalizedCopy.string("coinRelease.endsAt.title"),
                 value: endsAtText,
                 identifier: "coinRelease.endsAt"
             )
             detailRow(
                 icon: "square.stack.3d.up",
-                title: "남는 제한",
+                title: AppLocalizedCopy.string("coinRelease.remaining.title"),
                 value: remainingRestrictionText,
                 identifier: "coinRelease.remainingRestrictions"
             )
@@ -316,7 +316,10 @@ struct ActiveRestrictionReleaseView: View {
     }
 
     private var occurrencePicker: some View {
-        Picker("해제할 규칙", selection: selectedOccurrenceBinding) {
+        Picker(
+            AppLocalizedCopy.string("coinRelease.target.picker"),
+            selection: selectedOccurrenceBinding
+        ) {
             ForEach(model.activeOccurrences, id: \.id) { occurrence in
                 Text(displayName(for: occurrence)).tag(occurrence.id)
             }
@@ -328,12 +331,12 @@ struct ActiveRestrictionReleaseView: View {
     private var balanceSection: some View {
         HStack(spacing: 12) {
             balanceCard(
-                title: "이번 달 무료",
+                title: AppLocalizedCopy.string("coinRelease.balance.free"),
                 value: model.balance.freeAvailable,
                 identifier: "coinRelease.balance.free"
             )
             balanceCard(
-                title: "구매 코인",
+                title: AppLocalizedCopy.string("coinRelease.balance.purchased"),
                 value: model.balance.purchasedAvailable,
                 identifier: "coinRelease.balance.purchased"
             )
@@ -344,14 +347,20 @@ struct ActiveRestrictionReleaseView: View {
     private var statusSection: some View {
         switch model.phase {
         case .processing:
-            Label("해제 상태를 확인하고 있어요", systemImage: "arrow.triangle.2.circlepath")
+            Label(
+                AppLocalizedCopy.string("coinRelease.processing"),
+                systemImage: "arrow.triangle.2.circlepath"
+            )
                 .foregroundStyle(HomeColor.textSecondary)
                 .accessibilityIdentifier("coinRelease.processing")
         case .released(let fundingSource):
             Label(releasedText(for: fundingSource), systemImage: "checkmark.circle.fill")
                 .foregroundStyle(HomeColor.accent)
         case .blocked(.releaseFailed):
-            Label("해제하지 못했어요. 잔액은 사용되지 않았어요.", systemImage: "exclamationmark.circle")
+            Label(
+                AppLocalizedCopy.string("coinRelease.failed"),
+                systemImage: "exclamationmark.circle"
+            )
                 .foregroundStyle(HomeColor.error)
         case .idle, .confirmationRequested, .blocked:
             EmptyView()
@@ -362,28 +371,40 @@ struct ActiveRestrictionReleaseView: View {
     private var primaryAction: some View {
         switch model.availability {
         case .ready:
-            Button("해제권 1회 사용") {
+            Button(AppLocalizedCopy.string("coinRelease.action.release")) {
                 _ = model.requestConfirmation()
             }
             .buttonStyle(ReleasePrimaryButtonStyle())
             .disabled(!model.canRequestConfirmation)
-            .accessibilityHint("대상과 비용을 다시 확인하는 창을 엽니다.")
+            .accessibilityHint(AppLocalizedCopy.string("coinRelease.action.release.hint"))
             .accessibilityIdentifier("coinRelease.requestConfirmation")
         case .insufficientBalance:
-            routeButton("코인 상점으로 이동", destination: .coinStore)
+            routeButton(
+                AppLocalizedCopy.string("coinRelease.action.coinStore"),
+                destination: .coinStore
+            )
         case .iCloudRecoveryRequired:
-            routeButton("iCloud 잔액 복구", destination: .iCloudRecovery)
+            routeButton(
+                AppLocalizedCopy.string("coinRelease.action.iCloudRecovery"),
+                destination: .iCloudRecovery
+            )
         case .ledgerResetRequired:
-            routeButton("장부 복구 옵션 확인", destination: .ledgerReset)
+            routeButton(
+                AppLocalizedCopy.string("coinRelease.action.ledgerReset"),
+                destination: .ledgerReset
+            )
         case .reconciliationRequired:
-            routeButton("해제 상태 다시 확인", destination: .reconciliation)
+            routeButton(
+                AppLocalizedCopy.string("coinRelease.action.reconciliation"),
+                destination: .reconciliation
+            )
         case .releaseFailed:
-            Button("다시 확인") {
+            Button(AppLocalizedCopy.string("coinRelease.action.retry")) {
                 Task { await refresh() }
             }
             .buttonStyle(ReleasePrimaryButtonStyle())
         case .noActiveRestriction:
-            Text("현재 해제할 제한이 없어요")
+            Text(AppLocalizedCopy.string("coinRelease.noActiveRestriction"))
                 .foregroundStyle(HomeColor.textSecondary)
         }
     }
@@ -399,7 +420,7 @@ struct ActiveRestrictionReleaseView: View {
                 Text(String(instrumentation.remainingOccurrenceCount))
                     .accessibilityIdentifier("coinRelease.test.remainingOccurrenceCount")
                 if instrumentation.holdsExecution, model.phase == .processing {
-                    Button("테스트 해제 완료") {
+                    Button(AppLocalizedCopy.string("coinRelease.test.complete")) {
                         guard let balance = decrementedFixtureBalance else { return }
                         instrumentation.complete(
                             balance: balance,
@@ -488,15 +509,19 @@ struct ActiveRestrictionReleaseView: View {
     }
 
     private var selectedRuleName: String {
-        model.selectedOccurrence.map(displayName(for:)) ?? "현재 제한"
+        model.selectedOccurrence.map(displayName(for:))
+            ?? AppLocalizedCopy.string("coinRelease.target.fallback")
     }
 
     private func displayName(for occurrence: RestrictionOccurrence) -> String {
-        ruleDisplayNames[occurrence.ruleID] ?? "현재 제한"
+        ruleDisplayNames[occurrence.ruleID]
+            ?? AppLocalizedCopy.string("coinRelease.target.fallback")
     }
 
     private var endsAtText: String {
-        guard let occurrence = model.selectedOccurrence else { return "확인 불가" }
+        guard let occurrence = model.selectedOccurrence else {
+            return AppLocalizedCopy.string("coinRelease.endsAt.unavailable")
+        }
         let formatter = DateFormatter()
         formatter.locale = .autoupdatingCurrent
         formatter.timeZone = timeZone
@@ -508,18 +533,22 @@ struct ActiveRestrictionReleaseView: View {
     private var remainingRestrictionText: String {
         let remaining = max(0, model.activeOccurrences.count - 1)
         return remaining == 0
-            ? "이 규칙을 해제하면 다른 규칙 제한은 없어요"
-            : "다른 규칙 \(remaining)개의 제한은 계속 유지돼요"
+            ? AppLocalizedCopy.string("coinRelease.remaining.single")
+            : AppLocalizedCopy.format("coinRelease.remaining.multiple", remaining)
     }
 
     private var confirmationMessage: String {
-        "‘\(selectedRuleName)’의 이번 구간을 해제합니다. \(remainingRestrictionText)"
+        AppLocalizedCopy.format(
+            "coinRelease.confirmation.message",
+            selectedRuleName,
+            remainingRestrictionText
+        )
     }
 
     private func releasedText(for fundingSource: ReleaseFundingSource) -> String {
         fundingSource == .monthlyFree
-            ? "무료 해제권으로 이번 구간을 해제했어요"
-            : "구매 코인 1개로 이번 구간을 해제했어요"
+            ? AppLocalizedCopy.string("coinRelease.released.free")
+            : AppLocalizedCopy.string("coinRelease.released.purchased")
     }
 
     private var decrementedFixtureBalance: CoinBalanceSnapshot? {
@@ -576,23 +605,26 @@ private struct ActiveRestrictionReleaseDestinationView: View {
 
     private var title: String {
         switch destination {
-        case .coinStore: "코인 상점"
-        case .iCloudRecovery: "iCloud 잔액 복구"
-        case .ledgerReset: "장부 복구 옵션"
-        case .reconciliation: "해제 상태 확인"
+        case .coinStore: AppLocalizedCopy.string("coinRelease.destination.coinStore.title")
+        case .iCloudRecovery:
+            AppLocalizedCopy.string("coinRelease.destination.iCloudRecovery.title")
+        case .ledgerReset:
+            AppLocalizedCopy.string("coinRelease.destination.ledgerReset.title")
+        case .reconciliation:
+            AppLocalizedCopy.string("coinRelease.destination.reconciliation.title")
         }
     }
 
     private var message: String {
         switch destination {
         case .coinStore:
-            "사용 가능한 해제권이 없어요. 구매할 코인 상품과 가격을 확인해 주세요."
+            AppLocalizedCopy.string("coinRelease.destination.coinStore.message")
         case .iCloudRecovery:
-            "iCloud 연결과 최신 장부 상태를 확인한 뒤 다시 시도해 주세요."
+            AppLocalizedCopy.string("coinRelease.destination.iCloudRecovery.message")
         case .ledgerReset:
-            "장부 삭제 여부를 확인해야 해요. 구매 잔액을 임의로 복원하거나 초기화하지 않습니다."
+            AppLocalizedCopy.string("coinRelease.destination.ledgerReset.message")
         case .reconciliation:
-            "이전 해제 요청의 결과를 확인하고 있어요. 확인이 끝나기 전에는 새 해제권을 사용하지 않습니다."
+            AppLocalizedCopy.string("coinRelease.destination.reconciliation.message")
         }
     }
 

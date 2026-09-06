@@ -79,7 +79,7 @@ struct RestrictionStatusView: View {
                 Spacer(minLength: 0)
 
                 if releaseConfiguration != nil {
-                    Button("해제권 1회 사용") {
+                    Button(AppLocalizedCopy.string("coinRelease.action.release")) {
                         releaseConfiguration?.router.prefer(ruleID: item.id)
                         presentedSheet = .release
                     }
@@ -90,7 +90,9 @@ struct RestrictionStatusView: View {
                     .background(HomeColor.accent, in: .rect(cornerRadius: 14))
                     .contentShape(.rect)
                     .buttonStyle(.plain)
-                    .accessibilityHint("해제 대상, 비용과 유지되는 다른 제한을 확인합니다.")
+                    .accessibilityHint(
+                        AppLocalizedCopy.string("coinRelease.open.hint")
+                    )
                     .accessibilityIdentifier("coinRelease.open")
                 }
 
