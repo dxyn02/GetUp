@@ -7,19 +7,19 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 5 사용자 스토리 3 구현 진행 중
 
 ## 진행 중
-`codex/us3-product-catalog-tests`에서 T067 StoreKit 2 구매 adapter를 구현했다. T059 catalog는
-GREEN을 유지하며 후속 구매·observer·환불·장부 lifecycle·복구·UI 테스트는 해당 US3 구현 전의
-의도된 TDD RED 상태다. 다음은 T068이다.
+`codex/us3-product-catalog-tests`에서 T068 코인 구매 service를 구현했다. T059 catalog와 T060 구매
+service 테스트는 GREEN이며 후속 observer·환불·장부 lifecycle·복구·UI 테스트는 해당 US3 구현
+전의 의도된 TDD RED 상태다. 다음은 T069이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T067 — StoreKit 2 상품·구매·unfinished·update·finish adapter
+T068 — current 장부 사전 조건과 검증 구매의 CloudKit 지급·finish 조정 service
 
 ## 다음 작업
-T068 — current 사전 조건과 검증 거래의 CloudKit 지급·finish 구매 service 구현.
+T069 — 앱 시작 transaction listener와 unfinished·updates 재처리 observer 구현.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -38,6 +38,22 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-07 T068: `CoinPurchaseService`를 추가해 승인 catalog 상품과 `current` 장부 상태를 확인한
+뒤에만 StoreKit 구매를 시작하도록 했다. verified 결과는 선택 상품과 transaction 상품이 일치하고
+철회되지 않았을 때 catalog 수량으로 `CoinLedgerRepository.grantPurchase`를 먼저 완료한 후에만
+transaction을 finish한다. unverified는 검증 실패로 거부하고 pending·userCancelled는 지급·finish
+없이 각각 대기·취소 결과를 반환하며, StoreKit·CloudKit·finish 오류는 원래 오류를 보존해 재시도할
+수 있게 했다. observer가 전달할 verified transaction도 같은 current·catalog·commit-before-finish
+경계를 사용한다.
+
+T060 집중 테스트 7개와 T059 회귀를 포함한 13개 테스트는 iPhone 17 Pro iOS 26.5 Simulator에서
+실패·skip 없이 통과했고, 앱의 generic iOS Simulator Release 빌드와 project plist 검사도 통과했다.
+첫 집중 실행은 아직 구현 전인 T069·T072 타입을 참조하는 선행 RED 테스트가 테스트 타깃 전체 compile에
+포함되어 종료됐으며, 후속 실행은 원본 파일을 변경하지 않고 해당 RED source 4개만 build setting에서
+임시 제외했다. T063의 catalog fixture는 세 승인 상품을 모두 요구하는 T059·T066 계약과 일치하도록
+보정했으며, lifecycle 전체 실행은 T072 구현 뒤 검증한다. 운영 StoreKit 구매·CloudKit 원격 데이터는
+호출하거나 변경하지 않았고 새 제품 차단은 없다.
+
 2026-09-07 T067: `StoreKitPurchaseAdapter` actor를 추가해 `Product.products(for:)`의 consumable
 상품만 `CoinStoreProduct`로 변환하고 StoreKit의 현지화 이름·설명·가격을 그대로 전달한다. 상품
 로드를 시작할 때 기존 `Product` cache를 비우고 실패는 `productUnavailable`로 정규화하며, 실제

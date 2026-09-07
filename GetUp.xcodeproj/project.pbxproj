@@ -232,6 +232,7 @@
 		AA0000000000000000000311 /* UserStory3CoinPurchaseUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000007 /* UserStory3CoinPurchaseUITests.swift */; };
 		AA0000000000000000000312 /* CoinProductCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000079 /* CoinProductCatalog.swift */; };
 		AA0000000000000000000313 /* StoreKitPurchaseAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000080 /* StoreKitPurchaseAdapter.swift */; };
+		AA0000000000000000000314 /* CoinPurchaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000081 /* CoinPurchaseService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -454,6 +455,7 @@
 		B60000000000000000000007 /* UserStory3CoinPurchaseUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory3CoinPurchaseUITests.swift; sourceTree = "<group>"; };
 		B40000000000000000000079 /* CoinProductCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinProductCatalog.swift; sourceTree = "<group>"; };
 		B40000000000000000000080 /* StoreKitPurchaseAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitPurchaseAdapter.swift; sourceTree = "<group>"; };
+		B40000000000000000000081 /* CoinPurchaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinPurchaseService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -591,6 +593,7 @@
 		B40000000000000000000015 /* StateMachine */ = {
 			isa = PBXGroup;
 			children = (
+				B40000000000000000000081 /* CoinPurchaseService.swift */,
 				B40000000000000000000061 /* MonthlyAllowanceService.swift */,
 				B40000000000000000000069 /* RuleReleaseService.swift */,
 				B40000000000000000000006 /* RestrictionStateMachine.swift */,
@@ -1262,6 +1265,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000314 /* CoinPurchaseService.swift in Sources */,
 				AA0000000000000000000313 /* StoreKitPurchaseAdapter.swift in Sources */,
 				AA0000000000000000000312 /* CoinProductCatalog.swift in Sources */,
 				AA0000000000000000000308 /* ActiveRestrictionReleaseView.swift in Sources */,

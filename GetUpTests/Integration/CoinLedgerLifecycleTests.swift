@@ -157,11 +157,17 @@ private extension CoinLedgerLifecycleTests {
     static let resetEpochID = UUID(uuidString: "00000000-0000-4000-8000-000000000802")!
 
     static var catalogInfoDictionary: [String: Any] {
+        [SharedIdentifiers.coinProductCatalogInfoDictionaryKey: [
+            catalogEntry(productID: productID, quantity: 1),
+            catalogEntry(productID: "com.dxyn02.GetUp.coin.3", quantity: 3),
+            catalogEntry(productID: "com.dxyn02.GetUp.coin.5", quantity: 5),
+        ]]
+    }
+
+    static func catalogEntry(productID: String, quantity: Int) -> [String: Any] {
         [
-            SharedIdentifiers.coinProductCatalogInfoDictionaryKey: [[
-                SharedIdentifiers.coinProductIdentifierCatalogKey: productID,
-                SharedIdentifiers.coinProductQuantityCatalogKey: 1,
-            ]],
+            SharedIdentifiers.coinProductIdentifierCatalogKey: productID,
+            SharedIdentifiers.coinProductQuantityCatalogKey: quantity,
         ]
     }
 
