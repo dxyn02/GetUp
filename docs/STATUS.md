@@ -7,19 +7,19 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 5 사용자 스토리 3 구현 진행 중
 
 ## 진행 중
-`codex/us3-product-catalog-tests`에서 T073 기존 장부 복구와 projection 검증 서비스를 구현했다.
-T059 catalog부터 T064 새 설치 복구까지 구현된 계약은 GREEN이며, T065 UI 테스트만 후속 화면 구현
-전의 의도된 TDD RED 상태다. 다음은 T074이다.
+`codex/us3-product-catalog-tests`에서 T074 코인 상점 상태 모델을 구현했다. T059 catalog부터 T064
+새 설치 복구와 T074 모델까지 구현된 계약은 GREEN이며, T065 UI 테스트만 후속 화면 구현 전의
+의도된 TDD RED 상태다. 다음은 T075이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T073 — current 원격 장부의 지급·사용·보정 projection 검증과 무지급 복구
+T074 — 상품·구매·pending·잔액·장부 삭제 상태를 관리하는 코인 상점 모델
 
 ## 다음 작업
-T074 — 상품·구매·pending·잔액·장부 삭제 상태를 관리하는 `CoinStoreModel` 구현.
+T075 — 최초 활성화·삭제 reset·상품·구매 확인·내역·iCloud 복구 화면 구현.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -38,6 +38,24 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-07 T074: `CoinStoreModel`을 `@MainActor @Observable` 상태 경계로 추가해 StoreKit 현지화 상품
+목록, 판매 불가 상품, 상품 로드 오류, CloudKit 확정 잔액·지급·event 내역, pending 상품과 release
+reconciliation을 한곳에서 관리하도록 했다. `current`에서 로드된 상품만 구매 확인을 요청할 수 있고,
+`setupRequired`·`syncing`·`stale`·`unavailable`·`deletionConfirmed`·`resetRequired` 및 pending
+reconciliation에서는 구매 executor를 호출하지 않는다. 구매 확인과 실행을 분리하고 실행 중 중복
+확정을 한 번으로 제한하며, verified 지급은 주입된 authoritative ledger snapshot으로만 잔액·내역을
+교체한다. pending·취소·오류는 잔액을 만들지 않고, pending 상품 ID는 수명주기에서 다시 주입할 수
+있는 `CoinStoreLedgerState`에 포함했다. 화면·setup/reset action·실제 app lifecycle 조립은 계획대로
+T075·T076 범위에 남겼다.
+
+구현 전 집중 테스트는 `CoinStoreModel` 관련 타입 부재로 예상대로 컴파일 실패해 TDD RED를 확인했다.
+구현 후 집중 테스트 10개 선언은 동적 인자 포함 21회 모두 통과했고, 전체 `GetUpTests` 542개 선언은
+동적 인자 포함 654회 iPhone 17 Pro iOS 26.5 Simulator에서 실패·skip 없이 통과했다. generic iOS
+Simulator Release 빌드, Swift 구문, project plist·diff 검사도 통과했다. 기존
+`LocationMonitoringAdapterTests`의 불필요한 `try`와 Xcode 테스트 런타임 binary strip 경고가 남아
+있으며 T074 동작 실패는 아니다. 운영 CloudKit·StoreKit 데이터는 호출하거나 변경하지 않았고 새
+제품 차단은 없다.
+
 2026-09-07 T073: `CoinLedgerRecoveryService`를 추가해 원격 snapshot이 있고 sync 상태가 `current`인
 경우에만 기존 epoch·account·당월 allowance·`PurchaseGrant`·event를 검증하고, 새 지급이나 StoreKit
 작업 없이 local mirror와 기존 지급·내역을 그대로 반환하도록 했다. epoch 사유별 삭제 월 억제 정책,

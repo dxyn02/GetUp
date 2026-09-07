@@ -238,6 +238,8 @@
 		AA0000000000000000000317 /* CoinLedgerSetupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000084 /* CoinLedgerSetupService.swift */; };
 		AA0000000000000000000318 /* CoinLedgerResetService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000085 /* CoinLedgerResetService.swift */; };
 		AA0000000000000000000319 /* CoinLedgerRecoveryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000086 /* CoinLedgerRecoveryService.swift */; };
+		AA000000000000000000031A /* CoinStoreModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000057 /* CoinStoreModelTests.swift */; };
+		AA000000000000000000031B /* CoinStoreModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000087 /* CoinStoreModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -466,6 +468,8 @@
 		B40000000000000000000084 /* CoinLedgerSetupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinLedgerSetupService.swift; sourceTree = "<group>"; };
 		B40000000000000000000085 /* CoinLedgerResetService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinLedgerResetService.swift; sourceTree = "<group>"; };
 		B40000000000000000000086 /* CoinLedgerRecoveryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinLedgerRecoveryService.swift; sourceTree = "<group>"; };
+		B50000000000000000000057 /* CoinStoreModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinStoreModelTests.swift; sourceTree = "<group>"; };
+		B40000000000000000000087 /* CoinStoreModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinStoreModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -704,6 +708,7 @@
 		B40000000000000000000076 /* Coins */ = {
 			isa = PBXGroup;
 			children = (
+				B40000000000000000000087 /* CoinStoreModel.swift */,
 				B40000000000000000000075 /* ActiveRestrictionReleaseModel.swift */,
 				B40000000000000000000077 /* ActiveRestrictionReleaseView.swift */,
 			);
@@ -814,6 +819,7 @@
 				B50000000000000000000054 /* PurchaseRefundReconcilerTests.swift */,
 				B5000000000000000000004F /* ActiveRestrictionReleaseRouterTests.swift */,
 				B5000000000000000000004E /* ActiveRestrictionReleaseModelTests.swift */,
+				B50000000000000000000057 /* CoinStoreModelTests.swift */,
 				B50000000000000000000049 /* RuleReleaseServiceTests.swift */,
 				B50000000000000000000048 /* CoinReservationPolicyTests.swift */,
 				B50000000000000000000043 /* LiveActivityTimePolicyTests.swift */,
@@ -1280,6 +1286,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA000000000000000000031B /* CoinStoreModel.swift in Sources */,
 				AA0000000000000000000319 /* CoinLedgerRecoveryService.swift in Sources */,
 				AA0000000000000000000318 /* CoinLedgerResetService.swift in Sources */,
 				AA0000000000000000000317 /* CoinLedgerSetupService.swift in Sources */,
@@ -1466,6 +1473,7 @@
 				AA000000000000000000030B /* CoinProductCatalogTests.swift in Sources */,
 				AA0000000000000000000309 /* ActiveRestrictionReleaseRouterTests.swift in Sources */,
 				AA0000000000000000000307 /* ActiveRestrictionReleaseModelTests.swift in Sources */,
+				AA000000000000000000031A /* CoinStoreModelTests.swift in Sources */,
 				AA0000000000000000000283 /* ShieldReleaseDeadlineTests.swift in Sources */,
 				AA0000000000000000000282 /* ShieldCoinActionTests.swift in Sources */,
 				AA0000000000000000000281 /* RuleReleaseCoordinatorTests.swift in Sources */,
