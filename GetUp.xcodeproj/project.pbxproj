@@ -233,6 +233,7 @@
 		AA0000000000000000000312 /* CoinProductCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000079 /* CoinProductCatalog.swift */; };
 		AA0000000000000000000313 /* StoreKitPurchaseAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000080 /* StoreKitPurchaseAdapter.swift */; };
 		AA0000000000000000000314 /* CoinPurchaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000081 /* CoinPurchaseService.swift */; };
+		AA0000000000000000000315 /* StoreKitTransactionObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000082 /* StoreKitTransactionObserver.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -456,6 +457,7 @@
 		B40000000000000000000079 /* CoinProductCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinProductCatalog.swift; sourceTree = "<group>"; };
 		B40000000000000000000080 /* StoreKitPurchaseAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitPurchaseAdapter.swift; sourceTree = "<group>"; };
 		B40000000000000000000081 /* CoinPurchaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinPurchaseService.swift; sourceTree = "<group>"; };
+		B40000000000000000000082 /* StoreKitTransactionObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitTransactionObserver.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -622,6 +624,7 @@
 			children = (
 				B40000000000000000000079 /* CoinProductCatalog.swift */,
 				B40000000000000000000080 /* StoreKitPurchaseAdapter.swift */,
+				B40000000000000000000082 /* StoreKitTransactionObserver.swift */,
 			);
 			path = StoreKit;
 			sourceTree = "<group>";
@@ -1265,6 +1268,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000315 /* StoreKitTransactionObserver.swift in Sources */,
 				AA0000000000000000000314 /* CoinPurchaseService.swift in Sources */,
 				AA0000000000000000000313 /* StoreKitPurchaseAdapter.swift in Sources */,
 				AA0000000000000000000312 /* CoinProductCatalog.swift in Sources */,

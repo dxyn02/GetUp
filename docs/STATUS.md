@@ -7,19 +7,19 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 5 사용자 스토리 3 구현 진행 중
 
 ## 진행 중
-`codex/us3-product-catalog-tests`에서 T068 코인 구매 service를 구현했다. T059 catalog와 T060 구매
-service 테스트는 GREEN이며 후속 observer·환불·장부 lifecycle·복구·UI 테스트는 해당 US3 구현
-전의 의도된 TDD RED 상태다. 다음은 T069이다.
+`codex/us3-product-catalog-tests`에서 T069 StoreKit transaction observer를 구현했다. T059 catalog,
+T060 구매 service와 T061 observer 테스트는 GREEN이며 후속 환불·장부 lifecycle·복구·UI 테스트는
+해당 US3 구현 전의 의도된 TDD RED 상태다. 다음은 T070이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T068 — current 장부 사전 조건과 검증 구매의 CloudKit 지급·finish 조정 service
+T069 — listener 선개방과 unfinished·updates 재처리 StoreKit transaction observer
 
 ## 다음 작업
-T069 — 앱 시작 transaction listener와 unfinished·updates 재처리 observer 구현.
+T070 — 검증된 환불·철회의 미사용 구매 코인 역분개 구현.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -38,6 +38,21 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-07 T069: `StoreKitTransactionObserver`를 추가해 앱 시작 시 `transactionUpdates()` stream을
+먼저 확보하고 별도 task에서 소비한 뒤 unfinished transaction을 조회하도록 했다. 두 입력 경로의
+verified transaction은 모두 T068의 같은 `processVerifiedTransaction` 경계로 전달해 CloudKit 지급
+commit 후에만 finish하며, unverified update는 지급하지 않고 뒤의 verified update 처리를 계속한다.
+listener 종료를 기다리는 API는 처리 오류를 호출자에게 전달하고 중복 start는 새 listener를 만들지
+않는다.
+
+T061 집중 테스트 7개와 T059~T061 StoreKit 회귀 20개는 iPhone 17 Pro iOS 26.5 Simulator에서
+실패·skip 없이 통과했고, 앱의 generic iOS Simulator Release 빌드와 project plist 검사도 통과했다.
+아직 구현 전인 T070·T072의 선행 RED 테스트 세 파일은 원본을 변경하지 않고 집중 test build
+setting에서만 임시 제외했다. 테스트 build에는 기존 `LocationMonitoringAdapterTests`의 불필요한
+`try` 경고와 Xcode 테스트 런타임 binary strip 경고가 남아 있으며 T069 동작 실패는 아니다. 실제
+StoreKit sandbox의 장기 실행 updates·unfinished 복구는 T094 실기기 검증까지 미확인 상태이고 운영
+거래·CloudKit 원격 데이터는 호출하거나 변경하지 않았다. 새 제품 차단은 없다.
+
 2026-09-07 T068: `CoinPurchaseService`를 추가해 승인 catalog 상품과 `current` 장부 상태를 확인한
 뒤에만 StoreKit 구매를 시작하도록 했다. verified 결과는 선택 상품과 transaction 상품이 일치하고
 철회되지 않았을 때 catalog 수량으로 `CoinLedgerRepository.grantPurchase`를 먼저 완료한 후에만

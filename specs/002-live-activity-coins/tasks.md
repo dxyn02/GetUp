@@ -169,7 +169,7 @@ occurrence만 예외 처리되는지, 중복 100회에서 최대 1회만 소모�
 - [x] T066 [P] [US3] bundle catalog를 1개·3개·5개 허용 상품으로 검증하는 `GetUp/Infrastructure/StoreKit/CoinProductCatalog.swift`를 구현한다.
 - [x] T067 [P] [US3] `Product.products(for:)`, 현지 가격과 purchase 결과를 감싸는 `GetUp/Infrastructure/StoreKit/StoreKitPurchaseAdapter.swift`를 구현한다.
 - [x] T068 [US3] `current` 사전 조건, 검증 거래, CloudKit PurchaseGrant commit 후 finish를 조정하는 `GetUp/Core/StateMachine/CoinPurchaseService.swift`를 구현한다.
-- [ ] T069 [US3] 앱 시작 시 listener를 먼저 열고 unfinished·`Transaction.updates`를 같은 지급 키로 재처리하는 `GetUp/Infrastructure/StoreKit/StoreKitTransactionObserver.swift`를 구현한다.
+- [x] T069 [US3] 앱 시작 시 listener를 먼저 열고 unfinished·`Transaction.updates`를 같은 지급 키로 재처리하는 `GetUp/Infrastructure/StoreKit/StoreKitTransactionObserver.swift`를 구현한다.
 - [ ] T070 [US3] 검증된 환불·철회를 미사용 구매 코인 범위에서 역분개하는 `GetUp/Core/StateMachine/PurchaseRefundReconciler.swift`를 구현한다.
 - [ ] T071 [US3] zone 삭제 event·`userDeletedZone`·기존 장부 표식을 구분하고 구매·사용을 잠그도록 `GetUp/Infrastructure/CloudKit/CoinLedgerSyncAdapter.swift`를 확장한다.
 - [ ] T072 [US3] 원격 장부·삭제 증거가 없는 `setupRequired`에서 사용자 동의 뒤 initial epoch+당월 quota 2를 atomic 생성하는 `GetUp/Infrastructure/CloudKit/CoinLedgerSetupService.swift`와, 삭제 확인 뒤 새 epoch+구매 0+당월 quota 0을 atomic 생성하고 local mirror 자동 복원을 금지하는 `GetUp/Infrastructure/CloudKit/CoinLedgerResetService.swift`를 서로 다른 entry point와 허용 상태로 구현한다.
