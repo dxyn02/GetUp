@@ -8,21 +8,21 @@
 
 ## 진행 중
 Pull Request #30으로 US3 T059~T077을 `main`에 병합하고 최신 `main`에서
-`codex/us4-monthly-lifecycle-tests`를 분기했다. T078에서 Phase 2의 `MonthlyAllowancePolicy`·
-`MonthlyAllowanceService`와 `AppLifecycleCoordinator`를 함께 사용하는 수명주기 인수 테스트를
-추가했다. 서울 월 경계의 foreground 지연 생성, 자정 background 미생성, 기기 시간대 변경 무관성,
-삭제 reset 월 quota 0과 다음 서울 월 quota 2 재개를 검증한다. 다음은 T079다.
+`codex/us4-monthly-lifecycle-tests`를 분기했다. T078의 app lifecycle 인수 테스트에 이어 T079에서
+`MonthlyAllowanceService`와 `RuleReleaseService`를 실제 조합한 사용자 스토리 회귀 테스트를
+추가했다. 새달 첫 app foreground와 첫 Shield 요청의 지연 생성, 월 중간 quota 2, 이전 달 비이월,
+구매 잔액 보존과 무료분 우선 원자 예약을 검증한다. 다음은 T080이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T078 — 서울 월 경계·자정 background 미생성·기기 시간대 변경·reset 억제 월 app lifecycle 인수 테스트
+T079 — 새달 첫 app·Shield 지연 생성, 비이월, 구매 잔액 보존과 무료 우선 사용자 스토리 회귀 테스트
 
 ## 다음 작업
-T079 — 새달 첫 app foreground·첫 Shield 요청 지연 생성, 월 중간 최초 2회, 비이월, 구매 잔액 보존,
-무료 우선 사용 사용자 스토리 회귀 테스트를 먼저 작성한다.
+T080 — 같은 record ID 다기기 100회와 server creationDate 불일치·account 불가 재시도 조건을
+집계하는 CloudKit 월간 인수 harness를 작성한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -41,6 +41,17 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-07 T079: `MonthlyAllowanceUserStoryTests` 2개를 추가했다. 이전 달 무료분 2회가 남아 있어도
+새달 월 중간 첫 app foreground 전에는 allowance가 없고, foreground 뒤에는 누적 4회가 아닌 새달
+quota 2만 생성되며 구매 잔액 5는 그대로 유지됨을 검증했다. 첫 Shield 요청에서는 별도 선행 생성
+호출 없이 `reserveMonthlyFree` 한 번으로 당월 quota 2를 생성하고 1회를 예약해 available 1이 되며,
+구매 코인보다 무료분을 선택하고 구매 잔액과 이전 달 allowance를 변경하지 않는지 검증했다. Phase 2
+기반 구현을 인수하는 회귀 테스트이므로 추가 즉시 2개 모두 GREEN이었다. 전체 `GetUpTests` 555개
+선언은 동적 인자 포함 667회 모두 실패·skip 없이 통과했고 generic iOS Simulator Release 빌드,
+project plist·diff 검사도 통과했다. 기존 signed test binary strip, `StoreKitTest` header deprecation과
+`LocationMonitoringAdapterTests`의 불필요한 `try` 경고가 남아 있으며 T079 동작 실패는 아니다.
+운영 CloudKit·StoreKit 데이터는 호출하거나 변경하지 않았고 새 제품 차단은 없다.
+
 2026-09-07 T078: `MonthlyAllowanceLifecycleTests` 4개를 추가해 서울 기준 2026-09 월 경계 직전
 foreground는 8월 allowance를 만들고 경계 이후 다음 foreground에서만 9월 allowance를 만드는지
 검증했다. 앱이 비활성인 채 자정을 지나면 새 allowance가 자동 생성되지 않으며, 같은 절대 시각에서
