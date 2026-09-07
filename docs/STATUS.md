@@ -7,19 +7,19 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 5 사용자 스토리 3 구현 진행 중
 
 ## 진행 중
-`codex/us3-product-catalog-tests`에서 T066의 1개·3개·5개 bundle 상품 허용 catalog 구현을 완료해
-T059를 GREEN으로 전환했다. 후속 구매·observer·환불·장부 lifecycle·복구·UI 테스트는 해당 US3
-구현 전의 의도된 TDD RED 상태이며 다음은 T067이다.
+`codex/us3-product-catalog-tests`에서 T067 StoreKit 2 구매 adapter를 구현했다. T059 catalog는
+GREEN을 유지하며 후속 구매·observer·환불·장부 lifecycle·복구·UI 테스트는 해당 US3 구현 전의
+의도된 TDD RED 상태다. 다음은 T068이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T066 — bundle의 1개·3개·5개 허용 상품 검증과 StoreKit 표시 결과 정렬
+T067 — StoreKit 2 상품·구매·unfinished·update·finish adapter
 
 ## 다음 작업
-T067 — StoreKit `Product.products(for:)`, 현지 가격과 purchase 결과 adapter 구현.
+T068 — current 사전 조건과 검증 거래의 CloudKit 지급·finish 구매 service 구현.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -38,6 +38,21 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-07 T067: `StoreKitPurchaseAdapter` actor를 추가해 `Product.products(for:)`의 consumable
+상품만 `CoinStoreProduct`로 변환하고 StoreKit의 현지화 이름·설명·가격을 그대로 전달한다. 상품
+로드를 시작할 때 기존 `Product` cache를 비우고 실패는 `productUnavailable`로 정규화하며, 실제
+구매는 직전에 로드된 상품만 허용한다. purchase의 verified·unverified·pending·userCancelled와
+오류를 도메인 결과로 변환하고, production은 production 장부로, sandbox·Xcode 환경은 sandbox
+장부로 매핑하며 알 수 없는 환경은 verified로 승격하지 않는다.
+
+검증된 unfinished·`Transaction.updates`를 동일 변환 경계로 전달하고 transaction ID별 StoreKit
+객체를 보존해 CloudKit 지급 뒤에만 `finish`할 수 있게 했다. cache가 없는 finish 재시도는 StoreKit
+unfinished에서 같은 verified transaction을 다시 찾으며, 찾지 못하거나 지원하지 않는 환경이면
+`finishFailed`로 종료한다. T059 catalog 회귀 6개는 iPhone 17 Pro iOS 26.5 Simulator에서 실패·skip
+없이 통과했고, 앱과 네 extension의 Debug·Release generic Simulator 빌드, Swift 구문, project
+plist와 diff 검사도 통과했다. 실제 StoreKit Configuration 구매·pending·finish 런타임은 T077까지
+미검증 상태이며 운영 결제나 App Store Connect 상품은 호출·변경하지 않았다.
+
 2026-09-07 T066: `GetUpCoinProductCatalog`가 승인된
 `com.dxyn02.GetUp.coin.1`·`.3`·`.5`를 각각 1·3·5개로 정확히 매핑할 때만 생성되는
 `CoinProductCatalog`를 구현했다. 항목 누락·중복·수량 변조를 거부하고 미허용 StoreKit 상품을

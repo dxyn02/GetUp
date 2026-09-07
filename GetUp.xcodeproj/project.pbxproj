@@ -231,6 +231,7 @@
 		AA0000000000000000000310 /* CoinLedgerFreshInstallRecoveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000056 /* CoinLedgerFreshInstallRecoveryTests.swift */; };
 		AA0000000000000000000311 /* UserStory3CoinPurchaseUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000007 /* UserStory3CoinPurchaseUITests.swift */; };
 		AA0000000000000000000312 /* CoinProductCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000079 /* CoinProductCatalog.swift */; };
+		AA0000000000000000000313 /* StoreKitPurchaseAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000080 /* StoreKitPurchaseAdapter.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -452,6 +453,7 @@
 		B50000000000000000000056 /* CoinLedgerFreshInstallRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinLedgerFreshInstallRecoveryTests.swift; sourceTree = "<group>"; };
 		B60000000000000000000007 /* UserStory3CoinPurchaseUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory3CoinPurchaseUITests.swift; sourceTree = "<group>"; };
 		B40000000000000000000079 /* CoinProductCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinProductCatalog.swift; sourceTree = "<group>"; };
+		B40000000000000000000080 /* StoreKitPurchaseAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitPurchaseAdapter.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -616,6 +618,7 @@
 			isa = PBXGroup;
 			children = (
 				B40000000000000000000079 /* CoinProductCatalog.swift */,
+				B40000000000000000000080 /* StoreKitPurchaseAdapter.swift */,
 			);
 			path = StoreKit;
 			sourceTree = "<group>";
@@ -1259,6 +1262,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000313 /* StoreKitPurchaseAdapter.swift in Sources */,
 				AA0000000000000000000312 /* CoinProductCatalog.swift in Sources */,
 				AA0000000000000000000308 /* ActiveRestrictionReleaseView.swift in Sources */,
 				AA0000000000000000000306 /* ActiveRestrictionReleaseModel.swift in Sources */,
