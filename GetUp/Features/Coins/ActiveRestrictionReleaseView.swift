@@ -578,7 +578,7 @@ private struct ReleasePrimaryButtonStyle: ButtonStyle {
     }
 }
 
-private struct ActiveRestrictionReleaseDestinationView: View {
+struct ActiveRestrictionReleaseDestinationView: View {
     let destination: PendingAppRouteDestination
 
     var body: some View {

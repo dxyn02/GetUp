@@ -242,6 +242,8 @@
 		AA000000000000000000031B /* CoinStoreModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000087 /* CoinStoreModel.swift */; };
 		AA000000000000000000031C /* CoinStoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000088 /* CoinStoreView.swift */; };
 		AA000000000000000000031D /* CoinLedgerHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000089 /* CoinLedgerHistoryView.swift */; };
+		AA000000000000000000031E /* CoinAppLifecycleCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000058 /* CoinAppLifecycleCoordinatorTests.swift */; };
+		AA000000000000000000031F /* CoinAppLifecycleComposition.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000000000000000000008A /* CoinAppLifecycleComposition.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -354,6 +356,7 @@
 		B40000000000000000000045 /* RestrictionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionCoordinator.swift; sourceTree = "<group>"; };
 		B40000000000000000000046 /* AuthorizationAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationAdapter.swift; sourceTree = "<group>"; };
 		B40000000000000000000047 /* AppLifecycleCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLifecycleCoordinator.swift; sourceTree = "<group>"; };
+		B4000000000000000000008A /* CoinAppLifecycleComposition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinAppLifecycleComposition.swift; sourceTree = "<group>"; };
 		B40000000000000000000049 /* ShieldContentProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldContentProvider.swift; sourceTree = "<group>"; };
 		B40000000000000000000050 /* ShieldActionResponsePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldActionResponsePolicy.swift; sourceTree = "<group>"; };
 		B40000000000000000000051 /* RestrictionStatusModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStatusModel.swift; sourceTree = "<group>"; };
@@ -474,6 +477,7 @@
 		B40000000000000000000087 /* CoinStoreModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinStoreModel.swift; sourceTree = "<group>"; };
 		B40000000000000000000088 /* CoinStoreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinStoreView.swift; sourceTree = "<group>"; };
 		B40000000000000000000089 /* CoinLedgerHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinLedgerHistoryView.swift; sourceTree = "<group>"; };
+		B50000000000000000000058 /* CoinAppLifecycleCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinAppLifecycleCoordinatorTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -682,6 +686,7 @@
 			isa = PBXGroup;
 			children = (
 				B40000000000000000000047 /* AppLifecycleCoordinator.swift */,
+				B4000000000000000000008A /* CoinAppLifecycleComposition.swift */,
 				B40000000000000000000008 /* DependencyContainer.swift */,
 				B40000000000000000000038 /* AppModel.swift */,
 				B40000000000000000000039 /* GetUpApp.swift */,
@@ -871,6 +876,7 @@
 		B50000000000000000000014 /* Integration */ = {
 			isa = PBXGroup;
 			children = (
+				B50000000000000000000058 /* CoinAppLifecycleCoordinatorTests.swift */,
 				B50000000000000000000056 /* CoinLedgerFreshInstallRecoveryTests.swift */,
 				B50000000000000000000055 /* CoinLedgerLifecycleTests.swift */,
 				B5000000000000000000004D /* ShieldReleaseDeadlineTests.swift */,
@@ -1357,6 +1363,7 @@
 				AA0000000000000000000180 /* RestrictionCoordinator.swift in Sources */,
 				AA0000000000000000000183 /* AuthorizationAdapter.swift in Sources */,
 				AA0000000000000000000185 /* AppLifecycleCoordinator.swift in Sources */,
+				AA000000000000000000031F /* CoinAppLifecycleComposition.swift in Sources */,
 				AA0000000000000000000192 /* ShieldContentProvider.swift in Sources */,
 				AA0000000000000000000197 /* ShieldActionResponsePolicy.swift in Sources */,
 				AA0000000000000000000201 /* RestrictionStatusModel.swift in Sources */,
@@ -1473,6 +1480,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA000000000000000000031E /* CoinAppLifecycleCoordinatorTests.swift in Sources */,
 				AA0000000000000000000310 /* CoinLedgerFreshInstallRecoveryTests.swift in Sources */,
 				AA000000000000000000030F /* CoinLedgerLifecycleTests.swift in Sources */,
 				AA000000000000000000030E /* PurchaseRefundReconcilerTests.swift in Sources */,

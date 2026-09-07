@@ -7,20 +7,21 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 5 사용자 스토리 3 구현 진행 중
 
 ## 진행 중
-`codex/us3-product-catalog-tests`에서 T075 코인 상점·장부 내역 화면을 구현했다. T059 catalog부터
-T075 화면까지 구현된 계약은 GREEN이다. 최초 활성화와 확인된 삭제 reset은 서로 다른 서비스 경계를
-사용하고, 구매 pending은 재실행 뒤에도 표시되며 iCloud 장부 복구는 StoreKit 구매 복원과 분리했다.
-다음은 T076이다.
+`codex/us3-product-catalog-tests`에서 T076 앱 launch·foreground 코인 수명주기와 Shield route 단일
+소비 연결을 구현했다. T059 catalog부터 T076 수명주기까지 구현된 계약은 GREEN이다. StoreKit
+transaction listener를 launch에서 먼저 한 번 열고 launch·foreground마다 주입된 CloudKit 장부
+재조정과 활성 occurrence 기반 route 소비를 수행한다. 다음은 T077이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T075 — 최초 활성화·삭제 reset·상품·구매 확인·내역·iCloud 복구 화면
+T076 — app launch·foreground transaction/CloudKit 재조정과 Shield route 단일 소비 연결
 
 ## 다음 작업
-T076 — app launch·foreground transaction/CloudKit 재조정과 Shield route 단일 소비 연결.
+T077 — 최초 활성화·매 구매의 한국어·영어 삭제 불이익·복구·환불 한계 문구와 StoreKit Configuration
+자동 테스트.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -39,6 +40,24 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-07 T076: `CoinAppLifecycleCoordinator`와 앱 전용 composition을 추가해 첫 수명주기 refresh에서
+StoreKit transaction observer를 먼저 한 번 시작하고, app launch·scene foreground마다 장부
+재조정·활성 occurrence 평가·Shield route 소비를 순서대로 실행하도록 했다. 장부 재조정 실패와 route
+소비 실패는 각각 fail-closed 결과로 격리하고, 활성 snapshot·규칙 revision 로드 실패는 활성 조건을
+증명할 수 없으므로 route를 보존한다. 앱 루트는 적격 route만 전역 sheet로 한 번 열며 coin store와
+iCloud 복구·장부 reset·재조정 안내를 구분한다. 5분 미만·미소비·활성 occurrence 및 파일 claim 원자
+소비와 stale·중복·종료 폐기는 기존 `PendingAppRouteRepository`를 단일 권위로 재사용한다.
+
+T076 집중 테스트 5개와 route repository·transaction observer·coin ledger/app lifecycle 회귀는 모두
+통과했다. 전체 `GetUpTests` 547개 선언은 동적 인자 포함 659회 모두 실패·skip 없이 통과했고,
+`UserStory3CoinPurchaseUITests` 9개도 iPhone 17 Pro iOS 26.5 Simulator에서 모두 통과했다. generic
+iOS Simulator Release 빌드, project plist·diff 검사도 통과했다. 첫 Release 빌드는 sandbox의
+CoreSimulatorService·DerivedData 접근 거부로 실패했으나 승인된 동일 명령 재실행에서 통과했다. 기존
+`LocationMonitoringAdapterTests`의 불필요한 `try` 경고가 남아 있으며 T076 동작 실패는 아니다.
+StoreKit listener는 실제로 열지만 T097의 production CloudKit provider·schema 호환성 검증 전에는
+verified 지급·finish와 원격 재조정을 fail-closed로 유지해 운영 거래·CloudKit 데이터를 변경하지
+않는다. 새 제품 차단은 없다.
+
 2026-09-07 T075: `CoinStoreView`와 `CoinLedgerHistoryView`를 추가해 `CoinStoreModel`의 잔액·상품·구매
 상태와 장부 event를 화면에 연결했다. 최초 `setupRequired`에서는 iCloud 장부 삭제 시 구매 잔액과
 무료 코인이 복원되지 않고 App Store 구매 복원과도 다름을 고지한 뒤 명시적 동의 action만

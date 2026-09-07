@@ -164,6 +164,7 @@ private struct GetUpRootView: View {
     @State private var model: AppModel
     @State private var permissionGuideModel: PermissionGuideModel?
     @State private var isRestoringRuntime = false
+    @State private var coinRouteDestination: PendingAppRouteDestination?
     private let runtimeRecovery: AppEnvironment.RuntimeRecovery?
     private let currentLocationProvider: any CurrentLocationProviding & LocationAuthorizationRequesting
     private let defaultCoordinate: ReferenceLocation
@@ -173,6 +174,7 @@ private struct GetUpRootView: View {
     private let showsRestrictionProbe: Bool
     private let releaseConfiguration: ActiveRestrictionReleaseConfiguration?
     private let coinStoreConfiguration: CoinStoreConfiguration?
+    private let coinLifecycleCoordinator: CoinAppLifecycleCoordinator
     private let permissionGuideRetryResult: String?
     private let permissionGuideActionUpdate: PermissionGuideUpdate?
     private let permissionOnboardingStateStore: PermissionOnboardingStateStore
@@ -189,6 +191,7 @@ private struct GetUpRootView: View {
         showsRestrictionProbe = environment.showsRestrictionProbe
         releaseConfiguration = environment.releaseConfiguration
         coinStoreConfiguration = environment.coinStoreConfiguration
+        coinLifecycleCoordinator = environment.coinLifecycleCoordinator
         permissionGuideRetryResult = environment.permissionGuideRetryResult
         permissionGuideActionUpdate = environment.permissionGuideActionUpdate
         permissionOnboardingStateStore = environment.permissionOnboardingStateStore
@@ -212,8 +215,17 @@ private struct GetUpRootView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .preferredColorScheme(.dark)
+        .sheet(isPresented: coinRouteIsPresented) {
+            NavigationStack {
+                coinRouteDestinationView
+            }
+        }
         .task {
             guard model.loadingState == .idle else {
+                return
+            }
+            await refreshCoinLifecycle(trigger: .launch)
+            guard !Task.isCancelled else {
                 return
             }
             await model.load()
@@ -223,11 +235,14 @@ private struct GetUpRootView: View {
             _ = await restoreRuntimeState()
         }
         .onChange(of: scenePhase) { _, newPhase in
-            guard newPhase == .active, runtimeRecovery != nil else {
+            guard newPhase == .active else {
                 return
             }
             Task {
-                _ = await restoreRuntimeState()
+                if runtimeRecovery != nil {
+                    _ = await restoreRuntimeState()
+                }
+                await refreshCoinLifecycle(trigger: .foreground)
             }
         }
     }
@@ -424,6 +439,39 @@ private struct GetUpRootView: View {
         }
         return {
             try await model.deleteEditingRule()
+        }
+    }
+
+    private var coinRouteIsPresented: Binding<Bool> {
+        Binding(
+            get: { coinRouteDestination != nil },
+            set: { isPresented in
+                if !isPresented { coinRouteDestination = nil }
+            }
+        )
+    }
+
+    @ViewBuilder
+    private var coinRouteDestinationView: some View {
+        if coinRouteDestination == .coinStore,
+           let coinStoreConfiguration {
+            CoinStoreView(configuration: coinStoreConfiguration)
+        } else if let destination = coinRouteDestination {
+            ActiveRestrictionReleaseDestinationView(destination: destination)
+        }
+    }
+
+    private func refreshCoinLifecycle(trigger: CoinAppLifecycleTrigger) async {
+        let result = await coinLifecycleCoordinator.refresh(
+            trigger: trigger,
+            now: Date()
+        )
+        guard !Task.isCancelled else { return }
+        if let ledger = result.ledger {
+            coinStoreConfiguration?.model.refreshLedger(ledger.coinStoreLedgerState)
+        }
+        if let destination = result.destination {
+            coinRouteDestination = destination
         }
     }
 
@@ -1156,13 +1204,27 @@ private struct AppEnvironment {
     let showsRestrictionProbe: Bool
     let releaseConfiguration: ActiveRestrictionReleaseConfiguration?
     let coinStoreConfiguration: CoinStoreConfiguration?
+    let coinLifecycleCoordinator: CoinAppLifecycleCoordinator
     let permissionGuideModel: PermissionGuideModel?
     let permissionGuideRetryResult: String?
     let permissionGuideActionUpdate: PermissionGuideUpdate?
     let permissionOnboardingStateStore: PermissionOnboardingStateStore
 
     static func live() throws -> AppEnvironment {
-        let container = try DependencyContainer.live()
+        let storefront = StoreKitPurchaseAdapter()
+        let transactionObserver = StoreKitTransactionObserver(
+            storefront: storefront,
+            processVerifiedTransaction: { _ in
+                // The production CloudKit database provider remains closed until T097.
+                // Keep transactions unfinished so a verified provider can recover them later.
+                throw CoinPurchaseServiceError.ledgerNotCurrent
+            }
+        )
+        let container = try DependencyContainer.live(
+            startCoinTransactionObservation: {
+                try await transactionObserver.start()
+            }
+        )
         let locationSession = CoreLocationCurrentLocationSession()
         let liveActivityCoordinator = LiveActivityCoordinator(
             manager: SystemLiveActivityAdapter.live()
@@ -1251,6 +1313,32 @@ private struct AppEnvironment {
                 await appModel.refreshRestrictionStatus()
             }
         )
+        let coinLifecycleCoordinator = container.makeCoinAppLifecycleCoordinator()
+        let coinLedger = CoinStoreLedgerState(
+            balance: fallbackBalance,
+            purchaseGrants: [],
+            events: [],
+            pendingProductIdentifiers: [],
+            hasPendingReconciliation: false
+        )
+        let catalog = try CoinProductCatalog()
+        let coinStoreModel = CoinStoreModel(
+            ledger: coinLedger,
+            loadProducts: { try await catalog.loadProducts(from: storefront) },
+            executePurchase: { _ in
+                throw CoinPurchaseServiceError.ledgerNotCurrent
+            }
+        )
+        let coinStoreConfiguration = CoinStoreConfiguration(
+            model: coinStoreModel,
+            retryLedgerSync: {
+                let ledger = await coinLifecycleCoordinator.refresh(
+                    trigger: .foreground,
+                    now: Date()
+                ).ledger
+                return ledger?.coinStoreLedgerState ?? coinLedger
+            }
+        )
         return AppEnvironment(
             model: appModel,
             runtimeRecovery: {
@@ -1262,7 +1350,8 @@ private struct AppEnvironment {
             familyControlsAuthorizationStatusOverride: nil,
             showsRestrictionProbe: false,
             releaseConfiguration: releaseConfiguration,
-            coinStoreConfiguration: nil,
+            coinStoreConfiguration: coinStoreConfiguration,
+            coinLifecycleCoordinator: coinLifecycleCoordinator,
             permissionGuideModel: nil,
             permissionGuideRetryResult: nil,
             permissionGuideActionUpdate: nil,
@@ -1427,6 +1516,7 @@ private enum UITestConfiguration {
             root: root,
             now: fixtureNow
         )
+        let coinLifecycleCoordinator = container.makeCoinAppLifecycleCoordinator()
 
         return AppEnvironment(
             model: appModel,
@@ -1438,6 +1528,7 @@ private enum UITestConfiguration {
             showsRestrictionProbe: scenario == "restriction-activation",
             releaseConfiguration: releaseConfiguration,
             coinStoreConfiguration: coinStoreConfiguration,
+            coinLifecycleCoordinator: coinLifecycleCoordinator,
             permissionGuideModel: permissionGuideModel(
                 for: scenario,
                 onboardingStateStore: permissionOnboardingStateStore

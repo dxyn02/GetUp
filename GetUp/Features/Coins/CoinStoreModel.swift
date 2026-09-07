@@ -9,6 +9,18 @@ struct CoinStoreLedgerState: Equatable, Sendable {
     let hasPendingReconciliation: Bool
 }
 
+extension CoinLedgerReconciliationSnapshot {
+    var coinStoreLedgerState: CoinStoreLedgerState {
+        CoinStoreLedgerState(
+            balance: balance,
+            purchaseGrants: purchaseGrants,
+            events: events,
+            pendingProductIdentifiers: pendingProductIdentifiers,
+            hasPendingReconciliation: hasPendingReconciliation
+        )
+    }
+}
+
 enum CoinStoreAvailability: Equatable, Sendable {
     case ready
     case setupRequired

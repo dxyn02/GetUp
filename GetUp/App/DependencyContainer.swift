@@ -5,6 +5,111 @@ enum DependencyContainerError: Error, Equatable, Sendable {
     case appGroupContainerUnavailable
 }
 
+enum CoinAppLifecycleTrigger: Equatable, Sendable {
+    case launch
+    case foreground
+}
+
+enum CoinAppLifecycleFailure: Equatable, Sendable {
+    case transactionObservation
+    case ledgerReconciliation
+    case activeOccurrenceLoad
+    case routeConsumption
+}
+
+struct CoinAppLifecycleRefreshResult: Equatable, Sendable {
+    let ledger: CoinLedgerReconciliationSnapshot?
+    let destination: PendingAppRouteDestination?
+    let failures: [CoinAppLifecycleFailure]
+}
+
+struct CoinLedgerReconciliationSnapshot: Equatable, Sendable {
+    let balance: CoinBalanceSnapshot
+    let purchaseGrants: [PurchaseGrant]
+    let events: [CoinLedgerEvent]
+    let pendingProductIdentifiers: Set<String>
+    let hasPendingReconciliation: Bool
+}
+
+actor CoinAppLifecycleCoordinator {
+    typealias StartTransactionObservation = @Sendable () async throws -> Void
+    typealias ReconcileLedger = @Sendable () async throws -> CoinLedgerReconciliationSnapshot?
+    typealias LoadActiveOccurrenceIDs = @Sendable (Date) async throws -> Set<String>
+    typealias ConsumePendingRoute = @Sendable (
+        Date,
+        Set<String>
+    ) async throws -> PendingAppRouteDestination?
+
+    private let startTransactionObservation: StartTransactionObservation
+    private let reconcileLedger: ReconcileLedger
+    private let loadActiveOccurrenceIDs: LoadActiveOccurrenceIDs
+    private let consumePendingRoute: ConsumePendingRoute
+    private var transactionObservationStarted = false
+
+    init(
+        startTransactionObservation: @escaping StartTransactionObservation,
+        reconcileLedger: @escaping ReconcileLedger,
+        loadActiveOccurrenceIDs: @escaping LoadActiveOccurrenceIDs,
+        consumePendingRoute: @escaping ConsumePendingRoute
+    ) {
+        self.startTransactionObservation = startTransactionObservation
+        self.reconcileLedger = reconcileLedger
+        self.loadActiveOccurrenceIDs = loadActiveOccurrenceIDs
+        self.consumePendingRoute = consumePendingRoute
+    }
+
+    func refresh(
+        trigger: CoinAppLifecycleTrigger,
+        now: Date
+    ) async -> CoinAppLifecycleRefreshResult {
+        var failures: [CoinAppLifecycleFailure] = []
+
+        if !transactionObservationStarted {
+            transactionObservationStarted = true
+            do {
+                try await startTransactionObservation()
+            } catch {
+                failures.append(.transactionObservation)
+            }
+        }
+
+        let ledger: CoinLedgerReconciliationSnapshot?
+        do {
+            ledger = try await reconcileLedger()
+        } catch {
+            ledger = nil
+            failures.append(.ledgerReconciliation)
+        }
+
+        let activeOccurrenceIDs: Set<String>
+        do {
+            activeOccurrenceIDs = try await loadActiveOccurrenceIDs(now)
+        } catch {
+            failures.append(.activeOccurrenceLoad)
+            return CoinAppLifecycleRefreshResult(
+                ledger: ledger,
+                destination: nil,
+                failures: failures
+            )
+        }
+
+        let destination: PendingAppRouteDestination?
+        do {
+            destination = try await consumePendingRoute(now, activeOccurrenceIDs)
+        } catch {
+            destination = nil
+            failures.append(.routeConsumption)
+        }
+
+        _ = trigger
+        return CoinAppLifecycleRefreshResult(
+            ledger: ledger,
+            destination: destination,
+            failures: failures
+        )
+    }
+}
+
 struct DependencyContainer: Sendable {
     typealias MonthlyAllowanceForegroundContextProvider = @Sendable () async throws ->
         MonthlyAllowanceForegroundContext?
@@ -14,6 +119,8 @@ struct DependencyContainer: Sendable {
     let monthlyAllowanceService: MonthlyAllowanceService?
     let ensureMonthlyAllowanceOnForeground: @Sendable () async throws -> Void
     let coordinationDirectory: URL
+    let startCoinTransactionObservation: CoinAppLifecycleCoordinator.StartTransactionObservation
+    let reconcileCoinLedgerOnForeground: CoinAppLifecycleCoordinator.ReconcileLedger
 
     var ruleRepository: any RuleRepository {
         sharedSnapshotRepository
@@ -33,7 +140,11 @@ struct DependencyContainer: Sendable {
         diagnostics: any DiagnosticsLogging = DiagnosticsLogger(),
         coinLedgerRepository: (any CoinLedgerRepository)? = nil,
         monthlyAllowanceForegroundContextProvider:
-            MonthlyAllowanceForegroundContextProvider? = nil
+            MonthlyAllowanceForegroundContextProvider? = nil,
+        startCoinTransactionObservation:
+            @escaping CoinAppLifecycleCoordinator.StartTransactionObservation = {},
+        reconcileCoinLedgerOnForeground:
+            @escaping CoinAppLifecycleCoordinator.ReconcileLedger = { nil }
     ) {
         coordinationDirectory = containerURL
         sharedSnapshotRepository = SharedSnapshotRepository(
@@ -41,6 +152,8 @@ struct DependencyContainer: Sendable {
             fileWriter: fileWriter
         )
         self.diagnostics = diagnostics
+        self.startCoinTransactionObservation = startCoinTransactionObservation
+        self.reconcileCoinLedgerOnForeground = reconcileCoinLedgerOnForeground
 
         if let coinLedgerRepository {
             let service = MonthlyAllowanceService(
@@ -68,7 +181,11 @@ struct DependencyContainer: Sendable {
 
     static func live(
         bundle: Bundle = .main,
-        fileManager: FileManager = .default
+        fileManager: FileManager = .default,
+        startCoinTransactionObservation:
+            @escaping CoinAppLifecycleCoordinator.StartTransactionObservation = {},
+        reconcileCoinLedgerOnForeground:
+            @escaping CoinAppLifecycleCoordinator.ReconcileLedger = { nil }
     ) throws -> DependencyContainer {
         guard let appGroupIdentifier = SharedIdentifiers.appGroupIdentifier(in: bundle) else {
             throw DependencyContainerError.missingAppGroupIdentifier
@@ -82,7 +199,9 @@ struct DependencyContainer: Sendable {
         }
 
         return DependencyContainer(
-            containerURL: containerURL
+            containerURL: containerURL,
+            startCoinTransactionObservation: startCoinTransactionObservation,
+            reconcileCoinLedgerOnForeground: reconcileCoinLedgerOnForeground
         )
     }
 }
