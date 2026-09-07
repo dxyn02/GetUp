@@ -4,32 +4,28 @@
 001-location-app-restriction, 002-live-activity-coins
 
 ## 현재 단계
-001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 5 사용자 스토리 3 구현 진행 중
+001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 6 사용자 스토리 4 테스트 진행 중
 
 ## 진행 중
-`codex/us3-product-catalog-tests`에서 T077 한국어·영어 구매 한계 고지와 StoreKit Configuration 자동
-테스트를 완료했다. 최초 장부 활성화와 1·3·5개 코인 매 구매 확인에 같은 현지화 고지를 연결했고,
-상품 카드는 StoreKit의 현지화 이름·설명을 표시한다. `.storekit` 상품 ID·유형·가격·가족 공유·한국어·
-영어 metadata 계약과 `SKTestSession` 로드를 검증하는 테스트도 테스트 번들에 추가했다. T059 catalog부터
-T077 구매 고지까지 사용자 스토리 3 구현과 회귀가 GREEN이며, 다음은 T078이다.
-US3 T059~T077 변경은 Pull Request #30으로 `main` 병합 대기 중이다. T078은 별도 US4 브랜치를
-병합된 최신 `main`에서 만들기 위해 PR #30 병합 후 시작한다.
+Pull Request #30으로 US3 T059~T077을 `main`에 병합하고 최신 `main`에서
+`codex/us4-monthly-lifecycle-tests`를 분기했다. T078에서 Phase 2의 `MonthlyAllowancePolicy`·
+`MonthlyAllowanceService`와 `AppLifecycleCoordinator`를 함께 사용하는 수명주기 인수 테스트를
+추가했다. 서울 월 경계의 foreground 지연 생성, 자정 background 미생성, 기기 시간대 변경 무관성,
+삭제 reset 월 quota 0과 다음 서울 월 quota 2 재개를 검증한다. 다음은 T079다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T077 — 최초 활성화·매 구매의 한국어·영어 한계 고지와 StoreKit Configuration 자동 테스트
+T078 — 서울 월 경계·자정 background 미생성·기기 시간대 변경·reset 억제 월 app lifecycle 인수 테스트
 
 ## 다음 작업
-T078 — 서울 월 경계·자정 background 미생성·기기 시간대 변경·reset 억제 월의 app lifecycle 인수
-테스트를 먼저 작성한다.
+T079 — 새달 첫 app foreground·첫 Shield 요청 지연 생성, 월 중간 최초 2회, 비이월, 구매 잔액 보존,
+무료 우선 사용 사용자 스토리 회귀 테스트를 먼저 작성한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
-T078 시작은 Pull Request #30의 `main` 병합을 기다리는 GitHub Flow 절차상 대기 상태다. 제품 결정이나
-구현 차단은 없으며, 병합 뒤 최신 `main`에서 새 기능 브랜치를 만든다.
 BLK-016 해결됨: 명령별 원자 추가·조건부 제거 API와 최신 상태 재평가 계약 보강을 사용자 승인받았다.
 BLK-015 해결됨: occurrence별 예약 소유권 계약·스키마 보강을 사용자 승인받았다.
 T045 보고서 접근 차단은 사용자 허용 후 같은 명령 재시도로 해결됐다.
@@ -45,6 +41,18 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-07 T078: `MonthlyAllowanceLifecycleTests` 4개를 추가해 서울 기준 2026-09 월 경계 직전
+foreground는 8월 allowance를 만들고 경계 이후 다음 foreground에서만 9월 allowance를 만드는지
+검증했다. 앱이 비활성인 채 자정을 지나면 새 allowance가 자동 생성되지 않으며, 같은 절대 시각에서
+기기 시간대를 Honolulu에서 Kiritimati로 바꿔 현지 월이 달라져도 allowance month ID는 서울 기준을
+유지한다. 삭제 확인 reset epoch는 억제 월 available 0을 유지하고 다음 서울 월 첫 foreground에서
+available 2를 재개한다. Phase 2 기반 구현을 인수하는 테스트이므로 추가 즉시 4개 모두 GREEN이었다.
+전체 `GetUpTests` 553개 선언은 동적 인자 포함 665회 모두 실패·skip 없이 통과했고 generic iOS
+Simulator Release 빌드, project plist·diff 검사도 통과했다. 기존 signed test binary strip,
+`StoreKitTest` header deprecation과 `LocationMonitoringAdapterTests`의 불필요한 `try` 경고가 남아
+있으며 T078 동작 실패는 아니다. 운영 CloudKit 데이터는 호출하거나 변경하지 않았고 새 제품 차단은
+없다.
+
 2026-09-07 T077: 최초 장부 활성화와 1·3·5개 코인 각각의 구매 확인에서 삭제 불이익·같은
 iCloud 계정 복구·App Store 계정 불일치·새 장부 0 초기화·서울 기준 다음 달 무료 2회·서버 없는
 환경의 구분 한계·앱 종료 중 환불 지연·미사용 구매 코인 한정 보정을 한국어와 영어로 모두 확인하는

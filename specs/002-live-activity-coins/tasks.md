@@ -193,7 +193,7 @@ occurrence만 예외 처리되는지, 중복 100회에서 최대 1회만 소모�
 
 ### 사용자 스토리 4 테스트
 
-- [ ] T078 [P] [US4] Phase 2의 월 정책을 사용해 서울 월 경계·자정 background 미생성·기기 시간대 변경·reset 억제 월의 app lifecycle 인수 테스트를 `GetUpTests/Integration/MonthlyAllowanceLifecycleTests.swift`에 먼저 작성한다.
+- [X] T078 [P] [US4] Phase 2의 월 정책을 사용해 서울 월 경계·자정 background 미생성·기기 시간대 변경·reset 억제 월의 app lifecycle 인수 테스트를 `GetUpTests/Integration/MonthlyAllowanceLifecycleTests.swift`에 먼저 작성한다.
 - [ ] T079 [P] [US4] 새달 첫 앱 foreground·첫 Shield 요청의 지연 생성, 월 중간 최초 2회, 비이월, 구매 잔액 보존, 무료 우선 사용의 사용자 스토리 회귀 테스트를 `GetUpTests/Integration/MonthlyAllowanceUserStoryTests.swift`에 먼저 작성한다.
 - [ ] T080 [P] [US4] Phase 2 CloudKit 월간 suite를 같은 record ID 다기기 100회와 server creationDate 불일치·account 불가 재시도 조건으로 실행·집계하는 인수 harness를 `GetUpTests/Performance/MonthlyAllowanceAcceptanceTests.swift`에 작성한다.
 - [ ] T081 [P] [US4] 앱의 무료분·구매 코인 분리 표시와 Shield 단일 버튼의 무료 우선 사용 및 월 경계 갱신 UI 테스트를 `GetUpUITests/UserStory4MonthlyAllowanceUITests.swift`에 먼저 작성한다.
