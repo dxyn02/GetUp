@@ -229,6 +229,7 @@
 		AA000000000000000000030E /* PurchaseRefundReconcilerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000054 /* PurchaseRefundReconcilerTests.swift */; };
 		AA000000000000000000030F /* CoinLedgerLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000055 /* CoinLedgerLifecycleTests.swift */; };
 		AA0000000000000000000310 /* CoinLedgerFreshInstallRecoveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000056 /* CoinLedgerFreshInstallRecoveryTests.swift */; };
+		AA0000000000000000000311 /* UserStory3CoinPurchaseUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000007 /* UserStory3CoinPurchaseUITests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -448,6 +449,7 @@
 		B50000000000000000000054 /* PurchaseRefundReconcilerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseRefundReconcilerTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000055 /* CoinLedgerLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinLedgerLifecycleTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000056 /* CoinLedgerFreshInstallRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinLedgerFreshInstallRecoveryTests.swift; sourceTree = "<group>"; };
+		B60000000000000000000007 /* UserStory3CoinPurchaseUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory3CoinPurchaseUITests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -985,6 +987,7 @@
 				B60000000000000000000003 /* UserStory3AutoReleaseUITests.swift */,
 				B60000000000000000000004 /* UserStory4PermissionGuidanceUITests.swift */,
 				B60000000000000000000006 /* UserStory2CoinReleaseUITests.swift */,
+				B60000000000000000000007 /* UserStory3CoinPurchaseUITests.swift */,
 				B60000000000000000000005 /* AccessibilityUITests.swift */,
 			);
 			path = GetUpUITests;
@@ -1482,6 +1485,7 @@
 				AA0000000000000000000204 /* UserStory3AutoReleaseUITests.swift in Sources */,
 				AA0000000000000000000207 /* UserStory4PermissionGuidanceUITests.swift in Sources */,
 				AA0000000000000000000284 /* UserStory2CoinReleaseUITests.swift in Sources */,
+				AA0000000000000000000311 /* UserStory3CoinPurchaseUITests.swift in Sources */,
 				AA0000000000000000000211 /* AccessibilityUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

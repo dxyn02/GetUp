@@ -4,22 +4,22 @@
 001-location-app-restriction, 002-live-activity-coins
 
 ## 현재 단계
-001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 5 사용자 스토리 3 테스트 진행 중
+001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 5 사용자 스토리 3 구현 진행 중
 
 ## 진행 중
-`codex/us3-product-catalog-tests`에서 T064 새 설치 장부 복구·최초 setup·삭제 reset 계약 테스트를
-먼저 작성했다. 현재 테스트 타깃은 후속 US3 catalog·구매·observer·환불·setup·reset·recovery 구현
-전의 의도된 TDD RED 상태이며 다음은 T065이다.
+`codex/us3-product-catalog-tests`에서 T059~T065의 US3 catalog·구매·observer·환불·장부 lifecycle·
+새 설치 복구·구매 UI 계약 테스트를 모두 먼저 작성했다. 현재 테스트 타깃은 후속 US3 구현 전의
+의도된 TDD RED 상태이며 다음은 T066이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T064 — 새 설치의 current 장부 복구, 최초 setup, 삭제 reset, 불확실 장부 잠금 계약 테스트
+T065 — 최초 활성화·삭제 reset·매 구매 고지와 구매 상태·잔액·내역 UI 계약 테스트
 
 ## 다음 작업
-T065 — 최초 활성화·매 구매 고지와 구매 상태·잔액·내역 UI 테스트 작성.
+T066 — 1개·3개·5개 허용 상품을 검증하는 bundle catalog 구현.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -38,6 +38,20 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-07 T065: 최초 코인 기능 활성화에서 iCloud 장부 삭제 시 구매 잔액·현재 월 무료분의 복구
+한계를 고지하고, 동의 전 setup 0회·구매 비활성 상태를 유지한 뒤 명시적 action 후 구매 0개·당월
+무료 2회를 표시하는 UI 계약을 추가했다. 확인된 삭제는 최초 setup과 다른 reset 화면·확인 dialog를
+사용하고, 취소 시 무변경이며 확정 후 구매 0개·삭제 월 무료 0회가 되는 계약으로 분리했다.
+
+1개·3개·5개 상품과 StoreKit fixture 현지 가격, 매 구매 전 삭제 불이익 고지, 취소 시 무변경,
+verified 성공의 단일 지급과 구매 내역, pending 재실행 표시, 취소·실패 무지급, 구매·무료 지급·
+사용·원상 복구·환불 보정·환불 취소 내역의 수량·상태·시각, 장부 불가 시 구매 비활성화와 iCloud
+재시도 안내까지 총 9개 UI 테스트로 고정했다. 새 테스트 타깃은 경고 없이 build-for-testing을
+통과했고, 집중 실행 9개는 아직
+`coinStore.open` 진입점이 없어 모두 실패해 계획된 TDD RED를 확인했다. 앱과 네 extension의 generic
+iOS Simulator Release 빌드, Swift 구문, project plist, diff 검사도 통과했다. 운영 StoreKit 구매나
+CloudKit 원격 데이터는 호출·변경하지 않았다.
+
 2026-09-07 T064: 로컬 코인 데이터가 없는 새 설치가 동일 iCloud의 `current` 장부에서 기존
 `PurchaseGrant`와 구매·사용·환불 event를 그대로 복구하고, 계산된 구매 잔액 2개·당월 무료 잔액
 1회·내역이 일치하며 새 grant를 추가하지 않는 계약을 작성했다. `syncing`, `stale`, `unavailable`은
