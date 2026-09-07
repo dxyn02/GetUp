@@ -464,6 +464,9 @@ private extension CloudKitCoinLedgerRepository {
         guard case let .monthlyAllowance(value) = try decode(record) else {
             throw CoinLedgerRepositoryError.database(.invalidRecord)
         }
+        guard MonthlyAllowancePolicy.monthID(containing: value.creationDate) == value.monthID else {
+            throw CoinLedgerRepositoryError.database(.invalidRecord)
+        }
         return value
     }
 

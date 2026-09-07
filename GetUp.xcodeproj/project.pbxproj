@@ -248,6 +248,7 @@
 		AA0000000000000000000321 /* GetUp.storekit in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000004 /* GetUp.storekit */; };
 		AA0000000000000000000322 /* MonthlyAllowanceLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5000000000000000000005A /* MonthlyAllowanceLifecycleTests.swift */; };
 		AA0000000000000000000323 /* MonthlyAllowanceUserStoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5000000000000000000005B /* MonthlyAllowanceUserStoryTests.swift */; };
+		AA0000000000000000000324 /* MonthlyAllowanceAcceptanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5000000000000000000005C /* MonthlyAllowanceAcceptanceTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -468,6 +469,7 @@
 		B50000000000000000000059 /* StoreKitConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitConfigurationTests.swift; sourceTree = "<group>"; };
 		B5000000000000000000005A /* MonthlyAllowanceLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyAllowanceLifecycleTests.swift; sourceTree = "<group>"; };
 		B5000000000000000000005B /* MonthlyAllowanceUserStoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyAllowanceUserStoryTests.swift; sourceTree = "<group>"; };
+		B5000000000000000000005C /* MonthlyAllowanceAcceptanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyAllowanceAcceptanceTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000054 /* PurchaseRefundReconcilerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseRefundReconcilerTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000055 /* CoinLedgerLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinLedgerLifecycleTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000056 /* CoinLedgerFreshInstallRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinLedgerFreshInstallRecoveryTests.swift; sourceTree = "<group>"; };
@@ -914,6 +916,7 @@
 		B50000000000000000000032 /* Performance */ = {
 			isa = PBXGroup;
 			children = (
+				B5000000000000000000005C /* MonthlyAllowanceAcceptanceTests.swift */,
 				B50000000000000000000045 /* LiveActivityStartMeasurementTests.swift */,
 				B50000000000000000000031 /* RestrictionLatencyTests.swift */,
 			);
@@ -1491,6 +1494,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000324 /* MonthlyAllowanceAcceptanceTests.swift in Sources */,
 				AA0000000000000000000323 /* MonthlyAllowanceUserStoryTests.swift in Sources */,
 				AA0000000000000000000322 /* MonthlyAllowanceLifecycleTests.swift in Sources */,
 				AA000000000000000000031E /* CoinAppLifecycleCoordinatorTests.swift in Sources */,

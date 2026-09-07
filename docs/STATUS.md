@@ -8,21 +8,21 @@
 
 ## 진행 중
 Pull Request #30으로 US3 T059~T077을 `main`에 병합하고 최신 `main`에서
-`codex/us4-monthly-lifecycle-tests`를 분기했다. T078의 app lifecycle 인수 테스트에 이어 T079에서
-`MonthlyAllowanceService`와 `RuleReleaseService`를 실제 조합한 사용자 스토리 회귀 테스트를
-추가했다. 새달 첫 app foreground와 첫 Shield 요청의 지연 생성, 월 중간 quota 2, 이전 달 비이월,
-구매 잔액 보존과 무료분 우선 원자 예약을 검증한다. 다음은 T080이다.
+`codex/us4-monthly-lifecycle-tests`를 분기했다. T078·T079의 수명주기·사용자 스토리 회귀에 이어
+T080에서 CloudKit 월간 인수 harness를 추가했다. 같은 allowance record ID를 공유하는 100개 기기
+역할의 동시 생성이 단일 allowance·free-grant로 수렴하고, 서버 생성 월 불일치 거부와 iCloud 계정
+복구 뒤 명시적 재시도를 검증한다. 다음은 T081이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T079 — 새달 첫 app·Shield 지연 생성, 비이월, 구매 잔액 보존과 무료 우선 사용자 스토리 회귀 테스트
+T080 — 월간 allowance 동일 record ID 100기기 수렴·서버 생성 월·계정 불가 재시도 인수 harness
 
 ## 다음 작업
-T080 — 같은 record ID 다기기 100회와 server creationDate 불일치·account 불가 재시도 조건을
-집계하는 CloudKit 월간 인수 harness를 작성한다.
+T081 — 앱 무료분·구매 코인 분리 표시와 Shield 단일 버튼의 무료 우선 사용·월 경계 갱신 UI 테스트를
+먼저 작성한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -41,6 +41,20 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-07 T080: `MonthlyAllowanceAcceptanceTests` 3개를 추가했다. 같은
+`allowance:2026-09`를 사용하는 100개 기기 역할이 동시에 `createAllowanceIfNeeded`를 호출해도 모든
+응답이 quota 2로 수렴하고 서버에는 `MonthlyAllowance`·free-grant event가 각각 1개, 성공 atomic
+modify가 1회만 남는지 집계한다. 서버 allowance의 `creationDate`가 요청 `monthID`의 서울 기준 월과
+다르면 쓰기 없이 `invalidRecord`로 거부하고, iCloud account unavailable 첫 시도는 쓰지 않은 채
+실패한 뒤 account 복구 후 명시적 두 번째 호출에서만 생성되는 것도 검증한다. 최초 집중 실행은 서버
+allowance decode 경계의 생성 월 검증 누락으로 해당 테스트 1개가 예상대로 RED였고,
+`CloudKitCoinLedgerRepository.monthlyAllowance(from:)`에 명세의 월 일치 검증을 추가한 뒤 3개 모두
+GREEN이었다. 기존 CloudKit 월간·저장소 집중 회귀 11개와 전체 `GetUpTests` 558개 선언은 동적 인자
+포함 670회 모두 실패·skip 없이 통과했고 generic iOS Simulator Release 빌드, project plist·diff
+검사도 통과했다. 기존 signed test binary strip, `StoreKitTest` header deprecation과
+`LocationMonitoringAdapterTests`의 불필요한 `try` 경고가 남아 있으며 T080 동작 실패는 아니다.
+운영 CloudKit 데이터는 호출하거나 변경하지 않았고 새 제품 차단은 없다.
+
 2026-09-07 T079: `MonthlyAllowanceUserStoryTests` 2개를 추가했다. 이전 달 무료분 2회가 남아 있어도
 새달 월 중간 첫 app foreground 전에는 allowance가 없고, foreground 뒤에는 누적 4회가 아닌 새달
 quota 2만 생성되며 구매 잔액 5는 그대로 유지됨을 검증했다. 첫 Shield 요청에서는 별도 선행 생성
