@@ -202,9 +202,15 @@ struct CoinStoreView: View {
                 ForEach(model.products, id: \.product.id) { item in
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("\(item.quantity)개")
+                            Text(item.product.displayName)
                                 .font(.headline)
-                                .accessibilityIdentifier("coinStore.product.\(item.quantity).quantity")
+                                .accessibilityIdentifier("coinStore.product.\(item.quantity).name")
+                            Text(item.product.displayDescription)
+                                .font(.caption)
+                                .foregroundStyle(HomeColor.textSecondary)
+                                .accessibilityIdentifier(
+                                    "coinStore.product.\(item.quantity).description"
+                                )
                             Text(item.product.displayPrice)
                                 .foregroundStyle(HomeColor.textSecondary)
                                 .accessibilityIdentifier("coinStore.product.\(item.quantity).price")
@@ -255,7 +261,7 @@ struct CoinStoreView: View {
     }
 
     private var recoveryLimitDisclosure: some View {
-        Text("코인은 iCloud 장부에 기록됩니다. 장부를 삭제하면 구매 잔액과 무료 코인은 복원할 수 없으며, App Store 구매 복원으로 되돌아오지 않습니다.")
+        Text(CoinStoreLocalizedCopy.limitDisclosure)
             .foregroundStyle(HomeColor.textSecondary)
             .accessibilityIdentifier("coinStore.disclosure.recoveryLimit")
     }
@@ -292,17 +298,23 @@ private struct CoinPurchaseAlertPresenter: UIViewControllerRepresentable {
         context: Context
     ) {
         if isPresented, context.coordinator.alert == nil {
-            let message = "코인은 iCloud 장부에 기록됩니다. 장부를 삭제하면 구매 잔액과 무료 코인은 복원할 수 없으며, App Store 구매 복원으로 되돌아오지 않습니다."
+            let message = CoinStoreLocalizedCopy.limitDisclosure
             let alert = UIAlertController(
-                title: "코인을 구매할까요?",
+                title: AppLocalizedCopy.string("coinStore.purchase.confirmation.title"),
                 message: message,
                 preferredStyle: .alert
             )
-            alert.addAction(UIAlertAction(title: "취소", style: .cancel) { _ in
+            alert.addAction(UIAlertAction(
+                title: AppLocalizedCopy.string("coinStore.action.cancel"),
+                style: .cancel
+            ) { _ in
                 context.coordinator.alert = nil
                 Task { @MainActor in onCancel() }
             })
-            alert.addAction(UIAlertAction(title: "구매", style: .default) { _ in
+            alert.addAction(UIAlertAction(
+                title: AppLocalizedCopy.string("coinStore.action.purchase"),
+                style: .default
+            ) { _ in
                 context.coordinator.alert = nil
                 Task { @MainActor in onPurchase() }
             })
@@ -339,6 +351,12 @@ private struct CoinPurchaseAlertPresenter: UIViewControllerRepresentable {
 
     final class Coordinator {
         var alert: UIAlertController?
+    }
+}
+
+private enum CoinStoreLocalizedCopy {
+    static var limitDisclosure: String {
+        AppLocalizedCopy.string("coinStore.disclosure.limitations")
     }
 }
 

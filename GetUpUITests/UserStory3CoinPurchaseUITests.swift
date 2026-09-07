@@ -187,12 +187,69 @@ final class UserStory3CoinPurchaseUITests: XCTestCase {
     }
 
     @MainActor
+    func testKoreanActivationAndEveryPurchaseDiscloseRecoveryAndRefundLimits() {
+        let app = launchApp(
+            storeID: #function,
+            ledgerState: "setup-required",
+            language: "ko"
+        )
+        openCoinStore(in: app)
+
+        assertCompleteLimitDisclosure(
+            app.staticTexts["coinStore.disclosure.recoveryLimit"],
+            language: "ko"
+        )
+        app.buttons["coinStore.setup.confirm"].tap()
+        XCTAssertTrue(app.otherElements["coinStore.catalog"].waitForExistence(timeout: 5))
+
+        for quantity in [1, 3, 5] {
+            app.buttons["coinStore.product.\(quantity).purchase"].tap()
+            let dialog = app.alerts["코인을 구매할까요?"]
+            XCTAssertTrue(dialog.waitForExistence(timeout: 2))
+            assertCompleteLimitDisclosure(
+                dialog.staticTexts["coinStore.disclosure.recoveryLimit"],
+                language: "ko"
+            )
+            dialog.buttons["취소"].tap()
+        }
+    }
+
+    @MainActor
+    func testEnglishActivationAndEveryPurchaseDiscloseRecoveryAndRefundLimits() {
+        let app = launchApp(
+            storeID: #function,
+            ledgerState: "setup-required",
+            language: "en"
+        )
+        openCoinStore(in: app)
+
+        assertCompleteLimitDisclosure(
+            app.staticTexts["coinStore.disclosure.recoveryLimit"],
+            language: "en"
+        )
+        app.buttons["coinStore.setup.confirm"].tap()
+        XCTAssertTrue(app.otherElements["coinStore.catalog"].waitForExistence(timeout: 5))
+
+        for quantity in [1, 3, 5] {
+            app.buttons["coinStore.product.\(quantity).purchase"].tap()
+            let dialog = app.alerts["Purchase coins?"]
+            XCTAssertTrue(dialog.waitForExistence(timeout: 2))
+            assertCompleteLimitDisclosure(
+                dialog.staticTexts["coinStore.disclosure.recoveryLimit"],
+                language: "en"
+            )
+            dialog.buttons["Cancel"].tap()
+        }
+    }
+
+    @MainActor
     private func launchApp(
         storeID: String,
         ledgerState: String,
         purchaseResult: String? = nil,
         historyFixture: String? = nil,
-        resetStore: Bool = true
+        resetStore: Bool = true,
+        language: String = "ko"
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [
@@ -201,7 +258,8 @@ final class UserStory3CoinPurchaseUITests: XCTestCase {
             "--ui-test-coin-ledger-state", ledgerState,
             "--ui-test-free-balance", "1",
             "--ui-test-purchased-balance", "3",
-            "-AppleLanguages", "(ko)", "-AppleLocale", "ko_KR",
+            "-AppleLanguages", "(\(language))",
+            "-AppleLocale", language == "ko" ? "ko_KR" : "en_US",
         ]
         if resetStore {
             app.launchArguments.append("--ui-test-reset-store")
@@ -226,7 +284,13 @@ final class UserStory3CoinPurchaseUITests: XCTestCase {
 
     @MainActor
     private func assertProduct(in app: XCUIApplication, quantity: Int, localizedPrice: String) {
-        XCTAssertEqual(app.staticTexts["coinStore.product.\(quantity).quantity"].label, "\(quantity)개")
+        XCTAssertEqual(
+            app.staticTexts["coinStore.product.\(quantity).name"].label,
+            "코인 \(quantity)개"
+        )
+        XCTAssertFalse(
+            app.staticTexts["coinStore.product.\(quantity).description"].label.isEmpty
+        )
         XCTAssertEqual(app.staticTexts["coinStore.product.\(quantity).price"].label, localizedPrice)
         XCTAssertTrue(app.buttons["coinStore.product.\(quantity).purchase"].isEnabled)
     }
@@ -249,6 +313,32 @@ final class UserStory3CoinPurchaseUITests: XCTestCase {
         XCTAssertTrue(disclosure.contains("구매 잔액"))
         XCTAssertTrue(disclosure.contains("무료"))
         XCTAssertTrue(disclosure.contains("복원"))
+    }
+
+    @MainActor
+    private func assertCompleteLimitDisclosure(
+        _ element: XCUIElement,
+        language: String
+    ) {
+        XCTAssertTrue(element.waitForExistence(timeout: 2))
+        let requiredPhrases = language == "ko"
+            ? [
+                "현재 구간", "다른 규칙", "만료되지", "같은 iCloud", "App Store 구매 복원",
+                "구매 잔액", "이번 달 무료", "0", "서울", "무료 2회", "서버", "환불",
+                "미사용", "실시간", "계정이 다르면",
+            ]
+            : [
+                "current occurrence", "other rules", "do not expire", "same iCloud",
+                "App Store purchase restoration", "purchased balance", "monthly free",
+                "zero", "Seoul", "2 free releases", "server", "refund", "unused",
+                "real time", "accounts differ",
+            ]
+        for phrase in requiredPhrases {
+            XCTAssertTrue(
+                element.label.localizedCaseInsensitiveContains(phrase),
+                "Missing '\(phrase)' in \(language) disclosure: \(element.label)"
+            )
+        }
     }
 
     @MainActor

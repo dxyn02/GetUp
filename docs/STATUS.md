@@ -7,21 +7,22 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 5 사용자 스토리 3 구현 진행 중
 
 ## 진행 중
-`codex/us3-product-catalog-tests`에서 T076 앱 launch·foreground 코인 수명주기와 Shield route 단일
-소비 연결을 구현했다. T059 catalog부터 T076 수명주기까지 구현된 계약은 GREEN이다. StoreKit
-transaction listener를 launch에서 먼저 한 번 열고 launch·foreground마다 주입된 CloudKit 장부
-재조정과 활성 occurrence 기반 route 소비를 수행한다. 다음은 T077이다.
+`codex/us3-product-catalog-tests`에서 T077 한국어·영어 구매 한계 고지와 StoreKit Configuration 자동
+테스트를 완료했다. 최초 장부 활성화와 1·3·5개 코인 매 구매 확인에 같은 현지화 고지를 연결했고,
+상품 카드는 StoreKit의 현지화 이름·설명을 표시한다. `.storekit` 상품 ID·유형·가격·가족 공유·한국어·
+영어 metadata 계약과 `SKTestSession` 로드를 검증하는 테스트도 테스트 번들에 추가했다. T059 catalog부터
+T077 구매 고지까지 사용자 스토리 3 구현과 회귀가 GREEN이며, 다음은 T078이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T076 — app launch·foreground transaction/CloudKit 재조정과 Shield route 단일 소비 연결
+T077 — 최초 활성화·매 구매의 한국어·영어 한계 고지와 StoreKit Configuration 자동 테스트
 
 ## 다음 작업
-T077 — 최초 활성화·매 구매의 한국어·영어 삭제 불이익·복구·환불 한계 문구와 StoreKit Configuration
-자동 테스트.
+T078 — 서울 월 경계·자정 background 미생성·기기 시간대 변경·reset 억제 월의 app lifecycle 인수
+테스트를 먼저 작성한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -40,6 +41,20 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-07 T077: 최초 장부 활성화와 1·3·5개 코인 각각의 구매 확인에서 삭제 불이익·같은
+iCloud 계정 복구·App Store 계정 불일치·새 장부 0 초기화·서울 기준 다음 달 무료 2회·서버 없는
+환경의 구분 한계·앱 종료 중 환불 지연·미사용 구매 코인 한정 보정을 한국어와 영어로 모두 확인하는
+UI 집중 테스트 2개를 추가했다. `GetUp.storekit`의 세 consumable 상품과 양 언어 metadata를 강하게
+decode하는 테스트와 `SKTestSession` 수용 테스트도 추가했다. StoreKit 구성 2개와 전체
+`UserStory3CoinPurchaseUITests` 11개를 합친 집중 실행 13개는 iPhone 17 Pro iOS 26.5 Simulator에서
+실패·skip 없이 통과했다. 전체 `GetUpTests` 549개 선언은 동적 인자 포함 661회 모두 통과했고 generic
+iOS Simulator Release 빌드, 시뮬레이터 SDK 독립 타입 검사, catalog·localization JSON, project plist·
+diff 검사도 통과했다. 최초 최종 재실행은 sandbox의 CoreSimulatorService·simdiskimaged 접근 거부로
+중단됐으나 사용자 실행 결과와 승인된 재실행에서 통과했다. signed test binary strip 경고, Apple
+`StoreKitTest` header의 deprecated `SKPaymentTransactionState` 경고와 기존
+`LocationMonitoringAdapterTests`의 불필요한 `try` 경고는 제품 동작 실패가 아니다. 운영 StoreKit
+구매·CloudKit 데이터는 호출하거나 변경하지 않았고 새 제품 차단은 없다.
+
 2026-09-07 T076: `CoinAppLifecycleCoordinator`와 앱 전용 composition을 추가해 첫 수명주기 refresh에서
 StoreKit transaction observer를 먼저 한 번 시작하고, app launch·scene foreground마다 장부
 재조정·활성 occurrence 평가·Shield route 소비를 순서대로 실행하도록 했다. 장부 재조정 실패와 route
