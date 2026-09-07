@@ -602,7 +602,7 @@ struct CoinLedgerSyncAdapterTests {
         let clock = ContinuousClock()
         let setupAdapter = CoinLedgerSyncAdapter(accountSessionID: "icloud-account-a")
         let setup = try await setupAdapter.applyInitialFetch(
-            .noLedger(deletionConfirmed: false),
+            .noLedger(deletionEvidence: .none),
             accountSessionID: "icloud-account-a",
             localMirror: nil,
             currentMonthID: "2026-09",
@@ -613,7 +613,7 @@ struct CoinLedgerSyncAdapterTests {
 
         let deletedAdapter = CoinLedgerSyncAdapter(accountSessionID: "icloud-account-a")
         let deleted = try await deletedAdapter.applyInitialFetch(
-            .noLedger(deletionConfirmed: true),
+            .noLedger(deletionEvidence: .userDeletedZone),
             accountSessionID: "icloud-account-a",
             localMirror: nil,
             currentMonthID: "2026-09",
@@ -621,6 +621,73 @@ struct CoinLedgerSyncAdapterTests {
             syncedAt: Self.syncedAt
         )
         #expect(deleted.mirror.syncState == .deletionConfirmed)
+    }
+
+    @Test(
+        "Explicit CloudKit zone deletion evidence locks the ledger",
+        arguments: [
+            CoinLedgerDeletionEvidence.zoneDeletionEvent,
+            .userDeletedZone,
+        ]
+    )
+    func explicitZoneDeletionEvidenceLocksLedger(
+        evidence: CoinLedgerDeletionEvidence
+    ) async throws {
+        let adapter = CoinLedgerSyncAdapter(accountSessionID: "icloud-account-a")
+
+        let outcome = try await adapter.applyInitialFetch(
+            .noLedger(deletionEvidence: evidence),
+            accountSessionID: "icloud-account-a",
+            localMirror: nil,
+            currentMonthID: "2026-09",
+            fetchedAt: ContinuousClock().now,
+            syncedAt: Self.syncedAt
+        )
+
+        #expect(outcome.mirror.syncState == .deletionConfirmed)
+        #expect(outcome.mirror.purchasedAvailable == 0)
+        #expect(outcome.mirror.freeAvailable == 0)
+        #expect(outcome.mirror.ledgerEpochID == nil)
+        #expect(outcome.mirror.hadConfirmedLedger)
+        #expect(!outcome.recoveredFromRemote)
+    }
+
+    @Test("A confirmed ledger marker turns a later zone absence into deletion")
+    func confirmedLedgerMarkerLocksMissingZone() async throws {
+        let adapter = CoinLedgerSyncAdapter(accountSessionID: "icloud-account-a")
+
+        let outcome = try await adapter.applyInitialFetch(
+            .noLedger(deletionEvidence: .none),
+            accountSessionID: "icloud-account-a",
+            localMirror: CoinBalanceSnapshot.fixture(),
+            currentMonthID: "2026-09",
+            fetchedAt: ContinuousClock().now,
+            syncedAt: Self.syncedAt
+        )
+
+        #expect(outcome.mirror.syncState == .deletionConfirmed)
+        #expect(outcome.mirror.purchasedAvailable == 0)
+        #expect(outcome.mirror.freeAvailable == 0)
+        #expect(outcome.mirror.ledgerEpochID == nil)
+        #expect(outcome.mirror.hadConfirmedLedger)
+    }
+
+    @Test("A previous account ledger marker cannot confirm deletion for a new account")
+    func previousAccountMarkerIsIsolated() async throws {
+        let adapter = CoinLedgerSyncAdapter(accountSessionID: "icloud-account-a")
+
+        let outcome = try await adapter.applyInitialFetch(
+            .noLedger(deletionEvidence: .none),
+            accountSessionID: "icloud-account-b",
+            localMirror: CoinBalanceSnapshot.fixture(),
+            currentMonthID: "2026-09",
+            fetchedAt: ContinuousClock().now,
+            syncedAt: Self.syncedAt
+        )
+
+        #expect(outcome.mirror.syncState == .setupRequired)
+        #expect(!outcome.mirror.hadConfirmedLedger)
+        #expect(await adapter.session.accountSessionID == "icloud-account-b")
     }
 
     @Test("Switching accounts discards the previous mirror, freshness, and pending changes")

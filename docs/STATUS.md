@@ -7,19 +7,19 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 5 사용자 스토리 3 구현 진행 중
 
 ## 진행 중
-`codex/us3-product-catalog-tests`에서 T070 구매 환불 역분개를 구현했다. T059 catalog부터 T062 환불
-테스트까지 GREEN이며 후속 장부 lifecycle·복구·UI 테스트는 해당 US3 구현 전의 의도된 TDD RED
-상태다. 다음은 T071이다.
+`codex/us3-product-catalog-tests`에서 T071 CloudKit 장부 삭제 근거 분류와 잠금을 구현했다. T059
+catalog부터 T062 환불 테스트와 장부 sync adapter 테스트는 GREEN이며 후속 장부 생성·reset·복구·
+UI 테스트는 해당 US3 구현 전의 의도된 TDD RED 상태다. 다음은 T072이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T070 — 검증된 환불·철회의 미사용 구매 코인 역분개
+T071 — CloudKit zone 삭제 근거 분류와 구매·사용 잠금
 
 ## 다음 작업
-T071 — zone 삭제 event·`userDeletedZone`·기존 장부 표식을 구분하고 구매·사용을 잠그는 장부 동기화 확장.
+T072 — 최초 활성화 setup과 삭제 확인 후 reset을 서로 다른 원자적 entry point로 구현.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -38,6 +38,25 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-07 T071: `CoinLedgerDeletionEvidence`를 추가해 CKSyncEngine zone 삭제 event와
+`CKError.userDeletedZone`을 명시적인 삭제 근거로 구분하고, 서버에서 zone 부재가 확인된 같은 계정의
+로컬 mirror에 `hadConfirmedLedger` 표식이 있어도 삭제로 확정하도록 `CoinLedgerSyncAdapter`를
+확장했다. 삭제 확정 시 기존 로컬 잔액을 복원하지 않고 구매·무료 잔액 0, epoch 없음,
+`deletionConfirmed` mirror를 만들어 `current` 전용 구매·사용 gate를 잠근다. 삭제 근거와 과거 표식이
+모두 없는 부재는 `setupRequired`, 일시 장애는 `unavailable`로 유지하며 계정 전환 시 이전 계정의
+표식은 격리한다. 기존 모호한 `deletionConfirmed: Bool` 입력은 삭제 근거 enum으로 교체했다.
+
+구현 전 집중 실행은 `CoinLedgerDeletionEvidence` 부재로 예상대로 컴파일 실패해 RED를 확인했다.
+구현 후 sync adapter 집중 테스트 8개 선언은 동적 인자 포함 9회 모두 통과했고, 장부 current gate·
+sync adapter·구매·월간 무료분·예약·해제 서비스 관련 회귀 테스트 49개 선언은 동적 인자 포함 61회
+iPhone 17 Pro iOS 26.5 Simulator에서 실패·skip 없이 통과했다. 앱의 generic iOS Simulator Release
+빌드와 project plist·diff 검사도 통과했다. T072·T073 구현 전 RED인
+`CoinLedgerLifecycleTests.swift`·`CoinLedgerFreshInstallRecoveryTests.swift`는 원본 계약을 보존한 채
+집중 test build setting에서만 임시 제외했으며, 전자는 새 삭제 근거 API로 동기화했다. 테스트 build의
+기존 `LocationMonitoringAdapterTests` 불필요한 `try` 경고와 Xcode 테스트 런타임 binary strip 경고는
+남아 있다. 실제 CKSyncEngine event·CloudKit 오류 전달과 운영 remote provider 검증은 후속 통합·
+T097 범위로 미확인이고, 운영 CloudKit 데이터는 호출하거나 변경하지 않았다. 새 제품 차단은 없다.
+
 2026-09-07 T070: `PurchaseRefundReconciler`를 추가해 검증 transaction과 원 `PurchaseGrant`의
 transaction ID·환경·product ID·구매 시각이 모두 일치할 때만 환불을 처리하도록 했다. 철회가
 확인되면 grant의 미조정 수량과 현재 미사용 구매 잔액 중 작은 값만 회수해 예약·사용 코인을 침범하지

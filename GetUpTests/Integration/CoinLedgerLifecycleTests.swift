@@ -65,7 +65,7 @@ struct CoinLedgerLifecycleTests {
         let localMirror = try Self.localMirror(purchasedAvailable: 5, freeAvailable: 2)
 
         let outcome = try await adapter.applyInitialFetch(
-            .noLedger(deletionConfirmed: true),
+            .noLedger(deletionEvidence: .zoneDeletionEvent),
             accountSessionID: Self.accountSessionID,
             localMirror: localMirror,
             currentMonthID: Self.monthID,
@@ -86,7 +86,7 @@ struct CoinLedgerLifecycleTests {
         let adapter = CoinLedgerSyncAdapter(accountSessionID: Self.accountSessionID)
 
         let outcome = try await adapter.applyInitialFetch(
-            .noLedger(deletionConfirmed: false),
+            .noLedger(deletionEvidence: .none),
             accountSessionID: Self.accountSessionID,
             localMirror: nil,
             currentMonthID: Self.monthID,

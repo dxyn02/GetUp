@@ -108,9 +108,19 @@ struct CoinLedgerRemoteProjection: Equatable, Sendable {
     }
 }
 
+enum CoinLedgerDeletionEvidence: Equatable, Sendable {
+    case none
+    case zoneDeletionEvent
+    case userDeletedZone
+
+    var confirmsDeletion: Bool {
+        self != .none
+    }
+}
+
 enum CoinLedgerRemoteFetchResult: Equatable, Sendable {
     case ledger(CoinLedgerRemoteProjection)
-    case noLedger(deletionConfirmed: Bool)
+    case noLedger(deletionEvidence: CoinLedgerDeletionEvidence)
     case unavailable
 }
 
@@ -202,7 +212,9 @@ actor CoinLedgerSyncAdapter {
                 recoveredFromRemote: isolatedLocalMirror == nil && isConsistent
             )
 
-        case let .noLedger(deletionConfirmed):
+        case let .noLedger(deletionEvidence):
+            let deletionConfirmed = deletionEvidence.confirmsDeletion
+                || isolatedLocalMirror?.hadConfirmedLedger == true
             let nextMirror = try CoinBalanceSnapshot(
                 purchasedAvailable: 0,
                 currentMonthID: currentMonthID,
@@ -211,7 +223,6 @@ actor CoinLedgerSyncAdapter {
                 syncedAt: syncedAt,
                 ledgerEpochID: nil,
                 hadConfirmedLedger: deletionConfirmed
-                    || isolatedLocalMirror?.hadConfirmedLedger == true
             )
             session = CoinLedgerSyncSession(
                 initialFetchCompleted: true,
