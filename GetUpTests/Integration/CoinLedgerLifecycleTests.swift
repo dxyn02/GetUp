@@ -154,7 +154,7 @@ private extension CoinLedgerLifecycleTests {
     static let monthID = "2026-09"
     static let now = Date(timeIntervalSince1970: 1_788_192_000)
     static let epochID = UUID(uuidString: "00000000-0000-4000-8000-000000000801")!
-    static let resetID = UUID(uuidString: "00000000-0000-4000-8000-000000000802")!
+    static let resetEpochID = UUID(uuidString: "00000000-0000-4000-8000-000000000802")!
 
     static var catalogInfoDictionary: [String: Any] {
         [
@@ -167,7 +167,7 @@ private extension CoinLedgerLifecycleTests {
 
     static var resetRequest: CoinLedgerResetRequest {
         CoinLedgerResetRequest(
-            resetID: resetID,
+            epochID: resetEpochID,
             monthID: monthID,
             confirmedAt: now,
             disclosureVersion: 1
@@ -193,7 +193,30 @@ private extension CoinLedgerLifecycleTests {
 private actor CoinLedgerResetStoreSpy {
     private(set) var requests: [CoinLedgerResetRequest] = []
 
-    func reset(_ request: CoinLedgerResetRequest) async throws {
+    func reset(_ request: CoinLedgerResetRequest) async throws -> CoinLedgerInitializationResult {
         requests.append(request)
+        return try CoinLedgerInitializationResult(
+            epoch: LedgerEpoch(
+                epochID: request.epochID,
+                createdAt: request.confirmedAt,
+                reason: .userConfirmedResetAfterDeletion,
+                suppressedFreeMonthID: request.monthID,
+                disclosureVersion: request.disclosureVersion
+            ),
+            account: CoinAccount(
+                purchasedAvailable: 0,
+                purchasedReserved: 0,
+                revision: 0,
+                updatedAt: request.confirmedAt
+            ),
+            allowance: MonthlyAllowance(
+                monthID: request.monthID,
+                quota: 0,
+                used: 0,
+                reserved: 0,
+                creationDate: request.confirmedAt,
+                updatedAt: request.confirmedAt
+            )
+        )
     }
 }

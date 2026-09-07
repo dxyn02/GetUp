@@ -161,7 +161,7 @@ occurrence만 예외 처리되는지, 중복 100회에서 최대 1회만 소모�
 - [x] T061 [P] [US3] CloudKit commit 전 미finish, commit 후 finish 실패, 재실행 unfinished·updates 복구 테스트를 `GetUpTests/StoreKit/StoreKitTransactionObserverTests.swift`에 먼저 작성한다.
 - [x] T062 [P] [US3] 환불·철회·취소 reversal, 미사용분 한도와 0 clamp 테스트를 `GetUpTests/Core/PurchaseRefundReconcilerTests.swift`에 먼저 작성한다.
 - [x] T063 [P] [US3] `current` 외 구매 API 미호출, 일시 장애와 삭제 확정 구분, 자동 복원 금지, 명시적 reset 테스트를 `GetUpTests/Integration/CoinLedgerLifecycleTests.swift`에 먼저 작성한다.
-- [ ] T064 [P] [US3] 로컬 데이터가 없는 동일 iCloud 새 설치의 기존 `current` 장부 잔액·내역 복구와 새 grant 0개, 원격 장부·삭제 증거가 없는 최초 `setupRequired`에서 명시적 setup action 뒤 initial epoch+당월 무료 2회 atomic 생성, 확인된 삭제 reset의 구매 0·당월 무료 0, 불확실 장부 잠금을 `GetUpTests/Integration/CoinLedgerFreshInstallRecoveryTests.swift`에 먼저 작성한다.
+- [x] T064 [P] [US3] 로컬 데이터가 없는 동일 iCloud 새 설치의 기존 `current` 장부 잔액·내역 복구와 새 grant 0개, 원격 장부·삭제 증거가 없는 최초 `setupRequired`에서 명시적 setup action 뒤 initial epoch+당월 무료 2회 atomic 생성, 확인된 삭제 reset의 구매 0·당월 무료 0, 불확실 장부 잠금을 `GetUpTests/Integration/CoinLedgerFreshInstallRecoveryTests.swift`에 먼저 작성한다.
 - [ ] T065 [P] [US3] 최초 활성화 고지·동의 전 무변경·동의 action 후 무료 2회 표시, 삭제 reset과 구분, 매 구매 삭제 불이익 고지, 구매 상태·잔액·내역 UI 테스트를 `GetUpUITests/UserStory3CoinPurchaseUITests.swift`에 먼저 작성한다.
 
 ### 사용자 스토리 3 구현

@@ -7,19 +7,19 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 5 사용자 스토리 3 테스트 진행 중
 
 ## 진행 중
-`codex/us3-product-catalog-tests`에서 T063 장부 lifecycle 계약 테스트를 먼저 작성했다. 현재 테스트
-타깃은 후속 US3 catalog·구매·observer·환불·reset 구현 전의 의도된 TDD RED 상태이며 다음은
-T064이다.
+`codex/us3-product-catalog-tests`에서 T064 새 설치 장부 복구·최초 setup·삭제 reset 계약 테스트를
+먼저 작성했다. 현재 테스트 타깃은 후속 US3 catalog·구매·observer·환불·setup·reset·recovery 구현
+전의 의도된 TDD RED 상태이며 다음은 T065이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T063 — 비current 구매 API 차단과 장부 장애·삭제·reset lifecycle 계약 테스트
+T064 — 새 설치의 current 장부 복구, 최초 setup, 삭제 reset, 불확실 장부 잠금 계약 테스트
 
 ## 다음 작업
-T064 — 새 설치의 current 장부 복구, 최초 setup, 삭제 reset, 불확실 장부 잠금 테스트 작성.
+T065 — 최초 활성화·매 구매 고지와 구매 상태·잔액·내역 UI 테스트 작성.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -38,6 +38,25 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-07 T064: 로컬 코인 데이터가 없는 새 설치가 동일 iCloud의 `current` 장부에서 기존
+`PurchaseGrant`와 구매·사용·환불 event를 그대로 복구하고, 계산된 구매 잔액 2개·당월 무료 잔액
+1회·내역이 일치하며 새 grant를 추가하지 않는 계약을 작성했다. `syncing`, `stale`, `unavailable`은
+원격 snapshot이나 로컬 mirror로 복구하지 않고 `ledgerNotCurrent`로 잠그며, 원격 장부가 없는
+`setupRequired`도 StoreKit 내역이나 로컬 값으로 대체하지 않도록 했다.
+
+최초 활성화는 `setupRequired`에서 명시적 action이 있을 때만 initial epoch·구매 잔액 0·당월 quota
+2를 단일 atomic setup 경계에 전달하고, 다른 상태 6종에서는 쓰지 않는다. 확인된 삭제는 별도 reset
+경계에서 `userConfirmedResetAfterDeletion` epoch·구매 잔액 0·당월 quota 0·해당 월 지급 억제를 한
+결과로 만들도록 고정했다. T063 reset fixture도 같은 `CoinLedgerInitializationResult` 계약과 안정적인
+epoch ID를 사용하도록 정렬했다. 총 6개 테스트 선언이며 상태 인자를 포함해 13회 실행된다.
+
+T059~T063 RED 파일을 제외한 집중 컴파일은 계획된 T072·T073의
+`CoinLedgerSetupRequest`·`CoinLedgerResetRequest`·`CoinLedgerInitializationResult`·
+`CoinLedgerRecoverySnapshot` 부재에서 종료되어 TDD RED를 확인했고, 두 새 lifecycle 테스트 파일의
+Swift 구문 검사는 통과했다. 기존 `LiveActivityCoinModelTests`와 앱·네 extension의 generic iOS
+Simulator Release 빌드, project plist·diff 검사도 통과했다. 운영 StoreKit 구매나 CloudKit 원격
+데이터는 호출·변경하지 않았고 새 제품 차단은 없다.
+
 2026-09-07 T063: `setupRequired`, `syncing`, `stale`, `unavailable`, `deletionConfirmed`,
 `resetRequired`에서는 구매 요청을 StoreKit에 전달하지 않고 장부 지급·transaction finish도 시작하지
 않는 계약을 추가했다. 일시 장애는 기존 로컬 잔액을 참고용으로 유지한 `unavailable`이지만 삭제로
