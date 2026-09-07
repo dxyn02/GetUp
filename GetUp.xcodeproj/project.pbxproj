@@ -230,6 +230,7 @@
 		AA000000000000000000030F /* CoinLedgerLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000055 /* CoinLedgerLifecycleTests.swift */; };
 		AA0000000000000000000310 /* CoinLedgerFreshInstallRecoveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000056 /* CoinLedgerFreshInstallRecoveryTests.swift */; };
 		AA0000000000000000000311 /* UserStory3CoinPurchaseUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000007 /* UserStory3CoinPurchaseUITests.swift */; };
+		AA0000000000000000000312 /* CoinProductCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000079 /* CoinProductCatalog.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -450,6 +451,7 @@
 		B50000000000000000000055 /* CoinLedgerLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinLedgerLifecycleTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000056 /* CoinLedgerFreshInstallRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinLedgerFreshInstallRecoveryTests.swift; sourceTree = "<group>"; };
 		B60000000000000000000007 /* UserStory3CoinPurchaseUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory3CoinPurchaseUITests.swift; sourceTree = "<group>"; };
+		B40000000000000000000079 /* CoinProductCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinProductCatalog.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -605,8 +607,17 @@
 				B40000000000000000000017 /* Persistence */,
 				B40000000000000000000041 /* Scheduling */,
 				B40000000000000000000029 /* ScreenTime */,
+				B40000000000000000000078 /* StoreKit */,
 			);
 			path = Infrastructure;
+			sourceTree = "<group>";
+		};
+		B40000000000000000000078 /* StoreKit */ = {
+			isa = PBXGroup;
+			children = (
+				B40000000000000000000079 /* CoinProductCatalog.swift */,
+			);
+			path = StoreKit;
 			sourceTree = "<group>";
 		};
 		B40000000000000000000066 /* ActivityKit */ = {
@@ -1248,6 +1259,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000312 /* CoinProductCatalog.swift in Sources */,
 				AA0000000000000000000308 /* ActiveRestrictionReleaseView.swift in Sources */,
 				AA0000000000000000000306 /* ActiveRestrictionReleaseModel.swift in Sources */,
 				AA0000000000000000000274 /* SystemLiveActivityAdapter.swift in Sources */,

@@ -7,19 +7,19 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 5 사용자 스토리 3 구현 진행 중
 
 ## 진행 중
-`codex/us3-product-catalog-tests`에서 T059~T065의 US3 catalog·구매·observer·환불·장부 lifecycle·
-새 설치 복구·구매 UI 계약 테스트를 모두 먼저 작성했다. 현재 테스트 타깃은 후속 US3 구현 전의
-의도된 TDD RED 상태이며 다음은 T066이다.
+`codex/us3-product-catalog-tests`에서 T066의 1개·3개·5개 bundle 상품 허용 catalog 구현을 완료해
+T059를 GREEN으로 전환했다. 후속 구매·observer·환불·장부 lifecycle·복구·UI 테스트는 해당 US3
+구현 전의 의도된 TDD RED 상태이며 다음은 T067이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T065 — 최초 활성화·삭제 reset·매 구매 고지와 구매 상태·잔액·내역 UI 계약 테스트
+T066 — bundle의 1개·3개·5개 허용 상품 검증과 StoreKit 표시 결과 정렬
 
 ## 다음 작업
-T066 — 1개·3개·5개 허용 상품을 검증하는 bundle catalog 구현.
+T067 — StoreKit `Product.products(for:)`, 현지 가격과 purchase 결과 adapter 구현.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -38,6 +38,18 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-07 T066: `GetUpCoinProductCatalog`가 승인된
+`com.dxyn02.GetUp.coin.1`·`.3`·`.5`를 각각 1·3·5개로 정확히 매핑할 때만 생성되는
+`CoinProductCatalog`를 구현했다. 항목 누락·중복·수량 변조를 거부하고 미허용 StoreKit 상품을
+제외하며, 허용 상품은 수량순으로 정렬하면서 StoreKit의 현지화 이름·설명·가격을 그대로 보존한다.
+응답에서 누락·중복되거나 가격이 빈 상품은 unavailable로 분리하고, catalog가 가격을 캐시하지 않아
+재로드 실패 시 이전 가격을 현재 값처럼 반환하지 않는다.
+
+T059 집중 테스트 6개는 iPhone 17 Pro iOS 26.5 Simulator에서 실패·skip 없이 모두 통과했다. 앱과
+네 extension의 generic iOS Simulator Release 빌드, 새 Swift 파일 구문, project plist와 diff 검사도
+통과했다. 기존 T060~T065는 후속 구현 전 RED 계약으로 유지하며 운영 StoreKit 구매나 App Store
+Connect 상품은 호출·변경하지 않았다.
+
 2026-09-07 T065: 최초 코인 기능 활성화에서 iCloud 장부 삭제 시 구매 잔액·현재 월 무료분의 복구
 한계를 고지하고, 동의 전 setup 0회·구매 비활성 상태를 유지한 뒤 명시적 action 후 구매 0개·당월
 무료 2회를 표시하는 UI 계약을 추가했다. 확인된 삭제는 최초 setup과 다른 reset 화면·확인 dialog를
