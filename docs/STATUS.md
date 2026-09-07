@@ -7,19 +7,19 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 5 사용자 스토리 3 테스트 진행 중
 
 ## 진행 중
-`codex/us3-product-catalog-tests`에서 T062 구매 환불·철회·취소 reversal 계약 테스트를 먼저
-작성했다. 현재 테스트 타깃은 후속 US3 catalog·구매·observer·환불 구현 전의 의도된 TDD RED
-상태이며 다음은 T063이다.
+`codex/us3-product-catalog-tests`에서 T063 장부 lifecycle 계약 테스트를 먼저 작성했다. 현재 테스트
+타깃은 후속 US3 catalog·구매·observer·환불·reset 구현 전의 의도된 TDD RED 상태이며 다음은
+T064이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T062 — 구매 환불·철회·취소 reversal과 미사용분 한도·0 clamp 계약 테스트
+T063 — 비current 구매 API 차단과 장부 장애·삭제·reset lifecycle 계약 테스트
 
 ## 다음 작업
-T063 — 비current 구매 API 차단과 장부 장애·삭제·reset lifecycle 테스트 작성.
+T064 — 새 설치의 current 장부 복구, 최초 setup, 삭제 reset, 불확실 장부 잠금 테스트 작성.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -38,6 +38,21 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-07 T063: `setupRequired`, `syncing`, `stale`, `unavailable`, `deletionConfirmed`,
+`resetRequired`에서는 구매 요청을 StoreKit에 전달하지 않고 장부 지급·transaction finish도 시작하지
+않는 계약을 추가했다. 일시 장애는 기존 로컬 잔액을 참고용으로 유지한 `unavailable`이지만 삭제로
+승격하지 않고, 확인된 zone 삭제는 로컬 구매·무료 잔액을 복원하지 않은 0 잔액
+`deletionConfirmed`로 분류하도록 검증한다. 삭제 증거 없는 원격 장부 부재는 reset이 아닌
+`setupRequired`로 분리했다.
+
+reset은 `deletionConfirmed`에서 사용자가 명시적으로 호출한 경우에만 atomic 저장 경계에 정확히 한
+번 전달하고, 그 밖의 상태에서는 쓰기 없이 거부하도록 계약을 고정했다. 총 6개 테스트 선언이며
+비current 상태 인자를 포함해 11회 실행된다. T059~T062 RED 파일을 제외한 집중 컴파일은 계획된
+T072의 `CoinLedgerResetRequest` 부재에서 종료되어 TDD RED를 확인했다. 기존
+`LiveActivityCoinModelTests`는 통과했고 앱과 네 extension의 generic iOS Simulator Release 빌드,
+project plist·diff 검사가 통과했다. 운영 StoreKit 구매나 CloudKit 원격 데이터는 호출·변경하지
+않았고 새 제품 차단은 없다.
+
 2026-09-06 T062: 검증 transaction에 `revocationDate`가 생기면 원 `PurchaseGrant`와 일치하는 경우에만
 `refundAdjustment`를 만들고, 현재 사용 가능한 구매 잔액과 해당 grant 수량 중 작은 값까지만
 회수하도록 계약을 추가했다. 전량 미사용·일부 사용·전량 예약 또는 이미 사용된 0 usable 사례에서
