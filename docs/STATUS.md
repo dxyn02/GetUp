@@ -7,19 +7,20 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 5 사용자 스토리 3 구현 진행 중
 
 ## 진행 중
-`codex/us3-product-catalog-tests`에서 T074 코인 상점 상태 모델을 구현했다. T059 catalog부터 T064
-새 설치 복구와 T074 모델까지 구현된 계약은 GREEN이며, T065 UI 테스트만 후속 화면 구현 전의
-의도된 TDD RED 상태다. 다음은 T075이다.
+`codex/us3-product-catalog-tests`에서 T075 코인 상점·장부 내역 화면을 구현했다. T059 catalog부터
+T075 화면까지 구현된 계약은 GREEN이다. 최초 활성화와 확인된 삭제 reset은 서로 다른 서비스 경계를
+사용하고, 구매 pending은 재실행 뒤에도 표시되며 iCloud 장부 복구는 StoreKit 구매 복원과 분리했다.
+다음은 T076이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T074 — 상품·구매·pending·잔액·장부 삭제 상태를 관리하는 코인 상점 모델
+T075 — 최초 활성화·삭제 reset·상품·구매 확인·내역·iCloud 복구 화면
 
 ## 다음 작업
-T075 — 최초 활성화·삭제 reset·상품·구매 확인·내역·iCloud 복구 화면 구현.
+T076 — app launch·foreground transaction/CloudKit 재조정과 Shield route 단일 소비 연결.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -38,6 +39,24 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-07 T075: `CoinStoreView`와 `CoinLedgerHistoryView`를 추가해 `CoinStoreModel`의 잔액·상품·구매
+상태와 장부 event를 화면에 연결했다. 최초 `setupRequired`에서는 iCloud 장부 삭제 시 구매 잔액과
+무료 코인이 복원되지 않고 App Store 구매 복원과도 다름을 고지한 뒤 명시적 동의 action만
+`CoinLedgerSetupService`에 전달한다. 확인된 삭제는 별도 reset 고지·확인 dialog를 거쳐
+`CoinLedgerResetService`만 호출한다. 1·3·5개 상품과 StoreKit 현지 가격, 매 구매 전 삭제 위험 확인,
+성공·pending·취소·실패 상태, 구매·무료 지급·사용·해제·환불 보정·환불 취소 내역과 시각,
+iCloud 장부 동기화 불가 안내·재시도를 분리했다. 홈에는 주입된 configuration이 있을 때만 코인 상점
+진입점을 노출하며 실제 launch·foreground·Shield route의 운영 조립은 계획대로 T076에 남겼다.
+
+T065의 코인 상점 UI 테스트 9개는 iPhone 17 Pro iOS 26.5 Simulator에서 모두 통과했고, 전체
+`GetUpTests` 542개 선언은 동적 인자 포함 654회 모두 실패·skip 없이 통과했다. Debug
+build-for-testing, generic iOS Simulator Release 빌드, project plist·diff 검사도 통과했다. 첫 UI
+전체 실행은 `coinStore.screen`을 `ScrollView` 요소에 부여해 `otherElements` 계약과 달랐고, 구매
+alert의 SwiftUI message 식별자가 UIKit alert 계층에 전달되지 않아 실패했다. 화면 내부 container로
+식별자를 옮기고 alert message label에 식별자를 연결한 뒤 전체 재실행이 통과했다. 기존
+`LocationMonitoringAdapterTests`의 불필요한 `try`와 Xcode 테스트 런타임 binary strip 경고가 남아
+있으며 T075 동작 실패는 아니다. 운영 StoreKit 구매·CloudKit 데이터는 호출하거나 변경하지 않았다.
+
 2026-09-07 T074: `CoinStoreModel`을 `@MainActor @Observable` 상태 경계로 추가해 StoreKit 현지화 상품
 목록, 판매 불가 상품, 상품 로드 오류, CloudKit 확정 잔액·지급·event 내역, pending 상품과 release
 reconciliation을 한곳에서 관리하도록 했다. `current`에서 로드된 상품만 구매 확인을 요청할 수 있고,

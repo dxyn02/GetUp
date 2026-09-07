@@ -172,6 +172,7 @@ private struct GetUpRootView: View {
         (@MainActor () -> FamilyControlsAuthorizationStatus)?
     private let showsRestrictionProbe: Bool
     private let releaseConfiguration: ActiveRestrictionReleaseConfiguration?
+    private let coinStoreConfiguration: CoinStoreConfiguration?
     private let permissionGuideRetryResult: String?
     private let permissionGuideActionUpdate: PermissionGuideUpdate?
     private let permissionOnboardingStateStore: PermissionOnboardingStateStore
@@ -187,6 +188,7 @@ private struct GetUpRootView: View {
             environment.familyControlsAuthorizationStatusOverride
         showsRestrictionProbe = environment.showsRestrictionProbe
         releaseConfiguration = environment.releaseConfiguration
+        coinStoreConfiguration = environment.coinStoreConfiguration
         permissionGuideRetryResult = environment.permissionGuideRetryResult
         permissionGuideActionUpdate = environment.permissionGuideActionUpdate
         permissionOnboardingStateStore = environment.permissionOnboardingStateStore
@@ -241,7 +243,8 @@ private struct GetUpRootView: View {
             HomeView(
                 model: model,
                 showsRestrictionProbe: showsRestrictionProbe,
-                releaseConfiguration: releaseConfiguration
+                releaseConfiguration: releaseConfiguration,
+                coinStoreConfiguration: coinStoreConfiguration
             )
         case .failed:
             LoadFailureView {
@@ -456,6 +459,8 @@ private struct HomeView: View {
     @Bindable var model: AppModel
     let showsRestrictionProbe: Bool
     let releaseConfiguration: ActiveRestrictionReleaseConfiguration?
+    let coinStoreConfiguration: CoinStoreConfiguration?
+    @State private var showsCoinStore = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
@@ -486,6 +491,11 @@ private struct HomeView: View {
                 .zIndex(1)
             }
         }
+        .navigationDestination(isPresented: $showsCoinStore) {
+            if let coinStoreConfiguration {
+                CoinStoreView(configuration: coinStoreConfiguration)
+            }
+        }
     }
 
     private var header: some View {
@@ -495,6 +505,20 @@ private struct HomeView: View {
                 .fontWeight(.bold)
                 .accessibilityIdentifier("home.brandName")
             Spacer()
+            if coinStoreConfiguration != nil {
+                Button {
+                    showsCoinStore = true
+                } label: {
+                    Image(systemName: "circle.hexagongrid.fill")
+                        .font(.title2)
+                        .foregroundStyle(HomeColor.accent)
+                        .frame(width: 48, height: 48)
+                        .background(HomeColor.surfaceElevated, in: .circle)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("코인")
+                .accessibilityIdentifier("coinStore.open")
+            }
             Button {
                 model.beginCreatingRule()
             } label: {
@@ -1131,6 +1155,7 @@ private struct AppEnvironment {
         (@MainActor () -> FamilyControlsAuthorizationStatus)?
     let showsRestrictionProbe: Bool
     let releaseConfiguration: ActiveRestrictionReleaseConfiguration?
+    let coinStoreConfiguration: CoinStoreConfiguration?
     let permissionGuideModel: PermissionGuideModel?
     let permissionGuideRetryResult: String?
     let permissionGuideActionUpdate: PermissionGuideUpdate?
@@ -1237,6 +1262,7 @@ private struct AppEnvironment {
             familyControlsAuthorizationStatusOverride: nil,
             showsRestrictionProbe: false,
             releaseConfiguration: releaseConfiguration,
+            coinStoreConfiguration: nil,
             permissionGuideModel: nil,
             permissionGuideRetryResult: nil,
             permissionGuideActionUpdate: nil,
@@ -1393,6 +1419,14 @@ private enum UITestConfiguration {
             rule: restrictionActivationRule,
             now: fixtureNow
         )
+        let coinStoreConfiguration = try makeCoinStoreConfiguration(
+            scenario: scenario,
+            ledgerState: value(after: "--ui-test-coin-ledger-state"),
+            purchaseResult: value(after: "--ui-test-purchase-result"),
+            historyFixture: value(after: "--ui-test-coin-history"),
+            root: root,
+            now: fixtureNow
+        )
 
         return AppEnvironment(
             model: appModel,
@@ -1403,6 +1437,7 @@ private enum UITestConfiguration {
             familyControlsAuthorizationStatusOverride: authorizationStatusOverride,
             showsRestrictionProbe: scenario == "restriction-activation",
             releaseConfiguration: releaseConfiguration,
+            coinStoreConfiguration: coinStoreConfiguration,
             permissionGuideModel: permissionGuideModel(
                 for: scenario,
                 onboardingStateStore: permissionOnboardingStateStore
@@ -1492,6 +1527,42 @@ private enum UITestConfiguration {
             now: { fixedNow },
             timeZone: Fixtures.timeZone,
             instrumentation: instrumentation
+        )
+    }
+
+    private static func makeCoinStoreConfiguration(
+        scenario: String?,
+        ledgerState: String?,
+        purchaseResult: String?,
+        historyFixture: String?,
+        root: URL,
+        now: Date
+    ) throws -> CoinStoreConfiguration? {
+        guard scenario == "coin-store" else { return nil }
+
+        let driver = try CoinStoreUITestDriver(
+            ledgerState: ledgerState,
+            purchaseResult: purchaseResult,
+            historyFixture: historyFixture,
+            root: root,
+            now: now
+        )
+        let model = CoinStoreModel(
+            ledger: driver.ledger,
+            loadProducts: { await CoinStoreUITestDriver.products },
+            executePurchase: { productID in
+                try await driver.purchase(productID: productID)
+            }
+        )
+        return CoinStoreConfiguration(
+            model: model,
+            activateLedger: { try await driver.activate() },
+            resetLedger: { try await driver.reset() },
+            retryLedgerSync: { await driver.retrySync() },
+            instrumentation: driver.instrumentation,
+            purchaseGrantStatus: historyFixture == "full-ledger-events"
+                ? "구매 지급"
+                : "지급 완료"
         )
     }
 
@@ -1997,5 +2068,291 @@ private enum UITestConfiguration {
         private static let rule3ID = UUID(
             uuidString: "00000000-0000-4000-8000-000000000513"
         )!
+    }
+}
+
+@MainActor
+private final class CoinStoreUITestDriver {
+    static let products = CoinProductCatalogLoadResult(
+        availableProducts: [
+            product(quantity: 1, price: "₩1,100"),
+            product(quantity: 3, price: "₩2,900"),
+            product(quantity: 5, price: "₩4,400"),
+        ],
+        unavailableProductIdentifiers: []
+    )
+
+    let instrumentation = CoinStoreInstrumentation()
+    private(set) var ledger: CoinStoreLedgerState
+
+    private let purchaseResult: String?
+    private let now: Date
+    private let pendingMarkerURL: URL
+    private var nextTransactionID: UInt64 = 9_001
+
+    init(
+        ledgerState: String?,
+        purchaseResult: String?,
+        historyFixture: String?,
+        root: URL,
+        now: Date
+    ) throws {
+        self.purchaseResult = purchaseResult
+        self.now = now
+        pendingMarkerURL = root.appendingPathComponent("pending-coin-purchase")
+
+        let syncState: CoinBalanceSyncState = switch ledgerState {
+        case "setup-required": .setupRequired
+        case "deletion-confirmed": .deletionConfirmed
+        case "unavailable": .unavailable
+        default: .current
+        }
+        let isCurrent = syncState == .current
+        let events = historyFixture == "full-ledger-events"
+            ? try Self.fullHistory(now: now)
+            : []
+        let pendingIdentifiers: Set<String> = FileManager.default.fileExists(
+            atPath: pendingMarkerURL.path
+        ) ? ["com.dxyn02.GetUp.coin.1"] : []
+
+        ledger = CoinStoreLedgerState(
+            balance: try CoinBalanceSnapshot(
+                purchasedAvailable: isCurrent ? 3 : 0,
+                currentMonthID: MonthlyAllowancePolicy.monthID(containing: now),
+                freeAvailable: isCurrent ? 1 : 0,
+                syncState: syncState,
+                syncedAt: now,
+                ledgerEpochID: isCurrent
+                    ? UUID(uuidString: "00000000-0000-4000-8000-000000000901")
+                    : nil,
+                hadConfirmedLedger: syncState != .setupRequired
+            ),
+            purchaseGrants: [],
+            events: events,
+            pendingProductIdentifiers: pendingIdentifiers,
+            hasPendingReconciliation: false
+        )
+    }
+
+    func activate() async throws -> CoinStoreLedgerState {
+        let request = CoinLedgerSetupRequest(
+            epochID: UUID(uuidString: "00000000-0000-4000-8000-000000000902")!,
+            monthID: MonthlyAllowancePolicy.monthID(containing: now),
+            confirmedAt: now,
+            disclosureVersion: 1
+        )
+        let service = CoinLedgerSetupService { [instrumentation] request in
+            await instrumentation.recordSetup()
+            return try await Self.initializationResult(for: request)
+        }
+        let result = try await service.activate(
+            request,
+            ledgerState: ledger.balance.syncState
+        )
+        ledger = try Self.ledger(from: result, now: now)
+        return ledger
+    }
+
+    func reset() async throws -> CoinStoreLedgerState {
+        let request = CoinLedgerResetRequest(
+            epochID: UUID(uuidString: "00000000-0000-4000-8000-000000000903")!,
+            monthID: MonthlyAllowancePolicy.monthID(containing: now),
+            confirmedAt: now,
+            disclosureVersion: 1
+        )
+        let service = CoinLedgerResetService { [instrumentation] request in
+            await instrumentation.recordReset()
+            return try await Self.initializationResult(for: request)
+        }
+        let result = try await service.resetAfterConfirmedDeletion(
+            request,
+            ledgerState: ledger.balance.syncState
+        )
+        ledger = try Self.ledger(from: result, now: now)
+        return ledger
+    }
+
+    func retrySync() -> CoinStoreLedgerState {
+        ledger
+    }
+
+    func purchase(productID: String) async throws -> CoinStorePurchaseExecutionResult {
+        instrumentation.recordPurchase()
+        let quantity = Self.quantity(for: productID)
+
+        switch purchaseResult {
+        case "pending":
+            try Data().write(to: pendingMarkerURL, options: .atomic)
+            ledger = CoinStoreLedgerState(
+                balance: ledger.balance,
+                purchaseGrants: ledger.purchaseGrants,
+                events: ledger.events,
+                pendingProductIdentifiers: ledger.pendingProductIdentifiers.union([productID]),
+                hasPendingReconciliation: false
+            )
+            return .pending
+        case "user-cancelled":
+            return .cancelled
+        case "failed":
+            throw CoinStoreError.purchaseFailed
+        default:
+            let grant = try PurchaseGrant(
+                transactionID: nextTransactionID,
+                environment: .sandbox,
+                productID: productID,
+                quantity: quantity,
+                purchaseDate: now,
+                adjustedQuantity: 0
+            )
+            nextTransactionID += 1
+            let event = try CoinLedgerEvent(
+                eventID: "purchase-\(grant.transactionID)",
+                kind: .purchaseGrant,
+                source: .purchased,
+                quantity: quantity,
+                relatedTransactionID: grant.transactionID,
+                relatedCommandID: nil,
+                occurrenceID: nil,
+                createdAt: now
+            )
+            let balance = try CoinBalanceSnapshot(
+                purchasedAvailable: ledger.balance.purchasedAvailable + quantity,
+                currentMonthID: ledger.balance.currentMonthID,
+                freeAvailable: ledger.balance.freeAvailable,
+                syncState: .current,
+                syncedAt: now,
+                ledgerEpochID: ledger.balance.ledgerEpochID,
+                hadConfirmedLedger: true
+            )
+            ledger = CoinStoreLedgerState(
+                balance: balance,
+                purchaseGrants: ledger.purchaseGrants + [grant],
+                events: ledger.events + [event],
+                pendingProductIdentifiers: [],
+                hasPendingReconciliation: false
+            )
+            return .granted(grant: grant, ledger: ledger)
+        }
+    }
+
+    private static func product(quantity: Int, price: String) -> CoinCatalogProduct {
+        CoinCatalogProduct(
+            product: CoinStoreProduct(
+                id: "com.dxyn02.GetUp.coin.\(quantity)",
+                displayName: "코인 \(quantity)개",
+                displayDescription: "제한 해제 코인",
+                displayPrice: price
+            ),
+            quantity: quantity
+        )
+    }
+
+    private static func quantity(for productID: String) -> Int {
+        products.availableProducts.first { $0.product.id == productID }?.quantity ?? 0
+    }
+
+    private static func initializationResult(
+        for request: CoinLedgerSetupRequest
+    ) throws -> CoinLedgerInitializationResult {
+        try initializationResult(
+            epochID: request.epochID,
+            monthID: request.monthID,
+            confirmedAt: request.confirmedAt,
+            disclosureVersion: request.disclosureVersion,
+            reason: .initialSetup,
+            quota: MonthlyAllowancePolicy.monthlyQuota
+        )
+    }
+
+    private static func initializationResult(
+        for request: CoinLedgerResetRequest
+    ) throws -> CoinLedgerInitializationResult {
+        try initializationResult(
+            epochID: request.epochID,
+            monthID: request.monthID,
+            confirmedAt: request.confirmedAt,
+            disclosureVersion: request.disclosureVersion,
+            reason: .userConfirmedResetAfterDeletion,
+            quota: 0
+        )
+    }
+
+    private static func initializationResult(
+        epochID: UUID,
+        monthID: String,
+        confirmedAt: Date,
+        disclosureVersion: Int,
+        reason: LedgerEpochReason,
+        quota: Int
+    ) throws -> CoinLedgerInitializationResult {
+        try CoinLedgerInitializationResult(
+            epoch: LedgerEpoch(
+                epochID: epochID,
+                createdAt: confirmedAt,
+                reason: reason,
+                suppressedFreeMonthID: reason == .userConfirmedResetAfterDeletion
+                    ? monthID
+                    : nil,
+                disclosureVersion: disclosureVersion
+            ),
+            account: CoinAccount(
+                purchasedAvailable: 0,
+                purchasedReserved: 0,
+                revision: 0,
+                updatedAt: confirmedAt
+            ),
+            allowance: MonthlyAllowance(
+                monthID: monthID,
+                quota: quota,
+                used: 0,
+                reserved: 0,
+                creationDate: confirmedAt,
+                updatedAt: confirmedAt
+            )
+        )
+    }
+
+    private static func ledger(
+        from result: CoinLedgerInitializationResult,
+        now: Date
+    ) throws -> CoinStoreLedgerState {
+        CoinStoreLedgerState(
+            balance: try CoinBalanceSnapshot(
+                purchasedAvailable: result.account.purchasedAvailable,
+                currentMonthID: result.allowance.monthID,
+                freeAvailable: result.allowance.available,
+                syncState: .current,
+                syncedAt: now,
+                ledgerEpochID: result.epoch.epochID,
+                hadConfirmedLedger: true
+            ),
+            purchaseGrants: [],
+            events: [],
+            pendingProductIdentifiers: [],
+            hasPendingReconciliation: false
+        )
+    }
+
+    private static func fullHistory(now: Date) throws -> [CoinLedgerEvent] {
+        let fixtures: [(CoinLedgerEventKind, CoinLedgerEventSource, Int)] = [
+            (.purchaseGrant, .purchased, 5),
+            (.freeGrant, .monthlyFree, 2),
+            (.spend, .monthlyFree, 1),
+            (.release, .monthlyFree, 1),
+            (.refundAdjustment, .purchased, 2),
+            (.reversal, .purchased, 2),
+        ]
+        return try fixtures.enumerated().map { index, fixture in
+            try CoinLedgerEvent(
+                eventID: "history-\(fixture.0.rawValue)",
+                kind: fixture.0,
+                source: fixture.1,
+                quantity: fixture.2,
+                relatedTransactionID: fixture.0 == .purchaseGrant ? 8_001 : nil,
+                relatedCommandID: nil,
+                occurrenceID: nil,
+                createdAt: now.addingTimeInterval(TimeInterval(-index * 60))
+            )
+        }
     }
 }
