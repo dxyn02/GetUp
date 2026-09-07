@@ -173,7 +173,7 @@ occurrence만 예외 처리되는지, 중복 100회에서 최대 1회만 소모�
 - [x] T070 [US3] 검증된 환불·철회를 미사용 구매 코인 범위에서 역분개하는 `GetUp/Core/StateMachine/PurchaseRefundReconciler.swift`를 구현한다.
 - [x] T071 [US3] zone 삭제 event·`userDeletedZone`·기존 장부 표식을 구분하고 구매·사용을 잠그도록 `GetUp/Infrastructure/CloudKit/CoinLedgerSyncAdapter.swift`를 확장한다.
 - [x] T072 [US3] 원격 장부·삭제 증거가 없는 `setupRequired`에서 사용자 동의 뒤 initial epoch+당월 quota 2를 atomic 생성하는 `GetUp/Infrastructure/CloudKit/CoinLedgerSetupService.swift`와, 삭제 확인 뒤 새 epoch+구매 0+당월 quota 0을 atomic 생성하고 local mirror 자동 복원을 금지하는 `GetUp/Infrastructure/CloudKit/CoinLedgerResetService.swift`를 서로 다른 entry point와 허용 상태로 구현한다.
-- [ ] T073 [US3] 초기 fetch의 epoch·PurchaseGrant transaction 연결·사용·보정 projection을 검증해 기존 장부는 mirror와 내역만 재생성하고, 장부·삭제 증거가 모두 없는 최초 활성화와 확인된 삭제를 분리하며 새 지급을 만들지 않는 `GetUp/Infrastructure/CloudKit/CoinLedgerRecoveryService.swift`를 구현한다.
+- [x] T073 [US3] 초기 fetch의 epoch·PurchaseGrant transaction 연결·사용·보정 projection을 검증해 기존 장부는 mirror와 내역만 재생성하고, 장부·삭제 증거가 모두 없는 최초 활성화와 확인된 삭제를 분리하며 새 지급을 만들지 않는 `GetUp/Infrastructure/CloudKit/CoinLedgerRecoveryService.swift`를 구현한다.
 - [ ] T074 [P] [US3] 상품·구매·pending·잔액·장부 삭제 상태를 관리하는 `GetUp/Features/Coins/CoinStoreModel.swift`를 구현한다.
 - [ ] T075 [US3] `setupRequired` 최초 활성화 화면의 고지·명시적 동의 action을 `CoinLedgerSetupService`에 연결하고, 상품 1·3·5개·현지 가격·구매 확인·내역 및 삭제 reset 화면을 분리하며 StoreKit `구매 복원`과 구분되는 `iCloud 잔액 동기화·복구` 상태를 `GetUp/Features/Coins/CoinStoreView.swift`, `GetUp/Features/Coins/CoinLedgerHistoryView.swift`에 구현한다.
 - [ ] T076 [US3] app launch와 scene foreground에 transaction·CloudKit 재조정을 연결하고 Shield route는 생성 후 5분 이내·미소비·활성 occurrence 조건을 만족할 때 atomic하게 한 번 소비한 뒤 coin store·장부 복구로 이동하며 stale·중복·종료 route를 폐기하도록 `GetUp/App/GetUpApp.swift`, `GetUp/App/DependencyContainer.swift`를 확장한다.

@@ -7,19 +7,19 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 5 사용자 스토리 3 구현 진행 중
 
 ## 진행 중
-`codex/us3-product-catalog-tests`에서 T072 최초 장부 setup과 삭제 후 reset 서비스를 구현했다. T059
-catalog부터 T063 장부 lifecycle의 구현된 범위와 setup/reset 집중 테스트는 GREEN이며 후속 장부
-복구·UI 테스트는 해당 US3 구현 전의 의도된 TDD RED 상태다. 다음은 T073이다.
+`codex/us3-product-catalog-tests`에서 T073 기존 장부 복구와 projection 검증 서비스를 구현했다.
+T059 catalog부터 T064 새 설치 복구까지 구현된 계약은 GREEN이며, T065 UI 테스트만 후속 화면 구현
+전의 의도된 TDD RED 상태다. 다음은 T074이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T072 — 최초 활성화 setup과 삭제 확인 후 reset의 분리된 원자 저장 경계
+T073 — current 원격 장부의 지급·사용·보정 projection 검증과 무지급 복구
 
 ## 다음 작업
-T073 — 기존 current 장부의 지급·사용·보정 projection을 검증하고 새 grant 없이 잔액·내역 복구.
+T074 — 상품·구매·pending·잔액·장부 삭제 상태를 관리하는 `CoinStoreModel` 구현.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -38,6 +38,28 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-07 T073: `CoinLedgerRecoveryService`를 추가해 원격 snapshot이 있고 sync 상태가 `current`인
+경우에만 기존 epoch·account·당월 allowance·`PurchaseGrant`·event를 검증하고, 새 지급이나 StoreKit
+작업 없이 local mirror와 기존 지급·내역을 그대로 반환하도록 했다. epoch 사유별 삭제 월 억제 정책,
+schema와 당월 일치, event·transaction ID 유일성, purchase·reservation·spend·release event의
+결정적 ID와 grant·command 연결, 환불·철회 순서와 무관한 순보정, 구매 코인 사용량 및 저장 account
+잔액 projection을 확인한다. 원격
+장부가 없으면 `remoteLedgerMissing`, current가 아니면 `ledgerNotCurrent`, 모순된 snapshot은
+`invalidProjection`으로 거부해 최초 활성화와 확인된 삭제 reset 경계를 T072에 그대로 분리했다.
+
+구현 전 집중 테스트는 `CoinLedgerRecoverySnapshot` 부재로 예상대로 컴파일 실패해 TDD RED를
+확인했다. 구현 후 T064/T073 집중 테스트 11개 선언은 동적 인자 포함 18회 모두 통과했고, 전체
+`GetUpTests` 532개 선언은 동적 인자 포함 633회 iPhone 17 Pro iOS 26.5 Simulator에서 실패·skip
+없이 통과했다. generic iOS Simulator Release 빌드, Swift 구문, project plist·diff 검사도
+통과했다. 집중 테스트 첫 재실행은 shutdown 상태의 Simulator가 앱 사전 실행 검사에서 `Busy`를
+반환해 실패했으나 직접 boot 완료 후 동일 명령이 통과했고, Release 첫 시도도 sandbox의
+CoreSimulatorService 접근 거부 뒤 승인된 동일 명령 재실행에서 통과했다. 기존
+순서 독립성 테스트의 최초 fixture는 실제 계약에 없는 부분 reversal을 구성해 실패했으며, 전체
+reversal과 별도 미철회 refund 조합으로 바로잡은 뒤 동일 projection 테스트가 통과했다. 기존
+`LocationMonitoringAdapterTests`의 불필요한 `try`와 Xcode 테스트 런타임 binary strip 경고가
+남아 있으며 T073 동작 실패는 아니다. 운영 CloudKit·StoreKit 데이터는 호출하거나 변경하지 않았고
+새 제품 차단은 없다.
+
 2026-09-07 T072: `CoinLedgerSetupService`와 `CoinLedgerResetService`를 서로 다른 요청 타입·허용 상태·
 원자 저장 closure로 구현했다. setup은 `setupRequired`에서만 initial epoch, 구매 잔액 0, 당월 무료
 quota 2 결과를 허용하고 reset은 `deletionConfirmed`에서만 삭제 reset epoch, 구매 잔액 0, 삭제 월

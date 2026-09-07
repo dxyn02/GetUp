@@ -132,6 +132,121 @@ struct CoinLedgerFreshInstallRecoveryTests {
             )
         }
     }
+
+    @Test("A stored account balance must equal the purchase event projection")
+    func accountBalanceMustMatchProjection() throws {
+        let snapshot = try Self.currentSnapshot()
+        let mismatched = try Self.replacing(
+            snapshot,
+            account: CoinAccount(
+                purchasedAvailable: 3,
+                purchasedReserved: 0,
+                revision: snapshot.account.revision,
+                updatedAt: snapshot.account.updatedAt
+            )
+        )
+
+        #expect(throws: CoinLedgerRecoveryServiceError.invalidProjection) {
+            try CoinLedgerRecoveryService().recoverFreshInstall(
+                snapshot: mismatched,
+                ledgerState: .current,
+                syncedAt: Self.now
+            )
+        }
+    }
+
+    @Test("Refund events must reference an existing purchase grant")
+    func refundMustReferenceGrant() throws {
+        let snapshot = try Self.currentSnapshot()
+        let orphan = try Self.event(
+            id: "refund:orphan",
+            kind: .refundAdjustment,
+            quantity: 1,
+            relatedTransactionID: 99_999
+        )
+
+        #expect(throws: CoinLedgerRecoveryServiceError.invalidProjection) {
+            try CoinLedgerRecoveryService().recoverFreshInstall(
+                snapshot: Self.replacing(snapshot, events: snapshot.events + [orphan]),
+                ledgerState: .current,
+                syncedAt: Self.now
+            )
+        }
+    }
+
+    @Test("Grant adjustment must equal refund events minus reversals")
+    func grantAdjustmentMustMatchEvents() throws {
+        let snapshot = try Self.currentSnapshot()
+        let grant = try #require(snapshot.purchaseGrants.first)
+        let mismatchedGrant = try PurchaseGrant(
+            transactionID: grant.transactionID,
+            environment: grant.environment,
+            productID: grant.productID,
+            quantity: grant.quantity,
+            purchaseDate: grant.purchaseDate,
+            adjustedQuantity: 0
+        )
+
+        #expect(throws: CoinLedgerRecoveryServiceError.invalidProjection) {
+            try CoinLedgerRecoveryService().recoverFreshInstall(
+                snapshot: Self.replacing(snapshot, purchaseGrants: [mismatchedGrant]),
+                ledgerState: .current,
+                syncedAt: Self.now
+            )
+        }
+    }
+
+    @Test("Refund and reversal projection is independent of CloudKit event order")
+    func refundProjectionIsOrderIndependent() throws {
+        let snapshot = try Self.currentSnapshot()
+        let purchase = try #require(snapshot.events.first { $0.kind == .purchaseGrant })
+        let spend = try #require(snapshot.events.first { $0.kind == .spend })
+        let activeRefund = try Self.event(
+            id: "refund:sandbox:\(Self.transactionID):1",
+            kind: .refundAdjustment,
+            quantity: 1,
+            relatedTransactionID: Self.transactionID
+        )
+        let reversedRefund = try Self.event(
+            id: "refund:sandbox:\(Self.transactionID):2",
+            kind: .refundAdjustment,
+            quantity: 2,
+            relatedTransactionID: Self.transactionID
+        )
+        let reversal = try Self.event(
+            id: "reversal:\(reversedRefund.eventID)",
+            kind: .reversal,
+            quantity: 2,
+            relatedTransactionID: Self.transactionID
+        )
+        let reordered = Self.replacing(
+            snapshot,
+            events: [purchase, reversal, spend, activeRefund, reversedRefund]
+        )
+
+        let result = try CoinLedgerRecoveryService().recoverFreshInstall(
+            snapshot: reordered,
+            ledgerState: .current,
+            syncedAt: Self.now
+        )
+
+        #expect(result.mirror.purchasedAvailable == 2)
+        #expect(result.events == reordered.events)
+    }
+
+    @Test("Duplicate event IDs invalidate recovery")
+    func duplicateEventsAreRejected() throws {
+        let snapshot = try Self.currentSnapshot()
+        let duplicate = try #require(snapshot.events.first)
+
+        #expect(throws: CoinLedgerRecoveryServiceError.invalidProjection) {
+            try CoinLedgerRecoveryService().recoverFreshInstall(
+                snapshot: Self.replacing(snapshot, events: snapshot.events + [duplicate]),
+                ledgerState: .current,
+                syncedAt: Self.now
+            )
+        }
+    }
 }
 
 private extension CoinLedgerFreshInstallRecoveryTests {
@@ -288,6 +403,21 @@ private extension CoinLedgerFreshInstallRecoveryTests {
             relatedCommandID: relatedCommandID,
             occurrenceID: occurrenceID,
             createdAt: now
+        )
+    }
+
+    static func replacing(
+        _ snapshot: CoinLedgerRecoverySnapshot,
+        account: CoinAccount? = nil,
+        purchaseGrants: [PurchaseGrant]? = nil,
+        events: [CoinLedgerEvent]? = nil
+    ) -> CoinLedgerRecoverySnapshot {
+        CoinLedgerRecoverySnapshot(
+            epoch: snapshot.epoch,
+            account: account ?? snapshot.account,
+            allowance: snapshot.allowance,
+            purchaseGrants: purchaseGrants ?? snapshot.purchaseGrants,
+            events: events ?? snapshot.events
         )
     }
 }
