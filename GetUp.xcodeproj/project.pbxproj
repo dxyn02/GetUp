@@ -235,6 +235,8 @@
 		AA0000000000000000000314 /* CoinPurchaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000081 /* CoinPurchaseService.swift */; };
 		AA0000000000000000000315 /* StoreKitTransactionObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000082 /* StoreKitTransactionObserver.swift */; };
 		AA0000000000000000000316 /* PurchaseRefundReconciler.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000083 /* PurchaseRefundReconciler.swift */; };
+		AA0000000000000000000317 /* CoinLedgerSetupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000084 /* CoinLedgerSetupService.swift */; };
+		AA0000000000000000000318 /* CoinLedgerResetService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000085 /* CoinLedgerResetService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -460,6 +462,8 @@
 		B40000000000000000000081 /* CoinPurchaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinPurchaseService.swift; sourceTree = "<group>"; };
 		B40000000000000000000082 /* StoreKitTransactionObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitTransactionObserver.swift; sourceTree = "<group>"; };
 		B40000000000000000000083 /* PurchaseRefundReconciler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseRefundReconciler.swift; sourceTree = "<group>"; };
+		B40000000000000000000084 /* CoinLedgerSetupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinLedgerSetupService.swift; sourceTree = "<group>"; };
+		B40000000000000000000085 /* CoinLedgerResetService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinLedgerResetService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -644,6 +648,8 @@
 		B4000000000000000000005D /* CloudKit */ = {
 			isa = PBXGroup;
 			children = (
+				B40000000000000000000085 /* CoinLedgerResetService.swift */,
+				B40000000000000000000084 /* CoinLedgerSetupService.swift */,
 				B4000000000000000000005F /* CoinLedgerSyncAdapter.swift */,
 				B4000000000000000000005E /* CloudKitCoinLedgerRepository.swift */,
 				B4000000000000000000005C /* CoinLedgerRecordMapper.swift */,
@@ -1271,6 +1277,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000318 /* CoinLedgerResetService.swift in Sources */,
+				AA0000000000000000000317 /* CoinLedgerSetupService.swift in Sources */,
 				AA0000000000000000000315 /* StoreKitTransactionObserver.swift in Sources */,
 				AA0000000000000000000316 /* PurchaseRefundReconciler.swift in Sources */,
 				AA0000000000000000000314 /* CoinPurchaseService.swift in Sources */,

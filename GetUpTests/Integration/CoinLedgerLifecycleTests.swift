@@ -139,7 +139,7 @@ struct CoinLedgerLifecycleTests {
             }
         )
 
-        try await service.resetAfterConfirmedDeletion(
+        _ = try await service.resetAfterConfirmedDeletion(
             Self.resetRequest,
             ledgerState: .deletionConfirmed
         )

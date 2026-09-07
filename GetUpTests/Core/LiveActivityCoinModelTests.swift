@@ -777,6 +777,131 @@ struct CoinLedgerSyncAdapterTests {
     private static let syncedAt = Date(timeIntervalSince1970: 1_788_192_000)
 }
 
+@Suite("Coin ledger setup service")
+struct CoinLedgerSetupServiceTests {
+    @Test("First activation reaches only the atomic setup boundary")
+    func firstActivationUsesAtomicSetup() async throws {
+        let store = CoinLedgerSetupStoreSpy(result: try Self.setupResult())
+        let service = CoinLedgerSetupService(performAtomicSetup: { request in
+            try await store.setup(request)
+        })
+
+        let result = try await service.activate(
+            Self.request,
+            ledgerState: .setupRequired
+        )
+
+        #expect(await store.requests == [Self.request])
+        #expect(result == (try Self.setupResult()))
+        #expect(result.allowance.available == MonthlyAllowancePolicy.monthlyQuota)
+    }
+
+    @Test(
+        "Setup rejects every state except first activation without writing",
+        arguments: [
+            CoinBalanceSyncState.current,
+            .syncing,
+            .stale,
+            .unavailable,
+            .deletionConfirmed,
+            .resetRequired,
+        ]
+    )
+    func setupRejectsOtherStates(_ state: CoinBalanceSyncState) async throws {
+        let store = CoinLedgerSetupStoreSpy(result: try Self.setupResult())
+        let service = CoinLedgerSetupService(performAtomicSetup: { request in
+            try await store.setup(request)
+        })
+
+        await #expect(throws: CoinLedgerSetupServiceError.setupNotRequired) {
+            try await service.activate(Self.request, ledgerState: state)
+        }
+        #expect(await store.requests.isEmpty)
+    }
+
+    @Test("Setup rejects a reset-shaped result from its storage boundary")
+    func setupRejectsResetResult() async throws {
+        let store = CoinLedgerSetupStoreSpy(result: try Self.resetResult())
+        let service = CoinLedgerSetupService(performAtomicSetup: { request in
+            try await store.setup(request)
+        })
+
+        await #expect(throws: CoinLedgerSetupServiceError.invalidInitializationResult) {
+            try await service.activate(Self.request, ledgerState: .setupRequired)
+        }
+    }
+
+    private static var request: CoinLedgerSetupRequest {
+        CoinLedgerSetupRequest(
+            epochID: epochID,
+            monthID: "2026-09",
+            confirmedAt: confirmedAt,
+            disclosureVersion: 1
+        )
+    }
+
+    private static func setupResult() throws -> CoinLedgerInitializationResult {
+        try result(reason: .initialSetup, suppressedMonthID: nil, quota: 2)
+    }
+
+    private static func resetResult() throws -> CoinLedgerInitializationResult {
+        try result(
+            reason: .userConfirmedResetAfterDeletion,
+            suppressedMonthID: "2026-09",
+            quota: 0
+        )
+    }
+
+    private static func result(
+        reason: LedgerEpochReason,
+        suppressedMonthID: String?,
+        quota: Int
+    ) throws -> CoinLedgerInitializationResult {
+        try CoinLedgerInitializationResult(
+            epoch: LedgerEpoch(
+                epochID: epochID,
+                createdAt: confirmedAt,
+                reason: reason,
+                suppressedFreeMonthID: suppressedMonthID,
+                disclosureVersion: 1
+            ),
+            account: CoinAccount(
+                purchasedAvailable: 0,
+                purchasedReserved: 0,
+                revision: 0,
+                updatedAt: confirmedAt
+            ),
+            allowance: MonthlyAllowance(
+                monthID: "2026-09",
+                quota: quota,
+                used: 0,
+                reserved: 0,
+                creationDate: confirmedAt,
+                updatedAt: confirmedAt
+            )
+        )
+    }
+
+    private static let epochID = UUID(
+        uuidString: "00000000-0000-4000-8000-000000000701"
+    )!
+    private static let confirmedAt = Date(timeIntervalSince1970: 1_788_192_000)
+}
+
+private actor CoinLedgerSetupStoreSpy {
+    let result: CoinLedgerInitializationResult
+    private(set) var requests: [CoinLedgerSetupRequest] = []
+
+    init(result: CoinLedgerInitializationResult) {
+        self.result = result
+    }
+
+    func setup(_ request: CoinLedgerSetupRequest) throws -> CoinLedgerInitializationResult {
+        requests.append(request)
+        return result
+    }
+}
+
 private extension LiveActivityCoinModelTests {
     static let ruleID = UUID(uuidString: "00000000-0000-4000-8000-000000000101")!
     static let commandID = UUID(uuidString: "00000000-0000-4000-8000-000000000102")!
