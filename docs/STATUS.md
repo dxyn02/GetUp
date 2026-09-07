@@ -7,19 +7,19 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 5 사용자 스토리 3 구현 진행 중
 
 ## 진행 중
-`codex/us3-product-catalog-tests`에서 T069 StoreKit transaction observer를 구현했다. T059 catalog,
-T060 구매 service와 T061 observer 테스트는 GREEN이며 후속 환불·장부 lifecycle·복구·UI 테스트는
-해당 US3 구현 전의 의도된 TDD RED 상태다. 다음은 T070이다.
+`codex/us3-product-catalog-tests`에서 T070 구매 환불 역분개를 구현했다. T059 catalog부터 T062 환불
+테스트까지 GREEN이며 후속 장부 lifecycle·복구·UI 테스트는 해당 US3 구현 전의 의도된 TDD RED
+상태다. 다음은 T071이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T069 — listener 선개방과 unfinished·updates 재처리 StoreKit transaction observer
+T070 — 검증된 환불·철회의 미사용 구매 코인 역분개
 
 ## 다음 작업
-T070 — 검증된 환불·철회의 미사용 구매 코인 역분개 구현.
+T071 — zone 삭제 event·`userDeletedZone`·기존 장부 표식을 구분하고 구매·사용을 잠그는 장부 동기화 확장.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -38,6 +38,23 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-07 T070: `PurchaseRefundReconciler`를 추가해 검증 transaction과 원 `PurchaseGrant`의
+transaction ID·환경·product ID·구매 시각이 모두 일치할 때만 환불을 처리하도록 했다. 철회가
+확인되면 grant의 미조정 수량과 현재 미사용 구매 잔액 중 작은 값만 회수해 예약·사용 코인을 침범하지
+않고, 결정적 refund event ID로 같은 철회를 반복 처리해도 한 번만 반영한다. 철회가 취소되면 아직
+reversal되지 않은 원 adjustment 한 건의 수량만 복원하며 같은 취소 재처리는 무변경이다. 불일치
+transaction과 모순된 복수 adjustment는 장부 오류로 거부한다.
+
+T062 집중 테스트 8개와 T059~T062 구매 흐름 회귀 테스트 28개는 iPhone 17 Pro iOS 26.5
+Simulator에서 실패·skip 없이 통과했고, 앱의 generic iOS Simulator Release 빌드와 project plist
+검사도 통과했다. 아직 구현 전인 T071·T072의 선행 RED 테스트인
+`CoinLedgerLifecycleTests.swift`·`CoinLedgerFreshInstallRecoveryTests.swift`는 원본을 변경하지 않고
+집중 test build setting에서만 임시 제외했다. 테스트 build에는 기존
+`LocationMonitoringAdapterTests`의 불필요한 `try` 경고와 Xcode 테스트 런타임 binary strip 경고가
+남아 있으며 T070 동작 실패는 아니다. 실제 StoreKit sandbox의 환불·철회·취소 수명주기는 T094
+실기기 검증까지 미확인 상태이고 운영 거래·CloudKit 원격 데이터는 호출하거나 변경하지 않았다.
+새 제품 차단은 없다.
+
 2026-09-07 T069: `StoreKitTransactionObserver`를 추가해 앱 시작 시 `transactionUpdates()` stream을
 먼저 확보하고 별도 task에서 소비한 뒤 unfinished transaction을 조회하도록 했다. 두 입력 경로의
 verified transaction은 모두 T068의 같은 `processVerifiedTransaction` 경계로 전달해 CloudKit 지급
