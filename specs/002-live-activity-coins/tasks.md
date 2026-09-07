@@ -156,28 +156,28 @@ occurrence만 예외 처리되는지, 중복 100회에서 최대 1회만 소모�
 
 ### 사용자 스토리 3 테스트
 
-- [ ] T059 [P] [US3] 1개·3개·5개 product ID·수량 매핑, 현지 가격, 판매 불가·로드 실패 테스트를 `GetUpTests/StoreKit/CoinProductCatalogTests.swift`에 먼저 작성한다.
-- [ ] T060 [P] [US3] verified·unverified·pending·cancel·error와 같은 transaction 100회 멱등 지급 테스트를 `GetUpTests/StoreKit/CoinPurchaseServiceTests.swift`에 먼저 작성한다.
-- [ ] T061 [P] [US3] CloudKit commit 전 미finish, commit 후 finish 실패, 재실행 unfinished·updates 복구 테스트를 `GetUpTests/StoreKit/StoreKitTransactionObserverTests.swift`에 먼저 작성한다.
-- [ ] T062 [P] [US3] 환불·철회·취소 reversal, 미사용분 한도와 0 clamp 테스트를 `GetUpTests/Core/PurchaseRefundReconcilerTests.swift`에 먼저 작성한다.
-- [ ] T063 [P] [US3] `current` 외 구매 API 미호출, 일시 장애와 삭제 확정 구분, 자동 복원 금지, 명시적 reset 테스트를 `GetUpTests/Integration/CoinLedgerLifecycleTests.swift`에 먼저 작성한다.
-- [ ] T064 [P] [US3] 로컬 데이터가 없는 동일 iCloud 새 설치의 기존 `current` 장부 잔액·내역 복구와 새 grant 0개, 원격 장부·삭제 증거가 없는 최초 `setupRequired`에서 명시적 setup action 뒤 initial epoch+당월 무료 2회 atomic 생성, 확인된 삭제 reset의 구매 0·당월 무료 0, 불확실 장부 잠금을 `GetUpTests/Integration/CoinLedgerFreshInstallRecoveryTests.swift`에 먼저 작성한다.
-- [ ] T065 [P] [US3] 최초 활성화 고지·동의 전 무변경·동의 action 후 무료 2회 표시, 삭제 reset과 구분, 매 구매 삭제 불이익 고지, 구매 상태·잔액·내역 UI 테스트를 `GetUpUITests/UserStory3CoinPurchaseUITests.swift`에 먼저 작성한다.
+- [x] T059 [P] [US3] 1개·3개·5개 product ID·수량 매핑, 현지 가격, 판매 불가·로드 실패 테스트를 `GetUpTests/StoreKit/CoinProductCatalogTests.swift`에 먼저 작성한다.
+- [x] T060 [P] [US3] verified·unverified·pending·cancel·error와 같은 transaction 100회 멱등 지급 테스트를 `GetUpTests/StoreKit/CoinPurchaseServiceTests.swift`에 먼저 작성한다.
+- [x] T061 [P] [US3] CloudKit commit 전 미finish, commit 후 finish 실패, 재실행 unfinished·updates 복구 테스트를 `GetUpTests/StoreKit/StoreKitTransactionObserverTests.swift`에 먼저 작성한다.
+- [x] T062 [P] [US3] 환불·철회·취소 reversal, 미사용분 한도와 0 clamp 테스트를 `GetUpTests/Core/PurchaseRefundReconcilerTests.swift`에 먼저 작성한다.
+- [x] T063 [P] [US3] `current` 외 구매 API 미호출, 일시 장애와 삭제 확정 구분, 자동 복원 금지, 명시적 reset 테스트를 `GetUpTests/Integration/CoinLedgerLifecycleTests.swift`에 먼저 작성한다.
+- [x] T064 [P] [US3] 로컬 데이터가 없는 동일 iCloud 새 설치의 기존 `current` 장부 잔액·내역 복구와 새 grant 0개, 원격 장부·삭제 증거가 없는 최초 `setupRequired`에서 명시적 setup action 뒤 initial epoch+당월 무료 2회 atomic 생성, 확인된 삭제 reset의 구매 0·당월 무료 0, 불확실 장부 잠금을 `GetUpTests/Integration/CoinLedgerFreshInstallRecoveryTests.swift`에 먼저 작성한다.
+- [x] T065 [P] [US3] 최초 활성화 고지·동의 전 무변경·동의 action 후 무료 2회 표시, 삭제 reset과 구분, 매 구매 삭제 불이익 고지, 구매 상태·잔액·내역 UI 테스트를 `GetUpUITests/UserStory3CoinPurchaseUITests.swift`에 먼저 작성한다.
 
 ### 사용자 스토리 3 구현
 
-- [ ] T066 [P] [US3] bundle catalog를 1개·3개·5개 허용 상품으로 검증하는 `GetUp/Infrastructure/StoreKit/CoinProductCatalog.swift`를 구현한다.
-- [ ] T067 [P] [US3] `Product.products(for:)`, 현지 가격과 purchase 결과를 감싸는 `GetUp/Infrastructure/StoreKit/StoreKitPurchaseAdapter.swift`를 구현한다.
-- [ ] T068 [US3] `current` 사전 조건, 검증 거래, CloudKit PurchaseGrant commit 후 finish를 조정하는 `GetUp/Core/StateMachine/CoinPurchaseService.swift`를 구현한다.
-- [ ] T069 [US3] 앱 시작 시 listener를 먼저 열고 unfinished·`Transaction.updates`를 같은 지급 키로 재처리하는 `GetUp/Infrastructure/StoreKit/StoreKitTransactionObserver.swift`를 구현한다.
-- [ ] T070 [US3] 검증된 환불·철회를 미사용 구매 코인 범위에서 역분개하는 `GetUp/Core/StateMachine/PurchaseRefundReconciler.swift`를 구현한다.
-- [ ] T071 [US3] zone 삭제 event·`userDeletedZone`·기존 장부 표식을 구분하고 구매·사용을 잠그도록 `GetUp/Infrastructure/CloudKit/CoinLedgerSyncAdapter.swift`를 확장한다.
-- [ ] T072 [US3] 원격 장부·삭제 증거가 없는 `setupRequired`에서 사용자 동의 뒤 initial epoch+당월 quota 2를 atomic 생성하는 `GetUp/Infrastructure/CloudKit/CoinLedgerSetupService.swift`와, 삭제 확인 뒤 새 epoch+구매 0+당월 quota 0을 atomic 생성하고 local mirror 자동 복원을 금지하는 `GetUp/Infrastructure/CloudKit/CoinLedgerResetService.swift`를 서로 다른 entry point와 허용 상태로 구현한다.
-- [ ] T073 [US3] 초기 fetch의 epoch·PurchaseGrant transaction 연결·사용·보정 projection을 검증해 기존 장부는 mirror와 내역만 재생성하고, 장부·삭제 증거가 모두 없는 최초 활성화와 확인된 삭제를 분리하며 새 지급을 만들지 않는 `GetUp/Infrastructure/CloudKit/CoinLedgerRecoveryService.swift`를 구현한다.
-- [ ] T074 [P] [US3] 상품·구매·pending·잔액·장부 삭제 상태를 관리하는 `GetUp/Features/Coins/CoinStoreModel.swift`를 구현한다.
-- [ ] T075 [US3] `setupRequired` 최초 활성화 화면의 고지·명시적 동의 action을 `CoinLedgerSetupService`에 연결하고, 상품 1·3·5개·현지 가격·구매 확인·내역 및 삭제 reset 화면을 분리하며 StoreKit `구매 복원`과 구분되는 `iCloud 잔액 동기화·복구` 상태를 `GetUp/Features/Coins/CoinStoreView.swift`, `GetUp/Features/Coins/CoinLedgerHistoryView.swift`에 구현한다.
-- [ ] T076 [US3] app launch와 scene foreground에 transaction·CloudKit 재조정을 연결하고 Shield route는 생성 후 5분 이내·미소비·활성 occurrence 조건을 만족할 때 atomic하게 한 번 소비한 뒤 coin store·장부 복구로 이동하며 stale·중복·종료 route를 폐기하도록 `GetUp/App/GetUpApp.swift`, `GetUp/App/DependencyContainer.swift`를 확장한다.
-- [ ] T077 [US3] 최초 활성화·매 구매의 한국어·영어 삭제 불이익·복구·환불 한계 문구를 `GetUp/Resources/Localizable.xcstrings`에 추가하고 StoreKit Configuration 자동 테스트를 통과시킨다.
+- [x] T066 [P] [US3] bundle catalog를 1개·3개·5개 허용 상품으로 검증하는 `GetUp/Infrastructure/StoreKit/CoinProductCatalog.swift`를 구현한다.
+- [x] T067 [P] [US3] `Product.products(for:)`, 현지 가격과 purchase 결과를 감싸는 `GetUp/Infrastructure/StoreKit/StoreKitPurchaseAdapter.swift`를 구현한다.
+- [x] T068 [US3] `current` 사전 조건, 검증 거래, CloudKit PurchaseGrant commit 후 finish를 조정하는 `GetUp/Core/StateMachine/CoinPurchaseService.swift`를 구현한다.
+- [x] T069 [US3] 앱 시작 시 listener를 먼저 열고 unfinished·`Transaction.updates`를 같은 지급 키로 재처리하는 `GetUp/Infrastructure/StoreKit/StoreKitTransactionObserver.swift`를 구현한다.
+- [x] T070 [US3] 검증된 환불·철회를 미사용 구매 코인 범위에서 역분개하는 `GetUp/Core/StateMachine/PurchaseRefundReconciler.swift`를 구현한다.
+- [x] T071 [US3] zone 삭제 event·`userDeletedZone`·기존 장부 표식을 구분하고 구매·사용을 잠그도록 `GetUp/Infrastructure/CloudKit/CoinLedgerSyncAdapter.swift`를 확장한다.
+- [x] T072 [US3] 원격 장부·삭제 증거가 없는 `setupRequired`에서 사용자 동의 뒤 initial epoch+당월 quota 2를 atomic 생성하는 `GetUp/Infrastructure/CloudKit/CoinLedgerSetupService.swift`와, 삭제 확인 뒤 새 epoch+구매 0+당월 quota 0을 atomic 생성하고 local mirror 자동 복원을 금지하는 `GetUp/Infrastructure/CloudKit/CoinLedgerResetService.swift`를 서로 다른 entry point와 허용 상태로 구현한다.
+- [x] T073 [US3] 초기 fetch의 epoch·PurchaseGrant transaction 연결·사용·보정 projection을 검증해 기존 장부는 mirror와 내역만 재생성하고, 장부·삭제 증거가 모두 없는 최초 활성화와 확인된 삭제를 분리하며 새 지급을 만들지 않는 `GetUp/Infrastructure/CloudKit/CoinLedgerRecoveryService.swift`를 구현한다.
+- [x] T074 [P] [US3] 상품·구매·pending·잔액·장부 삭제 상태를 관리하는 `GetUp/Features/Coins/CoinStoreModel.swift`를 구현한다.
+- [x] T075 [US3] `setupRequired` 최초 활성화 화면의 고지·명시적 동의 action을 `CoinLedgerSetupService`에 연결하고, 상품 1·3·5개·현지 가격·구매 확인·내역 및 삭제 reset 화면을 분리하며 StoreKit `구매 복원`과 구분되는 `iCloud 잔액 동기화·복구` 상태를 `GetUp/Features/Coins/CoinStoreView.swift`, `GetUp/Features/Coins/CoinLedgerHistoryView.swift`에 구현한다.
+- [x] T076 [US3] app launch와 scene foreground에 transaction·CloudKit 재조정을 연결하고 Shield route는 생성 후 5분 이내·미소비·활성 occurrence 조건을 만족할 때 atomic하게 한 번 소비한 뒤 coin store·장부 복구로 이동하며 stale·중복·종료 route를 폐기하도록 `GetUp/App/GetUpApp.swift`, `GetUp/App/DependencyContainer.swift`를 확장한다.
+- [X] T077 [US3] 최초 활성화·매 구매의 한국어·영어 삭제 불이익·복구·환불 한계 문구를 `GetUp/Resources/Localizable.xcstrings`에 추가하고 StoreKit Configuration 자동 테스트를 통과시킨다.
 
 **체크포인트**: CloudKit `current` 상태에서만 구매를 시작하며 성공 거래 한 건이 정확히 한 번 지급된다.
 

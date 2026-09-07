@@ -1,5 +1,32 @@
 # 결정 사항
 
+## DEC-101 — 코인 앱 수명주기 재조정과 Shield route 소비 순서
+
+**날짜**: 2026-09-07
+
+**결정**: `CoinAppLifecycleCoordinator`는 첫 launch·foreground 요청에서 StoreKit transaction listener를
+한 번 먼저 시작하고, 모든 launch·foreground에서 주입된 CloudKit 장부 재조정을 실행한다. 금융 재조정
+실패는 코인 화면을 기존 fail-closed 상태로 유지하되 Shield route 정리를 막지 않는다. 반대로 활성
+occurrence snapshot이나 현재 규칙 revision을 읽지 못하면 route의 활성 조건을 증명할 수 없으므로
+소비하지 않고 다음 foreground 재시도를 위해 보존한다.
+
+활성 occurrence ID는 공통 `RestrictionOccurrenceEvaluator` 결과에서 만들며,
+`PendingAppRouteRepository`만 생성 후 5분 미만·미소비·활성 occurrence 조건과 파일 claim 기반 원자
+소비를 판정한다. 적격 route는 앱 루트의 item 상태로 한 번만 sheet를 열고 `.coinStore`는 코인 상점,
+복구·reset·재조정 route는 각 전용 안내로 이동한다. stale·중복·종료 route 폐기는 navigation 계층에서
+재구현하지 않고 repository 결과 nil을 그대로 따른다.
+
+**운영 경계**: StoreKit listener는 앱 launch에서 실제로 열지만 T097의 production CloudKit database
+provider·schema 호환성 검증 전에는 verified transaction 지급과 finish를 `ledgerNotCurrent`로
+fail-closed한다. CloudKit 재조정은 `DependencyContainer` 주입 경계까지 연결하며 live 기본값은 원격
+데이터를 읽거나 변경하지 않는다. 검증된 provider를 연결하면 같은 coordinator와 화면 상태 변환을
+그대로 사용한다.
+
+**근거**: transaction stream을 먼저 열면 unfinished 조회 사이의 누락 구간을 피하고, route의 금융
+실패와 활성 조건 실패를 구분하면 일시적인 CloudKit 장애 중에도 stale route는 정리하면서 증명되지
+않은 활성 route를 잘못 폐기하지 않는다. 원자성·시간 경계를 repository 한곳에 두어 앱 launch와 기존
+해제 화면이 동일한 일회 소비 규칙을 공유한다.
+
 ## DEC-100 — 앱과 Shield 확장의 해제 문구 catalog 소유권 분리
 
 **날짜**: 2026-09-06
