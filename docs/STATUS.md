@@ -9,20 +9,20 @@
 ## 진행 중
 Pull Request #30으로 US3 T059~T077을 `main`에 병합하고 최신 `main`에서
 `codex/us4-monthly-lifecycle-tests`를 분기했다. T078~T080의 월간 core·CloudKit 인수와 T081의 UI
-계약에 이어 T082에서 최초 `setupRequired`의 활성화 후 2회, 일반 `current`의 확정 잔액, 삭제 확인·
-reset의 당월 0회를 구분하는 `CoinStoreMonthlyAllowanceDisplay`를 구현했다. 동기화 중·stale·unavailable은
-마지막 확인값으로 분리해 후속 UI가 사용 가능한 확정 잔액으로 오인하지 않게 했다. 다음은 T083이다.
+계약과 T082의 월간 표시 모델에 이어 T083에서 `CoinStoreView`에 당월 무료 해제권 제목·서울 기준
+월·남은 무료 수량·비이월 정책·다음 달 1일 00:00 갱신 시점을 표시했다. 구매 코인 잔액은 별도 카드로
+유지하고 setup·current·삭제 reset·불확실 상태는 T082 표시값을 사용한다. 다음은 T084다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T082 — 최초 설정·정상 장부·삭제 reset을 구분하는 월간 무료분 표시 모델
+T083 — 월간 무료 잔여·비이월·서울 월 경계 안내와 구매 코인 잔액 분리 표시
 
 ## 다음 작업
-T083 — 당월 무료 잔여·비이월·다음 서울 월 경계 안내와 구매 코인 잔액을 `CoinStoreView`에 분리
-표시한다.
+T084 — 월간 무료 지급·사용·월 종료와 구매 지급·사용·보정 event를 구분하도록 코인 내역 화면을
+확장한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -41,6 +41,17 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-08 T083: `CoinStoreView`의 잔액 영역을 월간 무료 해제권 안내와 구매 코인 잔액 카드로
+분리했다. T082의 표시 모델에서 월 ID와 상태별 표시 잔액을 읽고, `Asia/Seoul` Gregorian 월 시작을
+기준으로 현재 월과 다음 달 1일 00:00을 사용자 locale에 맞게 표시한다. 남은 무료분이 다음 달로
+이월되지 않는다는 안내와 T081 접근성 식별자도 연결했다. T081의 코인 화면 표시 집중 UI 테스트 1개와
+기존 `UserStory3CoinPurchaseUITests` 11개가 모두 통과했다. 월 경계 재실행 fixture 계약은 계획대로
+T085 구현 전 RED 상태를 유지한다. 전체 `GetUpTests` 561개 선언은 동적 인자 포함 674회 모두 실패·
+skip 없이 통과했고 generic iOS Simulator Release 빌드와 diff 검사도 통과했다. 기존 Xcode 빈 build
+number·`no debugger version` 진단과 `LocationMonitoringAdapterTests`의 불필요한 `try` 경고가 남아
+있으며 T083 동작 실패는 아니다. 운영 CloudKit·StoreKit 데이터는 호출하거나 변경하지 않았고 새
+제품 차단은 없다.
+
 2026-09-08 T082: `CoinStoreMonthlyAllowanceDisplay`를 추가해 `setupRequired`는 실제 장부 활성화 전
 잔액이 아니라 활성화 후 받을 당월 2회로, `current`는 CloudKit 확정 `freeAvailable`로, 삭제 확인·
 reset 대기는 local mirror 값과 무관한 당월 0회로 모델링했다. `syncing`·`stale`·`unavailable`은

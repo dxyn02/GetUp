@@ -109,10 +109,56 @@ struct CoinStoreView: View {
     }
 
     private var balanceSection: some View {
-        HStack(spacing: 12) {
-            balanceCard(title: "이번 달 무료", value: model.balance.freeAvailable, id: "free")
-            balanceCard(title: "구매 잔액", value: model.balance.purchasedAvailable, id: "purchased")
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("이번 달 무료 해제권")
+                    .font(.title2.bold())
+                    .accessibilityIdentifier("coinStore.monthly.title")
+                Spacer()
+                Text(monthlyAllowance.monthLabel)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(HomeColor.textSecondary)
+                    .accessibilityIdentifier("coinStore.monthly.month")
+            }
+
+            HStack(spacing: 12) {
+                balanceCard(title: "남은 무료", value: monthlyAllowance.available, id: "free")
+                balanceCard(
+                    title: "구매 코인 잔액",
+                    value: model.balance.purchasedAvailable,
+                    id: "purchased"
+                )
+            }
+
+            Text("남은 무료 해제권은 다음 달로 이월되지 않아요.")
+                .font(.footnote)
+                .foregroundStyle(HomeColor.textSecondary)
+                .accessibilityIdentifier("coinStore.monthly.nonRollover")
+            Text(monthlyAllowance.nextRefreshLabel)
+                .font(.footnote)
+                .foregroundStyle(HomeColor.textSecondary)
+                .accessibilityIdentifier("coinStore.monthly.nextRefresh")
         }
+    }
+
+    private var monthlyAllowance: MonthlyAllowancePresentation {
+        let monthID: String
+        let available: Int
+        switch model.monthlyAllowanceDisplay {
+        case .setupRequired(let value, let availableAfterSetup):
+            monthID = value
+            available = availableAfterSetup
+        case .current(let value, let currentAvailable):
+            monthID = value
+            available = currentAvailable
+        case .resetRequired(let value, let resetAvailable):
+            monthID = value
+            available = resetAvailable
+        case .unavailable(let value, let lastKnownAvailable):
+            monthID = value
+            available = lastKnownAvailable
+        }
+        return MonthlyAllowancePresentation(monthID: monthID, available: available)
     }
 
     private func balanceCard(title: String, value: Int, id: String) -> some View {
@@ -277,6 +323,56 @@ struct CoinStoreView: View {
         } catch {
             lifecycleError = true
         }
+    }
+}
+
+private struct MonthlyAllowancePresentation {
+    let available: Int
+    let monthLabel: String
+    let nextRefreshLabel: String
+
+    init(monthID: String, available: Int) {
+        self.available = available
+
+        guard let monthStart = Self.monthStart(for: monthID),
+              let nextMonth = Self.calendar.date(byAdding: .month, value: 1, to: monthStart)
+        else {
+            monthLabel = monthID
+            nextRefreshLabel = "다음 갱신: 서울 기준 다음 달 1일 00:00"
+            return
+        }
+
+        monthLabel = Self.formatted(monthStart, template: "yyyyMMMM")
+        nextRefreshLabel = "다음 갱신: \(Self.formatted(nextMonth, template: "yyyyMMMMdHHmm")) (서울 기준)"
+    }
+
+    private static let seoulTimeZone = TimeZone(identifier: "Asia/Seoul")!
+
+    private static var calendar: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = seoulTimeZone
+        return calendar
+    }
+
+    private static func monthStart(for monthID: String) -> Date? {
+        let components = monthID.split(separator: "-", omittingEmptySubsequences: false)
+        guard components.count == 2,
+              let year = Int(components[0]),
+              let month = Int(components[1]),
+              (1...12).contains(month)
+        else {
+            return nil
+        }
+        return calendar.date(from: DateComponents(year: year, month: month, day: 1))
+    }
+
+    private static func formatted(_ date: Date, template: String) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = .current
+        formatter.calendar = calendar
+        formatter.timeZone = seoulTimeZone
+        formatter.setLocalizedDateFormatFromTemplate(template)
+        return formatter.string(from: date)
     }
 }
 
