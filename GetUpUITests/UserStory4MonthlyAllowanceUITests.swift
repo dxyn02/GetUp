@@ -16,8 +16,8 @@ final class UserStory4MonthlyAllowanceUITests: XCTestCase {
         )
         openCoinStore(in: app)
 
-        XCTAssertEqual(app.staticTexts["coinStore.balance.free"].label, "1")
-        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].label, "3")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.free"].value as? String, "1회")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].value as? String, "3개")
         XCTAssertEqual(
             app.staticTexts["coinStore.monthly.title"].label,
             "이번 달 무료 해제권"
@@ -75,8 +75,8 @@ final class UserStory4MonthlyAllowanceUITests: XCTestCase {
         openCoinStore(in: app)
 
         XCTAssertEqual(app.staticTexts["coinStore.monthly.month"].label, "2026년 8월")
-        XCTAssertEqual(app.staticTexts["coinStore.balance.free"].label, "1")
-        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].label, "3")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.free"].value as? String, "1회")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].value as? String, "3개")
 
         app.terminate()
         app = launchCoinStore(
@@ -88,8 +88,8 @@ final class UserStory4MonthlyAllowanceUITests: XCTestCase {
         openCoinStore(in: app)
 
         XCTAssertEqual(app.staticTexts["coinStore.monthly.month"].label, "2026년 9월")
-        XCTAssertEqual(app.staticTexts["coinStore.balance.free"].label, "2")
-        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].label, "3")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.free"].value as? String, "2회")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].value as? String, "3개")
         XCTAssertTrue(
             app.staticTexts["coinStore.monthly.nonRollover"].label.contains("이월되지")
         )
@@ -108,8 +108,8 @@ final class UserStory4MonthlyAllowanceUITests: XCTestCase {
         app.buttons["coinStore.setup.confirm"].tap()
 
         XCTAssertTrue(app.otherElements["coinStore.catalog"].waitForExistence(timeout: 5))
-        XCTAssertEqual(app.staticTexts["coinStore.balance.free"].label, "2")
-        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].label, "0")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.free"].value as? String, "2회")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].value as? String, "0개")
         XCTAssertEqual(app.staticTexts["coinStore.test.setupCount"].label, "1")
 
         app.terminate()
@@ -128,8 +128,8 @@ final class UserStory4MonthlyAllowanceUITests: XCTestCase {
         dialog.buttons["새 장부 시작"].tap()
 
         XCTAssertTrue(app.otherElements["coinStore.catalog"].waitForExistence(timeout: 5))
-        XCTAssertEqual(app.staticTexts["coinStore.balance.free"].label, "0")
-        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].label, "0")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.free"].value as? String, "0회")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].value as? String, "0개")
         XCTAssertEqual(app.staticTexts["coinStore.test.resetCount"].label, "1")
     }
 
@@ -144,6 +144,10 @@ final class UserStory4MonthlyAllowanceUITests: XCTestCase {
         openCoinStore(in: app)
         app.buttons["coinStore.history.open"].tap()
 
+        XCTAssertTrue(
+            app.descendants(matching: .any)["coinStore.history.current"]
+                .waitForExistence(timeout: 2)
+        )
         let monthlyGrant = app.otherElements["coinStore.history.freeGrant"]
         XCTAssertTrue(monthlyGrant.waitForExistence(timeout: 2))
         XCTAssertEqual(
@@ -171,12 +175,97 @@ final class UserStory4MonthlyAllowanceUITests: XCTestCase {
     }
 
     @MainActor
+    func testBalancesExposeLoadingEmptyStaleAndCurrentVoiceOverStates() {
+        assertBalanceState(
+            ledgerState: "syncing",
+            free: 1,
+            purchased: 3,
+            expectedState: "잔액을 확인하는 중이에요",
+            expectedFreeValue: "확인 중",
+            expectedPurchasedValue: "확인 중"
+        )
+        assertBalanceState(
+            ledgerState: "current",
+            free: 0,
+            purchased: 0,
+            expectedState: "사용 가능한 해제권이 없어요",
+            expectedFreeValue: "0회",
+            expectedPurchasedValue: "0개"
+        )
+        assertBalanceState(
+            ledgerState: "stale",
+            free: 1,
+            purchased: 3,
+            expectedState: "마지막으로 확인한 잔액이에요",
+            expectedFreeValue: "1회",
+            expectedPurchasedValue: "3개"
+        )
+        assertBalanceState(
+            ledgerState: "current",
+            free: 1,
+            purchased: 3,
+            expectedState: "최신 잔액이에요",
+            expectedFreeValue: "1회",
+            expectedPurchasedValue: "3개"
+        )
+    }
+
+    @MainActor
+    func testHistoryDistinguishesLoadingEmptyAndStaleLedgerStates() {
+        var app = launchCoinStore(
+            storeID: "\(#function).loading",
+            now: "2026-08-24T07:00:00Z",
+            resetStore: true,
+            ledgerState: "syncing"
+        )
+        openCoinStore(in: app)
+        app.buttons["coinStore.history.open"].tap()
+        XCTAssertTrue(
+            app.descendants(matching: .any)["coinStore.history.loading"]
+                .waitForExistence(timeout: 2)
+        )
+
+        app.terminate()
+        app = launchCoinStore(
+            storeID: "\(#function).empty",
+            now: "2026-08-24T07:00:00Z",
+            resetStore: true,
+            freeBalance: 0,
+            purchasedBalance: 0
+        )
+        openCoinStore(in: app)
+        app.buttons["coinStore.history.open"].tap()
+        XCTAssertTrue(
+            app.descendants(matching: .any)["coinStore.history.empty"]
+                .waitForExistence(timeout: 2)
+        )
+
+        app.terminate()
+        app = launchCoinStore(
+            storeID: "\(#function).stale",
+            now: "2026-08-24T07:00:00Z",
+            resetStore: true,
+            ledgerState: "stale",
+            historyFixture: "full-ledger-events"
+        )
+        openCoinStore(in: app)
+        app.buttons["coinStore.history.open"].tap()
+        XCTAssertTrue(
+            app.descendants(matching: .any)["coinStore.history.stale"]
+                .waitForExistence(timeout: 2)
+        )
+        XCTAssertTrue(app.otherElements["coinStore.history.freeGrant"].exists)
+    }
+
+    @MainActor
     private func launchCoinStore(
         storeID: String,
         now: String,
         resetStore: Bool,
         ledgerState: String = "current",
         monthlyAllowance: String = "persisted-one-remaining",
+        freeBalance: Int? = nil,
+        purchasedBalance: Int? = nil,
         historyFixture: String? = nil
     ) -> XCUIApplication {
         let app = XCUIApplication()
@@ -194,8 +283,47 @@ final class UserStory4MonthlyAllowanceUITests: XCTestCase {
         if let historyFixture {
             app.launchArguments += ["--ui-test-coin-history", historyFixture]
         }
+        if let freeBalance {
+            app.launchArguments += ["--ui-test-free-balance", String(freeBalance)]
+        }
+        if let purchasedBalance {
+            app.launchArguments += ["--ui-test-purchased-balance", String(purchasedBalance)]
+        }
         app.launch()
         return app
+    }
+
+    @MainActor
+    private func assertBalanceState(
+        ledgerState: String,
+        free: Int,
+        purchased: Int,
+        expectedState: String,
+        expectedFreeValue: String,
+        expectedPurchasedValue: String
+    ) {
+        let app = launchCoinStore(
+            storeID: "\(#function).\(ledgerState).\(free).\(purchased)",
+            now: "2026-08-24T07:00:00Z",
+            resetStore: true,
+            ledgerState: ledgerState,
+            freeBalance: free,
+            purchasedBalance: purchased
+        )
+        openCoinStore(in: app)
+
+        let state = app.staticTexts["coinStore.balance.state"]
+        let freeBalance = app.staticTexts["coinStore.balance.free"]
+        let purchasedBalance = app.staticTexts["coinStore.balance.purchased"]
+        XCTAssertEqual(state.label, expectedState)
+        XCTAssertEqual(freeBalance.label, "남은 무료 해제권")
+        XCTAssertEqual(freeBalance.value as? String, expectedFreeValue)
+        XCTAssertEqual(purchasedBalance.label, "구매 코인 잔액")
+        XCTAssertEqual(purchasedBalance.value as? String, expectedPurchasedValue)
+        XCTAssertLessThan(state.frame.minY, freeBalance.frame.minY)
+        XCTAssertLessThan(freeBalance.frame.minX, purchasedBalance.frame.minX)
+
+        app.terminate()
     }
 
     @MainActor

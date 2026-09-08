@@ -1398,6 +1398,8 @@ private enum UITestConfiguration {
         let coinReleaseResult = value(after: "--ui-test-coin-release-result")
         let monthlyAllowanceFixture = value(after: "--ui-test-monthly-allowance")
             .flatMap(MonthlyAllowanceUITestFixtureMode.init(rawValue:))
+        let freeBalanceOverride = value(after: "--ui-test-free-balance").flatMap(Int.init)
+        let purchasedBalanceOverride = value(after: "--ui-test-purchased-balance").flatMap(Int.init)
         let permissionOnboardingStateStore = PermissionOnboardingStateStore(
             key: "permissionOnboarding.hasCompleted.uiTest.\(storeID)"
         )
@@ -1519,6 +1521,8 @@ private enum UITestConfiguration {
             purchaseResult: value(after: "--ui-test-purchase-result"),
             historyFixture: value(after: "--ui-test-coin-history"),
             monthlyAllowanceFixture: monthlyAllowanceFixture,
+            freeBalanceOverride: freeBalanceOverride,
+            purchasedBalanceOverride: purchasedBalanceOverride,
             root: root,
             now: fixtureNow
         )
@@ -1622,6 +1626,8 @@ private enum UITestConfiguration {
         purchaseResult: String?,
         historyFixture: String?,
         monthlyAllowanceFixture: MonthlyAllowanceUITestFixtureMode?,
+        freeBalanceOverride: Int?,
+        purchasedBalanceOverride: Int?,
         root: URL,
         now: Date
     ) throws -> CoinStoreConfiguration? {
@@ -1632,6 +1638,8 @@ private enum UITestConfiguration {
             purchaseResult: purchaseResult,
             historyFixture: historyFixture,
             monthlyAllowanceFixture: monthlyAllowanceFixture,
+            freeBalanceOverride: freeBalanceOverride,
+            purchasedBalanceOverride: purchasedBalanceOverride,
             root: root,
             now: now
         )
@@ -2185,6 +2193,8 @@ private final class CoinStoreUITestDriver {
         purchaseResult: String?,
         historyFixture: String?,
         monthlyAllowanceFixture: MonthlyAllowanceUITestFixtureMode?,
+        freeBalanceOverride: Int?,
+        purchasedBalanceOverride: Int?,
         root: URL,
         now: Date
     ) throws {
@@ -2196,6 +2206,8 @@ private final class CoinStoreUITestDriver {
 
         let syncState: CoinBalanceSyncState = switch ledgerState {
         case "setup-required": .setupRequired
+        case "syncing": .syncing
+        case "stale": .stale
         case "deletion-confirmed": .deletionConfirmed
         case "unavailable": .unavailable
         default: .current
@@ -2207,12 +2219,24 @@ private final class CoinStoreUITestDriver {
             atPath: pendingMarkerURL.path
         ) ? ["com.dxyn02.GetUp.coin.1"] : []
 
+        let fixtureBalance = try monthlyAllowanceFixtureStore.balance(
+            mode: monthlyAllowanceFixture,
+            syncState: syncState,
+            now: now
+        )
+        let balance = try CoinBalanceSnapshot(
+            purchasedAvailable: purchasedBalanceOverride
+                ?? fixtureBalance.purchasedAvailable,
+            currentMonthID: fixtureBalance.currentMonthID,
+            freeAvailable: freeBalanceOverride ?? fixtureBalance.freeAvailable,
+            syncState: fixtureBalance.syncState,
+            syncedAt: fixtureBalance.syncedAt,
+            ledgerEpochID: fixtureBalance.ledgerEpochID,
+            hadConfirmedLedger: fixtureBalance.hadConfirmedLedger
+        )
+
         ledger = CoinStoreLedgerState(
-            balance: try monthlyAllowanceFixtureStore.balance(
-                mode: monthlyAllowanceFixture,
-                syncState: syncState,
-                now: now
-            ),
+            balance: balance,
             purchaseGrants: [],
             events: events,
             pendingProductIdentifiers: pendingIdentifiers,

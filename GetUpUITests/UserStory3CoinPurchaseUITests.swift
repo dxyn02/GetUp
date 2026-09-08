@@ -25,8 +25,8 @@ final class UserStory3CoinPurchaseUITests: XCTestCase {
         app.buttons["coinStore.setup.confirm"].tap()
 
         XCTAssertTrue(app.otherElements["coinStore.catalog"].waitForExistence(timeout: 5))
-        XCTAssertEqual(app.staticTexts["coinStore.balance.free"].label, "2")
-        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].label, "0")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.free"].value as? String, "2회")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].value as? String, "0개")
         XCTAssertEqual(app.staticTexts["coinStore.test.setupCount"].label, "1")
     }
 
@@ -52,8 +52,8 @@ final class UserStory3CoinPurchaseUITests: XCTestCase {
         dialog.buttons["새 장부 시작"].tap()
 
         XCTAssertTrue(app.otherElements["coinStore.catalog"].waitForExistence(timeout: 5))
-        XCTAssertEqual(app.staticTexts["coinStore.balance.free"].label, "0")
-        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].label, "0")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.free"].value as? String, "0회")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].value as? String, "0개")
         XCTAssertEqual(app.staticTexts["coinStore.test.resetCount"].label, "1")
     }
 
@@ -62,8 +62,8 @@ final class UserStory3CoinPurchaseUITests: XCTestCase {
         let app = launchApp(storeID: #function, ledgerState: "current")
         openCoinStore(in: app)
 
-        XCTAssertEqual(app.staticTexts["coinStore.balance.free"].label, "1")
-        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].label, "3")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.free"].value as? String, "1회")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].value as? String, "3개")
         assertProduct(in: app, quantity: 1, localizedPrice: "₩1,100")
         assertProduct(in: app, quantity: 3, localizedPrice: "₩2,900")
         assertProduct(in: app, quantity: 5, localizedPrice: "₩4,400")
@@ -81,7 +81,7 @@ final class UserStory3CoinPurchaseUITests: XCTestCase {
             assertRecoveryLimitDisclosure(in: dialog)
             XCTAssertEqual(app.staticTexts["coinStore.test.purchaseCount"].label, "0")
             dialog.buttons["취소"].tap()
-            XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].label, "3")
+            XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].value as? String, "3개")
         }
     }
 
@@ -96,7 +96,7 @@ final class UserStory3CoinPurchaseUITests: XCTestCase {
         confirmPurchase(quantity: 3, in: app)
 
         let balance = app.staticTexts["coinStore.balance.purchased"]
-        let credited = expectation(for: NSPredicate(format: "label == '6'"), evaluatedWith: balance)
+        let credited = expectation(for: NSPredicate(format: "value == '6개'"), evaluatedWith: balance)
         wait(for: [credited], timeout: 5)
         XCTAssertEqual(app.staticTexts["coinStore.test.purchaseCount"].label, "1")
 
@@ -122,7 +122,7 @@ final class UserStory3CoinPurchaseUITests: XCTestCase {
         openCoinStore(in: app)
         confirmPurchase(quantity: 1, in: app)
         XCTAssertTrue(app.staticTexts["coinStore.purchase.pending"].waitForExistence(timeout: 2))
-        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].label, "3")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].value as? String, "3개")
 
         app.terminate()
         app = launchApp(
@@ -133,7 +133,7 @@ final class UserStory3CoinPurchaseUITests: XCTestCase {
         )
         openCoinStore(in: app)
         XCTAssertTrue(app.staticTexts["coinStore.purchase.pending"].waitForExistence(timeout: 2))
-        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].label, "3")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].value as? String, "3개")
     }
 
     @MainActor
@@ -151,7 +151,7 @@ final class UserStory3CoinPurchaseUITests: XCTestCase {
                 ? "coinStore.purchase.error"
                 : "coinStore.purchase.cancelled"
             XCTAssertTrue(app.staticTexts[statusID].waitForExistence(timeout: 2))
-            XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].label, "3")
+            XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].value as? String, "3개")
             app.terminate()
         }
     }

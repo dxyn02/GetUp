@@ -6,6 +6,46 @@ import Testing
 @MainActor
 struct CoinStoreModelTests {
     @Test(
+        "Balance presentation distinguishes loading, empty, stale, and current states",
+        arguments: [
+            (CoinBalanceSyncState.syncing, 1, 3, CoinStoreBalanceContentState.loading),
+            (.current, 0, 0, .empty),
+            (.stale, 1, 3, .stale),
+            (.unavailable, 1, 3, .stale),
+            (.current, 1, 3, .current),
+        ]
+    )
+    func mapsBalanceContentState(
+        syncState: CoinBalanceSyncState,
+        free: Int,
+        purchased: Int,
+        expected: CoinStoreBalanceContentState
+    ) throws {
+        let model = makeModel(
+            ledger: try ledger(
+                syncState: syncState,
+                purchased: purchased,
+                free: free
+            )
+        )
+
+        let state = CoinStoreBalanceContentState(
+            balance: model.balance,
+            displayedFreeAvailable: free
+        )
+
+        #expect(state == expected)
+    }
+
+    @Test("Loading balance hides numeric mirrors while accessible values include units")
+    func balanceAccessibilityValues() {
+        #expect(CoinStoreBalanceContentState.loading.freeDisplayValue(2) == "—")
+        #expect(CoinStoreBalanceContentState.loading.freeAccessibilityValue(2) == "확인 중")
+        #expect(CoinStoreBalanceContentState.current.freeAccessibilityValue(2) == "2회")
+        #expect(CoinStoreBalanceContentState.current.purchasedAccessibilityValue(3) == "3개")
+    }
+
+    @Test(
         "Every ledger state maps to a distinct store availability",
         arguments: [
             (CoinBalanceSyncState.current, CoinStoreAvailability.ready),

@@ -88,6 +88,7 @@ struct CoinStoreView: View {
         .navigationDestination(isPresented: $showsHistory) {
             CoinLedgerHistoryView(
                 events: model.events,
+                syncState: model.balance.syncState,
                 purchaseGrantStatus: purchaseGrantStatus
             )
         }
@@ -110,6 +111,12 @@ struct CoinStoreView: View {
 
     private var balanceSection: some View {
         VStack(alignment: .leading, spacing: 12) {
+            Text(balanceContentState.message)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(balanceContentState.foregroundStyle)
+                .accessibilityIdentifier("coinStore.balance.state")
+                .accessibilitySortPriority(100)
+
             HStack(alignment: .firstTextBaseline) {
                 Text("이번 달 무료 해제권")
                     .font(.title2.bold())
@@ -122,11 +129,27 @@ struct CoinStoreView: View {
             }
 
             HStack(spacing: 12) {
-                balanceCard(title: "남은 무료", value: monthlyAllowance.available, id: "free")
+                balanceCard(
+                    title: "남은 무료 해제권",
+                    displayValue: balanceContentState.freeDisplayValue(
+                        monthlyAllowance.available
+                    ),
+                    accessibilityValue: balanceContentState.freeAccessibilityValue(
+                        monthlyAllowance.available
+                    ),
+                    id: "free",
+                    sortPriority: 80
+                )
                 balanceCard(
                     title: "구매 코인 잔액",
-                    value: model.balance.purchasedAvailable,
-                    id: "purchased"
+                    displayValue: balanceContentState.purchasedDisplayValue(
+                        model.balance.purchasedAvailable
+                    ),
+                    accessibilityValue: balanceContentState.purchasedAccessibilityValue(
+                        model.balance.purchasedAvailable
+                    ),
+                    id: "purchased",
+                    sortPriority: 70
                 )
             }
 
@@ -139,6 +162,13 @@ struct CoinStoreView: View {
                 .foregroundStyle(HomeColor.textSecondary)
                 .accessibilityIdentifier("coinStore.monthly.nextRefresh")
         }
+    }
+
+    private var balanceContentState: CoinStoreBalanceContentState {
+        CoinStoreBalanceContentState(
+            balance: model.balance,
+            displayedFreeAvailable: monthlyAllowance.available
+        )
     }
 
     private var monthlyAllowance: MonthlyAllowancePresentation {
@@ -161,12 +191,24 @@ struct CoinStoreView: View {
         return MonthlyAllowancePresentation(monthID: monthID, available: available)
     }
 
-    private func balanceCard(title: String, value: Int, id: String) -> some View {
+    private func balanceCard(
+        title: String,
+        displayValue: String,
+        accessibilityValue: String,
+        id: String,
+        sortPriority: Double
+    ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.caption).foregroundStyle(HomeColor.textSecondary)
-            Text(String(value))
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(HomeColor.textSecondary)
+                .accessibilityHidden(true)
+            Text(displayValue)
                 .font(.title.bold().monospacedDigit())
+                .accessibilityLabel(title)
+                .accessibilityValue(accessibilityValue)
                 .accessibilityIdentifier("coinStore.balance.\(id)")
+                .accessibilitySortPriority(sortPriority)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -323,6 +365,66 @@ struct CoinStoreView: View {
         } catch {
             lifecycleError = true
         }
+    }
+}
+
+enum CoinStoreBalanceContentState: Equatable {
+    case loading
+    case empty
+    case stale
+    case current
+    case setup
+    case reset
+
+    init(balance: CoinBalanceSnapshot, displayedFreeAvailable: Int) {
+        switch balance.syncState {
+        case .syncing:
+            self = .loading
+        case .stale, .unavailable:
+            self = .stale
+        case .current:
+            self = displayedFreeAvailable == 0 && balance.purchasedAvailable == 0
+                ? .empty
+                : .current
+        case .setupRequired:
+            self = .setup
+        case .deletionConfirmed, .resetRequired:
+            self = .reset
+        }
+    }
+
+    var message: String {
+        switch self {
+        case .loading: "잔액을 확인하는 중이에요"
+        case .empty: "사용 가능한 해제권이 없어요"
+        case .stale: "마지막으로 확인한 잔액이에요"
+        case .current: "최신 잔액이에요"
+        case .setup: "활성화 후 받을 잔액이에요"
+        case .reset: "새 장부의 이번 달 잔액은 0이에요"
+        }
+    }
+
+    var foregroundStyle: Color {
+        switch self {
+        case .stale: HomeColor.error
+        case .loading, .empty, .current, .setup, .reset: HomeColor.textSecondary
+        }
+    }
+
+    func freeDisplayValue(_ value: Int) -> String {
+        self == .loading ? "—" : String(value)
+    }
+
+    func purchasedDisplayValue(_ value: Int) -> String {
+        self == .loading ? "—" : String(value)
+    }
+
+    func freeAccessibilityValue(_ value: Int) -> String {
+        self == .loading ? "확인 중" : "\(value)회"
+    }
+
+    func purchasedAccessibilityValue(_ value: Int) -> String {
+        self == .loading ? "확인 중" : "\(value)개"
     }
 }
 
