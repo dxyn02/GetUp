@@ -18,7 +18,8 @@ current 상태를 구분하고, 동기화 중 숫자 mirror를 확정값처럼 �
 무료 우선·구매 코인 1개 fallback 안내를 유지하고, 실제 funding source는 탭 뒤 최신 장부 해제 결과로만
 확정되도록 회귀를 고정했다. T088에서는 월간 잔액·비이월·다음 갱신·내역과 VoiceOver 수량을 안정된
 문자열 키로 전환하고 한국어·영어 번역을 연결했다. 기존 app·Shield 무료 우선 문구의 양 언어 번역도
-함께 검증했다. 다음은 T089이다.
+함께 검증했다. T089 자동 검증 24개는 통과했지만 실제 동일 iCloud 계정의 iPhone 2대와 CloudKit
+development private database를 사용하는 다기기·서울 월 경계 수동 증적이 없어 BLK-017로 차단됐다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
@@ -28,10 +29,12 @@ T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부�
 T088 — 월간 무료분·비이월·무료 우선 및 접근성 문구의 한국어·영어 지역화
 
 ## 다음 작업
-T089 — US4 자동 테스트와 다기기·서울 월 경계 수동 검증 결과를 기록한다.
+T089 — BLK-017 해결 후 실제 다기기·서울 월 경계 수동 검증 결과를 기록한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
+BLK-017 미해결: T089 완료에 필요한 동일 iCloud 테스트 iPhone 2대, CloudKit development private
+database와 실제 서버 시각 기반 서울 월 경계 수동 증적이 현재 환경에 없다.
 BLK-016 해결됨: 명령별 원자 추가·조건부 제거 API와 최신 상태 재평가 계약 보강을 사용자 승인받았다.
 BLK-015 해결됨: occurrence별 예약 소유권 계약·스키마 보강을 사용자 승인받았다.
 T045 보고서 접근 차단은 사용자 허용 후 같은 명령 재시도로 해결됐다.
@@ -47,6 +50,16 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-08 T089 진행 중: `MonthlyAllowanceAcceptanceTests`, `MonthlyAllowanceLifecycleTests`,
+`MonthlyAllowanceUserStoryTests`, `CloudKitMonthlyAllowanceTests`, `UserStory4MonthlyAllowanceUITests`를
+iPhone 17 Pro iOS 26.5 Simulator에서 실행했다. 같은 allowance ID 100회 충돌, 무료 우선 사용,
+creation date 불일치, 서울 월 경계 지연 생성·비이월·구매 잔액 보존, 시간대 변경, reset 후 다음 달
+재개와 월간 UI를 포함한 24개가 실패·skip 없이 통과했다. Xcode 빈 build number·`no debugger
+version`과 signed binary stripping 진단은 결과에 영향을 주지 않았다. 이 실행은 in-memory CloudKit
+protocol fake와 UI fixture이므로 실제 private database 다기기·서버 시각 월 경계 증적은 아니다.
+필요한 수동 항목과 대기 상태를 `quickstart.md`에 기록하고 BLK-017을 열었다. T089은 완료 표시하지
+않았으며 운영 CloudKit 데이터는 호출하거나 변경하지 않았다.
+
 2026-09-08 T088: T082~T086에서 추가된 월간 무료분 제목, 무료·구매 잔액 label, loading·empty·stale·
 current·setup·reset 상태, 비이월, 서울 기준 다음 갱신, 내역 loading·empty·stale·current와 월 종료
 소멸·event 출처 문구를 `coinStore.*` 문자열 키로 전환하고 한국어·영어를 등록했다. VoiceOver 수량은

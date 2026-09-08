@@ -149,6 +149,31 @@ xcodebuild test \
 - 자정에는 background 생성을 요구하지 않고 첫 앱 foreground에서 quota 2를 생성한다. 별도 첫 Shield
   요청은 quota 2 생성과 무료 1회 사용을 한 command로 확정해 freeAvailable 1이 된다.
 
+### T089 검증 현황 (2026-09-08)
+
+자동 검증은 iPhone 17 Pro iOS 26.5 Simulator에서 다음 suite를 실행했다.
+
+- `MonthlyAllowanceAcceptanceTests`
+- `MonthlyAllowanceLifecycleTests`
+- `MonthlyAllowanceUserStoryTests`
+- `CloudKitMonthlyAllowanceTests`
+- `UserStory4MonthlyAllowanceUITests`
+
+총 24개가 실패·skip 없이 통과했다. 같은 allowance record ID의 100회 요청 집계, 무료 사용 충돌,
+서버 creation date 불일치, 서울 자정 전후 첫 foreground·첫 Shield 지연 생성, 비이월, 구매 잔액 보존,
+기기 시간대 변경, 삭제 reset 뒤 다음 달 재개와 한국어·영어 UI를 포함한다.
+
+이 결과는 in-memory CloudKit protocol fake와 UI test fixture를 사용하므로 실제 private database의
+다기기 전파·충돌 해결 또는 실제 서버 시각 기반 월 경계를 입증하지 않는다. 아래 수동 증적은
+`BLK-017` 해결 뒤 기록한다.
+
+| 수동 항목 | 환경 | 결과 |
+|----------|------|------|
+| 같은 iCloud 계정의 iPhone 2대에서 같은 월 allowance 동시 생성 | CloudKit development, 실기기 2대 | 대기 |
+| 두 기기의 무료 해제 동시 요청과 계정 전체 최대 2회 확인 | CloudKit development, 실기기 2대 | 대기 |
+| 서울 월 경계 전후 비이월 및 구매 잔액 보존 | 서버 creation date를 확인할 수 있는 실제 장부 | 대기 |
+| 월 경계 동안 앱·Shield 미실행 후 첫 foreground 및 별도 첫 Shield 지연 생성 | 실기기 및 실제 장부 | 대기 |
+
 ## Live Activity end-to-end
 
 1. 앱 foreground에서 시간·위치 조건을 만족시켜 제한을 시작한다.
