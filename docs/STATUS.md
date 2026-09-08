@@ -8,21 +8,20 @@
 
 ## 진행 중
 Pull Request #30으로 US3 T059~T077을 `main`에 병합하고 최신 `main`에서
-`codex/us4-monthly-lifecycle-tests`를 분기했다. T078·T079의 수명주기·사용자 스토리 회귀에 이어
-T080에서 CloudKit 월간 인수 harness를 추가했다. 같은 allowance record ID를 공유하는 100개 기기
-역할의 동시 생성이 단일 allowance·free-grant로 수렴하고, 서버 생성 월 불일치 거부와 iCloud 계정
-복구 뒤 명시적 재시도를 검증한다. 다음은 T081이다.
+`codex/us4-monthly-lifecycle-tests`를 분기했다. T078~T080의 월간 core·CloudKit 인수에 이어 T081에서
+앱의 무료분·구매 잔액 분리와 비이월 안내, Shield 단일 버튼 무료 우선 사용, 서울 월 경계 foreground
+갱신 UI 계약을 추가했다. 후속 월간 표시·fixture 구현 전 의도된 TDD RED 상태이며 다음은 T082다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T080 — 월간 allowance 동일 record ID 100기기 수렴·서버 생성 월·계정 불가 재시도 인수 harness
+T081 — 앱·Shield 월간 무료분 분리 표시·무료 우선·서울 월 경계 갱신 UI 계약 테스트
 
 ## 다음 작업
-T081 — 앱 무료분·구매 코인 분리 표시와 Shield 단일 버튼의 무료 우선 사용·월 경계 갱신 UI 테스트를
-먼저 작성한다.
+T082 — 최초 `setupRequired`, 일반 `current`, 삭제 확인 reset의 당월 무료 상태를 구분하는 월간 표시
+모델을 `CoinStoreModel`에 구현한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -41,6 +40,20 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-08 T081: `UserStory4MonthlyAllowanceUITests` 3개를 추가했다. 앱 코인 화면에서 이번 달 무료
+잔액과 구매 잔액을 별도 요소로 표시하고 비이월·서울 기준 다음 갱신 안내를 제공하는 계약, Shield의
+funding source 선택 UI 없는 단일 버튼에서 무료 우선 설명과 실행 후 무료 2→1·구매 3 유지 계약,
+서울 월 경계 직전 8월 잔여 1회에서 경계 뒤 첫 foreground에 9월 무료 2회로 갱신하면서 구매 3을
+보존하는 계약을 고정했다. 전체 테스트 타깃의 build-for-testing은 통과했다. 집중 실행은 기존
+Shield 무료 우선 흐름 1개가 GREEN이고, T083의 월간 안내 요소와 T085의 persisted month fixture가
+아직 없어 앱 표시·월 경계 2개가 계획대로 RED다. 기존 US2·US3 코인 UI 16개는 모두 통과했고 전체
+`GetUpTests` 558개 선언은 동적 인자 포함 670회 모두 실패·skip 없이 통과했다. generic iOS Simulator
+Release 빌드와 project plist·diff 검사도 통과했다. 기존 UI 회귀의 첫 실행은 Simulator runner
+`Busy` preflight 오류로 시작하지 못했으나 시뮬레이터 재부팅 뒤 같은 명령이 통과했다. Xcode의
+`no debugger version`·빈 build number 진단, signed test binary strip, `StoreKitTest` header
+deprecation과 `LocationMonitoringAdapterTests`의 불필요한 `try` 경고가 남아 있으며 T081 계약 실패는
+아니다. 운영 CloudKit·StoreKit 데이터는 호출하거나 변경하지 않았고 새 제품 차단은 없다.
+
 2026-09-07 T080: `MonthlyAllowanceAcceptanceTests` 3개를 추가했다. 같은
 `allowance:2026-09`를 사용하는 100개 기기 역할이 동시에 `createAllowanceIfNeeded`를 호출해도 모든
 응답이 quota 2로 수렴하고 서버에는 `MonthlyAllowance`·free-grant event가 각각 1개, 성공 atomic
