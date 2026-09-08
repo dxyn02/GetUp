@@ -4,6 +4,77 @@ import Testing
 
 @Suite("Monthly allowance app lifecycle", .serialized)
 struct MonthlyAllowanceLifecycleTests {
+    @Test("App UI fixture persists purchased coins and refreshes only free allowance")
+    func appFixturePersistsAcrossSeoulMonthBoundary() throws {
+        let root = try Self.makeFixtureDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = MonthlyAllowanceUITestFixtureStore(containerURL: root)
+        let august = try #require(Self.date("2026-08-31T14:59:59Z"))
+        let september = try #require(Self.date("2026-08-31T15:00:00Z"))
+
+        let beforeBoundary = try store.balance(
+            mode: .persistedOneRemaining,
+            syncState: .current,
+            now: august
+        )
+        let afterBoundary = try store.balance(
+            mode: .persistedOneRemaining,
+            syncState: .current,
+            now: september
+        )
+
+        #expect(beforeBoundary.freeAvailable == 1)
+        #expect(afterBoundary.freeAvailable == 2)
+        #expect(afterBoundary.purchasedAvailable == 3)
+        #expect(afterBoundary.currentMonthID == "2026-09")
+    }
+
+    @Test("Setup grants two while deletion reset suppresses only its current month")
+    func setupAndResetFixturesRemainDistinct() throws {
+        let setupRoot = try Self.makeFixtureDirectory()
+        let resetRoot = try Self.makeFixtureDirectory()
+        defer {
+            try? FileManager.default.removeItem(at: setupRoot)
+            try? FileManager.default.removeItem(at: resetRoot)
+        }
+        let august = try #require(Self.date("2026-08-24T07:00:00Z"))
+        let september = try #require(Self.date("2026-08-31T15:00:00Z"))
+
+        let setup = try MonthlyAllowanceUITestFixtureStore(containerURL: setupRoot)
+            .balance(mode: .firstSetup, syncState: .current, now: august)
+        let resetStore = MonthlyAllowanceUITestFixtureStore(containerURL: resetRoot)
+        let reset = try resetStore.balance(
+            mode: .deletionReset,
+            syncState: .deletionConfirmed,
+            now: august
+        )
+        let resumed = try resetStore.balance(
+            mode: .deletionReset,
+            syncState: .current,
+            now: september
+        )
+
+        #expect(setup.freeAvailable == 2)
+        #expect(setup.purchasedAvailable == 0)
+        #expect(reset.freeAvailable == 0)
+        #expect(reset.purchasedAvailable == 0)
+        #expect(resumed.freeAvailable == 2)
+        #expect(resumed.purchasedAvailable == 0)
+    }
+
+    @Test("First Shield request creates two and atomically reserves the free allowance first")
+    func firstShieldFixtureCreatesAndReservesAllowance() throws {
+        let now = try #require(Self.date("2026-08-24T07:00:00Z"))
+        let fixture = try ShieldMonthlyAllowanceUITestFixture.firstRequest(now: now)
+
+        #expect(fixture.initialBalance.freeAvailable == 2)
+        #expect(fixture.balanceAfterAtomicReservation.freeAvailable == 1)
+        #expect(fixture.initialBalance.purchasedAvailable == 3)
+        #expect(fixture.balanceAfterAtomicReservation.purchasedAvailable == 3)
+        #expect(fixture.initialBalance.currentMonthID == "2026-08")
+        #expect(fixture.createsAllowanceOnRequest)
+    }
+
     @Test("Seoul month boundary creates the new allowance only on the next foreground")
     func seoulBoundaryUsesLazyForegroundCreation() async throws {
         let clock = LiveActivityCoinWallClock(
@@ -146,6 +217,16 @@ struct MonthlyAllowanceLifecycleTests {
 
     private static func date(_ value: String) -> Date? {
         ISO8601DateFormatter().date(from: value)
+    }
+
+    private static func makeFixtureDirectory() throws -> URL {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GetUpMonthlyAllowanceTests-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+        return directory
     }
 }
 

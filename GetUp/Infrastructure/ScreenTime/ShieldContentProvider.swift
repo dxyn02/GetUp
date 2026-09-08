@@ -317,3 +317,44 @@ struct ShieldContentProvider {
         return String(format: "%02d:%02d %@", twelveHour, minute, period)
     }
 }
+
+struct ShieldMonthlyAllowanceUITestFixture: Equatable, Sendable {
+    let initialBalance: CoinBalanceSnapshot
+    let balanceAfterAtomicReservation: CoinBalanceSnapshot
+    let createsAllowanceOnRequest: Bool
+
+    static func firstRequest(now: Date, purchasedAvailable: Int = 3) throws -> Self {
+        let monthID = MonthlyAllowancePolicy.monthID(containing: now)
+        let epochID = UUID(uuidString: "00000000-0000-4000-8000-000000000592")!
+        return try ShieldMonthlyAllowanceUITestFixture(
+            initialBalance: CoinBalanceSnapshot(
+                purchasedAvailable: purchasedAvailable,
+                currentMonthID: monthID,
+                freeAvailable: MonthlyAllowancePolicy.monthlyQuota,
+                syncState: .current,
+                syncedAt: now,
+                ledgerEpochID: epochID,
+                hadConfirmedLedger: true
+            ),
+            balanceAfterAtomicReservation: CoinBalanceSnapshot(
+                purchasedAvailable: purchasedAvailable,
+                currentMonthID: monthID,
+                freeAvailable: MonthlyAllowancePolicy.monthlyQuota - 1,
+                syncState: .current,
+                syncedAt: now,
+                ledgerEpochID: epochID,
+                hadConfirmedLedger: true
+            ),
+            createsAllowanceOnRequest: true
+        )
+    }
+
+    static func existingAllowance(now: Date, purchasedAvailable: Int = 3) throws -> Self {
+        let fixture = try firstRequest(now: now, purchasedAvailable: purchasedAvailable)
+        return ShieldMonthlyAllowanceUITestFixture(
+            initialBalance: fixture.initialBalance,
+            balanceAfterAtomicReservation: fixture.balanceAfterAtomicReservation,
+            createsAllowanceOnRequest: false
+        )
+    }
+}

@@ -1054,6 +1054,8 @@ private struct RestrictionActivationProbeView: View {
                 .accessibilityIdentifier("coinRelease.test.committedCount")
             Text(String(instrumentation.remainingOccurrenceCount))
                 .accessibilityIdentifier("coinRelease.test.remainingOccurrenceCount")
+            Text(String(instrumentation.createsMonthlyAllowanceOnRequest))
+                .accessibilityIdentifier("coinRelease.test.createsMonthlyAllowanceOnRequest")
             if instrumentation.holdsExecution,
                configuration.model.phase == .processing {
                 Button(AppLocalizedCopy.string("coinRelease.test.complete")) {
@@ -1394,6 +1396,8 @@ private enum UITestConfiguration {
         )
         let coinReleaseMode = value(after: "--ui-test-coin-release")
         let coinReleaseResult = value(after: "--ui-test-coin-release-result")
+        let monthlyAllowanceFixture = value(after: "--ui-test-monthly-allowance")
+            .flatMap(MonthlyAllowanceUITestFixtureMode.init(rawValue:))
         let permissionOnboardingStateStore = PermissionOnboardingStateStore(
             key: "permissionOnboarding.hasCompleted.uiTest.\(storeID)"
         )
@@ -1505,6 +1509,7 @@ private enum UITestConfiguration {
         let releaseConfiguration = try makeCoinReleaseConfiguration(
             mode: coinReleaseMode,
             result: coinReleaseResult,
+            monthlyAllowanceFixture: monthlyAllowanceFixture,
             rule: restrictionActivationRule,
             now: fixtureNow
         )
@@ -1513,6 +1518,7 @@ private enum UITestConfiguration {
             ledgerState: value(after: "--ui-test-coin-ledger-state"),
             purchaseResult: value(after: "--ui-test-purchase-result"),
             historyFixture: value(after: "--ui-test-coin-history"),
+            monthlyAllowanceFixture: monthlyAllowanceFixture,
             root: root,
             now: fixtureNow
         )
@@ -1542,6 +1548,7 @@ private enum UITestConfiguration {
     private static func makeCoinReleaseConfiguration(
         mode: String?,
         result: String?,
+        monthlyAllowanceFixture: MonthlyAllowanceUITestFixtureMode?,
         rule: RestrictionRuleSnapshot,
         now: Date
     ) throws -> ActiveRestrictionReleaseConfiguration? {
@@ -1568,29 +1575,17 @@ private enum UITestConfiguration {
         )
         let occurrences = mode == "overlapping" ? [primary, overlap] : [primary]
         let remainingOccurrences = mode == "overlapping" ? [overlap] : []
-        let balance = try CoinBalanceSnapshot(
-            purchasedAvailable: 3,
-            currentMonthID: MonthlyAllowancePolicy.monthID(containing: now),
-            freeAvailable: 2,
-            syncState: .current,
-            syncedAt: now,
-            ledgerEpochID: UUID(
-                uuidString: "00000000-0000-4000-8000-000000000592"
-            ),
-            hadConfirmedLedger: true
-        )
-        let updatedBalance = try CoinBalanceSnapshot(
-            purchasedAvailable: 3,
-            currentMonthID: balance.currentMonthID,
-            freeAvailable: 1,
-            syncState: .current,
-            syncedAt: now,
-            ledgerEpochID: balance.ledgerEpochID,
-            hadConfirmedLedger: true
-        )
+        let shieldAllowance = if monthlyAllowanceFixture == .firstShield {
+            try ShieldMonthlyAllowanceUITestFixture.firstRequest(now: now)
+        } else {
+            try ShieldMonthlyAllowanceUITestFixture.existingAllowance(now: now)
+        }
+        let balance = shieldAllowance.initialBalance
+        let updatedBalance = shieldAllowance.balanceAfterAtomicReservation
         let instrumentation = ActiveRestrictionReleaseInstrumentation(
             remainingOccurrenceCount: occurrences.count,
-            holdsExecution: result == "held-success"
+            holdsExecution: result == "held-success",
+            createsMonthlyAllowanceOnRequest: shieldAllowance.createsAllowanceOnRequest
         )
         let fixedNow = now
         let releaseModel = ActiveRestrictionReleaseModel(
@@ -1626,6 +1621,7 @@ private enum UITestConfiguration {
         ledgerState: String?,
         purchaseResult: String?,
         historyFixture: String?,
+        monthlyAllowanceFixture: MonthlyAllowanceUITestFixtureMode?,
         root: URL,
         now: Date
     ) throws -> CoinStoreConfiguration? {
@@ -1635,6 +1631,7 @@ private enum UITestConfiguration {
             ledgerState: ledgerState,
             purchaseResult: purchaseResult,
             historyFixture: historyFixture,
+            monthlyAllowanceFixture: monthlyAllowanceFixture,
             root: root,
             now: now
         )
@@ -2179,17 +2176,22 @@ private final class CoinStoreUITestDriver {
     private let purchaseResult: String?
     private let now: Date
     private let pendingMarkerURL: URL
+    private let monthlyAllowanceFixtureStore: MonthlyAllowanceUITestFixtureStore
+    private let monthlyAllowanceFixture: MonthlyAllowanceUITestFixtureMode?
     private var nextTransactionID: UInt64 = 9_001
 
     init(
         ledgerState: String?,
         purchaseResult: String?,
         historyFixture: String?,
+        monthlyAllowanceFixture: MonthlyAllowanceUITestFixtureMode?,
         root: URL,
         now: Date
     ) throws {
         self.purchaseResult = purchaseResult
         self.now = now
+        self.monthlyAllowanceFixture = monthlyAllowanceFixture
+        monthlyAllowanceFixtureStore = MonthlyAllowanceUITestFixtureStore(containerURL: root)
         pendingMarkerURL = root.appendingPathComponent("pending-coin-purchase")
 
         let syncState: CoinBalanceSyncState = switch ledgerState {
@@ -2198,7 +2200,6 @@ private final class CoinStoreUITestDriver {
         case "unavailable": .unavailable
         default: .current
         }
-        let isCurrent = syncState == .current
         let events = historyFixture == "full-ledger-events"
             ? try Self.fullHistory(now: now)
             : []
@@ -2207,16 +2208,10 @@ private final class CoinStoreUITestDriver {
         ) ? ["com.dxyn02.GetUp.coin.1"] : []
 
         ledger = CoinStoreLedgerState(
-            balance: try CoinBalanceSnapshot(
-                purchasedAvailable: isCurrent ? 3 : 0,
-                currentMonthID: MonthlyAllowancePolicy.monthID(containing: now),
-                freeAvailable: isCurrent ? 1 : 0,
+            balance: try monthlyAllowanceFixtureStore.balance(
+                mode: monthlyAllowanceFixture,
                 syncState: syncState,
-                syncedAt: now,
-                ledgerEpochID: isCurrent
-                    ? UUID(uuidString: "00000000-0000-4000-8000-000000000901")
-                    : nil,
-                hadConfirmedLedger: syncState != .setupRequired
+                now: now
             ),
             purchaseGrants: [],
             events: events,
@@ -2241,6 +2236,7 @@ private final class CoinStoreUITestDriver {
             ledgerState: ledger.balance.syncState
         )
         ledger = try Self.ledger(from: result, now: now)
+        try persistMonthlyAllowanceFixture()
         return ledger
     }
 
@@ -2260,6 +2256,7 @@ private final class CoinStoreUITestDriver {
             ledgerState: ledger.balance.syncState
         )
         ledger = try Self.ledger(from: result, now: now)
+        try persistMonthlyAllowanceFixture()
         return ledger
     }
 
@@ -2322,8 +2319,14 @@ private final class CoinStoreUITestDriver {
                 pendingProductIdentifiers: [],
                 hasPendingReconciliation: false
             )
+            try persistMonthlyAllowanceFixture()
             return .granted(grant: grant, ledger: ledger)
         }
+    }
+
+    private func persistMonthlyAllowanceFixture() throws {
+        guard monthlyAllowanceFixture != nil else { return }
+        try monthlyAllowanceFixtureStore.save(ledger.balance)
     }
 
     private static func product(quantity: Int, price: String) -> CoinCatalogProduct {

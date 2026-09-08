@@ -47,6 +47,10 @@ final class UserStory4MonthlyAllowanceUITests: XCTestCase {
         XCTAssertTrue(shield.staticTexts["restrictionProbe.shield.cost"].label.contains("무료"))
         XCTAssertTrue(shield.staticTexts["restrictionProbe.shield.cost"].label.contains("우선"))
         XCTAssertFalse(shield.buttons["coinRelease.chooseFundingSource"].exists)
+        XCTAssertEqual(
+            app.staticTexts["coinRelease.test.createsMonthlyAllowanceOnRequest"].label,
+            "true"
+        )
 
         release.tap()
 
@@ -78,7 +82,8 @@ final class UserStory4MonthlyAllowanceUITests: XCTestCase {
         app = launchCoinStore(
             storeID: storeID,
             now: "2026-08-31T15:00:00Z",
-            resetStore: false
+            resetStore: false,
+            monthlyAllowance: "first-app"
         )
         openCoinStore(in: app)
 
@@ -88,6 +93,44 @@ final class UserStory4MonthlyAllowanceUITests: XCTestCase {
         XCTAssertTrue(
             app.staticTexts["coinStore.monthly.nonRollover"].label.contains("이월되지")
         )
+    }
+
+    @MainActor
+    func testFirstSetupAndDeletionResetUseDistinctMonthlyFixtures() {
+        var app = launchCoinStore(
+            storeID: "\(#function).setup",
+            now: "2026-08-24T07:00:00Z",
+            resetStore: true,
+            ledgerState: "setup-required",
+            monthlyAllowance: "first-setup"
+        )
+        openCoinStore(in: app)
+        app.buttons["coinStore.setup.confirm"].tap()
+
+        XCTAssertTrue(app.otherElements["coinStore.catalog"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["coinStore.balance.free"].label, "2")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].label, "0")
+        XCTAssertEqual(app.staticTexts["coinStore.test.setupCount"].label, "1")
+
+        app.terminate()
+        app = launchCoinStore(
+            storeID: "\(#function).reset",
+            now: "2026-08-24T07:00:00Z",
+            resetStore: true,
+            ledgerState: "deletion-confirmed",
+            monthlyAllowance: "deletion-reset"
+        )
+        openCoinStore(in: app)
+        app.buttons["coinStore.reset.requestConfirmation"].tap()
+
+        let dialog = app.alerts["새 장부를 시작할까요?"]
+        XCTAssertTrue(dialog.waitForExistence(timeout: 2))
+        dialog.buttons["새 장부 시작"].tap()
+
+        XCTAssertTrue(app.otherElements["coinStore.catalog"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["coinStore.balance.free"].label, "0")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].label, "0")
+        XCTAssertEqual(app.staticTexts["coinStore.test.resetCount"].label, "1")
     }
 
     @MainActor
@@ -132,14 +175,16 @@ final class UserStory4MonthlyAllowanceUITests: XCTestCase {
         storeID: String,
         now: String,
         resetStore: Bool,
+        ledgerState: String = "current",
+        monthlyAllowance: String = "persisted-one-remaining",
         historyFixture: String? = nil
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [
             "--ui-testing", "--ui-test-store-id", storeID,
             "--ui-test-scenario", "coin-store",
-            "--ui-test-coin-ledger-state", "current",
-            "--ui-test-monthly-allowance", "persisted-one-remaining",
+            "--ui-test-coin-ledger-state", ledgerState,
+            "--ui-test-monthly-allowance", monthlyAllowance,
             "--ui-test-now", now,
             "-AppleLanguages", "(ko)", "-AppleLocale", "ko_KR",
         ]
@@ -163,6 +208,7 @@ final class UserStory4MonthlyAllowanceUITests: XCTestCase {
             "--ui-test-location-state", "inside",
             "--ui-test-coin-release", "overlapping",
             "--ui-test-coin-release-result", "success",
+            "--ui-test-monthly-allowance", "first-shield",
             "-AppleLanguages", "(ko)", "-AppleLocale", "ko_KR",
         ]
         app.launch()

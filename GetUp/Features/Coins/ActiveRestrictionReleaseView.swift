@@ -91,13 +91,19 @@ final class ActiveRestrictionReleaseInstrumentation {
     private(set) var committedCount = 0
     private(set) var remainingOccurrenceCount: Int
     let holdsExecution: Bool
+    let createsMonthlyAllowanceOnRequest: Bool
 
     private var continuation:
         CheckedContinuation<ActiveRestrictionReleaseExecutionResult, Never>?
 
-    init(remainingOccurrenceCount: Int, holdsExecution: Bool) {
+    init(
+        remainingOccurrenceCount: Int,
+        holdsExecution: Bool,
+        createsMonthlyAllowanceOnRequest: Bool = false
+    ) {
         self.remainingOccurrenceCount = remainingOccurrenceCount
         self.holdsExecution = holdsExecution
+        self.createsMonthlyAllowanceOnRequest = createsMonthlyAllowanceOnRequest
     }
 
     func execute(
@@ -419,6 +425,8 @@ struct ActiveRestrictionReleaseView: View {
                     .accessibilityIdentifier("coinRelease.test.committedCount")
                 Text(String(instrumentation.remainingOccurrenceCount))
                     .accessibilityIdentifier("coinRelease.test.remainingOccurrenceCount")
+                Text(String(instrumentation.createsMonthlyAllowanceOnRequest))
+                    .accessibilityIdentifier("coinRelease.test.createsMonthlyAllowanceOnRequest")
                 if instrumentation.holdsExecution, model.phase == .processing {
                     Button(AppLocalizedCopy.string("coinRelease.test.complete")) {
                         guard let balance = decrementedFixtureBalance else { return }

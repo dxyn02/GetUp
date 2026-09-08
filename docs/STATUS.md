@@ -9,21 +9,21 @@
 ## 진행 중
 Pull Request #30으로 US3 T059~T077을 `main`에 병합하고 최신 `main`에서
 `codex/us4-monthly-lifecycle-tests`를 분기했다. T078~T080의 월간 core·CloudKit 인수와 T081의 UI
-계약과 T082~T083의 월간 잔액 표시에 이어 T084에서 `CoinLedgerHistoryView`가 event `kind`와
-`source`를 함께 판정해 월간 무료 지급·예약·사용·취소와 구매 코인 지급·예약·사용·취소·환불 보정을
-구분하도록 했다. 별도 `monthEnd` 장부 event를 만들지 않고 실제 월간 지급 행에 월 종료 시 남은
-무료분 소멸 안내를 표시한다. 다음은 T085다.
+계약과 T082~T083의 월간 잔액 표시, T084의 월간·구매 내역 분리에 이어 T085에서 월 경계 재실행,
+새달 첫 앱 foreground, 첫 Shield 요청, 최초 setup, 삭제 reset을 결정적으로 재현하는 UI test fixture를
+app과 Shield seam에 연결했다. 같은 fixture store는 서울 기준 월 ID와 구매·무료 잔액을 파일로 보존해
+새달에는 구매 잔액을 유지하고 무료 2회만 갱신하며, 삭제 reset 당월은 0회로 억제한 뒤 다음 달 2회를
+재개한다. 다음은 T086이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T084 — 월간 무료와 구매 코인의 지급·사용·취소·보정 내역 분리 표시
+T085 — 월 경계·첫 앱·첫 Shield·최초 setup·삭제 reset UI test fixture 연결
 
 ## 다음 작업
-T085 — 월 경계·첫 앱·첫 Shield·최초 setup·삭제 reset fixture를 app과 Shield UI test seam에
-연결한다.
+T086 — 무료·구매 잔액의 loading·empty·stale·current 상태와 VoiceOver 읽기 순서를 구현한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -42,6 +42,19 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-08 T085: `MonthlyAllowanceUITestFixtureStore`를 추가해 같은 UI test store ID에서 서울 기준
+월 ID, 구매 잔액, 무료 잔액을 원자 파일로 보존한다. 월 경계 뒤 첫 앱 foreground는 구매 잔액을
+유지하면서 무료분만 2회로 교체하고, 최초 setup은 구매 0·무료 2회, 삭제 reset은 당월 구매 0·무료
+0회와 다음 달 무료 2회 재개를 서로 다른 fixture로 유지한다. Shield의 첫 당월 요청은 무료 2회를
+생성하면서 한 번의 예약 결과를 무료 1·구매 3으로 제공하고, 진단 표식으로 실제 `first-shield`
+fixture 선택도 확인한다. fixture 집중 단위 테스트 3개와 기존 수명주기 4개가 통과했고, US4 UI
+테스트 5개가 모두 통과했다. 전체 `GetUpTests` 564개 선언과 기존 US3 UI 11개를 합친 실행은 동적
+인자 포함 688회 모두 실패·skip 없이 통과했다. generic iOS Simulator Release 빌드와 diff 검사도
+통과했다. 첫 단위 테스트 실행은 sandbox의 CoreSimulatorService 접근 차단으로 중단됐으나 승인된
+동일 명령 재실행에서 통과했다. 기존 Xcode 빈 build number·`no debugger version` 진단과
+`LocationMonitoringAdapterTests`의 불필요한 `try` 경고가 남아 있으며 T085 동작 실패는 아니다.
+운영 CloudKit·StoreKit 데이터는 호출하거나 변경하지 않았고 새 제품 차단은 없다.
+
 2026-09-08 T084: 코인 내역 표시가 event `kind`만 보던 방식에서 `kind`와 `source`를 함께 사용하는
 방식으로 확장됐다. 같은 예약·사용·취소도 월간 무료와 구매 코인으로 구분하고 구매 지급·환불 보정·
 환불 취소에도 구매 코인 출처를 명시한다. 장부 스키마에는 별도 `monthEnd` event가 없으므로 합성
