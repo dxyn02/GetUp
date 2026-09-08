@@ -9,20 +9,21 @@
 ## 진행 중
 Pull Request #30으로 US3 T059~T077을 `main`에 병합하고 최신 `main`에서
 `codex/us4-monthly-lifecycle-tests`를 분기했다. T078~T080의 월간 core·CloudKit 인수와 T081의 UI
-계약과 T082의 월간 표시 모델에 이어 T083에서 `CoinStoreView`에 당월 무료 해제권 제목·서울 기준
-월·남은 무료 수량·비이월 정책·다음 달 1일 00:00 갱신 시점을 표시했다. 구매 코인 잔액은 별도 카드로
-유지하고 setup·current·삭제 reset·불확실 상태는 T082 표시값을 사용한다. 다음은 T084다.
+계약과 T082~T083의 월간 잔액 표시에 이어 T084에서 `CoinLedgerHistoryView`가 event `kind`와
+`source`를 함께 판정해 월간 무료 지급·예약·사용·취소와 구매 코인 지급·예약·사용·취소·환불 보정을
+구분하도록 했다. 별도 `monthEnd` 장부 event를 만들지 않고 실제 월간 지급 행에 월 종료 시 남은
+무료분 소멸 안내를 표시한다. 다음은 T085다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T083 — 월간 무료 잔여·비이월·서울 월 경계 안내와 구매 코인 잔액 분리 표시
+T084 — 월간 무료와 구매 코인의 지급·사용·취소·보정 내역 분리 표시
 
 ## 다음 작업
-T084 — 월간 무료 지급·사용·월 종료와 구매 지급·사용·보정 event를 구분하도록 코인 내역 화면을
-확장한다.
+T085 — 월 경계·첫 앱·첫 Shield·최초 setup·삭제 reset fixture를 app과 Shield UI test seam에
+연결한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -41,6 +42,18 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-08 T084: 코인 내역 표시가 event `kind`만 보던 방식에서 `kind`와 `source`를 함께 사용하는
+방식으로 확장됐다. 같은 예약·사용·취소도 월간 무료와 구매 코인으로 구분하고 구매 지급·환불 보정·
+환불 취소에도 구매 코인 출처를 명시한다. 장부 스키마에는 별도 `monthEnd` event가 없으므로 합성
+내역을 추가하지 않고 실제 월간 무료 지급 행에 월 종료 시 남은 무료분 소멸 안내를 연결했다. 구현 전
+새 US4 내역 UI 테스트는 기존 `무료 지급` 문구로 예상대로 RED였고 구현 후 GREEN이 됐다. 새 US4 내역
+계약과 기존 구매 지급·전체 내역 UI 계약 3개가 통과했으며, 전체 `GetUpTests` 561개 선언은 동적 인자
+포함 674회 모두 실패·skip 없이 통과했다. generic iOS Simulator Release 첫 실행은 sandbox의
+CoreSimulatorService 차단으로 실패했으나 승인된 동일 명령 재실행에서 통과했고 diff 검사도 통과했다.
+기존 Xcode 빈 build number·`no debugger version` 진단과 `LocationMonitoringAdapterTests`의 불필요한
+`try` 경고가 남아 있으며 T084 동작 실패는 아니다. 운영 CloudKit·StoreKit 데이터는 호출하거나
+변경하지 않았고 새 제품 차단은 없다.
+
 2026-09-08 T083: `CoinStoreView`의 잔액 영역을 월간 무료 해제권 안내와 구매 코인 잔액 카드로
 분리했다. T082의 표시 모델에서 월 ID와 상태별 표시 잔액을 읽고, `Asia/Seoul` Gregorian 월 시작을
 기준으로 현재 월과 다음 달 1일 00:00을 사용자 locale에 맞게 표시한다. 남은 무료분이 다음 달로

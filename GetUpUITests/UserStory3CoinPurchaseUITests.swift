@@ -104,7 +104,10 @@ final class UserStory3CoinPurchaseUITests: XCTestCase {
         let purchase = app.otherElements["coinStore.history.purchaseGrant"]
         XCTAssertTrue(purchase.waitForExistence(timeout: 2))
         XCTAssertEqual(purchase.staticTexts["coinStore.history.quantity"].label, "+3")
-        XCTAssertEqual(purchase.staticTexts["coinStore.history.status"].label, "지급 완료")
+        XCTAssertEqual(
+            purchase.staticTexts["coinStore.history.status"].label,
+            "구매 코인 지급 완료"
+        )
         XCTAssertFalse(purchase.staticTexts["coinStore.history.timestamp"].label.isEmpty)
     }
 
@@ -163,12 +166,17 @@ final class UserStory3CoinPurchaseUITests: XCTestCase {
         openCoinStore(in: app)
         app.buttons["coinStore.history.open"].tap()
 
-        assertHistoryRow(in: app, id: "purchaseGrant", quantity: "+5", status: "구매 지급")
-        assertHistoryRow(in: app, id: "freeGrant", quantity: "+2", status: "무료 지급")
-        assertHistoryRow(in: app, id: "spend", quantity: "-1", status: "사용 완료")
-        assertHistoryRow(in: app, id: "release", quantity: "+1", status: "원상 복구")
-        assertHistoryRow(in: app, id: "refundAdjustment", quantity: "-2", status: "환불 보정")
-        assertHistoryRow(in: app, id: "reversal", quantity: "+2", status: "환불 취소")
+        assertHistoryRow(in: app, id: "purchaseGrant", quantity: "+5", status: "구매 코인 지급")
+        assertHistoryRow(in: app, id: "freeGrant", quantity: "+2", status: "월간 무료 지급")
+        assertHistoryRow(in: app, id: "spend", quantity: "-1", status: "월간 무료 사용")
+        assertHistoryRow(in: app, id: "release", quantity: "+1", status: "월간 무료 사용 취소")
+        assertHistoryRow(
+            in: app,
+            id: "refundAdjustment",
+            quantity: "-2",
+            status: "구매 코인 환불 보정"
+        )
+        assertHistoryRow(in: app, id: "reversal", quantity: "+2", status: "구매 코인 환불 취소")
     }
 
     @MainActor

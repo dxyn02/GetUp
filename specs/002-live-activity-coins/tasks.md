@@ -202,7 +202,7 @@ occurrence만 예외 처리되는지, 중복 100회에서 최대 1회만 소모�
 
 - [X] T082 [US4] 최초 `setupRequired` 사용자의 당월 무료 2회, 일반 `current` 잔액, 삭제 확인 reset 사용자의 당월 무료 0 상태를 구분하는 월간 표시 모델을 `GetUp/Features/Coins/CoinStoreModel.swift`에 구현한다.
 - [X] T083 [US4] 이번 달 무료 잔여 수량·비이월·다음 서울 월 경계 안내와 구매 코인 잔액을 분리 표시하도록 `GetUp/Features/Coins/CoinStoreView.swift`를 확장한다.
-- [ ] T084 [US4] 월간 무료 지급·사용·월 종료와 구매 지급·사용·보정 event를 구분해 표시하도록 `GetUp/Features/Coins/CoinLedgerHistoryView.swift`를 확장한다.
+- [X] T084 [US4] 월간 무료 지급·사용·월 종료와 구매 지급·사용·보정 event를 구분해 표시하도록 `GetUp/Features/Coins/CoinLedgerHistoryView.swift`를 확장한다.
 - [ ] T085 [US4] 월 경계·첫 앱·첫 Shield·최초 setup·삭제 reset fixture를 app과 Shield UI test seam에 연결하도록 `GetUp/App/DependencyContainer.swift`, `GetUp/Infrastructure/ScreenTime/ShieldContentProvider.swift`를 확장한다.
 - [ ] T086 [US4] 무료·구매 잔액의 loading·empty·stale·current 상태와 VoiceOver 읽기 순서를 `GetUp/Features/Coins/CoinStoreView.swift`, `GetUp/Features/Coins/CoinLedgerHistoryView.swift`에 구현한다.
 - [ ] T087 [US4] Shield에는 funding source를 미리 단정하지 않는 단일 해제 버튼과 무료 우선·구매 fallback 설명을 표시하고 실제 source는 tap 뒤 최신 장부에서 결정하도록 `GetUp/Infrastructure/ScreenTime/ShieldContentProvider.swift`를 확장한다.

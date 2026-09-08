@@ -11,6 +11,12 @@ struct CoinLedgerHistoryView: View {
                     Text(status(for: event))
                         .font(.headline)
                         .accessibilityIdentifier("coinStore.history.status")
+                    if event.kind == .freeGrant, event.source == .monthlyFree {
+                        Text("월 종료 시 남은 무료분은 소멸해요.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("coinStore.history.monthEnd")
+                    }
                     Text(event.createdAt, format: .dateTime.year().month().day().hour().minute())
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -43,13 +49,30 @@ struct CoinLedgerHistoryView: View {
 
     private func status(for event: CoinLedgerEvent) -> String {
         switch event.kind {
-        case .purchaseGrant: purchaseGrantStatus
-        case .freeGrant: "무료 지급"
-        case .reservation: "사용 예약"
-        case .spend: "사용 완료"
-        case .release: "원상 복구"
-        case .refundAdjustment: "환불 보정"
-        case .reversal: "환불 취소"
+        case .purchaseGrant:
+            purchaseGrantStatus == "구매 지급"
+                ? "구매 코인 지급"
+                : "구매 코인 \(purchaseGrantStatus)"
+        case .freeGrant:
+            "월간 무료 지급"
+        case .reservation:
+            sourcePrefix(for: event) + " 사용 예약"
+        case .spend:
+            sourcePrefix(for: event) + " 사용"
+        case .release:
+            sourcePrefix(for: event) + " 사용 취소"
+        case .refundAdjustment:
+            "구매 코인 환불 보정"
+        case .reversal:
+            "구매 코인 환불 취소"
+        }
+    }
+
+    private func sourcePrefix(for event: CoinLedgerEvent) -> String {
+        switch event.source {
+        case .monthlyFree: "월간 무료"
+        case .purchased: "구매 코인"
+        case .none: "코인"
         }
     }
 }

@@ -91,10 +91,48 @@ final class UserStory4MonthlyAllowanceUITests: XCTestCase {
     }
 
     @MainActor
+    func testHistorySeparatesMonthlyLifecycleFromPurchasedCoinChanges() {
+        let app = launchCoinStore(
+            storeID: #function,
+            now: "2026-08-24T07:00:00Z",
+            resetStore: true,
+            historyFixture: "full-ledger-events"
+        )
+        openCoinStore(in: app)
+        app.buttons["coinStore.history.open"].tap()
+
+        let monthlyGrant = app.otherElements["coinStore.history.freeGrant"]
+        XCTAssertTrue(monthlyGrant.waitForExistence(timeout: 2))
+        XCTAssertEqual(
+            monthlyGrant.staticTexts["coinStore.history.status"].label,
+            "월간 무료 지급"
+        )
+        XCTAssertTrue(
+            monthlyGrant.staticTexts["coinStore.history.monthEnd"].label.contains("월 종료")
+        )
+        XCTAssertEqual(
+            app.otherElements["coinStore.history.spend"]
+                .staticTexts["coinStore.history.status"].label,
+            "월간 무료 사용"
+        )
+        XCTAssertEqual(
+            app.otherElements["coinStore.history.purchaseGrant"]
+                .staticTexts["coinStore.history.status"].label,
+            "구매 코인 지급"
+        )
+        XCTAssertEqual(
+            app.otherElements["coinStore.history.refundAdjustment"]
+                .staticTexts["coinStore.history.status"].label,
+            "구매 코인 환불 보정"
+        )
+    }
+
+    @MainActor
     private func launchCoinStore(
         storeID: String,
         now: String,
-        resetStore: Bool
+        resetStore: Bool,
+        historyFixture: String? = nil
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [
@@ -107,6 +145,9 @@ final class UserStory4MonthlyAllowanceUITests: XCTestCase {
         ]
         if resetStore {
             app.launchArguments.append("--ui-test-reset-store")
+        }
+        if let historyFixture {
+            app.launchArguments += ["--ui-test-coin-history", historyFixture]
         }
         app.launch()
         return app
