@@ -258,6 +258,68 @@ final class UserStory4MonthlyAllowanceUITests: XCTestCase {
     }
 
     @MainActor
+    func testEnglishMonthlyAllowanceHistoryAndAccessibilityCopyIsLocalized() {
+        let app = launchCoinStore(
+            storeID: #function,
+            now: "2026-08-24T07:00:00Z",
+            resetStore: true,
+            historyFixture: "full-ledger-events",
+            language: "en",
+            locale: "en_US"
+        )
+        openCoinStore(in: app)
+
+        XCTAssertEqual(
+            app.staticTexts["coinStore.monthly.title"].label,
+            "Monthly Free Releases"
+        )
+        XCTAssertEqual(
+            app.staticTexts["coinStore.balance.free"].label,
+            "Free Releases Remaining"
+        )
+        XCTAssertEqual(
+            app.staticTexts["coinStore.balance.free"].value as? String,
+            "1 release"
+        )
+        XCTAssertEqual(
+            app.staticTexts["coinStore.balance.purchased"].label,
+            "Purchased Coin Balance"
+        )
+        XCTAssertEqual(
+            app.staticTexts["coinStore.balance.purchased"].value as? String,
+            "3 coins"
+        )
+        XCTAssertEqual(
+            app.staticTexts["coinStore.monthly.nonRollover"].label,
+            "Unused free releases do not roll over to the next month."
+        )
+        XCTAssertTrue(
+            app.staticTexts["coinStore.monthly.nextRefresh"].label.contains("Seoul time")
+        )
+
+        app.buttons["coinStore.history.open"].tap()
+        XCTAssertEqual(
+            app.staticTexts["coinStore.history.current"].label,
+            "Latest history"
+        )
+        XCTAssertEqual(
+            app.otherElements["coinStore.history.freeGrant"]
+                .staticTexts["coinStore.history.status"].label,
+            "Monthly free grant"
+        )
+        XCTAssertEqual(
+            app.otherElements["coinStore.history.freeGrant"]
+                .staticTexts["coinStore.history.monthEnd"].label,
+            "Unused free releases expire at month end."
+        )
+        XCTAssertEqual(
+            app.otherElements["coinStore.history.purchaseGrant"]
+                .staticTexts["coinStore.history.status"].label,
+            "Purchased coin grant"
+        )
+    }
+
+    @MainActor
     private func launchCoinStore(
         storeID: String,
         now: String,
@@ -266,7 +328,9 @@ final class UserStory4MonthlyAllowanceUITests: XCTestCase {
         monthlyAllowance: String = "persisted-one-remaining",
         freeBalance: Int? = nil,
         purchasedBalance: Int? = nil,
-        historyFixture: String? = nil
+        historyFixture: String? = nil,
+        language: String = "ko",
+        locale: String = "ko_KR"
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [
@@ -275,7 +339,7 @@ final class UserStory4MonthlyAllowanceUITests: XCTestCase {
             "--ui-test-coin-ledger-state", ledgerState,
             "--ui-test-monthly-allowance", monthlyAllowance,
             "--ui-test-now", now,
-            "-AppleLanguages", "(ko)", "-AppleLocale", "ko_KR",
+            "-AppleLanguages", "(\(language))", "-AppleLocale", locale,
         ]
         if resetStore {
             app.launchArguments.append("--ui-test-reset-store")

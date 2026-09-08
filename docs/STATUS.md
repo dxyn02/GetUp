@@ -16,17 +16,19 @@ current 상태를 구분하고, 동기화 중 숫자 mirror를 확정값처럼 �
 무료 잔액 → 구매 잔액 순서와 `회`·`개` 단위를 읽도록 확장했다. T087에서는 Shield 표시 모델에
 `latestLedgerFreeFirst` 정책을 명시해 mirror의 sync state나 표시 수량과 무관하게 단일 해제 버튼과
 무료 우선·구매 코인 1개 fallback 안내를 유지하고, 실제 funding source는 탭 뒤 최신 장부 해제 결과로만
-확정되도록 회귀를 고정했다. 다음은 T088이다.
+확정되도록 회귀를 고정했다. T088에서는 월간 잔액·비이월·다음 갱신·내역과 VoiceOver 수량을 안정된
+문자열 키로 전환하고 한국어·영어 번역을 연결했다. 기존 app·Shield 무료 우선 문구의 양 언어 번역도
+함께 검증했다. 다음은 T089이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T087 — Shield의 단일 해제 동의와 탭 후 최신 장부 funding source 결정 계약 구현
+T088 — 월간 무료분·비이월·무료 우선 및 접근성 문구의 한국어·영어 지역화
 
 ## 다음 작업
-T088 — 한국어·영어 월간 무료분·비이월·무료 우선 문구와 접근성 label을 지역화한다.
+T089 — US4 자동 테스트와 다기기·서울 월 경계 수동 검증 결과를 기록한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -45,6 +47,21 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-08 T088: T082~T086에서 추가된 월간 무료분 제목, 무료·구매 잔액 label, loading·empty·stale·
+current·setup·reset 상태, 비이월, 서울 기준 다음 갱신, 내역 loading·empty·stale·current와 월 종료
+소멸·event 출처 문구를 `coinStore.*` 문자열 키로 전환하고 한국어·영어를 등록했다. VoiceOver 수량은
+한국어 `회`·`개`를 유지하며 영어는 `1 release`/`n releases`, `1 coin`/`n coins`로 단복수를 구분한다.
+app의 `coinRelease.cost.value`와 Shield Configuration의 단일 버튼·무료 우선·구매 fallback 키는 기존
+양 언어 번역을 재사용하고 카탈로그 완전성 검사로 확인했다. 새 영어 월간·내역·접근성 UI 테스트는
+구현 전 한국어 literal 노출로 예상대로 RED였고 구현 후 GREEN이 됐다. 전체 `GetUpTests` 568개 선언,
+US3 UI 11개, US4 UI 8개를 합친 587개 선언은 동적 인자 포함 707회 모두 실패·skip 없이 통과했다.
+두 String Catalog JSON과 관련 키의 한국어·영어 값, generic iOS Simulator Release 빌드, project
+plist·diff 검사도 통과했다. focused GREEN의 첫 실행은 sandbox의 CoreSimulatorService 차단으로
+기기 검색 전에 실패했고 승인된 동일 명령 재실행에서 통과했다. 기존 Xcode 빈 build number·
+`no debugger version` 진단과 `LocationMonitoringAdapterTests`의 불필요한 `try` 경고가 남아 있으며
+T088 동작 실패는 아니다. 운영 CloudKit·StoreKit 데이터는 호출하거나 변경하지 않았고 새 제품 차단은
+없다.
+
 2026-09-08 T087: `ShieldContent`에 표시용 balance mirror와 실제 소비 결정을 분리하는
 `ShieldReleaseFundingPolicy.latestLedgerFreeFirst(purchasedFallbackQuantity: 1)`를 추가했다. 읽을 수
 있는 모든 sync state와 무료만·구매만·잔액 없음·두 잔액 모두 있음 조합에서 같은 `해제권 1회 사용`

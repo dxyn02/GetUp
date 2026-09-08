@@ -9,10 +9,13 @@ struct CoinLedgerHistoryView: View {
         Group {
             switch contentState {
             case .loading:
-                ProgressView("코인 내역을 불러오는 중이에요")
+                ProgressView(AppLocalizedCopy.string("coinStore.history.loading"))
                     .accessibilityIdentifier("coinStore.history.loading")
             case .empty:
-                ContentUnavailableView("아직 코인 내역이 없어요", systemImage: "clock")
+                ContentUnavailableView(
+                    AppLocalizedCopy.string("coinStore.history.empty"),
+                    systemImage: "clock"
+                )
                     .accessibilityIdentifier("coinStore.history.empty")
             case .stale:
                 historyList(showsStaleWarning: true)
@@ -20,7 +23,7 @@ struct CoinLedgerHistoryView: View {
                 historyList(showsStaleWarning: false)
             }
         }
-        .navigationTitle("코인 내역")
+        .navigationTitle(AppLocalizedCopy.string("coinStore.history.title"))
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -28,14 +31,17 @@ struct CoinLedgerHistoryView: View {
         List {
             if showsStaleWarning {
                 Label(
-                    "마지막으로 확인한 내역이에요. iCloud 연결 후 다시 확인해 주세요.",
+                    AppLocalizedCopy.string("coinStore.history.stale"),
                     systemImage: "icloud.slash"
                 )
                 .foregroundStyle(.secondary)
                 .accessibilityIdentifier("coinStore.history.stale")
                 .accessibilitySortPriority(100)
             } else {
-                Label("최신 내역이에요", systemImage: "checkmark.icloud")
+                Label(
+                    AppLocalizedCopy.string("coinStore.history.current"),
+                    systemImage: "checkmark.icloud"
+                )
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("coinStore.history.current")
                     .accessibilitySortPriority(100)
@@ -55,7 +61,7 @@ struct CoinLedgerHistoryView: View {
                     .accessibilityIdentifier("coinStore.history.status")
                     .accessibilitySortPriority(40)
                 if event.kind == .freeGrant, event.source == .monthlyFree {
-                    Text("월 종료 시 남은 무료분은 소멸해요.")
+                    Text(AppLocalizedCopy.string("coinStore.history.monthEnd"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .accessibilityIdentifier("coinStore.history.monthEnd")
@@ -100,30 +106,57 @@ struct CoinLedgerHistoryView: View {
         switch event.kind {
         case .purchaseGrant:
             purchaseGrantStatus == "구매 지급"
-                ? "구매 코인 지급"
-                : "구매 코인 \(purchaseGrantStatus)"
+                ? AppLocalizedCopy.string("coinStore.history.status.purchaseGrant")
+                : AppLocalizedCopy.format(
+                    "coinStore.history.status.purchaseGrant.custom",
+                    purchaseGrantStatus
+                )
         case .freeGrant:
-            "월간 무료 지급"
+            AppLocalizedCopy.string("coinStore.history.status.freeGrant")
         case .reservation:
-            sourcePrefix(for: event) + " 사용 예약"
+            localizedUsageStatus(for: event, operation: .reservation)
         case .spend:
-            sourcePrefix(for: event) + " 사용"
+            localizedUsageStatus(for: event, operation: .spend)
         case .release:
-            sourcePrefix(for: event) + " 사용 취소"
+            localizedUsageStatus(for: event, operation: .release)
         case .refundAdjustment:
-            "구매 코인 환불 보정"
+            AppLocalizedCopy.string("coinStore.history.status.refundAdjustment")
         case .reversal:
-            "구매 코인 환불 취소"
+            AppLocalizedCopy.string("coinStore.history.status.reversal")
         }
     }
 
-    private func sourcePrefix(for event: CoinLedgerEvent) -> String {
-        switch event.source {
-        case .monthlyFree: "월간 무료"
-        case .purchased: "구매 코인"
-        case .none: "코인"
+    private func localizedUsageStatus(
+        for event: CoinLedgerEvent,
+        operation: CoinLedgerHistoryOperation
+    ) -> String {
+        switch (event.source, operation) {
+        case (.monthlyFree, .reservation):
+            AppLocalizedCopy.string("coinStore.history.status.monthlyFree.reservation")
+        case (.monthlyFree, .spend):
+            AppLocalizedCopy.string("coinStore.history.status.monthlyFree.spend")
+        case (.monthlyFree, .release):
+            AppLocalizedCopy.string("coinStore.history.status.monthlyFree.release")
+        case (.purchased, .reservation):
+            AppLocalizedCopy.string("coinStore.history.status.purchased.reservation")
+        case (.purchased, .spend):
+            AppLocalizedCopy.string("coinStore.history.status.purchased.spend")
+        case (.purchased, .release):
+            AppLocalizedCopy.string("coinStore.history.status.purchased.release")
+        case (.none, .reservation):
+            AppLocalizedCopy.string("coinStore.history.status.coin.reservation")
+        case (.none, .spend):
+            AppLocalizedCopy.string("coinStore.history.status.coin.spend")
+        case (.none, .release):
+            AppLocalizedCopy.string("coinStore.history.status.coin.release")
         }
     }
+}
+
+private enum CoinLedgerHistoryOperation {
+    case reservation
+    case spend
+    case release
 }
 
 private enum CoinLedgerHistoryContentState {

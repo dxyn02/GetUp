@@ -71,7 +71,9 @@ struct CoinStoreView: View {
                 availabilitySection
                 purchaseStatus
                 catalogSection
-                Button("코인 내역 보기") { showsHistory = true }
+                Button(AppLocalizedCopy.string("coinStore.history.open")) {
+                    showsHistory = true
+                }
                     .buttonStyle(.bordered)
                     .accessibilityIdentifier("coinStore.history.open")
                 instrumentationSection
@@ -82,7 +84,7 @@ struct CoinStoreView: View {
         }
         .background(HomeColor.background.ignoresSafeArea())
         .foregroundStyle(HomeColor.textPrimary)
-        .navigationTitle("코인")
+        .navigationTitle(AppLocalizedCopy.string("coinStore.title"))
         .navigationBarTitleDisplayMode(.inline)
         .task { await model.loadProducts() }
         .navigationDestination(isPresented: $showsHistory) {
@@ -118,7 +120,7 @@ struct CoinStoreView: View {
                 .accessibilitySortPriority(100)
 
             HStack(alignment: .firstTextBaseline) {
-                Text("이번 달 무료 해제권")
+                Text(AppLocalizedCopy.string("coinStore.monthly.title"))
                     .font(.title2.bold())
                     .accessibilityIdentifier("coinStore.monthly.title")
                 Spacer()
@@ -130,7 +132,7 @@ struct CoinStoreView: View {
 
             HStack(spacing: 12) {
                 balanceCard(
-                    title: "남은 무료 해제권",
+                    title: AppLocalizedCopy.string("coinStore.balance.free.label"),
                     displayValue: balanceContentState.freeDisplayValue(
                         monthlyAllowance.available
                     ),
@@ -141,7 +143,7 @@ struct CoinStoreView: View {
                     sortPriority: 80
                 )
                 balanceCard(
-                    title: "구매 코인 잔액",
+                    title: AppLocalizedCopy.string("coinStore.balance.purchased.label"),
                     displayValue: balanceContentState.purchasedDisplayValue(
                         model.balance.purchasedAvailable
                     ),
@@ -153,7 +155,7 @@ struct CoinStoreView: View {
                 )
             }
 
-            Text("남은 무료 해제권은 다음 달로 이월되지 않아요.")
+            Text(AppLocalizedCopy.string("coinStore.monthly.nonRollover"))
                 .font(.footnote)
                 .foregroundStyle(HomeColor.textSecondary)
                 .accessibilityIdentifier("coinStore.monthly.nonRollover")
@@ -395,12 +397,12 @@ enum CoinStoreBalanceContentState: Equatable {
 
     var message: String {
         switch self {
-        case .loading: "잔액을 확인하는 중이에요"
-        case .empty: "사용 가능한 해제권이 없어요"
-        case .stale: "마지막으로 확인한 잔액이에요"
-        case .current: "최신 잔액이에요"
-        case .setup: "활성화 후 받을 잔액이에요"
-        case .reset: "새 장부의 이번 달 잔액은 0이에요"
+        case .loading: AppLocalizedCopy.string("coinStore.balance.state.loading")
+        case .empty: AppLocalizedCopy.string("coinStore.balance.state.empty")
+        case .stale: AppLocalizedCopy.string("coinStore.balance.state.stale")
+        case .current: AppLocalizedCopy.string("coinStore.balance.state.current")
+        case .setup: AppLocalizedCopy.string("coinStore.balance.state.setup")
+        case .reset: AppLocalizedCopy.string("coinStore.balance.state.reset")
         }
     }
 
@@ -420,11 +422,27 @@ enum CoinStoreBalanceContentState: Equatable {
     }
 
     func freeAccessibilityValue(_ value: Int) -> String {
-        self == .loading ? "확인 중" : "\(value)회"
+        guard self != .loading else {
+            return AppLocalizedCopy.string("coinStore.balance.value.loading")
+        }
+        return value == 1
+            ? AppLocalizedCopy.string("coinStore.balance.free.accessibilityValue.one")
+            : AppLocalizedCopy.format(
+                "coinStore.balance.free.accessibilityValue.other",
+                value
+            )
     }
 
     func purchasedAccessibilityValue(_ value: Int) -> String {
-        self == .loading ? "확인 중" : "\(value)개"
+        guard self != .loading else {
+            return AppLocalizedCopy.string("coinStore.balance.value.loading")
+        }
+        return value == 1
+            ? AppLocalizedCopy.string("coinStore.balance.purchased.accessibilityValue.one")
+            : AppLocalizedCopy.format(
+                "coinStore.balance.purchased.accessibilityValue.other",
+                value
+            )
     }
 }
 
@@ -440,12 +458,17 @@ private struct MonthlyAllowancePresentation {
               let nextMonth = Self.calendar.date(byAdding: .month, value: 1, to: monthStart)
         else {
             monthLabel = monthID
-            nextRefreshLabel = "다음 갱신: 서울 기준 다음 달 1일 00:00"
+            nextRefreshLabel = AppLocalizedCopy.string(
+                "coinStore.monthly.nextRefresh.fallback"
+            )
             return
         }
 
         monthLabel = Self.formatted(monthStart, template: "yyyyMMMM")
-        nextRefreshLabel = "다음 갱신: \(Self.formatted(nextMonth, template: "yyyyMMMMdHHmm")) (서울 기준)"
+        nextRefreshLabel = AppLocalizedCopy.format(
+            "coinStore.monthly.nextRefresh",
+            Self.formatted(nextMonth, template: "yyyyMMMMdHHmm")
+        )
     }
 
     private static let seoulTimeZone = TimeZone(identifier: "Asia/Seoul")!
