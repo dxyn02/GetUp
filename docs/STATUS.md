@@ -13,17 +13,20 @@ Pull Request #30으로 US3 T059~T077을 `main`에 병합하고 최신 `main`에�
 새달 첫 앱 foreground, 첫 Shield 요청, 최초 setup, 삭제 reset을 결정적으로 재현하는 UI test fixture를
 app과 Shield seam에 연결했다. T086에서는 코인 화면과 내역 화면이 장부의 loading·empty·stale·
 current 상태를 구분하고, 동기화 중 숫자 mirror를 확정값처럼 표시하지 않으며, VoiceOver가 상태 →
-무료 잔액 → 구매 잔액 순서와 `회`·`개` 단위를 읽도록 확장했다. 다음은 T087이다.
+무료 잔액 → 구매 잔액 순서와 `회`·`개` 단위를 읽도록 확장했다. T087에서는 Shield 표시 모델에
+`latestLedgerFreeFirst` 정책을 명시해 mirror의 sync state나 표시 수량과 무관하게 단일 해제 버튼과
+무료 우선·구매 코인 1개 fallback 안내를 유지하고, 실제 funding source는 탭 뒤 최신 장부 해제 결과로만
+확정되도록 회귀를 고정했다. 다음은 T088이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T086 — 무료·구매 잔액과 내역의 loading·empty·stale·current 및 VoiceOver 순서 구현
+T087 — Shield의 단일 해제 동의와 탭 후 최신 장부 funding source 결정 계약 구현
 
 ## 다음 작업
-T087 — Shield의 단일 해제 버튼과 무료 우선·구매 fallback 설명 및 tap 후 funding source 결정을 구현한다.
+T088 — 한국어·영어 월간 무료분·비이월·무료 우선 문구와 접근성 label을 지역화한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -42,6 +45,20 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-08 T087: `ShieldContent`에 표시용 balance mirror와 실제 소비 결정을 분리하는
+`ShieldReleaseFundingPolicy.latestLedgerFreeFirst(purchasedFallbackQuantity: 1)`를 추가했다. 읽을 수
+있는 모든 sync state와 무료만·구매만·잔액 없음·두 잔액 모두 있음 조합에서 같은 `해제권 1회 사용`
+버튼과 무료 우선·구매 코인 1개 fallback 설명을 유지한다. action 회귀는 표시 mirror가 무료를 가리켜도
+최신 장부 결과가 구매일 수 있고 그 반대도 가능함을 검증해 실제 funding source가 탭 뒤
+`releaseRepresentative` 결과로만 확정됨을 고정한다. 새 표시 정책 테스트는 구현 전 member 부재로
+예상대로 RED였고 구현 후 Shield content/action 집중 실행 22회가 통과했다. 전체 `GetUpTests` 568개
+선언과 US4 UI 7개를 합친 575개 선언에서는 동적 인자 포함 694회가 통과하고 UI 1개가 Simulator 앱
+launch timeout으로 실패했으나, 같은 테스트 독립 재실행은 통과해 최종 기능 실패·skip은 없다. generic
+iOS Simulator Release 빌드 첫 실행은 sandbox의 CoreSimulatorService 차단으로 실패했고 승인된 같은
+명령 재실행은 통과했다. 기존 Xcode 빈 build number·`no debugger version` 진단과
+`LocationMonitoringAdapterTests`의 불필요한 `try` 경고가 남아 있으며 T087 동작 실패는 아니다.
+운영 CloudKit·StoreKit 데이터는 호출하거나 변경하지 않았고 새 제품 차단은 없다.
+
 2026-09-08 T086: `CoinStoreBalanceContentState`를 추가해 `syncing`은 숫자 대신 `—`와 `확인 중`,
 `current` 0/0은 사용 가능한 해제권이 없는 empty, `stale`·`unavailable`은 마지막 확인 잔액,
 그 밖의 `current`는 최신 잔액으로 표시한다. setup과 삭제 reset은 기존 T082 정책을 유지하면서 각각

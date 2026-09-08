@@ -42,6 +42,32 @@ struct ShieldCoinActionTests {
         #expect(await fixture.routes.savedRoutes.isEmpty)
     }
 
+    @Test("The tap result, not the displayed mirror, determines the actual funding source")
+    func latestLedgerResultOverridesDisplayedMirror() async throws {
+        let freeMirror = try Fixture(
+            balance: .fixture(freeAvailable: 2, purchasedAvailable: 0),
+            releaseResult: .released(fundingSource: .purchased)
+        )
+        let purchasedMirror = try Fixture(
+            balance: .fixture(freeAvailable: 0, purchasedAvailable: 3),
+            releaseResult: .released(fundingSource: .monthlyFree)
+        )
+
+        let purchasedDecision = await freeMirror.handler.handlePrimaryAction(
+            context: freeMirror.context,
+            operatingSystemVersion: Self.iOS26_5
+        )
+        let freeDecision = await purchasedMirror.handler.handlePrimaryAction(
+            context: purchasedMirror.context,
+            operatingSystemVersion: Self.iOS26_5
+        )
+
+        #expect(purchasedDecision.fundingSource == .purchased)
+        #expect(freeDecision.fundingSource == .monthlyFree)
+        #expect(await freeMirror.release.requests == [freeMirror.context.representative])
+        #expect(await purchasedMirror.release.requests == [purchasedMirror.context.representative])
+    }
+
     @Test("Confirmed insufficient balance keeps the Shield and routes to the coin store")
     func insufficientBalanceRoutesToCoinStore() async throws {
         let fixture = try Fixture(

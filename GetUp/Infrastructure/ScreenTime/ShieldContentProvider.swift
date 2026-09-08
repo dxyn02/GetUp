@@ -105,11 +105,18 @@ struct AppGroupShieldSnapshotReader: ShieldSnapshotReading {
     }
 }
 
+enum ShieldReleaseFundingPolicy: Equatable, Sendable {
+    /// The balance snapshot is presentation-only. The action extension asks the
+    /// latest ledger to reserve the monthly allowance first, then this quantity.
+    case latestLedgerFreeFirst(purchasedFallbackQuantity: Int)
+}
+
 struct ShieldContent: Equatable, Sendable {
     let title: String
     let subtitle: String
     let primaryButtonLabel: String
     let secondaryButtonLabel: String?
+    let releaseFundingPolicy: ShieldReleaseFundingPolicy?
 }
 
 struct ShieldContentProvider {
@@ -251,7 +258,10 @@ struct ShieldContentProvider {
             title: String(format: titleFormat, placeName, radius),
             subtitle: subtitle,
             primaryButtonLabel: releaseButtonLabel,
-            secondaryButtonLabel: closeButtonLabel
+            secondaryButtonLabel: closeButtonLabel,
+            releaseFundingPolicy: .latestLedgerFreeFirst(
+                purchasedFallbackQuantity: 1
+            )
         )
     }
 
@@ -266,7 +276,8 @@ struct ShieldContentProvider {
                 value: "설정한 위치에서 벗어나거나 시간이 끝나면 자동으로 다시 사용할 수 있어요."
             ),
             primaryButtonLabel: closeButtonLabel,
-            secondaryButtonLabel: nil
+            secondaryButtonLabel: nil,
+            releaseFundingPolicy: nil
         )
     }
 

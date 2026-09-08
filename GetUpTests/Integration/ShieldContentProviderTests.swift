@@ -184,6 +184,44 @@ struct ShieldContentProviderTests {
         #expect(content.primaryButtonLabel == "해제권 1회 사용")
         #expect(content.secondaryButtonLabel == "앱 닫기")
         #expect(content.subtitle.contains("무료 해제권을 먼저 사용하고, 없으면 구매 코인 1개"))
+        #expect(
+            content.releaseFundingPolicy
+                == .latestLedgerFreeFirst(purchasedFallbackQuantity: 1)
+        )
+    }
+
+    @Test(
+        "Mirror quantities never change the disclosed funding policy",
+        arguments: [(2, 0), (0, 3), (0, 0), (2, 3)]
+    )
+    func mirrorQuantitiesDoNotPredictFundingSource(
+        freeAvailable: Int,
+        purchasedAvailable: Int
+    ) throws {
+        let token = try applicationToken(seed: UInt8(20 + freeAvailable + purchasedAvailable))
+        let rule = TestFixtures.makeRule(activitySelection: selection(tokens: [token]))
+        let provider = ShieldContentProvider(
+            snapshotReader: FixedShieldSnapshotReader(
+                snapshot: snapshot(
+                    rules: [rule],
+                    balance: try balance(
+                        freeAvailable: freeAvailable,
+                        purchasedAvailable: purchasedAvailable
+                    )
+                )
+            ),
+            now: { TestFixtures.now },
+            calendar: TestFixtures.calendar
+        )
+
+        let content = provider.content(for: token)
+
+        #expect(content.primaryButtonLabel == "해제권 1회 사용")
+        #expect(content.subtitle.contains("무료 해제권을 먼저 사용하고, 없으면 구매 코인 1개"))
+        #expect(
+            content.releaseFundingPolicy
+                == .latestLedgerFreeFirst(purchasedFallbackQuantity: 1)
+        )
     }
 
     @Test("A missing token or unreadable snapshot uses privacy-safe fallback copy")
@@ -295,10 +333,22 @@ struct ShieldContentProviderTests {
     }
 
     private func balance(syncState: CoinBalanceSyncState) throws -> CoinBalanceSnapshot {
-        try CoinBalanceSnapshot(
-            purchasedAvailable: syncState == .current ? 3 : 0,
-            currentMonthID: "2026-09",
+        try balance(
             freeAvailable: syncState == .current ? 1 : 0,
+            purchasedAvailable: syncState == .current ? 3 : 0,
+            syncState: syncState
+        )
+    }
+
+    private func balance(
+        freeAvailable: Int,
+        purchasedAvailable: Int,
+        syncState: CoinBalanceSyncState = .current
+    ) throws -> CoinBalanceSnapshot {
+        try CoinBalanceSnapshot(
+            purchasedAvailable: purchasedAvailable,
+            currentMonthID: "2026-09",
+            freeAvailable: freeAvailable,
             syncState: syncState,
             syncedAt: TestFixtures.now,
             ledgerEpochID: syncState == .current
