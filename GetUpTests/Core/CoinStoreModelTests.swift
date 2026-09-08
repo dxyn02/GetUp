@@ -26,6 +26,48 @@ struct CoinStoreModelTests {
         #expect(model.availability == expected)
     }
 
+    @Test("A first setup presents the two allowances available after activation")
+    func setupRequiredMonthlyAllowance() throws {
+        let model = makeModel(
+            ledger: try ledger(syncState: .setupRequired, free: 0)
+        )
+
+        #expect(
+            model.monthlyAllowanceDisplay
+                == .setupRequired(monthID: "2026-09", availableAfterSetup: 2)
+        )
+    }
+
+    @Test("A current ledger presents its authoritative monthly allowance balance")
+    func currentMonthlyAllowance() throws {
+        let model = makeModel(
+            ledger: try ledger(syncState: .current, free: 1)
+        )
+
+        #expect(
+            model.monthlyAllowanceDisplay
+                == .current(monthID: "2026-09", available: 1)
+        )
+    }
+
+    @Test(
+        "A confirmed deletion or pending reset suppresses this month's allowance",
+        arguments: [
+            CoinBalanceSyncState.deletionConfirmed,
+            .resetRequired,
+        ]
+    )
+    func resetMonthlyAllowance(syncState: CoinBalanceSyncState) throws {
+        let model = makeModel(
+            ledger: try ledger(syncState: syncState, free: 2)
+        )
+
+        #expect(
+            model.monthlyAllowanceDisplay
+                == .resetRequired(monthID: "2026-09", available: 0)
+        )
+    }
+
     @Test("Pending reconciliation blocks purchases before the current balance is considered")
     func reconciliationTakesPriority() throws {
         let model = makeModel(
@@ -276,6 +318,7 @@ private extension CoinStoreModelTests {
     func ledger(
         syncState: CoinBalanceSyncState = .current,
         purchased: Int = 3,
+        free: Int = 1,
         purchaseGrants: [PurchaseGrant] = [],
         events: [CoinLedgerEvent] = [],
         pendingProductIdentifiers: Set<String> = [],
@@ -285,7 +328,7 @@ private extension CoinStoreModelTests {
             balance: try CoinBalanceSnapshot(
                 purchasedAvailable: purchased,
                 currentMonthID: "2026-09",
-                freeAvailable: 1,
+                freeAvailable: free,
                 syncState: syncState,
                 syncedAt: Self.now,
                 ledgerEpochID: syncState == .current ? Self.epochID : nil,

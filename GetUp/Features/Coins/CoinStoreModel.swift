@@ -30,6 +30,13 @@ enum CoinStoreAvailability: Equatable, Sendable {
     case reconciliationRequired
 }
 
+enum CoinStoreMonthlyAllowanceDisplay: Equatable, Sendable {
+    case setupRequired(monthID: String, availableAfterSetup: Int)
+    case current(monthID: String, available: Int)
+    case resetRequired(monthID: String, available: Int)
+    case unavailable(monthID: String, lastKnownAvailable: Int)
+}
+
 enum CoinStorePurchaseState: Equatable, Sendable {
     case idle
     case confirmationRequested(String)
@@ -83,6 +90,31 @@ final class CoinStoreModel {
             return .iCloudRecoveryRequired
         case .deletionConfirmed, .resetRequired:
             return .ledgerResetRequired
+        }
+    }
+
+    var monthlyAllowanceDisplay: CoinStoreMonthlyAllowanceDisplay {
+        switch balance.syncState {
+        case .setupRequired:
+            return .setupRequired(
+                monthID: balance.currentMonthID,
+                availableAfterSetup: MonthlyAllowancePolicy.monthlyQuota
+            )
+        case .current:
+            return .current(
+                monthID: balance.currentMonthID,
+                available: balance.freeAvailable
+            )
+        case .deletionConfirmed, .resetRequired:
+            return .resetRequired(
+                monthID: balance.currentMonthID,
+                available: 0
+            )
+        case .syncing, .stale, .unavailable:
+            return .unavailable(
+                monthID: balance.currentMonthID,
+                lastKnownAvailable: balance.freeAvailable
+            )
         }
     }
 

@@ -4,24 +4,25 @@
 001-location-app-restriction, 002-live-activity-coins
 
 ## 현재 단계
-001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 6 사용자 스토리 4 테스트 진행 중
+001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 6 사용자 스토리 4 월간 표시 구현 진행 중
 
 ## 진행 중
 Pull Request #30으로 US3 T059~T077을 `main`에 병합하고 최신 `main`에서
-`codex/us4-monthly-lifecycle-tests`를 분기했다. T078~T080의 월간 core·CloudKit 인수에 이어 T081에서
-앱의 무료분·구매 잔액 분리와 비이월 안내, Shield 단일 버튼 무료 우선 사용, 서울 월 경계 foreground
-갱신 UI 계약을 추가했다. 후속 월간 표시·fixture 구현 전 의도된 TDD RED 상태이며 다음은 T082다.
+`codex/us4-monthly-lifecycle-tests`를 분기했다. T078~T080의 월간 core·CloudKit 인수와 T081의 UI
+계약에 이어 T082에서 최초 `setupRequired`의 활성화 후 2회, 일반 `current`의 확정 잔액, 삭제 확인·
+reset의 당월 0회를 구분하는 `CoinStoreMonthlyAllowanceDisplay`를 구현했다. 동기화 중·stale·unavailable은
+마지막 확인값으로 분리해 후속 UI가 사용 가능한 확정 잔액으로 오인하지 않게 했다. 다음은 T083이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
 `.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T081 — 앱·Shield 월간 무료분 분리 표시·무료 우선·서울 월 경계 갱신 UI 계약 테스트
+T082 — 최초 설정·정상 장부·삭제 reset을 구분하는 월간 무료분 표시 모델
 
 ## 다음 작업
-T082 — 최초 `setupRequired`, 일반 `current`, 삭제 확인 reset의 당월 무료 상태를 구분하는 월간 표시
-모델을 `CoinStoreModel`에 구현한다.
+T083 — 당월 무료 잔여·비이월·다음 서울 월 경계 안내와 구매 코인 잔액을 `CoinStoreView`에 분리
+표시한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -40,6 +41,17 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-08 T082: `CoinStoreMonthlyAllowanceDisplay`를 추가해 `setupRequired`는 실제 장부 활성화 전
+잔액이 아니라 활성화 후 받을 당월 2회로, `current`는 CloudKit 확정 `freeAvailable`로, 삭제 확인·
+reset 대기는 local mirror 값과 무관한 당월 0회로 모델링했다. `syncing`·`stale`·`unavailable`은
+`lastKnownAvailable`로 분리해 후속 UI에서 권한 있는 현재 잔액으로 오인하지 않게 했다. 구현 전 집중
+테스트는 표시 모델 부재로 예상대로 컴파일 RED였고 구현 후 통과했다. 전체 `GetUpTests` 561개 선언은
+동적 인자 포함 674회 모두 실패·skip 없이 통과했고 generic iOS Simulator Release 빌드와 diff 검사도
+통과했다. Release 첫 실행은 sandbox의 DerivedData·CoreSimulatorService 접근 거부로 실패했으나 승인된
+동일 명령 재실행에서 통과했다. 기존 Xcode 빈 build number 진단과
+`LocationMonitoringAdapterTests`의 불필요한 `try` 경고가 남아 있으며 T082 동작 실패는 아니다.
+운영 CloudKit·StoreKit 데이터는 호출하거나 변경하지 않았고 새 제품 차단은 없다.
+
 2026-09-08 T081: `UserStory4MonthlyAllowanceUITests` 3개를 추가했다. 앱 코인 화면에서 이번 달 무료
 잔액과 구매 잔액을 별도 요소로 표시하고 비이월·서울 기준 다음 갱신 안내를 제공하는 계약, Shield의
 funding source 선택 UI 없는 단일 버튼에서 무료 우선 설명과 실행 후 무료 2→1·구매 3 유지 계약,
