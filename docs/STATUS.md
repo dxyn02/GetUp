@@ -4,7 +4,7 @@
 001-location-app-restriction, 002-live-activity-coins
 
 ## 현재 단계
-001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 6 사용자 스토리 4 월간 표시 구현 진행 중
+001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 8 CloudKit 수렴 구현 진행 중
 
 ## 진행 중
 Pull Request #30으로 US3 T059~T077을 `main`에 병합하고 최신 `main`에서
@@ -21,20 +21,24 @@ current 상태를 구분하고, 동기화 중 숫자 mirror를 확정값처럼 �
 함께 검증했다. T089 자동 검증 24개는 통과했지만 실제 동일 iCloud 계정의 iPhone 2대와 CloudKit
 development private database를 사용하는 다기기·서울 월 경계 수동 증적이 없어 BLK-017로 차단됐다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
-운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
-`.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
+T099에서 실제 `CKContainer.privateCloudDatabase`·`CoinLedgerZone` adapter와 server creation date,
+change-tag CAS, atomic modify, record별 오류 변환을 구현했다. 초기 fetch가 zone을 만들지 않고 실제
+쓰기에서만 준비해 삭제 감지 근거를 보존한다. 운영 활성화·migration은 수행하지 않았으며 T101의
+동기화 provider, T102의 migration 호환성 검증, T100의 live 조립 전까지 앱과 Shield는 계속
+`.iCloudRecovery`로 fail-closed한다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T088 — 월간 무료분·비이월·무료 우선 및 접근성 문구의 한국어·영어 지역화
+T099 — 실제 private CloudKit database adapter와 안전한 zone·CAS·서버 시각 경계
 
 ## 다음 작업
-T089 — BLK-017 해결 후 실제 다기기·서울 월 경계 수동 검증 결과를 기록한다.
+T101 — CKSyncEngine 기반 계정·초기 fetch·삭제 evidence·mirror 동기화 provider를 구현한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
-BLK-017 미해결: T089 완료에 필요한 동일 iCloud 테스트 iPhone 2대, CloudKit development private
-database와 실제 서버 시각 기반 서울 월 경계 수동 증적이 현재 환경에 없다.
+BLK-017 미해결: 사용자가 동일 iCloud 테스트 iPhone 2대와 CloudKit development 접근 준비가
+가능하다고 확인했다. T099 database adapter는 완료됐지만 T101·T102·T100 live 연결과 실제 서울 월
+경계 검증이 남아 있어 T089 수동 증적은 아직 실행하지 않는다.
 BLK-016 해결됨: 명령별 원자 추가·조건부 제거 API와 최신 상태 재평가 계약 보강을 사용자 승인받았다.
 BLK-015 해결됨: occurrence별 예약 소유권 계약·스키마 보강을 사용자 승인받았다.
 T045 보고서 접근 차단은 사용자 허용 후 같은 명령 재시도로 해결됐다.
@@ -50,6 +54,16 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-09 T099: `SystemCoinLedgerCloudDatabase`를 구현해 private custom zone record ID, fetch 순서와
+부재 처리, 원본 `CKRecord`를 재사용한 change-tag CAS, atomic modify 옵션, CloudKit 시스템
+`creationDate`, 전체 장부 value 왕복, record별 충돌과 응답 유실 오류 변환을 검증했다. 새 adapter
+테스트 5개와 기존 mapper·repository·월 지급 회귀를 합친 21개 테스트 선언(동적 실행 포함 22회)이
+iPhone 17 Pro iOS 26.5 Simulator에서 실패·skip 없이 통과했다. 앱과 Shield Action을 포함한 generic
+iOS Simulator Release 빌드, project plist와 diff 검사도 통과했다. 첫 GREEN 재실행은 직전 crash 뒤
+Simulator가 Busy 상태여서 실행 전 실패했으며 대상 Simulator 재부팅 뒤 통과했다. Xcode의 빈 build
+number 진단은 기존 경고다. live 서비스 조립은 T100 전까지 닫혀 있어 실제 CloudKit 데이터는 읽거나
+변경하지 않았다.
+
 2026-09-08 T089 진행 중: `MonthlyAllowanceAcceptanceTests`, `MonthlyAllowanceLifecycleTests`,
 `MonthlyAllowanceUserStoryTests`, `CloudKitMonthlyAllowanceTests`, `UserStory4MonthlyAllowanceUITests`를
 iPhone 17 Pro iOS 26.5 Simulator에서 실행했다. 같은 allowance ID 100회 충돌, 무료 우선 사용,

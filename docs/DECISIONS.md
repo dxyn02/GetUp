@@ -1,5 +1,33 @@
 # 결정 사항
 
+## DEC-102 — 실제 CloudKit database adapter의 zone·CAS·서버 시각 경계
+
+**날짜**: 2026-09-09
+
+**결정**: `SystemCoinLedgerCloudDatabase`는 `CKContainer.privateCloudDatabase`의 custom
+`CoinLedgerZone` 안에서만 장부 record를 조회·수정한다. 초기 조회는 zone을 자동 생성하지 않는다.
+원격 장부 부재와 사용자 삭제를 T101에서 구분할 수 있도록 조회는 기존 zone 상태를 보존하고, setup·
+reset 등 검증된 쓰기가 실제로 시작될 때만 zone을 한 번 준비한다.
+
+변경 record는 직전 fetch에서 받은 원본 `CKRecord`와 `recordChangeTag`를 actor 안에 보관했다가
+`.ifServerRecordUnchanged` 저장에 재사용한다. snapshot의 change tag와 캐시가 다르거나 원본을 찾을 수
+없으면 원격 상태를 추측해 덮어쓰지 않고 `serverRecordChanged`로 실패한다. 여러 잔액·event·command
+변경은 호출 계약의 atomic 옵션을 그대로 CloudKit operation에 전달한다.
+
+`creationDate`는 CloudKit 예약 시스템 필드이므로 앱이 사용자 필드로 쓰지 않는다. 월 allowance를
+읽거나 저장 결과로 받을 때 CloudKit이 반환한 시스템 `CKRecord.creationDate`만 snapshot의
+`creationDate`로 사용하며 값이 확인되지 않으면 `resultUnknown`으로 닫는다. record별 `unknownItem`은
+조회 부재로 처리하고, 충돌·계정·네트워크·응답 유실·schema 오류는 안정된 장부 오류로 변환한다.
+
+**대안과 근거**: 모든 fetch 전에 zone을 생성하는 방식은 삭제된 장부와 최초 사용자를 구분할 근거를
+없애므로 제외했다. change tag 문자열만 새 `CKRecord`에 복제하는 방식은 CloudKit 시스템 필드를
+복원할 수 없으므로 제외했다. 앱이 제안한 월 생성 시각을 그대로 저장하는 방식은 기기 시각 변경으로
+월 지급을 조작할 수 있어 제외했다.
+
+**영향 범위**: T099는 시스템 database 경계와 앱·Shield Action target membership만 추가한다. 실제
+계정·sync provider는 T101, reservation migration 허용은 T102, 앱·Shield live 서비스 조립은 T100에서
+검증한 뒤 활성화하므로 이번 변경만으로 원격 장부를 읽거나 변경하지 않는다.
+
 ## DEC-101 — 코인 앱 수명주기 재조정과 Shield route 소비 순서
 
 **날짜**: 2026-09-07

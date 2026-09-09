@@ -175,6 +175,8 @@
 		AA0000000000000000000252 /* CloudKitCoinLedgerRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000000000000000000005E /* CloudKitCoinLedgerRepository.swift */; };
 		AA0000000000000000000253 /* CoinLedgerSyncAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000000000000000000005F /* CoinLedgerSyncAdapter.swift */; };
 		AA0000000000000000000254 /* CoinLedgerSyncAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000000000000000000005F /* CoinLedgerSyncAdapter.swift */; };
+		AA0000000000000000000326 /* SystemCoinLedgerCloudDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000000000000000000008B /* SystemCoinLedgerCloudDatabase.swift */; };
+		AA0000000000000000000327 /* SystemCoinLedgerCloudDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000000000000000000008B /* SystemCoinLedgerCloudDatabase.swift */; };
 		AA0000000000000000000255 /* LiveActivityCoinFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000040 /* LiveActivityCoinFixtures.swift */; };
 		AA0000000000000000000256 /* MonthlyAllowancePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000060 /* MonthlyAllowancePolicy.swift */; };
 		AA0000000000000000000257 /* MonthlyAllowancePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000060 /* MonthlyAllowancePolicy.swift */; };
@@ -377,6 +379,7 @@
 		B4000000000000000000005C /* CoinLedgerRecordMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinLedgerRecordMapper.swift; sourceTree = "<group>"; };
 		B4000000000000000000005E /* CloudKitCoinLedgerRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitCoinLedgerRepository.swift; sourceTree = "<group>"; };
 		B4000000000000000000005F /* CoinLedgerSyncAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinLedgerSyncAdapter.swift; sourceTree = "<group>"; };
+		B4000000000000000000008B /* SystemCoinLedgerCloudDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemCoinLedgerCloudDatabase.swift; sourceTree = "<group>"; };
 		B40000000000000000000060 /* MonthlyAllowancePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyAllowancePolicy.swift; sourceTree = "<group>"; };
 		B40000000000000000000061 /* MonthlyAllowanceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyAllowanceService.swift; sourceTree = "<group>"; };
 		B40000000000000000000062 /* RestrictionOccurrenceEvaluator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionOccurrenceEvaluator.swift; sourceTree = "<group>"; };
@@ -673,6 +676,7 @@
 		B4000000000000000000005D /* CloudKit */ = {
 			isa = PBXGroup;
 			children = (
+				B4000000000000000000008B /* SystemCoinLedgerCloudDatabase.swift */,
 				B40000000000000000000086 /* CoinLedgerRecoveryService.swift */,
 				B40000000000000000000085 /* CoinLedgerResetService.swift */,
 				B40000000000000000000084 /* CoinLedgerSetupService.swift */,
@@ -1315,6 +1319,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000326 /* SystemCoinLedgerCloudDatabase.swift in Sources */,
 				AA000000000000000000031D /* CoinLedgerHistoryView.swift in Sources */,
 				AA000000000000000000031C /* CoinStoreView.swift in Sources */,
 				AA000000000000000000031B /* CoinStoreModel.swift in Sources */,
@@ -1458,6 +1463,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000327 /* SystemCoinLedgerCloudDatabase.swift in Sources */,
 				AA0000000000000000000305 /* RestrictionOccurrenceEvaluator.swift in Sources */,
 				AA0000000000000000000276 /* ActivityKitFeasibilityProbe.swift in Sources */,
 				AA0000000000000000000259 /* MonthlyAllowanceService.swift in Sources */,

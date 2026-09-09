@@ -1,3 +1,4 @@
+@preconcurrency import CloudKit
 import Foundation
 import Testing
 @testable import GetUp
@@ -836,6 +837,274 @@ enum CloudKitLedgerTestFixtures {
             recordName: record.recordName,
             changeTag: changeTag,
             fields: record.fields
+        )
+    }
+}
+
+@Suite("System CloudKit coin ledger database")
+struct SystemCoinLedgerCloudDatabaseTests {
+    @Test("Fetch uses the private custom zone without creating it and preserves request order")
+    func fetchUsesZoneAndOmitsMissingRecords() async throws {
+        let zoneID = CKRecordZone.ID(
+            zoneName: SharedIdentifiers.coinLedgerZoneName,
+            ownerName: CKCurrentUserDefaultName
+        )
+        let account = CKRecord(
+            recordType: CoinLedgerRecordType.coinAccount,
+            recordID: CKRecord.ID(recordName: CoinLedgerRecordID.coinAccount, zoneID: zoneID)
+        )
+        account["schemaVersion"] = NSNumber(value: 1)
+        account["purchasedAvailable"] = NSNumber(value: 3)
+        account["purchasedReserved"] = NSNumber(value: 0)
+        account["revision"] = NSNumber(value: 1)
+        account["updatedAt"] = CloudKitLedgerTestFixtures.now as NSDate
+
+        let client = RecordingSystemCloudKitClient(fetchResults: [
+            account.recordID: .success(SystemCloudKitRecordEnvelope(
+                record: account,
+                changeTag: "account-v1",
+                creationDate: CloudKitLedgerTestFixtures.now
+            )),
+            CKRecord.ID(recordName: "missing", zoneID: zoneID): .failure(
+                CKError(.unknownItem)
+            ),
+        ])
+        let database = SystemCoinLedgerCloudDatabase(client: client)
+
+        let first = try await database.fetch(CoinLedgerFetchRequest(
+            recordNames: ["missing", CoinLedgerRecordID.coinAccount]
+        ))
+        _ = try await database.fetch(CoinLedgerFetchRequest(
+            recordNames: [CoinLedgerRecordID.coinAccount]
+        ))
+
+        #expect(first.map(\.recordName) == [CoinLedgerRecordID.coinAccount])
+        #expect(first.first?.changeTag == "account-v1")
+        #expect(await client.savedZoneIDs.isEmpty)
+        #expect(await client.fetchRequests.count == 2)
+        #expect(await client.fetchRequests.allSatisfy { ids in
+            ids.allSatisfy { $0.zoneID == zoneID }
+        })
+    }
+
+    @Test("Modify reuses the fetched system record and forwards atomic compare-and-swap options")
+    func modifyUsesCachedChangeTaggedRecord() async throws {
+        let zoneID = CKRecordZone.ID(
+            zoneName: SharedIdentifiers.coinLedgerZoneName,
+            ownerName: CKCurrentUserDefaultName
+        )
+        let account = CKRecord(
+            recordType: CoinLedgerRecordType.coinAccount,
+            recordID: CKRecord.ID(recordName: CoinLedgerRecordID.coinAccount, zoneID: zoneID)
+        )
+        account["schemaVersion"] = NSNumber(value: 1)
+        account["purchasedAvailable"] = NSNumber(value: 3)
+        account["purchasedReserved"] = NSNumber(value: 0)
+        account["revision"] = NSNumber(value: 1)
+        account["updatedAt"] = CloudKitLedgerTestFixtures.now as NSDate
+        let envelope = SystemCloudKitRecordEnvelope(
+            record: account,
+            changeTag: "account-v1",
+            creationDate: CloudKitLedgerTestFixtures.now
+        )
+        let client = RecordingSystemCloudKitClient(
+            fetchResults: [account.recordID: .success(envelope)],
+            modifyResults: [account.recordID: .success(SystemCloudKitRecordEnvelope(
+                record: account,
+                changeTag: "account-v2",
+                creationDate: CloudKitLedgerTestFixtures.now
+            ))]
+        )
+        let database = SystemCoinLedgerCloudDatabase(client: client)
+        let fetched = try #require(try await database.fetch(CoinLedgerFetchRequest(
+            recordNames: [CoinLedgerRecordID.coinAccount]
+        )).first)
+        let updated = fetched
+            .replacingField("purchasedAvailable", with: .int(2))
+            .replacingField("revision", with: .int(2))
+
+        let saved = try await database.modify(CoinLedgerModifyRequest(
+            recordsToSave: [updated]
+        ))
+
+        let operation = try #require(await client.modifyRequests.first)
+        #expect(operation.atomically)
+        #expect(operation.savePolicy == .ifServerRecordUnchanged)
+        #expect(operation.recordsToSave.count == 1)
+        #expect(operation.recordsToSave.first === account)
+        #expect(operation.recordsToSave.first?["purchasedAvailable"] as? Int == 2)
+        #expect(saved.first?.changeTag == "account-v2")
+        #expect(await client.savedZoneIDs == [zoneID])
+    }
+
+    @Test("Server creation date replaces the proposed monthly allowance timestamp")
+    func serverCreationDateIsAuthoritative() async throws {
+        let zoneID = CKRecordZone.ID(
+            zoneName: SharedIdentifiers.coinLedgerZoneName,
+            ownerName: CKCurrentUserDefaultName
+        )
+        let record = CKRecord(
+            recordType: CoinLedgerRecordType.monthlyAllowance,
+            recordID: CKRecord.ID(recordName: "allowance:2026-09", zoneID: zoneID)
+        )
+        let proposed = Date(timeIntervalSince1970: 1_788_105_600)
+        let server = Date(timeIntervalSince1970: 1_788_192_000)
+        record["schemaVersion"] = NSNumber(value: 1)
+        record["monthID"] = "2026-09" as NSString
+        record["quota"] = NSNumber(value: 2)
+        record["used"] = NSNumber(value: 0)
+        record["reserved"] = NSNumber(value: 0)
+        record["updatedAt"] = proposed as NSDate
+        let client = RecordingSystemCloudKitClient(fetchResults: [
+            record.recordID: .success(SystemCloudKitRecordEnvelope(
+                record: record, changeTag: "allowance-v1", creationDate: server
+            )),
+        ])
+        let database = SystemCoinLedgerCloudDatabase(client: client)
+
+        let snapshot = try #require(try await database.fetch(CoinLedgerFetchRequest(
+            recordNames: [record.recordID.recordName]
+        )).first)
+
+        #expect(snapshot.fields["creationDate"] == .date(server))
+        #expect(snapshot.fields["updatedAt"] == .date(proposed))
+    }
+
+    @Test("Per-record conflicts and lost responses map to stable database errors")
+    func errorsAreMapped() async throws {
+        let zoneID = CKRecordZone.ID(
+            zoneName: SharedIdentifiers.coinLedgerZoneName,
+            ownerName: CKCurrentUserDefaultName
+        )
+        let recordID = CKRecord.ID(recordName: "new-event", zoneID: zoneID)
+        let record = CloudKitRecordSnapshot(
+            recordType: CoinLedgerRecordType.event,
+            recordName: recordID.recordName,
+            changeTag: nil,
+            fields: ["schemaVersion": .int(1)]
+        )
+        let conflictClient = RecordingSystemCloudKitClient(
+            modifyResults: [recordID: .failure(CKError(.serverRecordChanged))]
+        )
+        let conflictDatabase = SystemCoinLedgerCloudDatabase(client: conflictClient)
+
+        await #expect(throws: CoinLedgerDatabaseError.serverRecordChanged) {
+            _ = try await conflictDatabase.modify(CoinLedgerModifyRequest(
+                recordsToSave: [record]
+            ))
+        }
+
+        let unknownClient = RecordingSystemCloudKitClient(
+            modifyError: CKError(.serverResponseLost)
+        )
+        let unknownDatabase = SystemCoinLedgerCloudDatabase(client: unknownClient)
+        await #expect(throws: CoinLedgerDatabaseError.resultUnknown) {
+            _ = try await unknownDatabase.modify(CoinLedgerModifyRequest(
+                recordsToSave: [record]
+            ))
+        }
+
+        let partialClient = RecordingSystemCloudKitClient(modifyError: CKError(
+            .partialFailure,
+            userInfo: [
+                CKPartialErrorsByItemIDKey: [
+                    recordID: CKError(.serverRecordChanged),
+                ],
+            ]
+        ))
+        let partialDatabase = SystemCoinLedgerCloudDatabase(client: partialClient)
+        await #expect(throws: CoinLedgerDatabaseError.serverRecordChanged) {
+            _ = try await partialDatabase.modify(CoinLedgerModifyRequest(
+                recordsToSave: [record]
+            ))
+        }
+    }
+
+    @Test("Every ledger entity survives the system CloudKit value conversion")
+    func ledgerEntitiesRoundTripThroughSystemValues() async throws {
+        let mapper = CoinLedgerRecordMapper()
+        let proposed = try CloudKitLedgerTestFixtures.entities().map(mapper.record(for:))
+        let client = RecordingSystemCloudKitClient(echoSavedRecords: true)
+        let database = SystemCoinLedgerCloudDatabase(client: client)
+
+        let saved = try await database.modify(CoinLedgerModifyRequest(
+            recordsToSave: proposed
+        ))
+
+        #expect(saved.count == proposed.count)
+        for snapshot in saved {
+            let expected = try #require(proposed.first { $0.recordName == snapshot.recordName })
+            #expect(try mapper.entity(from: snapshot) == mapper.entity(from: expected))
+        }
+    }
+}
+
+private actor RecordingSystemCloudKitClient: SystemCloudKitDatabaseClient {
+    struct ModifyRequest: @unchecked Sendable {
+        let recordsToSave: [CKRecord]
+        let recordIDsToDelete: [CKRecord.ID]
+        let savePolicy: CKModifyRecordsOperation.RecordSavePolicy
+        let atomically: Bool
+    }
+
+    private let fetchResults: [CKRecord.ID: Result<SystemCloudKitRecordEnvelope, Error>]
+    private let modifyResults: [CKRecord.ID: Result<SystemCloudKitRecordEnvelope, Error>]
+    private let modifyError: Error?
+    private let echoSavedRecords: Bool
+    private(set) var savedZoneIDs: [CKRecordZone.ID] = []
+    private(set) var fetchRequests: [[CKRecord.ID]] = []
+    private(set) var modifyRequests: [ModifyRequest] = []
+
+    init(
+        fetchResults: [CKRecord.ID: Result<SystemCloudKitRecordEnvelope, Error>] = [:],
+        modifyResults: [CKRecord.ID: Result<SystemCloudKitRecordEnvelope, Error>] = [:],
+        modifyError: Error? = nil,
+        echoSavedRecords: Bool = false
+    ) {
+        self.fetchResults = fetchResults
+        self.modifyResults = modifyResults
+        self.modifyError = modifyError
+        self.echoSavedRecords = echoSavedRecords
+    }
+
+    func saveZone(_ zone: CKRecordZone) async throws {
+        savedZoneIDs.append(zone.zoneID)
+    }
+
+    func fetchRecords(
+        _ recordIDs: [CKRecord.ID]
+    ) async throws -> [CKRecord.ID: Result<SystemCloudKitRecordEnvelope, Error>] {
+        fetchRequests.append(recordIDs)
+        return fetchResults.filter { recordIDs.contains($0.key) }
+    }
+
+    func modifyRecords(
+        saving recordsToSave: [CKRecord],
+        deleting recordIDsToDelete: [CKRecord.ID],
+        savePolicy: CKModifyRecordsOperation.RecordSavePolicy,
+        atomically: Bool
+    ) async throws -> SystemCloudKitModifyResult {
+        modifyRequests.append(ModifyRequest(
+            recordsToSave: recordsToSave,
+            recordIDsToDelete: recordIDsToDelete,
+            savePolicy: savePolicy,
+            atomically: atomically
+        ))
+        if let modifyError { throw modifyError }
+        let saveResults = echoSavedRecords
+            ? Dictionary(uniqueKeysWithValues: recordsToSave.map { record in
+                (record.recordID, .success(SystemCloudKitRecordEnvelope(
+                    record: record,
+                    changeTag: "saved",
+                    creationDate: CloudKitLedgerTestFixtures.now
+                )))
+            })
+            : modifyResults
+        return SystemCloudKitModifyResult(
+            saveResults: saveResults,
+            deleteResults: Dictionary(uniqueKeysWithValues: recordIDsToDelete.map {
+                ($0, .success(()))
+            })
         )
     }
 }

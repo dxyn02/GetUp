@@ -2,7 +2,7 @@
 
 ## BLK-017 — T089 실제 CloudKit 다기기·서울 월 경계 수동 증적
 
-**상태**: 미해결(OPEN) — 2026-09-08
+**상태**: 미해결(OPEN) — 2026-09-09
 
 T089의 US4 자동 검증은 iPhone 17 Pro iOS 26.5 Simulator에서 24개 모두 통과했다. 같은 record ID
 100회 충돌, 무료 우선 예약, 서울 자정 전후 지연 생성·비이월, 시간대 변경과 reset 뒤 다음 달 재개를
@@ -10,7 +10,9 @@ in-memory CloudKit protocol fake와 UI fixture로 검증했다.
 
 그러나 `quickstart.md`의 완료 증적은 동일 iCloud 계정의 테스트 iPhone 2대, CloudKit development
 private database와 서버 creation date를 사용한 실제 다기기 충돌 및 서울 월 경계 결과를 요구한다.
-현재 세션에는 두 실기기와 해당 iCloud·CloudKit 환경이 연결되어 있지 않다. Simulator fake 결과를
+사용자는 두 실기기와 동일 테스트 iCloud 계정, CloudKit development 접근을 준비할 수 있다고
+확인했다. T099의 실제 database adapter는 완료했지만 T101 동기화 provider, T102 migration 호환성
+검증, T100 앱·Shield live 조립과 실제 서울 월 경계 실행이 남아 있다. 이 선행 구현 전 fixture 결과를
 실제 CloudKit 수동 결과로 기록하면 검증 출처가 달라지므로 T089을 완료 처리할 수 없다.
 
 **해결 조건**: 같은 iCloud 계정의 테스트 iPhone 2대와 development schema를 준비한 뒤
