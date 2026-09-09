@@ -27,21 +27,24 @@ change-tag CAS, atomic modify, record별 오류 변환을 구현했다. 초기 f
 private database용 `CKSyncEngine` provider와 앱·Shield별 계정 결합 checkpoint, 프로세스별 initial
 fetch gate, pending 재시도, zone 삭제 evidence, 원격 장부 projection과 App Group mirror 저장을
 구현했다. T102에서는 command별 protocol stamp, epoch별 `preparing | ready` marker와 명시적 구버전
-writer 종료 승인을 사용하는 migration provider를 구현했다. T100의 live 조립 전까지 앱과 Shield는
-계속 `.iCloudRecovery`로 fail-closed한다.
+writer 종료 승인을 사용하는 migration provider를 구현했다. T100에서 앱과 Shield Action에 실제
+CloudKit database·프로세스별 sync·migration 검증 runtime을 조립하고 월 지급, 구매 지급, 해제 예약,
+setup/reset/recovery/reconciliation과 5초 Shield 응답 상한을 live 경로에 연결했다. 기존 epoch는
+명시적 migration 전까지 계속 fail-closed하고 새 epoch만 atomic setup/reset에서 ready marker를 만든다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T102 — reservation compatibility stamp와 명시적 epoch migration provider
+T100 — 앱·Shield Action의 실제 CloudKit 장부 서비스와 수명주기 조립
 
 ## 다음 작업
-T100 — 검증된 database·sync·migration provider를 앱과 Shield live 환경에 조립한다.
+T089 — 동일 iCloud 계정 실기기 2대와 development private database로 월 경계·동시 지급 수동 증적을
+수집한다. T094·T095의 Shield/StoreKit 실기기 인수도 이어서 수행한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
 BLK-017 미해결: 사용자가 동일 iCloud 테스트 iPhone 2대와 CloudKit development 접근 준비가
-가능하다고 확인했다. T099 database adapter, T101 sync provider와 T102 migration provider는 완료됐지만 T100 live 연결과 실제 서울 월
-경계 검증이 남아 있어 T089 수동 증적은 아직 실행하지 않는다.
+가능하다고 확인했다. T099 database adapter, T101 sync provider, T102 migration provider와 T100 live
+연결은 완료됐으며 실제 서울 월 경계·다기기 실행과 결과 기록만 남았다.
 BLK-016 해결됨: 명령별 원자 추가·조건부 제거 API와 최신 상태 재평가 계약 보강을 사용자 승인받았다.
 BLK-015 해결됨: occurrence별 예약 소유권 계약·스키마 보강을 사용자 승인받았다.
 T045 보고서 접근 차단은 사용자 허용 후 같은 명령 재시도로 해결됐다.
@@ -57,6 +60,18 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-09 T100: `CoinLedgerLiveRuntime`으로 앱과 Shield Action의 실제 private CloudKit database,
+프로세스별 `CKSyncEngine` checkpoint, reservation compatibility verification을 조립했다. 앱 launch·
+foreground는 StoreKit listener 시작, 미종결 command 재조정, 새달 allowance 생성, 재동기화 순서로
+App Group mirror를 갱신한다. 구매 지급은 `CoinPurchaseService`, 앱·Shield 해제는 공통
+`CoinRuleReleaseLiveExecutor`, setup/reset은 새 epoch의 ready marker까지 포함한 atomic provider에
+연결했다. Shield는 탭 직전 자체 fresh fetch를 수행하고 전체 처리 응답을 5초로 제한한다. launch·
+foreground·Shield가 각각 fresh fetch를 수행하고 공유 mirror를 갱신하는 회귀, pending command를
+current 반환 전에 재조정하는 회귀, initial setup의 5개 record atomic 저장 회귀를 추가했다. iPhone 17
+Pro iOS 26.5 Simulator에서 전체 `GetUpTests` 593개 선언이 동적 실행 포함 713회 모두 통과했고 실패·
+skip은 없다. 앱과 네 확장의 generic iOS Simulator Release 빌드도 통과했다. 실제 iCloud 장부 쓰기,
+다기기 월 경계, Shield와 StoreKit 결제 실기기 증적은 T089·T094·T095에 남아 있다.
+
 2026-09-09 T102: 새 reservation에 command별 `ReservationCompatibilityStamp`를 claim·command·잔액·
 event와 같은 atomic modify로 저장하고, 기존 epoch를 데이터 삭제·reset 없이 전환하는
 `ReservationCompatibilityMigrationProvider`를 추가했다. 구버전 writer 종료 승인 없이는 쓰지 않으며,

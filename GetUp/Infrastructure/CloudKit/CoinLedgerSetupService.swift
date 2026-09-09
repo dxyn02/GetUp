@@ -104,7 +104,143 @@ struct CoinLedgerSetupService: Sendable {
             && result.epoch.disclosureVersion == request.disclosureVersion
             && result.account.updatedAt == request.confirmedAt
             && result.allowance.monthID == request.monthID
-            && result.allowance.creationDate == request.confirmedAt
+            && result.allowance.creationDate.timeIntervalSince1970.isFinite
+            && MonthlyAllowancePolicy.monthID(containing: result.allowance.creationDate)
+                == request.monthID
             && result.allowance.updatedAt == request.confirmedAt
+    }
+}
+
+/// Writes a new epoch as one CloudKit transaction. The ready marker is valid for
+/// a newly-created epoch because no legacy writer has ever owned that epoch.
+actor CloudKitCoinLedgerInitializationProvider {
+    private let database: any CoinLedgerCloudDatabase
+    private let mapper = CoinLedgerRecordMapper()
+
+    init(database: any CoinLedgerCloudDatabase) {
+        self.database = database
+    }
+
+    func setup(_ request: CoinLedgerSetupRequest) async throws
+        -> CoinLedgerInitializationResult
+    {
+        try await initialize(
+            epochID: request.epochID,
+            monthID: request.monthID,
+            confirmedAt: request.confirmedAt,
+            disclosureVersion: request.disclosureVersion,
+            reason: .initialSetup
+        )
+    }
+
+    func reset(_ request: CoinLedgerResetRequest) async throws
+        -> CoinLedgerInitializationResult
+    {
+        try await initialize(
+            epochID: request.epochID,
+            monthID: request.monthID,
+            confirmedAt: request.confirmedAt,
+            disclosureVersion: request.disclosureVersion,
+            reason: .userConfirmedResetAfterDeletion
+        )
+    }
+
+    private func initialize(
+        epochID: UUID,
+        monthID: String,
+        confirmedAt: Date,
+        disclosureVersion: Int,
+        reason: LedgerEpochReason
+    ) async throws -> CoinLedgerInitializationResult {
+        let suppressedMonthID = reason == .userConfirmedResetAfterDeletion ? monthID : nil
+        let epoch = LedgerEpoch(
+            epochID: epochID,
+            createdAt: confirmedAt,
+            reason: reason,
+            suppressedFreeMonthID: suppressedMonthID,
+            disclosureVersion: disclosureVersion
+        )
+        let account = try CoinAccount(
+            purchasedAvailable: 0,
+            purchasedReserved: 0,
+            revision: 0,
+            updatedAt: confirmedAt
+        )
+        let quota = reason == .initialSetup ? MonthlyAllowancePolicy.monthlyQuota : 0
+        let proposedAllowance = try MonthlyAllowance(
+            monthID: monthID,
+            quota: quota,
+            used: 0,
+            reserved: 0,
+            creationDate: confirmedAt,
+            updatedAt: confirmedAt
+        )
+        let marker = try ReservationMigrationMarker(
+            ledgerEpochID: epochID,
+            state: .ready,
+            legacyWritersRetiredAt: confirmedAt,
+            evidenceVersion: 1,
+            updatedAt: confirmedAt
+        )
+
+        var entities: [CoinLedgerRecordEntity] = [
+            .ledgerEpoch(epoch),
+            .coinAccount(account),
+            .monthlyAllowance(proposedAllowance),
+            .reservationMigrationMarker(marker),
+        ]
+        if quota > 0 {
+            entities.append(.event(try CoinLedgerEvent(
+                eventID: CoinLedgerDeterministicID.freeGrant(monthID: monthID),
+                kind: .freeGrant,
+                source: .monthlyFree,
+                quantity: quota,
+                relatedTransactionID: nil,
+                relatedCommandID: nil,
+                occurrenceID: nil,
+                createdAt: confirmedAt
+            )))
+        }
+
+        let saved: [CloudKitRecordSnapshot]
+        do {
+            saved = try await database.modify(CoinLedgerModifyRequest(
+                recordsToSave: try entities.map(mapper.record(for:)),
+                isAtomic: true
+            ))
+        } catch CoinLedgerDatabaseError.resultUnknown {
+            saved = try await database.fetch(CoinLedgerFetchRequest(recordNames: [
+                CoinLedgerRecordID.ledgerEpoch,
+                CoinLedgerRecordID.coinAccount,
+                CoinLedgerRecordID.allowance(monthID: monthID),
+                CoinLedgerRecordID.reservationMigrationMarker(epochID: epochID),
+            ]))
+        }
+
+        var confirmedEpoch: LedgerEpoch?
+        var confirmedAccount: CoinAccount?
+        var confirmedAllowance: MonthlyAllowance?
+        var confirmedMarker: ReservationMigrationMarker?
+        for record in saved {
+            switch try mapper.entity(from: record) {
+            case .ledgerEpoch(let value): confirmedEpoch = value
+            case .coinAccount(let value): confirmedAccount = value
+            case .monthlyAllowance(let value) where value.monthID == monthID:
+                confirmedAllowance = value
+            case .reservationMigrationMarker(let value): confirmedMarker = value
+            default: break
+            }
+        }
+        guard let confirmedEpoch, let confirmedAccount, let confirmedAllowance,
+              confirmedEpoch == epoch, confirmedAccount == account,
+              confirmedMarker?.ledgerEpochID == epochID,
+              confirmedMarker?.state == .ready else {
+            throw CoinLedgerInitializationResultError.invalidInitialState
+        }
+        return try CoinLedgerInitializationResult(
+            epoch: confirmedEpoch,
+            account: confirmedAccount,
+            allowance: confirmedAllowance
+        )
     }
 }

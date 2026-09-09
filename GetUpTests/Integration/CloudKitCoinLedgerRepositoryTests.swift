@@ -843,6 +843,33 @@ enum CloudKitLedgerTestFixtures {
 
 @Suite("System CloudKit coin ledger database")
 struct SystemCoinLedgerCloudDatabaseTests {
+    @Test("Initial setup atomically creates balances, free grant, and a ready compatibility marker")
+    func initialSetupCreatesCompatibleEpochAtomically() async throws {
+        let client = RecordingSystemCloudKitClient(echoSavedRecords: true)
+        let database = SystemCoinLedgerCloudDatabase(client: client)
+        let provider = CloudKitCoinLedgerInitializationProvider(database: database)
+        let request = CoinLedgerSetupRequest(
+            epochID: CloudKitLedgerTestFixtures.epochID,
+            monthID: "2026-09",
+            confirmedAt: CloudKitLedgerTestFixtures.now,
+            disclosureVersion: 1
+        )
+
+        let result = try await provider.setup(request)
+        let modify = try #require(await client.modifyRequests.first)
+
+        #expect(result.epoch.reason == .initialSetup)
+        #expect(result.allowance.available == MonthlyAllowancePolicy.monthlyQuota)
+        #expect(modify.atomically)
+        #expect(Set(modify.recordsToSave.map(\.recordType)) == [
+            CoinLedgerRecordType.ledgerEpoch,
+            CoinLedgerRecordType.coinAccount,
+            CoinLedgerRecordType.monthlyAllowance,
+            CoinLedgerRecordType.event,
+            CoinLedgerRecordType.reservationMigrationMarker,
+        ])
+    }
+
     @Test("Fetch uses the private custom zone without creating it and preserves request order")
     func fetchUsesZoneAndOmitsMissingRecords() async throws {
         let zoneID = CKRecordZone.ID(

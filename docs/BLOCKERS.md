@@ -11,9 +11,9 @@ in-memory CloudKit protocol fake와 UI fixture로 검증했다.
 그러나 `quickstart.md`의 완료 증적은 동일 iCloud 계정의 테스트 iPhone 2대, CloudKit development
 private database와 서버 creation date를 사용한 실제 다기기 충돌 및 서울 월 경계 결과를 요구한다.
 사용자는 두 실기기와 동일 테스트 iCloud 계정, CloudKit development 접근을 준비할 수 있다고
-확인했다. T099의 실제 database adapter, T101 동기화 provider와 T102 migration 호환성 provider는
-완료했지만 T100 앱·Shield live 조립과 실제 서울 월 경계 실행이 남아 있다. 이 선행 구현 전 fixture 결과를
-실제 CloudKit 수동 결과로 기록하면 검증 출처가 달라지므로 T089을 완료 처리할 수 없다.
+확인했다. T099의 실제 database adapter, T101 동기화 provider, T102 migration 호환성 provider와
+T100 앱·Shield live 조립은 완료됐다. 실제 서울 월 경계 실행과 결과 기록은 아직 남아 있으므로 fixture
+결과를 실제 CloudKit 수동 결과로 대체하거나 T089을 완료 처리할 수 없다.
 
 **해결 조건**: 같은 iCloud 계정의 테스트 iPhone 2대와 development schema를 준비한 뒤
 `quickstart.md`의 T089 수동 표 네 항목을 실행해 기기·OS·장부 monthID, 무료·구매 전후 잔액,

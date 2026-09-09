@@ -1,5 +1,31 @@
 # 결정 사항
 
+## DEC-105 — 앱·Shield의 프로세스별 live 장부 조립과 새 epoch 활성화
+
+**날짜**: 2026-09-09
+
+**결정**: 앱과 Shield Action은 각각 `CoinLedgerLiveRuntime`을 생성하고 T099의 실제 private CloudKit
+database, T101의 프로세스별 `CKSyncEngine` provider, T102의 reservation compatibility 검증을 같은
+repository 경계에 조립한다. 앱 launch·foreground는 StoreKit listener를 시작한 뒤 원격 command를
+먼저 재조정하고 현재 월 allowance가 없을 때 생성한 다음 다시 동기화한다. Shield는 표시용 App Group
+mirror를 권위 값으로 쓰지 않고 탭 처리 직전 Shield 프로세스의 initial/fresh fetch를 수행한다. 전체
+Shield 처리에는 5초 응답 상한을 두며, 확인되지 않은 결과는 제한을 유지하고 앱 복구 경로로 보낸다.
+
+앱 구매는 `CoinPurchaseService`, 규칙 해제는 `RuleReleaseService`와 `RuleReleaseCoordinator`, launch·
+foreground 복구는 `RuleReleaseReconciler`, 원격 projection 검증은 `CoinLedgerRecoveryService`를 실제
+repository에 연결한다. setup/reset은 `CloudKitCoinLedgerInitializationProvider`가 epoch, 0 구매 잔액,
+현재 월 allowance와 새 epoch의 `ready` compatibility marker를 한 atomic modify로 만든다. initial setup은
+무료 2회와 grant event를 만들고, 삭제 확인 reset은 현재 월 무료분을 0으로 억제한다.
+
+**호환성 경계**: `ready` marker 자동 생성은 기존 writer가 존재할 수 없는 새 UUID epoch에만 허용한다.
+기존 epoch는 앱이 marker를 추측하거나 자동 생성하지 않으며 DEC-104의 명시적 migration과 구버전 writer
+종료 증거가 없으면 앱·Shield 모두 예약을 거부한다. App Group snapshot은 동기화 결과 표시와 프로세스
+간 전달용 mirror일 뿐 CloudKit current 판정을 대신하지 않는다.
+
+**근거**: 각 화면에서 database·sync·migration을 따로 조립하면 앱과 Shield의 current 판정과 command
+복구 순서가 달라질 수 있다. 프로세스별 runtime과 공통 해제 executor는 최신 fetch, 무료 우선 예약,
+로컬 제한 예외 적용, 원격 commit, 재조정 순서를 하나로 유지하면서도 T101의 checkpoint 격리를 보존한다.
+
 ## DEC-104 — reservation 호환성의 command stamp와 명시적 epoch migration
 
 **날짜**: 2026-09-09

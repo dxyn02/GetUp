@@ -1213,16 +1213,43 @@ private struct AppEnvironment {
     let permissionOnboardingStateStore: PermissionOnboardingStateStore
 
     static func live() throws -> AppEnvironment {
+        guard let identifier = SharedIdentifiers.appGroupIdentifier(),
+              let containerURL = FileManager.default.containerURL(
+                forSecurityApplicationGroupIdentifier: identifier
+              ) else {
+            throw DependencyContainerError.appGroupContainerUnavailable
+        }
+        let ledgerRuntime = CoinLedgerLiveRuntime.live(
+            containerURL: containerURL,
+            process: .app
+        )
         let storefront = StoreKitPurchaseAdapter()
-        let transactionObserver = StoreKitTransactionObserver(
+        let catalog = try CoinProductCatalog()
+        let purchaseService = CoinPurchaseService(
+            catalog: catalog,
             storefront: storefront,
-            processVerifiedTransaction: { _ in
-                // The production CloudKit database provider remains closed until T097.
-                // Keep transactions unfinished so a verified provider can recover them later.
-                throw CoinPurchaseServiceError.ledgerNotCurrent
+            repository: ledgerRuntime.repository,
+            fetchLedgerState: {
+                try await ledgerRuntime.refreshBeforeShieldRequest().ledgerState
             }
         )
-        let container = try DependencyContainer.live(
+        let transactionObserver = StoreKitTransactionObserver(
+            storefront: storefront,
+            processVerifiedTransaction: { transaction in
+                try await purchaseService.processVerifiedTransaction(transaction)
+            }
+        )
+        let container = DependencyContainer(
+            containerURL: containerURL,
+            coinLedgerRepository: ledgerRuntime.repository,
+            monthlyAllowanceForegroundContextProvider: {
+                let context = try await ledgerRuntime.refreshBeforeShieldRequest()
+                return MonthlyAllowanceForegroundContext(
+                    monthID: context.snapshot.balance.currentMonthID,
+                    ledgerState: context.ledgerState,
+                    existingAllowance: context.allowance
+                )
+            },
             startCoinTransactionObservation: {
                 try await transactionObserver.start()
             }
@@ -1253,6 +1280,21 @@ private struct AppEnvironment {
             }
         )
         let restrictionAdapter = try ManagedSettingsRestrictionAdapter.live()
+        let releaseExecutor = CoinRuleReleaseLiveExecutor(
+            runtime: ledgerRuntime,
+            sharedRepository: container.sharedSnapshotRepository,
+            applyRestrictions: try container.makeRuleReleaseApplicationProvider(
+                authorizationProvider: SystemAuthorizationProvider.forApplication()
+            ),
+            reconcileLiveActivity: { snapshot in
+                await liveActivityCoordinator.reconcile(
+                    context: .foreground,
+                    desiredActivity: snapshot
+                )
+            },
+            coordinationDirectory: container.coordinationDirectory,
+            clock: SystemRestrictionClock()
+        )
         let appModel = AppModel(
             ruleRepository: container.ruleRepository,
             savedPlaceRepository: container.savedPlaceRepository,
@@ -1277,7 +1319,37 @@ private struct AppEnvironment {
             currentRuleRevisions: [:],
             balance: fallbackBalance,
             hasPendingReconciliation: false,
-            executeRelease: { _ in .iCloudRecoveryRequired }
+            executeRelease: { occurrence in
+                do {
+                    let result = try await releaseExecutor.execute(
+                        occurrence: occurrence,
+                        commandID: UUID(),
+                        source: .app
+                    )
+                    return .released(
+                        fundingSource: result.fundingSource,
+                        balance: result.ledger.balance,
+                        remainingOccurrences: result.remainingOccurrences
+                    )
+                } catch CoinLedgerRepositoryError.insufficientMonthlyAllowance {
+                    let balance = (try? await ledgerRuntime.refresh().balance) ?? fallbackBalance
+                    return .insufficientBalance(balance)
+                } catch CoinLedgerRepositoryError.insufficientPurchasedBalance {
+                    let balance = (try? await ledgerRuntime.refresh().balance) ?? fallbackBalance
+                    return .insufficientBalance(balance)
+                } catch CoinLedgerRepositoryError.reconciliationRequired {
+                    return .reconciliationRequired
+                } catch RuleReleaseCoordinationError.reconciliationRequired {
+                    return .reconciliationRequired
+                } catch {
+                    let state = try? await ledgerRuntime.refresh().balance.syncState
+                    switch state {
+                    case .deletionConfirmed, .resetRequired: return .ledgerResetRequired
+                    case .current: return .rejected
+                    default: return .iCloudRecoveryRequired
+                    }
+                }
+            }
         )
         let pendingRouteRepository = PendingAppRouteRepository(
             containerURL: container.coordinationDirectory
@@ -1315,7 +1387,31 @@ private struct AppEnvironment {
                 await appModel.refreshRestrictionStatus()
             }
         )
-        let coinLifecycleCoordinator = container.makeCoinAppLifecycleCoordinator()
+        let coinLifecycleCoordinator = CoinAppLifecycleCoordinator(
+            startTransactionObservation: {
+                try await transactionObserver.start()
+            },
+            reconcileLedger: {
+                try await ledgerRuntime.refreshForApp { commandIDs in
+                    try await releaseExecutor.reconcilePending(commandIDs)
+                }
+            },
+            loadActiveOccurrenceIDs: { now in
+                let snapshot = try await container.sharedSnapshotRepository
+                    .loadActiveRestrictionSnapshot()
+                let rules = try await container.ruleRepository.loadRuleCollection()?.rules ?? []
+                return Set(RestrictionOccurrenceEvaluator.evaluate(
+                    snapshot: snapshot,
+                    currentRuleRevisions: Dictionary(
+                        uniqueKeysWithValues: rules.map { ($0.id, $0.revision) }
+                    ),
+                    now: now
+                ).orderedOccurrences.map(\.id))
+            },
+            consumePendingRoute: { now, activeIDs in
+                try await pendingRouteRepository.consumeIfEligible(now: now, activeOccurrenceIDs: activeIDs)?.destination
+            }
+        )
         let coinLedger = CoinStoreLedgerState(
             balance: fallbackBalance,
             purchaseGrants: [],
@@ -1323,16 +1419,62 @@ private struct AppEnvironment {
             pendingProductIdentifiers: [],
             hasPendingReconciliation: false
         )
-        let catalog = try CoinProductCatalog()
         let coinStoreModel = CoinStoreModel(
             ledger: coinLedger,
             loadProducts: { try await catalog.loadProducts(from: storefront) },
-            executePurchase: { _ in
-                throw CoinPurchaseServiceError.ledgerNotCurrent
+            executePurchase: { productID in
+                switch try await purchaseService.purchase(productID: productID) {
+                case .granted(let grant):
+                    return .granted(
+                        grant: grant,
+                        ledger: try await ledgerRuntime.refresh().coinStoreLedgerState
+                    )
+                case .pending: return .pending
+                case .cancelled: return .cancelled
+                }
             }
+        )
+        let initializationProvider = CloudKitCoinLedgerInitializationProvider(
+            database: SystemCoinLedgerCloudDatabase()
         )
         let coinStoreConfiguration = CoinStoreConfiguration(
             model: coinStoreModel,
+            activateLedger: {
+                let before = try await ledgerRuntime.refreshBeforeShieldRequest()
+                let now = Date()
+                _ = try await CoinLedgerSetupService(
+                    performAtomicSetup: { request in
+                        try await initializationProvider.setup(request)
+                    }
+                ).activate(
+                    CoinLedgerSetupRequest(
+                        epochID: UUID(),
+                        monthID: MonthlyAllowancePolicy.monthID(containing: now),
+                        confirmedAt: now,
+                        disclosureVersion: 1
+                    ),
+                    ledgerState: before.snapshot.balance.syncState
+                )
+                return try await ledgerRuntime.refreshForApp().coinStoreLedgerState
+            },
+            resetLedger: {
+                let before = try await ledgerRuntime.refreshBeforeShieldRequest()
+                let now = Date()
+                _ = try await CoinLedgerResetService(
+                    performAtomicReset: { request in
+                        try await initializationProvider.reset(request)
+                    }
+                ).resetAfterConfirmedDeletion(
+                    CoinLedgerResetRequest(
+                        epochID: UUID(),
+                        monthID: MonthlyAllowancePolicy.monthID(containing: now),
+                        confirmedAt: now,
+                        disclosureVersion: 1
+                    ),
+                    ledgerState: before.snapshot.balance.syncState
+                )
+                return try await ledgerRuntime.refreshForApp().coinStoreLedgerState
+            },
             retryLedgerSync: {
                 let ledger = await coinLifecycleCoordinator.refresh(
                     trigger: .foreground,

@@ -59,7 +59,9 @@ struct CoinLedgerResetService: Sendable {
             && result.epoch.disclosureVersion == request.disclosureVersion
             && result.account.updatedAt == request.confirmedAt
             && result.allowance.monthID == request.monthID
-            && result.allowance.creationDate == request.confirmedAt
+            && result.allowance.creationDate.timeIntervalSince1970.isFinite
+            && MonthlyAllowancePolicy.monthID(containing: result.allowance.creationDate)
+                == request.monthID
             && result.allowance.updatedAt == request.confirmedAt
     }
 }

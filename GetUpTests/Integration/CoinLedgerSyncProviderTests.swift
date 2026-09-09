@@ -298,6 +298,116 @@ struct CoinLedgerSyncProviderTests {
         #expect(await checkpointStore.checkpoint?.lastMirror == result.outcome.mirror)
         #expect(await provider.isCurrent() == false)
     }
+
+    @Test("App launch, foreground, and Shield each fetch before exposing the shared mirror")
+    func liveRuntimeRefreshesEveryProcessEntryPoint() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(
+            "coin-ledger-live-runtime-\(UUID().uuidString)",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let shared = SharedSnapshotRepository(containerURL: directory)
+        let records = try Self.ledgerRecords(freeAvailable: 2)
+        let appEngine = CoinLedgerSyncEngineFake(results: [
+            .success(Self.engineResult(records: records)),
+            .success(Self.engineResult(records: records)),
+        ])
+        let shieldEngine = CoinLedgerSyncEngineFake(results: [
+            .success(Self.engineResult(records: records)),
+        ])
+        let appProvider = CoinLedgerSyncProvider(
+            accountProvider: CoinLedgerCloudAccountFake(.available(sessionID: "account-a")),
+            engine: appEngine,
+            checkpointRepository: CoinLedgerSyncCheckpointStoreFake(),
+            balanceRepository: shared,
+            wallClockNow: { Self.now }
+        )
+        let shieldProvider = CoinLedgerSyncProvider(
+            accountProvider: CoinLedgerCloudAccountFake(.available(sessionID: "account-a")),
+            engine: shieldEngine,
+            checkpointRepository: CoinLedgerSyncCheckpointStoreFake(),
+            balanceRepository: shared,
+            wallClockNow: { Self.now }
+        )
+        let unusedDatabase = CoinLedgerDatabaseUnusedFake()
+        let app = CoinLedgerLiveRuntime(
+            repository: CloudKitCoinLedgerRepository(database: unusedDatabase),
+            synchronize: { try await appProvider.synchronize() }
+        )
+        let shield = CoinLedgerLiveRuntime(
+            repository: CloudKitCoinLedgerRepository(database: unusedDatabase),
+            synchronize: { try await shieldProvider.synchronize() }
+        )
+
+        let launch = try await app.refreshForApp()
+        let foreground = try await app.refreshForApp()
+        let shieldRequest = try await shield.refreshBeforeShieldRequest()
+
+        #expect(launch.balance.syncState == .current)
+        #expect(foreground.balance.syncState == .current)
+        #expect(shieldRequest.snapshot.balance.syncState == .current)
+        #expect(await appEngine.receivedCheckpoints.count == 2)
+        #expect(await shieldEngine.receivedCheckpoints.count == 1)
+        #expect(try await shared.loadCoinBalanceSnapshot() == shieldRequest.snapshot.balance)
+    }
+
+    @Test("App refresh reconciles every remote nonterminal command before returning current")
+    func liveRuntimeReconcilesBeforeReturning() async throws {
+        let commandID = UUID(uuidString: "00000000-0000-4000-8000-000000001102")!
+        let requested = try ReleaseCommand.requested(
+            commandID: commandID,
+            occurrenceID: "occurrence-live",
+            ruleID: UUID(),
+            requestedFrom: .shield,
+            at: Self.now
+        )
+        let reserved = try requested.transitioning(
+            to: .reserved,
+            fundingSource: .monthlyFree,
+            at: Self.now
+        )
+        let mapper = CoinLedgerRecordMapper()
+        let pendingRecords = try Self.ledgerRecords(freeAvailable: 1)
+            + [mapper.record(for: .releaseCommand(reserved))]
+        let queue = RuntimeSyncQueue(results: [
+            CoinLedgerSyncProviderResult(
+                outcome: CoinLedgerSyncOutcome(
+                    mirror: try CoinBalanceSnapshot(
+                        purchasedAvailable: 0,
+                        currentMonthID: "2026-09",
+                        freeAvailable: 1,
+                        syncState: .stale,
+                        syncedAt: Self.now,
+                        ledgerEpochID: Self.epochID,
+                        hadConfirmedLedger: true
+                    ),
+                    recoveredFromRemote: false
+                ),
+                remoteRecords: pendingRecords
+            ),
+            CoinLedgerSyncProviderResult(
+                outcome: CoinLedgerSyncOutcome(
+                    mirror: try Self.balance(freeAvailable: 2),
+                    recoveredFromRemote: true
+                ),
+                remoteRecords: try Self.ledgerRecords(freeAvailable: 2)
+            ),
+        ])
+        let reconciled = ReconciledCommandRecorder()
+        let runtime = CoinLedgerLiveRuntime(
+            repository: CloudKitCoinLedgerRepository(database: CoinLedgerDatabaseUnusedFake()),
+            synchronize: { try await queue.next() }
+        )
+
+        let result = try await runtime.refreshForApp { ids in
+            await reconciled.record(ids)
+        }
+
+        #expect(result.balance.syncState == .current)
+        #expect(await reconciled.commandIDs == [commandID])
+        #expect(await queue.callCount == 2)
+    }
 }
 
 private extension CoinLedgerSyncProviderTests {
@@ -462,4 +572,29 @@ private actor CoinBalanceStoreFake: CoinBalanceSnapshotRepository {
     func saveCoinBalanceSnapshot(_ snapshot: CoinBalanceSnapshot) async throws {
         self.snapshot = snapshot
     }
+}
+
+private actor CoinLedgerDatabaseUnusedFake: CoinLedgerCloudDatabase {
+    func fetch(_: CoinLedgerFetchRequest) async throws -> [CloudKitRecordSnapshot] { [] }
+    func modify(_: CoinLedgerModifyRequest) async throws -> [CloudKitRecordSnapshot] {
+        throw CoinLedgerDatabaseError.unexpectedRequest
+    }
+}
+
+private actor RuntimeSyncQueue {
+    private var results: [CoinLedgerSyncProviderResult]
+    private(set) var callCount = 0
+
+    init(results: [CoinLedgerSyncProviderResult]) { self.results = results }
+
+    func next() throws -> CoinLedgerSyncProviderResult {
+        callCount += 1
+        guard !results.isEmpty else { throw CoinLedgerSyncProviderError.syncUnavailable }
+        return results.removeFirst()
+    }
+}
+
+private actor ReconciledCommandRecorder {
+    private(set) var commandIDs: [UUID] = []
+    func record(_ commandIDs: [UUID]) { self.commandIDs.append(contentsOf: commandIDs) }
 }
