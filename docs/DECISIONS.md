@@ -1,5 +1,35 @@
 # 결정 사항
 
+## DEC-104 — reservation 호환성의 command stamp와 명시적 epoch migration
+
+**날짜**: 2026-09-09
+
+**결정**: claim protocol writer는 모든 새 예약에서 `ReservationCompatibilityStamp`를 claim·command·
+잔액·event와 같은 CloudKit atomic modify에 기록한다. 기존 epoch는 구버전 writer가 더 이상 접근하지
+않는다는 운영 승인이 epoch ID·승인 시각·evidence version과 함께 주어진 경우에만 명시적 migration을
+시작한다. provider는 `ReservationMigrationMarker`를 먼저 `preparing`으로 기록하고 기존 command를
+전수 검사한다. committed command의 claim이 없으면 동일 command의 held claim을 보강하고, rejected·
+compensated 또는 올바른 held claim이 있는 command에는 stamp를 추가한다. requested나 claim 없는
+미종결 command, 소유자가 다른 claim, 중복 committed occurrence는 자동 판단하지 않고 중단한다.
+모든 command가 stamp와 필요한 claim으로 덮인 후에만 marker를 `ready`로 전환한다.
+
+`verifyReservationCompatibility`는 저장된 ready 값만 신뢰하지 않는다. 앱과 Shield Action 각각의
+현재 프로세스가 T101 whole-zone sync로 받은 최신 레코드에서 epoch 일치, ready marker, 모든 command
+stamp와 활성·committed command의 held claim을 매번 함께 검사한다. migration 완료 뒤 claim 없는
+구버전 writer command가 추가되면 즉시 false로 닫힌다. 중단·CloudKit 실패·`preparing`은 멱등 재시도
+대상이며 예약 권한이 아니다.
+
+**근거**: epoch 또는 marker 존재만으로 허용하면 migration 완료 뒤에도 구버전 writer가 claim 없이
+중복 예약할 수 있다. command별 stamp는 과거 compensated command의 claim이 다음 소유자로 바뀐 뒤에도
+해당 command가 호환 writer 또는 검증된 migration을 거쳤음을 남긴다. committed claim 보강은 이미
+소모된 occurrence의 재사용을 막지만, 미종결 command의 결과를 추측해 보상하는 것은 FR-015를 위반할
+수 있어 재조정으로 남긴다.
+
+**운영 경계**: `legacyWritersRetiredAt` 승인은 앱 내부 자동 추론 값이 아니며 배포 시 기존 writer가
+CloudKit에 더 이상 쓰지 않는다는 운영 증거가 있어야 한다. migration은 epoch·command·잔액을 삭제하거나
+reset하지 않는다. T102는 provider와 앱·Shield 공용 target 경계를 제공하지만 실제 live 생성·호출은
+T100에서 T099 database와 T101 sync provider에 조립한다. 그 전에는 기본 false가 유지된다.
+
 ## DEC-103 — CKSyncEngine의 프로세스별 checkpoint와 계정 격리
 
 **날짜**: 2026-09-09

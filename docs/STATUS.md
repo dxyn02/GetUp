@@ -26,20 +26,21 @@ change-tag CAS, atomic modify, record별 오류 변환을 구현했다. 초기 f
 쓰기에서만 준비해 삭제 감지 근거를 보존한다. 운영 활성화·migration은 수행하지 않았다. T101에서는
 private database용 `CKSyncEngine` provider와 앱·Shield별 계정 결합 checkpoint, 프로세스별 initial
 fetch gate, pending 재시도, zone 삭제 evidence, 원격 장부 projection과 App Group mirror 저장을
-구현했다. T102의 migration 호환성 검증과 T100의 live 조립 전까지 앱과 Shield는 계속
-`.iCloudRecovery`로 fail-closed한다.
+구현했다. T102에서는 command별 protocol stamp, epoch별 `preparing | ready` marker와 명시적 구버전
+writer 종료 승인을 사용하는 migration provider를 구현했다. T100의 live 조립 전까지 앱과 Shield는
+계속 `.iCloudRecovery`로 fail-closed한다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T101 — CKSyncEngine 계정·checkpoint·projection·App Group mirror 동기화 provider
+T102 — reservation compatibility stamp와 명시적 epoch migration provider
 
 ## 다음 작업
-T102 — 기존 장부 reservation compatibility를 검증하는 명시적 migration provider를 구현한다.
+T100 — 검증된 database·sync·migration provider를 앱과 Shield live 환경에 조립한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
 BLK-017 미해결: 사용자가 동일 iCloud 테스트 iPhone 2대와 CloudKit development 접근 준비가
-가능하다고 확인했다. T099 database adapter와 T101 sync provider는 완료됐지만 T102·T100 live 연결과 실제 서울 월
+가능하다고 확인했다. T099 database adapter, T101 sync provider와 T102 migration provider는 완료됐지만 T100 live 연결과 실제 서울 월
 경계 검증이 남아 있어 T089 수동 증적은 아직 실행하지 않는다.
 BLK-016 해결됨: 명령별 원자 추가·조건부 제거 API와 최신 상태 재평가 계약 보강을 사용자 승인받았다.
 BLK-015 해결됨: occurrence별 예약 소유권 계약·스키마 보강을 사용자 승인받았다.
@@ -56,6 +57,19 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-09 T102: 새 reservation에 command별 `ReservationCompatibilityStamp`를 claim·command·잔액·
+event와 같은 atomic modify로 저장하고, 기존 epoch를 데이터 삭제·reset 없이 전환하는
+`ReservationCompatibilityMigrationProvider`를 추가했다. 구버전 writer 종료 승인 없이는 쓰지 않으며,
+`preparing` marker 뒤 기존 command를 전수 검사해 committed의 누락 held claim과 command stamp만
+보강한다. claim 없는 미종결 command·소유자 충돌·중복 committed occurrence는 중단하고, 모든 검증 뒤
+`ready` marker를 기록한다. verification은 최신 whole-zone records에서 marker만이 아니라 모든 command
+stamp와 필요한 held claim을 다시 확인하므로 완료 뒤 claim 없는 writer가 쓰면 즉시 닫힌다. migration
+기본 거부·미종결 차단·중단 뒤 재시도·claim-aware 진행 command·완료 뒤 구버전 writer 탐지·새 예약의
+atomic stamp 테스트 6개와 기존 repository·allowance·sync 회귀를 합친 25개가 iPhone 17 Pro iOS 26.5
+Simulator에서 실패·skip 없이 통과했다. 전체 `GetUpTests` 590개 선언은 동적 실행 포함 710회 모두
+실패·skip 없이 통과했고 앱과 네 확장의 generic iOS Simulator Release 빌드도 통과했다. 실제 live
+조립과 CloudKit migration 실행은 T100 전까지 수행하지 않는다.
+
 2026-09-09 T101: `CoinLedgerSyncProvider`와 system `CKSyncEngine` driver를 추가했다. account status와
 사용자 record ID로 계정을 구분하고 앱·Shield Action별 checkpoint에 engine serialization, 원격 record
 cache, 원본 `CKRecord` archive, 계정 결합 mirror를 protected atomic 저장한다. 각 프로세스는 저장된

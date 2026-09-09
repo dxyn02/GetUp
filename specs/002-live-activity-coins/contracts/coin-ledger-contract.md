@@ -39,8 +39,11 @@
 ## 원자성·충돌
 
 - 예약 repository의 `verifyReservationCompatibility(epochID)`는 기본 false다. 이 경계는 freshness와
-  별개이며 기존 장부 전환·구버전 writer 배제가 검증되지 않으면 true를 공급하지 않는다. 이번 단계의
-  허용 provider는 격리 테스트 전용이고 실제 migration·운영 활성화는 완료하지 않는다.
+  별개이며 기존 장부 전환·구버전 writer 배제가 검증되지 않으면 true를 공급하지 않는다.
+  `ReservationCompatibilityMigrationProvider`는 명시적인 구버전 writer 종료 승인, epoch 결합
+  `ready` marker, 모든 command의 protocol stamp와 예약 진행 중·committed command의 held claim을 최신 whole-zone
+  fetch에서 함께 확인한 경우에만 true를 반환한다. `preparing`, fetch 실패, 다른 epoch, stamp 없는
+  뒤늦은 writer는 false다.
 - 무료·구매 예약은 읽은 `LedgerEpoch`도 같은 CAS modify에 넣어 reset 경쟁을 막는다. 구매 fallback은
   소진된 allowance를 함께 CAS해 충돌 시 무료 우선 정책을 다시 평가한다. `reservePurchasedCoin`도
   최신 무료분이 있으면 monthlyFree reservation을 반환할 수 있다.
@@ -57,6 +60,11 @@
 - 기존 여섯 record type의 schema 1은 그대로 읽는다. claim 없는 기존 진행·완료 command를
   새 예약 가능으로 간주하지 않는다. 구버전 writer 공존·기존 장부 전환의 안전성 검증 전 새 예약을
   차단하며 데이터 삭제·자동 reset을 migration 수단으로 사용하지 않는다.
+- 새 예약은 `ReservationCompatibilityStamp`를 claim·command·잔액·event와 같은 atomic modify에
+  저장한다. migration은 `ReservationMigrationMarker`를 먼저 `preparing`으로 저장하고 command별
+  stamp를 보강한 뒤에만 `ready`로 전환한다. 중간 실패는 `preparing`을 유지하며 같은 epoch에서
+  멱등 재시도한다. claim 없는 committed command는 held claim으로 보존하지만 requested 또는 claim
+  없는 미종결 command는 자동 추측·보상하지 않고 재조정을 요구한다.
 
 - mutable record는 `ifServerRecordUnchanged`로 저장한다.
 - balance 또는 allowance 변경과 대응 ledger event·command 변경은 같은 atomic modify operation에

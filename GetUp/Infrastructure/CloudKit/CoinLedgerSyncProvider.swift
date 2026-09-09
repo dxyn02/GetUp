@@ -486,7 +486,8 @@ private struct CoinLedgerRemoteProjector {
                 case .purchaseGrant(let value): grants.append(value)
                 case .event(let value): events.append(value)
                 case .releaseCommand(let value): commands.append(value)
-                case .releaseOccurrenceClaim: break
+                case .releaseOccurrenceClaim, .reservationCompatibilityStamp,
+                     .reservationMigrationMarker: break
                 }
             }
         } catch {

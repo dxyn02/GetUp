@@ -85,6 +85,8 @@ enum CoinLedgerRecordType {
     static let event = "CoinLedgerEvent"
     static let releaseCommand = "ReleaseCommand"
     static let releaseOccurrenceClaim = "ReleaseOccurrenceClaim"
+    static let reservationCompatibilityStamp = "ReservationCompatibilityStamp"
+    static let reservationMigrationMarker = "ReservationMigrationMarker"
 }
 
 enum CoinLedgerRecordID {
@@ -114,6 +116,14 @@ enum CoinLedgerRecordID {
         let digest = SHA256.hash(data: Data(occurrenceID.utf8))
             .map { String(format: "%02x", $0) }.joined()
         return "release-claim:\(normalized(ledgerEpochID)):\(digest)"
+    }
+
+    static func reservationCompatibilityStamp(commandID: UUID) -> String {
+        "reservation-compatibility:\(normalized(commandID))"
+    }
+
+    static func reservationMigrationMarker(epochID: UUID) -> String {
+        "reservation-migration:\(normalized(epochID))"
     }
 
     private static func normalized(_ identifier: UUID) -> String {

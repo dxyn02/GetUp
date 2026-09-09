@@ -152,10 +152,17 @@ struct CloudKitCoinLedgerRepository: CoinLedgerRepository, Sendable {
             let event = try reservationEvent(
                 request: request, source: funding == .monthlyFree ? .monthlyFree : .purchased
             )
+            let compatibilityStamp = try ReservationCompatibilityStamp(
+                ledgerEpochID: request.ledgerEpochID,
+                commandID: request.commandID,
+                occurrenceID: request.occurrenceID,
+                createdAt: request.requestedAt
+            )
             var entities: [(CoinLedgerRecordEntity, String?)] = [
                 (.ledgerEpoch(epoch), epochRecord.changeTag),
                 (.releaseOccurrenceClaim(claim), indexed[claimName]?.changeTag),
                 (.releaseCommand(command), nil), (.event(event), nil),
+                (.reservationCompatibilityStamp(compatibilityStamp), nil),
             ]
             let updatedAllowance: MonthlyAllowance
             var updatedAccount: CoinAccount?

@@ -218,6 +218,21 @@ decode 시 명시적 필드 whitelist, 필수 값·상태·version·record name 
 held 획득은 잔액 reservation과, released 전환은 잔액 보상·compensated와 같은 atomic modify다.
 released 레코드는 삭제하지 않고 change tag를 유지해 새 command의 재획득 CAS에 사용한다.
 
+### ReservationCompatibilityStamp
+
+claim protocol을 사용한 writer가 예약과 같은 atomic modify에 남기는 command별 schema 1 증거다.
+`ledgerEpochID`, `commandID`, `occurrenceID`, `protocolVersion`, `createdAt`을 가지며 record name은
+`reservation-compatibility:{소문자 command UUID}`다. marker만 존재하고 stamp가 없는 command는
+구버전 writer 쓰기로 취급해 epoch의 예약 호환성을 닫는다.
+
+### ReservationMigrationMarker
+
+기존 epoch의 명시적 migration 진행 상태다. `ledgerEpochID`, `protocolVersion`,
+`preparing | ready`, `legacyWritersRetiredAt`, `evidenceVersion`, `updatedAt`을 보존하며 record name은
+`reservation-migration:{소문자 epoch UUID}`다. `preparing`은 중단·재시도 checkpoint일 뿐 예약
+권한이 아니며, `ready`도 최신 whole-zone 검사에서 모든 command stamp와 필요한 claim이 확인될 때만
+유효하다.
+
 ### ReleaseException
 
 App Group에 저장해 Device Activity·Shield·앱이 공통으로 읽는 현재 구간 예외다.
@@ -374,9 +389,10 @@ ActiveRestrictionSnapshot 1 ── 0..1 RestrictionLiveActivityAttributes.Conten
 ## 마이그레이션
 
 - BLK-015의 `ReleaseOccurrenceClaim`은 schema 1 새 record type이며 기존 여섯 record type은 그대로
-  읽는다. T047a는 codec만 추가하고 원격 migration은 수행하지 않는다. 기존 진행·완료 command에
-  claim이 없으면 신규 예약 가능으로 해석하지 않는다. 구버전 writer가 claim을 무시할 수 있으므로
-  혼합 버전·기존 장부 전환 안전성 검증 전 새 예약을 허용하지 않는 gate가 T047b에 필요하다.
+  읽는다. 기존 진행·완료 command에 claim이 없으면 신규 예약 가능으로 해석하지 않는다. T102는
+  구버전 writer 종료를 명시적으로 승인한 epoch만 `preparing`으로 만들고 command별 compatibility
+  stamp를 보강한다. committed의 누락 claim은 held로 보존하고 claim 없는 미종결 command는 중단한다.
+  모든 command가 검증된 뒤 marker를 `ready`로 전환하며 중간 실패는 같은 epoch에서 재시도한다.
   데이터 삭제·자동 reset 없이 전환하며 실제 운영 schema 배포는 별도 검증·승인 대상으로 남긴다.
 
 - 기존 규칙·장소·위치 snapshot schema와 파일은 유지한다.
