@@ -23,21 +23,23 @@ development private database를 사용하는 다기기·서울 월 경계 수동
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 T099에서 실제 `CKContainer.privateCloudDatabase`·`CoinLedgerZone` adapter와 server creation date,
 change-tag CAS, atomic modify, record별 오류 변환을 구현했다. 초기 fetch가 zone을 만들지 않고 실제
-쓰기에서만 준비해 삭제 감지 근거를 보존한다. 운영 활성화·migration은 수행하지 않았으며 T101의
-동기화 provider, T102의 migration 호환성 검증, T100의 live 조립 전까지 앱과 Shield는 계속
+쓰기에서만 준비해 삭제 감지 근거를 보존한다. 운영 활성화·migration은 수행하지 않았다. T101에서는
+private database용 `CKSyncEngine` provider와 앱·Shield별 계정 결합 checkpoint, 프로세스별 initial
+fetch gate, pending 재시도, zone 삭제 evidence, 원격 장부 projection과 App Group mirror 저장을
+구현했다. T102의 migration 호환성 검증과 T100의 live 조립 전까지 앱과 Shield는 계속
 `.iCloudRecovery`로 fail-closed한다.
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T099 — 실제 private CloudKit database adapter와 안전한 zone·CAS·서버 시각 경계
+T101 — CKSyncEngine 계정·checkpoint·projection·App Group mirror 동기화 provider
 
 ## 다음 작업
-T101 — CKSyncEngine 기반 계정·초기 fetch·삭제 evidence·mirror 동기화 provider를 구현한다.
+T102 — 기존 장부 reservation compatibility를 검증하는 명시적 migration provider를 구현한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
 BLK-017 미해결: 사용자가 동일 iCloud 테스트 iPhone 2대와 CloudKit development 접근 준비가
-가능하다고 확인했다. T099 database adapter는 완료됐지만 T101·T102·T100 live 연결과 실제 서울 월
+가능하다고 확인했다. T099 database adapter와 T101 sync provider는 완료됐지만 T102·T100 live 연결과 실제 서울 월
 경계 검증이 남아 있어 T089 수동 증적은 아직 실행하지 않는다.
 BLK-016 해결됨: 명령별 원자 추가·조건부 제거 API와 최신 상태 재평가 계약 보강을 사용자 승인받았다.
 BLK-015 해결됨: occurrence별 예약 소유권 계약·스키마 보강을 사용자 승인받았다.
@@ -54,6 +56,23 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-09 T101: `CoinLedgerSyncProvider`와 system `CKSyncEngine` driver를 추가했다. account status와
+사용자 record ID로 계정을 구분하고 앱·Shield Action별 checkpoint에 engine serialization, 원격 record
+cache, 원본 `CKRecord` archive, 계정 결합 mirror를 protected atomic 저장한다. 각 프로세스는 저장된
+토큰과 무관하게 fetch 성공 전 `current`가 아니며, pending send 실패는 checkpoint를 지워버리지 않고
+다음 sync에서 재시도한다. account switch·sign-out은 이전 잔액을 격리하고, 일시 account 불가는 같은
+계정의 마지막 mirror만 `unavailable`로 보존한다. zone 삭제 event·`userDeletedZone`·기존 장부 뒤
+`zoneNotFound`만 삭제로 확정하며 네트워크와 불완전 projection은 `unavailable`로 닫는다. 원격
+epoch·account·allowance·grant·event 검증 결과와 pending 상태를 `CoinLedgerSyncAdapter`에 전달한 뒤
+App Group mirror를 저장한다. 최초 fetch, 프로세스 재시작, 계정 전환, pending 재시도, 삭제, 일시 불가,
+sign-out, allowance 지연 생성, 프로세스별 파일 격리와 불완전 projection 자동 테스트 11개가 통과했고,
+기존 adapter·lifecycle·fresh-install 회귀를 합친 35개 선언(동적 실행 포함 48회)도 실패·skip 없이
+통과했다. 전체 `GetUpTests` 584개 선언은 동적 실행 포함 704회 모두 실패·skip 없이 통과했고 앱과 네
+확장의 generic iOS Simulator Release 빌드도 통과했다. 첫 Release 빌드는 sandbox의 DerivedData·
+CoreSimulatorService 접근 차단으로 실행 전 실패했으며 승인된 같은 명령 재실행에서 통과했다. 기존
+Xcode 빈 build number와 `LocationMonitoringAdapterTests`의 불필요한 `try` 경고는 남아 있다. 실제
+iCloud 호출은 T100 조립 전까지 활성화하지 않았으며 T089·T095 실기기 증적은 남아 있다.
+
 2026-09-09 T099: `SystemCoinLedgerCloudDatabase`를 구현해 private custom zone record ID, fetch 순서와
 부재 처리, 원본 `CKRecord`를 재사용한 change-tag CAS, atomic modify 옵션, CloudKit 시스템
 `creationDate`, 전체 장부 value 왕복, record별 충돌과 응답 유실 오류 변환을 검증했다. 새 adapter

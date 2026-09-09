@@ -278,6 +278,25 @@ reconciliation이 없을 때만 성립한다. `lastSuccessfulFetchInstant`는 �
 iCloud account session 변경 시 빈 상태로 만들고 새 서버 fetch가 완료되기 전에는 `current`를
 허용하지 않는다.
 
+### CoinLedgerSyncCheckpoint
+
+`CKSyncEngine`의 증분 동기화를 재개하기 위한 로컬 cache다. 권한 freshness를 나타내는
+`CoinLedgerSyncSession`과 분리하며 앱과 Shield Action은 서로 다른 checkpoint 파일을 사용한다.
+
+| 필드 | 형식 | 규칙 |
+|------|------|------|
+| `accountSessionID` | 불투명 문자열 | 현재 iCloud 계정과 일치하는 checkpoint만 읽는다. |
+| `stateSerialization` | Data? | `CKSyncEngine.State.Serialization`의 Codable 표현이다. |
+| `records`, `recordArchives` | snapshot·archive | projection용 값과 pending save 재시도용 원본 `CKRecord`를 함께 보관한다. |
+| `lastMirror` | CoinBalanceSnapshot? | 같은 checkpoint 계정에서 마지막으로 확인한 표시 mirror다. |
+| `hadObservedZone` | Bool | 이전 zone 관측 뒤 서버가 zone 부재를 반환할 때 삭제 증거를 보강한다. |
+| `hasPendingChanges` | Bool | 남은 engine change가 있으면 App Group mirror를 `current`로 쓰지 않는다. |
+
+checkpoint는 증분 fetch·재시도 성능을 위한 cache이며 새 프로세스의 `initialFetchCompleted`를
+복원하지 않는다. 각 프로세스는 저장된 serialization을 사용하더라도 `fetchChanges`가 성공한 뒤에만
+새 `CoinLedgerSyncSession`을 current 후보로 만든다. 계정 전환·sign-out에서는 이전 checkpoint와
+mirror를 사용하지 않고, 손상된 checkpoint는 폐기한 뒤 전체 fetch를 다시 시도한다.
+
 ### PendingAppRoute
 
 Shield Action이 메인 앱을 열기 전에 App Group에 기록하는 일회성 진입 목적이다.
@@ -348,6 +367,7 @@ ActiveRestrictionSnapshot 1 ── 0..1 RestrictionLiveActivityAttributes.Conten
 | LedgerEpoch·CoinAccount·MonthlyAllowance·이벤트·명령 | 앱 또는 Shield Action의 coin service | 같은 iCloud 계정의 앱·Shield Action | CloudKit private custom zone |
 | ReleaseException | 성공한 release coordinator | 앱·Device Activity·Shield 확장 | App Group atomic JSON |
 | CoinBalanceSnapshot | CKSyncEngine mirror writer | 앱·Shield 확장 | App Group atomic JSON |
+| CoinLedgerSyncCheckpoint | 앱·Shield Action의 CKSyncEngine provider | 해당 프로세스의 다음 실행 | App Group의 프로세스별 protected atomic JSON |
 | PendingAppRoute | Shield Action | 메인 앱 | App Group atomic JSON |
 | StoreKit 거래 | App Store | 앱 StoreKit adapter | StoreKit |
 

@@ -80,6 +80,9 @@ purchasedUsable = coinAccount.purchasedAvailable - purchasedReserved
 ## 동기화
 
 - CKSyncEngine은 remote changes와 local mirror를 background에서 동기화한다.
+- 앱과 Shield Action은 계정별 record cache와 `CKSyncEngine.State.Serialization`을 서로 다른 protected
+  checkpoint 파일에 저장한다. checkpoint는 증분 fetch와 pending change 재시도에만 사용하며
+  프로세스별 `initialFetchCompleted`·monotonic freshness를 복원하지 않는다.
 - 코인 사용의 승인 경로는 자동 sync 결과만 믿지 않고 최신 record fetch와 atomic save를 수행한다.
 - confirmed server state만 App Group `CoinBalanceSnapshot`에 기록한다.
 - extension이 local mirror를 수정하지 않으며 CloudKit command 결과 뒤 전용 writer가 갱신한다.

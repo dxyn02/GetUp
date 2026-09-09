@@ -1,5 +1,41 @@
 # 결정 사항
 
+## DEC-103 — CKSyncEngine의 프로세스별 checkpoint와 계정 격리
+
+**날짜**: 2026-09-09
+
+**결정**: `CoinLedgerSyncProvider`는 `CKContainer.accountStatus`와 private database 사용자 record ID로
+현재 iCloud account session을 확인한 뒤에만 `CKSyncEngine`을 실행한다. 앱과 Shield Action은 각각
+별도의 protected atomic checkpoint에 `CKSyncEngine.State.Serialization`, projection용 record snapshot,
+pending save 재시도용 원본 `CKRecord` archive와 같은 계정에서 마지막으로 확인한 mirror를 보관한다.
+저장된 checkpoint는 증분 fetch를 재개하는 cache일 뿐이며, 프로세스가 시작될 때마다 비영속
+`CoinLedgerSyncSession`을 새로 만들고 `fetchChanges` 성공 전에는 `current`를 허용하지 않는다.
+
+계정이 바뀌면 이전 checkpoint와 App Group 잔액을 새 계정의 입력으로 사용하지 않는다. sign-out은
+checkpoint를 폐기하고 0 잔액의 `unavailable` mirror로 격리한다. account status가 일시적으로
+확인되지 않을 때만 같은 checkpoint에 결합된 마지막 mirror를 참고용 `unavailable`로 보존한다.
+checkpoint가 손상되면 권위 데이터로 복구하지 않고 폐기한 뒤 전체 fetch를 다시 수행한다.
+
+`CKSyncEngine`은 남은 database·record change를 먼저 `sendChanges`로 재시도한 뒤 remote change를
+fetch한다. pending이 남거나 release command가 종결되지 않았으면 projection을 `stale`로 저장한다.
+완전한 epoch·account·월 allowance·PurchaseGrant·event projection만 `CoinLedgerSyncAdapter`를 통해
+App Group `CoinBalanceSnapshot.current`로 기록한다. 현재 월 allowance가 아직 없는 정상 장부는
+확정 무료 잔액 0으로 projection해 후속 foreground의 지연 생성을 허용한다.
+
+zone 삭제 event와 `userDeletedZone`, 이전 장부가 확인된 checkpoint에서의 `zoneNotFound`만 삭제
+증거로 인정한다. 네트워크·계정 조회 실패와 불완전 record projection은 삭제로 추측하지 않고
+`unavailable`로 닫는다.
+
+**대안과 근거**: 앱과 Shield가 하나의 engine token을 공유하면 한 프로세스의 증분 진행 상태가 다른
+프로세스의 최초 fetch를 대신하고 동시 저장이 서로를 덮을 수 있어 제외했다. 공유 balance 파일만
+일시 장애 복구에 사용하면 계정 전환 직후 다른 계정 잔액을 표시할 수 있어 checkpoint의 계정 결합
+mirror만 사용한다. local record를 zone에 자동 재업로드하는 방식은 삭제 장부를 되살릴 수 있어
+채택하지 않았다.
+
+**영향 범위**: T101은 provider·checkpoint·projection 경계와 앱·Shield Action target membership만
+완성한다. T102의 reservation migration 허용과 T100의 live 수명주기 조립 전까지 실제 운영
+CloudKit fetch·구매·해제는 활성화하지 않는다.
+
 ## DEC-102 — 실제 CloudKit database adapter의 zone·CAS·서버 시각 경계
 
 **날짜**: 2026-09-09

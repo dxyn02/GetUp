@@ -19,6 +19,10 @@ enum SharedIdentifiers {
 
     static let coinLedgerZoneName = "CoinLedgerZone"
 
+    static func coinLedgerSyncCheckpointFileName(processIdentifier: String) -> String {
+        "coin-ledger-sync-\(processIdentifier).json"
+    }
+
     static let managedSettingsStoreName = "getup.restriction"
     static let deviceActivityNamePrefix = "getup.schedule"
     static let locationRegionIdentifierPrefix = "getup.location"
