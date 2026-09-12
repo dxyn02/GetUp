@@ -48,6 +48,9 @@ Max에서 상세 Shield와 `Use 1 Release` 버튼 표시를 확인했다. 버튼
 `September 2026`, 무료 2, 구매 0에 수렴했다. 중복 지급은 없어 원격 동시 생성 무결성은 통과했지만
 패배한 화면의 즉시 수렴은 실패했다. fresh state가 이미 `current`이면 winner 장부를 채택하도록
 활성화 경합 복구를 보정했고 새 namespace 재검증을 준비한다.
+`t089-day13-concurrent-retry`에서 동시 활성화를 다시 실행한 결과 두 기기 모두 첫 탭 한 번으로
+성공했고, 재실행 없이 양쪽 `September 2026`, 무료 2, 구매 0으로 수렴했다. 같은 allowance 동시
+생성·중복 지급 방지·충돌 직후 UI 수렴 항목은 모두 통과했다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 T099에서 실제 `CKContainer.privateCloudDatabase`·`CoinLedgerZone` adapter와 server creation date,
 change-tag CAS, atomic modify, record별 오류 변환을 구현했다. 초기 fetch가 zone을 만들지 않고 실제
@@ -106,6 +109,8 @@ winner 장부를 `current`로 읽었어도 화면의 기존 setup action을 계�
 setupRequired·syncing·stale·unavailable·deletionConfirmed·resetRequired는 성공으로 승격하지 않는
 회귀를 추가했다. 집중 테스트와 전체 `GetUpTests` 605개 선언(동적 실행 725회)이 실패·skip 없이
 통과했다. 새 격리 namespace 실기기 재검증은 대기 중이다.
+이어 `t089-day13-concurrent-retry` 실기기 재검증도 양쪽 첫 탭 성공과 `September 2026`, 무료 2,
+구매 0 수렴으로 통과했다.
 
 2026-09-12 T089 13일 대체 경계 준비: 9월 12일 23:59:59와 13일 00:00 서울 시각의 period가 각각
 `2026-08`, `2026-09`로 전환되고 다음 경계가 정확히 13일 00:00인지 검증하는 core 회귀와 namespace별

@@ -232,6 +232,10 @@ Pro Max에서 상세 Shield와 `Use 1 Release` 버튼 표시를 확인했다. �
 `setupNotRequired`를 표시하는 문제가 있어, fresh winner 장부를 성공 결과로 채택하도록 보정했다.
 재실행 없이 즉시 수렴하는지는 새 `t089-day13-concurrent-retry`에서 다시 확인한다.
 
+동시 setup 수정 재검증: `t089-day13-concurrent-retry`에서 두 기기가 활성화를 다시 동시에 요청했고,
+양쪽 모두 첫 탭 한 번으로 성공했다. 앱 재실행이나 추가 탭 없이 최종 `September 2026`, 무료 2,
+구매 0으로 수렴했으므로 원격 단일 장부, 중복 지급 방지와 즉시 UI 수렴을 모두 통과했다.
+
 ## Live Activity end-to-end
 
 1. 앱 foreground에서 시간·위치 조건을 만족시켜 제한을 시작한다.

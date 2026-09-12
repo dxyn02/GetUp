@@ -36,6 +36,11 @@ iOS Simulator Release 빌드는 통과했고, 첫 `t089-day13-app` 서명 빌드
 있었다. 활성화 직전과 충돌 후 refreshed state가 `current`이면 기존 권위 장부를 성공 결과로 채택하도록
 수정했다. 새 namespace에서 재실행 없는 UI 수렴 회귀와 Shield-first 재검증은 남아 있다.
 
+수정 빌드의 빈 `t089-day13-concurrent-retry` zone에서 두 기기의 활성화를 다시 동시에 실행했다.
+양쪽 모두 첫 탭 한 번으로 활성화됐고 재시작이나 추가 탭 없이 `September 2026`, 무료 2, 구매 0으로
+수렴했다. 따라서 같은 allowance 동시 생성, 중복 지급 방지와 충돌 직후 UI 수렴은 모두 통과했다.
+수정된 Shield-first 지연 생성과 구매 코인의 경계 보존 실기기 증적만 남아 있다.
+
 **2026-09-12 추가 관찰**: 동일한 당월 무료 2회·구매 0 mirror를 표시하는 두 기기 중 iPhone 15 Pro
 Max에서는 상세 Shield와 `해제권 1회 사용`이 표시되지만 iPhone 17에서는 일반 fallback만 표시됐다.
 iPhone 17의 interval callback은 권한 보완 뒤 제한 적용 완료를 기록했다. 두 기기에 DEBUG 진단을
