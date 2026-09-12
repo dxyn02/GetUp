@@ -23,6 +23,11 @@ iOS Simulator Release 빌드는 통과했고, 첫 `t089-day13-app` 서명 빌드
 수정했고 자동 회귀를 추가했다. 수정 빌드로 Shield-first 실기기 검증을 다시 해야 하므로 차단은
 유지한다.
 
+수정된 `t089-day13-app` 빌드를 두 기기에 다시 설치하고 경계 뒤 처음 foreground로 열었다. 자정 전
+양쪽 `August 2026`, 무료 2, 구매 0이었던 별도 장부가 자정 뒤 양쪽 `September 2026`, 무료 2,
+구매 0으로 수렴했다. 따라서 첫 app foreground 지연 생성, 이전 기간 무료분 비이월과 다기기 전파는
+통과했다. 같은 allowance 동시 생성과 수정 후 Shield-first 재검증은 남아 있다.
+
 **2026-09-12 추가 관찰**: 동일한 당월 무료 2회·구매 0 mirror를 표시하는 두 기기 중 iPhone 15 Pro
 Max에서는 상세 Shield와 `해제권 1회 사용`이 표시되지만 iPhone 17에서는 일반 fallback만 표시됐다.
 iPhone 17의 interval callback은 권한 보완 뒤 제한 적용 완료를 기록했다. 두 기기에 DEBUG 진단을

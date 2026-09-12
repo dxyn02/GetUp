@@ -221,6 +221,10 @@ Pro Max에서 상세 Shield와 `Use 1 Release` 버튼 표시를 확인했다. �
 0/0을 확정 잔액 부족으로 처리하던 선행 guard를 발견했다. allowance 부재일 때는 CloudKit의
 생성+reservation 원자 연산을 시도하도록 보정하고 회귀를 추가했으며, 별도 격리 장부에서 재검증한다.
 
+첫 app foreground 결과: 수정 빌드의 `t089-day13-app` 장부는 경계 전 두 기기 모두 `August 2026`,
+무료 2, 구매 0이었고, 경계 뒤 첫 foreground와 두 번째 기기 동기화 후 모두 `September 2026`, 무료 2,
+구매 0이 됐다. 이전 기간의 미사용 2회가 더해지지 않았으므로 첫 app 지연 생성과 비이월을 통과했다.
+
 ## Live Activity end-to-end
 
 1. 앱 foreground에서 시간·위치 조건을 만족시켜 제한을 시작한다.

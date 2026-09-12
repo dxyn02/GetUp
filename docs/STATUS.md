@@ -41,6 +41,9 @@ Max에서 상세 Shield와 `Use 1 Release` 버튼 표시를 확인했다. 버튼
 무료 1, 구매 0으로 수렴했다. 첫 앱 foreground가 allowance를 생성했으므로 서울 경계·비이월·앱 지연
 생성은 확인됐지만 Shield 지연 생성은 실패로 분류했다. allowance가 없는 fresh 0/0 projection을
 확정 잔액 부족으로 차단하던 Shield 선행 guard를 수정했으며 별도 격리 장부 재검증이 남았다.
+수정된 `t089-day13-app`을 두 기기에 다시 설치한 뒤 경계 후 처음 foreground로 열어 양쪽 모두
+`September 2026`, 무료 2, 구매 0으로 수렴하는 것을 확인했다. 경계 전 값은 양쪽 `August 2026`,
+무료 2, 구매 0이었으므로 첫 app 지연 생성·비이월·다기기 전파 항목은 통과했다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 T099에서 실제 `CKContainer.privateCloudDatabase`·`CoinLedgerZone` adapter와 server creation date,
 change-tag CAS, atomic modify, record별 오류 변환을 구현했다. 초기 fetch가 zone을 만들지 않고 실제
@@ -90,6 +93,7 @@ allowance가 실제 존재하는 확정 0/0만 빠르게 차단하도록 `Shield
 구현 전 새 회귀는 컴파일 RED였고 구현 후 `ShieldCoinActionTests`와 `CloudKitMonthlyAllowanceTests`가
 통과했다. 이어 전체 `GetUpTests` 604개 선언이 동적 실행 포함 724회 모두 통과했고 실패·skip은 없다.
 Shield-first 실기기 재검증은 아직 남아 있다.
+수정된 app namespace의 첫 foreground 결과도 양쪽 `September 2026`, 무료 2, 구매 0으로 확인됐다.
 
 2026-09-12 T089 13일 대체 경계 준비: 9월 12일 23:59:59와 13일 00:00 서울 시각의 period가 각각
 `2026-08`, `2026-09`로 전환되고 다음 경계가 정확히 13일 00:00인지 검증하는 core 회귀와 namespace별
