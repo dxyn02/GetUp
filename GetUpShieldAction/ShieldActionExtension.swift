@@ -161,8 +161,10 @@ private final class ShieldCoinActionRuntime: @unchecked Sendable {
                     guard !context.snapshot.hasPendingReconciliation else {
                         return .reconciliationRequired
                     }
-                    guard context.snapshot.balance.freeAvailable > 0
-                            || context.snapshot.balance.purchasedAvailable > 0 else {
+                    guard ShieldFreshLedgerReleaseGate.shouldAttemptRelease(
+                        balance: context.snapshot.balance,
+                        hasCurrentAllowance: context.allowance != nil
+                    ) else {
                         return .insufficientBalance
                     }
                 } catch {

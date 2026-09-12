@@ -5,6 +5,27 @@ import Testing
 
 @Suite("Shield coin action")
 struct ShieldCoinActionTests {
+    @Test("A missing current-period allowance reaches atomic Shield reservation")
+    func missingAllowanceBypassesConfirmedZeroShortcut() throws {
+        let balance = try CoinBalanceSnapshot.fixture(
+            freeAvailable: 0,
+            purchasedAvailable: 0
+        )
+
+        #expect(
+            ShieldFreshLedgerReleaseGate.shouldAttemptRelease(
+                balance: balance,
+                hasCurrentAllowance: false
+            )
+        )
+        #expect(
+            !ShieldFreshLedgerReleaseGate.shouldAttemptRelease(
+                balance: balance,
+                hasCurrentAllowance: true
+            )
+        )
+    }
+
     @Test("The one primary action spends the monthly free use first")
     func primaryActionUsesMonthlyFreeFirst() async throws {
         let fixture = try Fixture(

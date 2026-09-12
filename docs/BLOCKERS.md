@@ -15,7 +15,13 @@ iOS Simulator Release 빌드는 통과했고, 첫 `t089-day13-app` 서명 빌드
 구매 0을 표시했다. 이어 별도 `t089-day13-shield` 서명 빌드를 두 기기에 설치했으며, 해당 장부의
 활성화·동기화를 마쳐 양쪽 모두 `August 2026`, 무료 2, 구매 0을 표시했다. iPhone 15 Pro Max의
 제한 앱에서 상세 Shield와 `Use 1 Release` 버튼도 확인했다. 13일 자정 뒤 앱 미실행 Shield 요청은
-아직 대기 중이다.
+첫 탭에서 해제되지 않고 Coins 화면을 열었으며 두 번째 탭에서 해제돼 양쪽 `September 2026`, 무료
+1, 구매 0으로 수렴했다. 원인은 fresh sync 뒤 current-period allowance가 아직 없어서 표시 mirror가
+0/0인 상태를 확정 잔액 부족으로 오판한 Shield 선행 guard였다. 첫 앱 foreground가 allowance를 만든
+뒤 두 번째 탭이 성공한 것이므로 서울 경계·비이월·앱 지연 생성은 확인했지만 Shield 지연 생성
+증적으로는 실패다. allowance 부재는 확정 0이 아니므로 권위 있는 atomic reservation까지 진행하도록
+수정했고 자동 회귀를 추가했다. 수정 빌드로 Shield-first 실기기 검증을 다시 해야 하므로 차단은
+유지한다.
 
 **2026-09-12 추가 관찰**: 동일한 당월 무료 2회·구매 0 mirror를 표시하는 두 기기 중 iPhone 15 Pro
 Max에서는 상세 Shield와 `해제권 1회 사용`이 표시되지만 iPhone 17에서는 일반 fallback만 표시됐다.

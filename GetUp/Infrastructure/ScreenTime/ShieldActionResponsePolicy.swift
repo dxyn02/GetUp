@@ -27,6 +27,20 @@ struct ShieldCoinActionContext: Equatable, Sendable {
     let hasPendingReconciliation: Bool
 }
 
+enum ShieldFreshLedgerReleaseGate {
+    /// A missing current-period allowance is not a confirmed zero balance. The
+    /// authoritative reservation operation must be allowed to atomically create
+    /// the allowance and reserve its first free release.
+    static func shouldAttemptRelease(
+        balance: CoinBalanceSnapshot,
+        hasCurrentAllowance: Bool
+    ) -> Bool {
+        !hasCurrentAllowance
+            || balance.freeAvailable > 0
+            || balance.purchasedAvailable > 0
+    }
+}
+
 enum ShieldReleaseAttemptResult: Equatable, Sendable {
     case released(fundingSource: ReleaseFundingSource)
     case insufficientBalance

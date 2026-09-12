@@ -214,6 +214,13 @@ iOS 27 모두 `August 2026`, 무료 2, 구매 0으로 수렴했다. `t089-day13-
 Pro Max에서 상세 Shield와 `Use 1 Release` 버튼 표시를 확인했다. 버튼은 누르지 않았으며 두 기기의
 나서 앱을 종료한 상태에서 자정 뒤 첫 Shield 요청 결과를 기다린다.
 
+경계 뒤 첫 Shield 실행 결과: 첫 탭은 제한을 해제하지 않고 Coins 화면을 열었고, 두 번째 탭은
+성공하여 양쪽 모두 `September 2026`, 무료 1, 구매 0으로 수렴했다. 첫 탭이 앱 foreground를 만들었기
+때문에 이 결과는 서울 자정 전환, 이전 무료분 비이월과 앱의 첫 foreground allowance 생성은
+입증하지만 Shield-first 원자 생성은 입증하지 않는다. fresh projection에서 current allowance가 없는
+0/0을 확정 잔액 부족으로 처리하던 선행 guard를 발견했다. allowance 부재일 때는 CloudKit의
+생성+reservation 원자 연산을 시도하도록 보정하고 회귀를 추가했으며, 별도 격리 장부에서 재검증한다.
+
 ## Live Activity end-to-end
 
 1. 앱 foreground에서 시간·위치 조건을 만족시켜 제한을 시작한다.
