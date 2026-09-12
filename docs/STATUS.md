@@ -44,6 +44,10 @@ Max에서 상세 Shield와 `Use 1 Release` 버튼 표시를 확인했다. 버튼
 수정된 `t089-day13-app`을 두 기기에 다시 설치한 뒤 경계 후 처음 foreground로 열어 양쪽 모두
 `September 2026`, 무료 2, 구매 0으로 수렴하는 것을 확인했다. 경계 전 값은 양쪽 `August 2026`,
 무료 2, 구매 0이었으므로 첫 app 지연 생성·비이월·다기기 전파 항목은 통과했다.
+빈 `t089-day13-concurrent`의 동시 활성화는 한쪽 즉시 성공, 다른 쪽 오류 뒤 앱 재실행으로 양쪽
+`September 2026`, 무료 2, 구매 0에 수렴했다. 중복 지급은 없어 원격 동시 생성 무결성은 통과했지만
+패배한 화면의 즉시 수렴은 실패했다. fresh state가 이미 `current`이면 winner 장부를 채택하도록
+활성화 경합 복구를 보정했고 새 namespace 재검증을 준비한다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 T099에서 실제 `CKContainer.privateCloudDatabase`·`CoinLedgerZone` adapter와 server creation date,
 change-tag CAS, atomic modify, record별 오류 변환을 구현했다. 초기 fetch가 zone을 만들지 않고 실제
@@ -94,6 +98,14 @@ allowance가 실제 존재하는 확정 0/0만 빠르게 차단하도록 `Shield
 통과했다. 이어 전체 `GetUpTests` 604개 선언이 동적 실행 포함 724회 모두 통과했고 실패·skip은 없다.
 Shield-first 실기기 재검증은 아직 남아 있다.
 수정된 app namespace의 첫 foreground 결과도 양쪽 `September 2026`, 무료 2, 구매 0으로 확인됐다.
+
+2026-09-13 T089 동시 setup 후속 수정: 실제 동시 요청에서 패배한 기기는 다음 CloudKit fetch로
+winner 장부를 `current`로 읽었어도 화면의 기존 setup action을 계속 실행해 `setupNotRequired`를
+오류로 표시했다. 활성화 직전 current면 쓰기 없이 해당 snapshot을 반환하고, atomic setup 오류 뒤에도
+한 번 refresh하여 current winner가 확인되면 성공으로 채택하도록 수정했다. current만 허용하고
+setupRequired·syncing·stale·unavailable·deletionConfirmed·resetRequired는 성공으로 승격하지 않는
+회귀를 추가했다. 집중 테스트와 전체 `GetUpTests` 605개 선언(동적 실행 725회)이 실패·skip 없이
+통과했다. 새 격리 namespace 실기기 재검증은 대기 중이다.
 
 2026-09-12 T089 13일 대체 경계 준비: 9월 12일 23:59:59와 13일 00:00 서울 시각의 period가 각각
 `2026-08`, `2026-09`로 전환되고 다음 경계가 정확히 13일 00:00인지 검증하는 core 회귀와 namespace별

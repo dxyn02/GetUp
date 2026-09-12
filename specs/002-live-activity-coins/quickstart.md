@@ -225,6 +225,13 @@ Pro Max에서 상세 Shield와 `Use 1 Release` 버튼 표시를 확인했다. �
 무료 2, 구매 0이었고, 경계 뒤 첫 foreground와 두 번째 기기 동기화 후 모두 `September 2026`, 무료 2,
 구매 0이 됐다. 이전 기간의 미사용 2회가 더해지지 않았으므로 첫 app 지연 생성과 비이월을 통과했다.
 
+동시 setup 결과: 빈 `t089-day13-concurrent`에서 두 기기의 활성화 버튼을 동시에 눌렀다. 한 기기는
+즉시 성공했고 다른 기기는 장부 작업 오류를 유지했으나 앱 재실행 후 양쪽 `September 2026`, 무료 2,
+구매 0으로 수렴했다. 중복 지급 없이 하나의 원격 장부에 수렴했으므로 allowance 동시 생성 무결성은
+통과했다. 패배한 기기의 다음 fetch가 이미 `current`여도 이전 화면의 setup 요청을 다시 실행해
+`setupNotRequired`를 표시하는 문제가 있어, fresh winner 장부를 성공 결과로 채택하도록 보정했다.
+재실행 없이 즉시 수렴하는지는 새 `t089-day13-concurrent-retry`에서 다시 확인한다.
+
 ## Live Activity end-to-end
 
 1. 앱 foreground에서 시간·위치 조건을 만족시켜 제한을 시작한다.

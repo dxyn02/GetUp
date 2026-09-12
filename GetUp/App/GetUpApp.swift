@@ -1467,20 +1467,35 @@ private struct AppEnvironment {
             model: coinStoreModel,
             activateLedger: {
                 let before = try await ledgerRuntime.refreshBeforeShieldRequest()
+                if CoinLedgerActivationRacePolicy.shouldUseExistingLedger(
+                    before.snapshot.balance.syncState
+                ) {
+                    return before.snapshot.coinStoreLedgerState
+                }
                 let now = Date()
-                _ = try await CoinLedgerSetupService(
-                    performAtomicSetup: { request in
-                        try await initializationProvider.setup(request)
+                do {
+                    _ = try await CoinLedgerSetupService(
+                        performAtomicSetup: { request in
+                            try await initializationProvider.setup(request)
+                        }
+                    ).activate(
+                        CoinLedgerSetupRequest(
+                            epochID: UUID(),
+                            monthID: MonthlyAllowancePolicy.monthID(containing: now),
+                            confirmedAt: now,
+                            disclosureVersion: 1
+                        ),
+                        ledgerState: before.snapshot.balance.syncState
+                    )
+                } catch {
+                    let afterConflict = try await ledgerRuntime.refreshForApp()
+                    guard CoinLedgerActivationRacePolicy.shouldUseExistingLedger(
+                        afterConflict.balance.syncState
+                    ) else {
+                        throw error
                     }
-                ).activate(
-                    CoinLedgerSetupRequest(
-                        epochID: UUID(),
-                        monthID: MonthlyAllowancePolicy.monthID(containing: now),
-                        confirmedAt: now,
-                        disclosureVersion: 1
-                    ),
-                    ledgerState: before.snapshot.balance.syncState
-                )
+                    return afterConflict.coinStoreLedgerState
+                }
                 return try await ledgerRuntime.refreshForApp().coinStoreLedgerState
             },
             resetLedger: {

@@ -28,6 +28,14 @@ iOS Simulator Release 빌드는 통과했고, 첫 `t089-day13-app` 서명 빌드
 구매 0으로 수렴했다. 따라서 첫 app foreground 지연 생성, 이전 기간 무료분 비이월과 다기기 전파는
 통과했다. 같은 allowance 동시 생성과 수정 후 Shield-first 재검증은 남아 있다.
 
+새 `t089-day13-concurrent` zone에서 두 기기가 setup을 동시에 요청했다. 한 기기는 즉시 성공했고
+다른 기기는 `iCloud 장부 작업을 완료하지 못했어요`를 계속 표시했지만, 앱 재실행 후 오류가 사라지고
+양쪽 모두 `September 2026`, 무료 2, 구매 0으로 수렴했다. 원격에는 중복 4회 지급 없이 한 장부만
+남았으므로 같은 allowance 동시 생성의 무결성 항목은 통과했다. 다만 패배한 기기가 다음 탭에서 이미
+`current`로 fetch한 winner 장부를 화면에 적용하지 않고 `setupNotRequired` 오류로 버리는 UI 문제가
+있었다. 활성화 직전과 충돌 후 refreshed state가 `current`이면 기존 권위 장부를 성공 결과로 채택하도록
+수정했다. 새 namespace에서 재실행 없는 UI 수렴 회귀와 Shield-first 재검증은 남아 있다.
+
 **2026-09-12 추가 관찰**: 동일한 당월 무료 2회·구매 0 mirror를 표시하는 두 기기 중 iPhone 15 Pro
 Max에서는 상세 Shield와 `해제권 1회 사용`이 표시되지만 iPhone 17에서는 일반 fallback만 표시됐다.
 iPhone 17의 interval callback은 권한 보완 뒤 제한 적용 완료를 기록했다. 두 기기에 DEBUG 진단을

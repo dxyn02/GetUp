@@ -58,6 +58,15 @@ enum CoinLedgerSetupServiceError: Error, Equatable, Sendable {
     case invalidInitializationResult
 }
 
+enum CoinLedgerActivationRacePolicy {
+    /// A concurrent device may finish setup between the screen rendering and the
+    /// user's tap. In that case the freshly fetched server ledger is the success
+    /// result; starting another setup with a different epoch would be incorrect.
+    static func shouldUseExistingLedger(_ state: CoinBalanceSyncState) -> Bool {
+        state == .current
+    }
+}
+
 struct CoinLedgerSetupService: Sendable {
     typealias PerformAtomicSetup = @Sendable (
         CoinLedgerSetupRequest

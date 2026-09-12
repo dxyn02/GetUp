@@ -4,6 +4,21 @@ import Testing
 
 @Suite("Coin ledger fresh-install recovery")
 struct CoinLedgerFreshInstallRecoveryTests {
+    @Test("A concurrent setup winner is adopted only when the refreshed ledger is current")
+    func concurrentSetupWinnerPolicy() {
+        #expect(CoinLedgerActivationRacePolicy.shouldUseExistingLedger(.current))
+        for state in [
+            CoinBalanceSyncState.setupRequired,
+            .syncing,
+            .stale,
+            .unavailable,
+            .deletionConfirmed,
+            .resetRequired,
+        ] {
+            #expect(!CoinLedgerActivationRacePolicy.shouldUseExistingLedger(state))
+        }
+    }
+
     @Test("A current iCloud ledger restores its balance, history, and existing grants only")
     func currentLedgerRestoresWithoutCreatingGrant() throws {
         let snapshot = try Self.currentSnapshot()
