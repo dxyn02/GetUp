@@ -32,7 +32,10 @@ iOS 26.5 이상의 `ManagedSettingsStore.refresh(_:)`로 만료 token을 갱신�
 계속 남아 있다. 실제 월초까지 기다리지 않는 사용자 승인에 따라 DEC-107의 DEBUG 전용 13일 서울
 자정 대체 경계를 구현했다. 유효한 테스트 namespace와 경계일이 함께 있을 때만 별도 CloudKit zone·
 subscription·checkpoint를 사용하고, Release는 설정을 무시해 기존 매월 1일과 운영 zone을 유지한다.
-`t089-day13-app` 서명 빌드는 두 실기기에 설치됐으며 경계 전 격리 장부 활성화를 기다리고 있다.
+`t089-day13-app` 서명 빌드는 두 실기기에서 활성화·동기화를 완료해 모두 `August 2026`, 무료 2,
+구매 0을 확인했다. 별도
+`t089-day13-shield` 빌드도 앱과 Shield Action의 namespace·13일 설정을 검사한 뒤 두 기기에
+설치했다. 해당 장부 활성화와 자정 뒤 앱 미실행 Shield 실행은 아직 대기 중이다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 T099에서 실제 `CKContainer.privateCloudDatabase`·`CoinLedgerZone` adapter와 server creation date,
 change-tag CAS, atomic modify, record별 오류 변환을 구현했다. 초기 fetch가 zone을 만들지 않고 실제
@@ -81,7 +84,9 @@ sync checkpoint 격리 회귀를 추가했다. 전체 `GetUpTests` 603개 선언
 DerivedData/CoreSimulator 접근 제한으로 빌드 전 실패했으며 승인된 동일 명령 재실행에서 통과했다.
 `t089-day13-app` Debug 서명 빌드의 앱·Shield Action `Info.plist`에 namespace, 13일 경계와 명시
 iCloud container가 포함됨을 확인하고 iPhone 17 iOS 26.6.2와 iPhone 15 Pro Max iOS 27에 설치했다.
-격리 장부 활성화와 실제 경계 결과는 아직 대기 중이며 운영 CloudKit record는 변경·삭제하지 않았다.
+양쪽 경계 전 결과는 `August 2026`, 무료 2, 구매 0으로 일치했다. 이어 같은 설정을 사용하는 별도
+`t089-day13-shield` 빌드도 두 기기에 설치했다. Shield 장부 활성화와 실제 경계 결과는 아직 대기
+중이며 운영 CloudKit record는 변경·삭제하지 않았다.
 
 2026-09-12 T089 다기기 진행: iPhone 17 iOS 26.6.2와 iPhone 15 Pro Max iOS 27의 Shield Action이
 공통으로 반환한 `CKError` code 5를 `badContainer`로 확인했다. 앱·Shield Action의 빌드된

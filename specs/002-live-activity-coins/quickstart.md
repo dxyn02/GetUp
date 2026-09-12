@@ -208,6 +208,10 @@ Release의 매월 1일 경계와 운영 `CoinLedgerZone`은 변경하지 않는�
 이 절차는 실제 CloudKit 서버 시각과 서울 자정 전환을 사용하지만 달력상 월초 대신 13일을 경계로
 이동한 대체 증적이다. 실제 월초·시간대 변경은 자동 테스트가 계속 검증한다.
 
+경계 전 결과: `t089-day13-app`을 두 기기에서 확인했으며 iPhone 17 iOS 26.6.2와 iPhone 15 Pro Max
+iOS 27 모두 `August 2026`, 무료 2, 구매 0으로 수렴했다. `t089-day13-shield` 빌드도 양쪽 설치를
+마쳤으며 활성화와 자정 뒤 실행 결과는 대기 중이다.
+
 ## Live Activity end-to-end
 
 1. 앱 foreground에서 시간·위치 조건을 만족시켜 제한을 시작한다.
