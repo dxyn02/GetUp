@@ -13,49 +13,6 @@ protocol ShieldSnapshotReading {
     func readSnapshot() throws -> ShieldContentSnapshot
 }
 
-protocol ShieldTokenRefreshing {
-    func applicationTokens(_ tokens: Set<ApplicationToken>) throws -> Set<ApplicationToken>
-    func categoryTokens(
-        _ tokens: Set<ActivityCategoryToken>
-    ) throws -> Set<ActivityCategoryToken>
-    func webDomainTokens(_ tokens: Set<WebDomainToken>) throws -> Set<WebDomainToken>
-}
-
-struct SystemShieldTokenRefresher: ShieldTokenRefreshing {
-    func applicationTokens(
-        _ tokens: Set<ApplicationToken>
-    ) throws -> Set<ApplicationToken> {
-        guard #available(iOS 26.5, *) else {
-            return tokens
-        }
-        var refreshed = Array(tokens)
-        try ManagedSettingsStore.refresh(&refreshed)
-        return Set(refreshed)
-    }
-
-    func categoryTokens(
-        _ tokens: Set<ActivityCategoryToken>
-    ) throws -> Set<ActivityCategoryToken> {
-        guard #available(iOS 26.5, *) else {
-            return tokens
-        }
-        var refreshed = Array(tokens)
-        try ManagedSettingsStore.refresh(&refreshed)
-        return Set(refreshed)
-    }
-
-    func webDomainTokens(
-        _ tokens: Set<WebDomainToken>
-    ) throws -> Set<WebDomainToken> {
-        guard #available(iOS 26.5, *) else {
-            return tokens
-        }
-        var refreshed = Array(tokens)
-        try ManagedSettingsStore.refresh(&refreshed)
-        return Set(refreshed)
-    }
-}
-
 enum ShieldSnapshotReaderError: Error, Equatable, Sendable {
     case missingAppGroupIdentifier
     case appGroupContainerUnavailable
@@ -508,7 +465,7 @@ struct ShieldContentProvider {
         webDomainToken: WebDomainToken?
     ) -> Bool {
         if let applicationToken,
-           matches(
+           shieldTokenMatches(
                applicationToken,
                storedTokens: selection.applicationTokens,
                refresh: tokenRefresher.applicationTokens
@@ -516,7 +473,7 @@ struct ShieldContentProvider {
             return true
         }
         if let categoryToken,
-           matches(
+           shieldTokenMatches(
                categoryToken,
                storedTokens: selection.categoryTokens,
                refresh: tokenRefresher.categoryTokens
@@ -524,7 +481,7 @@ struct ShieldContentProvider {
             return true
         }
         if let webDomainToken,
-           matches(
+           shieldTokenMatches(
                webDomainToken,
                storedTokens: selection.webDomainTokens,
                refresh: tokenRefresher.webDomainTokens
@@ -532,17 +489,6 @@ struct ShieldContentProvider {
             return true
         }
         return false
-    }
-
-    private func matches<Token: Hashable>(
-        _ callbackToken: Token,
-        storedTokens: Set<Token>,
-        refresh: (Set<Token>) throws -> Set<Token>
-    ) -> Bool {
-        if storedTokens.contains(callbackToken) {
-            return true
-        }
-        return (try? refresh(storedTokens).contains(callbackToken)) == true
     }
 
     private func releaseContent(

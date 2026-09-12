@@ -22,6 +22,7 @@ struct ShieldCoinActionTests {
         #expect(decision.keepsShield == false)
         #expect(await fixture.release.requests == [fixture.context.representative])
         #expect(await fixture.routes.savedRoutes.isEmpty)
+        #expect(await fixture.routes.discardCount == 1)
     }
 
     @Test("The same primary action falls back to one purchased coin")
@@ -294,6 +295,9 @@ private struct Fixture {
             savePendingRoute: { route in
                 try await routes.save(route)
             },
+            discardPendingRoute: {
+                await routes.discard()
+            },
             makeRouteID: { ShieldCoinActionTests.routeID },
             now: { ShieldCoinActionTests.now }
         )
@@ -317,6 +321,7 @@ private actor ShieldReleaseSpy {
 private actor PendingRouteSpy {
     private let shouldFailSave: Bool
     private(set) var savedRoutes: [PendingAppRoute] = []
+    private(set) var discardCount = 0
 
     init(shouldFailSave: Bool = false) {
         self.shouldFailSave = shouldFailSave
@@ -331,6 +336,11 @@ private actor PendingRouteSpy {
             throw PendingRouteSpyError.writeFailed
         }
         savedRoutes.append(route)
+    }
+
+    func discard() {
+        discardCount += 1
+        savedRoutes = []
     }
 }
 

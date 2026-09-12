@@ -24,8 +24,12 @@ development private database를 사용하는 다기기·서울 월 경계 수동
 2026-09-12에 토큰·식별자를 남기지 않는 DEBUG Shield 진단을 추가하고 해당 기기에 설치했다. 적용
 규칙을 완전히 제거·재적용한 DEBUG 결과는 iPhone 15 Pro Max에서 `active: 1`, `matching: 0`이었다.
 iOS 26.5 이상의 `ManagedSettingsStore.refresh(_:)`로 만료 token을 갱신한 뒤 비교하도록 수정하자
-같은 기기에서 상세 Shield와 `Use 1 Release`가 복구됐다. 이제 두 실기기의 동시 사용과 장부 결과를
-수집한다.
+같은 기기에서 상세 Shield와 `Use 1 Release`가 복구됐다. 이후 두 Shield Action에서 공통으로 발생한
+`CKError.badContainer`를 명시 CloudKit container 주입으로 해결했다. 첫 해제는 `releaseCommitted` 뒤
+양쪽 1/0으로 수렴했고, 남은 무료 1회의 동시 요청은 한 기기만 해제·다른 기기 reconciliation 실패
+닫힘·최종 양쪽 0/0으로 수렴했다. 성공 또는 앱 시작 재조정으로 이미 해결된 pending route가 복구
+화면으로 남지 않도록 폐기 정책도 보정했다. 실제 같은 allowance 동시 생성과 서울 월 경계 증적은
+계속 남아 있다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 T099에서 실제 `CKContainer.privateCloudDatabase`·`CoinLedgerZone` adapter와 server creation date,
 change-tag CAS, atomic modify, record별 오류 변환을 구현했다. 초기 fetch가 zone을 만들지 않고 실제
@@ -43,14 +47,15 @@ setup/reset/recovery/reconciliation과 5초 Shield 응답 상한을 live 경로�
 T100 — 앱·Shield Action의 실제 CloudKit 장부 서비스와 수명주기 조립
 
 ## 다음 작업
-T089 — 동일 iCloud 계정 실기기 2대와 development private database로 월 경계·동시 지급 수동 증적을
-수집한다. T094·T095의 Shield/StoreKit 실기기 인수도 이어서 수행한다.
+T089 — 동일 iCloud 계정 실기기 2대의 동시 해제는 통과했다. development private database에서 같은
+allowance 동시 생성과 서울 월 경계·지연 생성 수동 증적을 수집한다. T094·T095의 Shield/StoreKit
+실기기 인수도 이어서 수행한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
-BLK-017 미해결: 사용자가 동일 iCloud 테스트 iPhone 2대와 CloudKit development 접근 준비가
-가능하다고 확인했다. T099 database adapter, T101 sync provider, T102 migration provider와 T100 live
-연결은 완료됐으며 실제 서울 월 경계·다기기 실행과 결과 기록만 남았다.
+BLK-017 미해결: 동일 iCloud 테스트 iPhone 2대의 동시 해제와 계정 전체 최대 사용은 통과했다.
+T099 database adapter, T101 sync provider, T102 migration provider와 T100 live 연결은 완료됐으며
+같은 allowance 동시 생성과 실제 서울 월 경계·지연 생성 결과 기록이 남았다.
 BLK-016 해결됨: 명령별 원자 추가·조건부 제거 API와 최신 상태 재평가 계약 보강을 사용자 승인받았다.
 BLK-015 해결됨: occurrence별 예약 소유권 계약·스키마 보강을 사용자 승인받았다.
 T045 보고서 접근 차단은 사용자 허용 후 같은 명령 재시도로 해결됐다.
@@ -66,6 +71,19 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-12 T089 다기기 진행: iPhone 17 iOS 26.6.2와 iPhone 15 Pro Max iOS 27의 Shield Action이
+공통으로 반환한 `CKError` code 5를 `badContainer`로 확인했다. 앱·Shield Action의 빌드된
+`Info.plist`와 서명 entitlement에 `iCloud.com.dxyn02.GetUp`이 일치하는지 검사하고, 기본 컨테이너
+추론 대신 같은 명시 `CKContainer`를 account provider, `CKSyncEngine`, private database와 setup/reset에
+주입했다. 수정 뒤 첫 무료 해제는 `releaseCommitted`로 확정돼 두 기기 2/0이 1/0으로 동기화됐다.
+남은 무료 1회의 동시 요청은 한 기기만 해제되고 다른 기기는 추가 차감 없이 reconciliation route로
+닫혔으며 최종 두 기기 모두 0/0이었다. 성공 뒤 과거 route 원자 폐기와 재조정 완료 route 억제 회귀를
+추가했고 `CoinLedgerSyncProviderTests`, `ShieldCoinActionTests`, `ShieldActionResponsePolicyTests`,
+`PendingAppRouteRepositoryTests`, `CoinAppLifecycleCoordinatorTests` 집중 실행이 실패·skip 없이
+통과했다. 이어 전체 `GetUpTests` 601개 선언이 동적 인자 포함 721회 모두 통과했고 실패·skip은 없다.
+CloudKit schema나 원격 record를 수동 수정·삭제하지 않았다. T089은 실제 같은 allowance 동시 생성과
+서울 월 경계 증적이 남아 있어 미완료다.
+
 2026-09-12 T089 진단 진행: `ShieldContentProvider`가 App Group 식별자·파일별 missing/read/decode·
 schema 오류, collection identity, 현재 활성 occurrence 수, callback token 매칭 수와 저장 장소 부재를
 구분해 DEBUG App Group 진단으로 기록하도록 보강했다. Family Controls token, 규칙·장소 ID와 이름,

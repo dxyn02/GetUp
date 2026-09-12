@@ -423,6 +423,17 @@ actor PendingAppRouteRepository: PendingAppRoutePersisting {
         }
     }
 
+    func discard() async throws {
+        guard let claimedFileURL = try claimRouteFileIfPresent() else {
+            return
+        }
+        do {
+            try FileManager.default.removeItem(at: claimedFileURL)
+        } catch {
+            throw SharedSnapshotRepositoryError.deletionFailed(fileName: fileName)
+        }
+    }
+
     func consumeIfEligible(
         now: Date,
         activeOccurrenceIDs: Set<String>

@@ -1,3 +1,4 @@
+@preconcurrency import CloudKit
 import Foundation
 
 struct CoinLedgerLiveContext: Sendable {
@@ -7,6 +8,8 @@ struct CoinLedgerLiveContext: Sendable {
     let account: CoinAccount?
     let allowance: MonthlyAllowance?
     let pendingCommandIDs: [UUID]
+    let syncDiagnosticReason: CoinLedgerSyncDiagnosticReason?
+    let syncDiagnosticDetail: String?
 }
 
 /// Process-local production composition for the CloudKit ledger.
@@ -31,12 +34,13 @@ actor CoinLedgerLiveRuntime {
 
     static func live(
         containerURL: URL,
-        process: CoinLedgerSyncProcess
+        process: CoinLedgerSyncProcess,
+        cloudContainer: CKContainer
     ) -> CoinLedgerLiveRuntime {
-        let database = SystemCoinLedgerCloudDatabase()
+        let database = SystemCoinLedgerCloudDatabase(container: cloudContainer)
         let syncProvider = CoinLedgerSyncProvider(
-            accountProvider: SystemCoinLedgerCloudAccountProvider(),
-            engine: SystemCoinLedgerSyncEngineDriver(),
+            accountProvider: SystemCoinLedgerCloudAccountProvider(container: cloudContainer),
+            engine: SystemCoinLedgerSyncEngineDriver(container: cloudContainer),
             checkpointRepository: FileCoinLedgerSyncCheckpointRepository(
                 containerURL: containerURL,
                 process: process
@@ -167,7 +171,9 @@ actor CoinLedgerLiveRuntime {
             epoch: epoch,
             account: account,
             allowance: allowance,
-            pendingCommandIDs: pendingCommandIDs
+            pendingCommandIDs: pendingCommandIDs,
+            syncDiagnosticReason: result.diagnosticReason,
+            syncDiagnosticDetail: result.diagnosticDetail
         )
     }
 

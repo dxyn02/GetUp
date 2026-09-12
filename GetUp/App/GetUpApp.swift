@@ -1,3 +1,4 @@
+@preconcurrency import CloudKit
 @preconcurrency import CoreLocation
 @preconcurrency import FamilyControls
 import Foundation
@@ -469,6 +470,16 @@ private struct GetUpRootView: View {
         guard !Task.isCancelled else { return }
         if let ledger = result.ledger {
             coinStoreConfiguration?.model.refreshLedger(ledger.coinStoreLedgerState)
+            if coinRouteDestination == .reconciliation,
+               !ledger.hasPendingReconciliation {
+                coinRouteDestination = nil
+            } else if coinRouteDestination == .iCloudRecovery,
+                      ledger.balance.syncState == .current {
+                coinRouteDestination = nil
+            } else if coinRouteDestination == .ledgerReset,
+                      ledger.balance.syncState == .current {
+                coinRouteDestination = nil
+            }
         }
         if let destination = result.destination {
             coinRouteDestination = destination
@@ -1213,15 +1224,22 @@ private struct AppEnvironment {
     let permissionOnboardingStateStore: PermissionOnboardingStateStore
 
     static func live() throws -> AppEnvironment {
-        guard let identifier = SharedIdentifiers.appGroupIdentifier(),
-              let containerURL = FileManager.default.containerURL(
-                forSecurityApplicationGroupIdentifier: identifier
-              ) else {
+        guard let identifier = SharedIdentifiers.appGroupIdentifier() else {
+            throw DependencyContainerError.missingAppGroupIdentifier
+        }
+        guard let cloudContainerIdentifier = SharedIdentifiers.iCloudContainerIdentifier() else {
+            throw DependencyContainerError.missingICloudContainerIdentifier
+        }
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: identifier
+        ) else {
             throw DependencyContainerError.appGroupContainerUnavailable
         }
+        let cloudContainer = CKContainer(identifier: cloudContainerIdentifier)
         let ledgerRuntime = CoinLedgerLiveRuntime.live(
             containerURL: containerURL,
-            process: .app
+            process: .app,
+            cloudContainer: cloudContainer
         )
         let storefront = StoreKitPurchaseAdapter()
         let catalog = try CoinProductCatalog()
@@ -1435,7 +1453,7 @@ private struct AppEnvironment {
             }
         )
         let initializationProvider = CloudKitCoinLedgerInitializationProvider(
-            database: SystemCoinLedgerCloudDatabase()
+            database: SystemCoinLedgerCloudDatabase(container: cloudContainer)
         )
         let coinStoreConfiguration = CoinStoreConfiguration(
             model: coinStoreModel,

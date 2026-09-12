@@ -107,6 +107,7 @@ struct CoinLedgerSyncProviderTests {
 
         let unavailable = try await provider.synchronize()
         #expect(unavailable.outcome.mirror.syncState == .unavailable)
+        #expect(unavailable.diagnosticReason == .engineUnavailable)
         #expect(await checkpointStore.checkpoint == checkpoint)
         #expect(await provider.isCurrent() == false)
 
@@ -170,10 +171,34 @@ struct CoinLedgerSyncProviderTests {
         let result = try await provider.synchronize()
 
         #expect(result.outcome.mirror.syncState == .unavailable)
+        #expect(result.diagnosticReason == .accountTemporarilyUnavailable)
         #expect(result.outcome.mirror.freeAvailable == 1)
         #expect(result.outcome.mirror.hadConfirmedLedger)
         #expect(await engine.receivedCheckpoints.isEmpty)
         #expect(await provider.isCurrent() == false)
+    }
+
+    @Test("A temporary user identity failure stays distinct from account status failure")
+    func temporaryUserIdentityFailureIsDiagnosed() async throws {
+        let balance = try Self.balance(freeAvailable: 1)
+        let result = try await Self.provider(
+            account: CoinLedgerCloudAccountFake(
+                .userIdentityTemporarilyUnavailable(errorCode: 9)
+            ),
+            engine: CoinLedgerSyncEngineFake(results: []),
+            checkpointStore: CoinLedgerSyncCheckpointStoreFake(checkpoint: Self.checkpoint(
+                accountSessionID: "account-a",
+                records: try Self.ledgerRecords(freeAvailable: 1),
+                hasPendingChanges: false,
+                lastMirror: balance
+            )),
+            balanceStore: CoinBalanceStoreFake(snapshot: balance)
+        ).synchronize()
+
+        #expect(result.outcome.mirror.syncState == .unavailable)
+        #expect(result.outcome.mirror.freeAvailable == 1)
+        #expect(result.diagnosticReason == .userIdentityTemporarilyUnavailable)
+        #expect(result.diagnosticDetail == "ckErrorCode: 9")
     }
 
     @Test("Signing out removes the account checkpoint and never exposes its balance")
@@ -194,6 +219,7 @@ struct CoinLedgerSyncProviderTests {
         let result = try await provider.synchronize()
 
         #expect(result.outcome.mirror.syncState == .unavailable)
+        #expect(result.diagnosticReason == .signedOut)
         #expect(result.outcome.mirror.purchasedAvailable == 0)
         #expect(result.outcome.mirror.freeAvailable == 0)
         #expect(result.outcome.mirror.hadConfirmedLedger == false)
@@ -220,6 +246,11 @@ struct CoinLedgerSyncProviderTests {
         let result = try await provider.synchronize()
 
         #expect(result.outcome.mirror.syncState == .stale)
+        #expect(result.diagnosticReason == .staleProjection)
+        #expect(
+            result.diagnosticDetail
+                == "projectionCompleted: true, pendingReconciliation: false, pendingChanges: true"
+        )
         #expect(await provider.isCurrent() == false)
     }
 
@@ -294,6 +325,7 @@ struct CoinLedgerSyncProviderTests {
         let result = try await provider.synchronize()
 
         #expect(result.outcome.mirror.syncState == .unavailable)
+        #expect(result.diagnosticReason == .invalidProjection)
         #expect(result.outcome.mirror.hadConfirmedLedger == false)
         #expect(await checkpointStore.checkpoint?.lastMirror == result.outcome.mirror)
         #expect(await provider.isCurrent() == false)

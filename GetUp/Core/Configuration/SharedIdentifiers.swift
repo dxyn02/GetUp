@@ -3,6 +3,8 @@ import Foundation
 
 enum SharedIdentifiers {
     static let appGroupIdentifierInfoDictionaryKey = "GetUpAppGroupIdentifier"
+    static let iCloudContainerIdentifierInfoDictionaryKey =
+        "GetUpICloudContainerIdentifier"
     static let coinProductCatalogInfoDictionaryKey = "GetUpCoinProductCatalog"
     static let coinProductIdentifierCatalogKey = "ProductIdentifier"
     static let coinProductQuantityCatalogKey = "Quantity"
@@ -30,6 +32,7 @@ enum SharedIdentifiers {
     static let authorizationSnapshotDefaultsKey = "getup.authorization.last-known-snapshot"
     static let intervalStartDiagnosticDefaultsKey = "getup.diagnostics.interval-start.latest"
     static let shieldContentDiagnosticDefaultsKey = "getup.diagnostics.shield-content.latest"
+    static let shieldActionDiagnosticDefaultsKey = "getup.diagnostics.shield-action.latest"
     static let legacyRestrictionIsAppliedDefaultsKey = "getup.restriction.is-applied"
     static let legacyRestrictionRuleRevisionDefaultsKey = "getup.restriction.rule-revision"
 
@@ -63,6 +66,20 @@ enum SharedIdentifiers {
         guard
             let identifier = bundle.object(
                 forInfoDictionaryKey: appGroupIdentifierInfoDictionaryKey
+            ) as? String,
+            !identifier.isEmpty,
+            !identifier.contains("$(")
+        else {
+            return nil
+        }
+
+        return identifier
+    }
+
+    static func iCloudContainerIdentifier(in bundle: Bundle = .main) -> String? {
+        guard
+            let identifier = bundle.object(
+                forInfoDictionaryKey: iCloudContainerIdentifierInfoDictionaryKey
             ) as? String,
             !identifier.isEmpty,
             !identifier.contains("$(")

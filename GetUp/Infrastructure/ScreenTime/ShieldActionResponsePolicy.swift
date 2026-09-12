@@ -47,9 +47,11 @@ actor ShieldCoinActionHandler {
         RestrictionOccurrence
     ) async -> ShieldReleaseAttemptResult
     typealias SavePendingRoute = @Sendable (PendingAppRoute) async throws -> Void
+    typealias DiscardPendingRoute = @Sendable () async throws -> Void
 
     private let releaseRepresentative: ReleaseRepresentative
     private let savePendingRoute: SavePendingRoute
+    private let discardPendingRoute: DiscardPendingRoute
     private let makeRouteID: @Sendable () -> UUID
     private let now: @Sendable () -> Date
     private let responsePolicy: ShieldActionResponsePolicy
@@ -58,12 +60,14 @@ actor ShieldCoinActionHandler {
     init(
         releaseRepresentative: @escaping ReleaseRepresentative,
         savePendingRoute: @escaping SavePendingRoute,
+        discardPendingRoute: @escaping DiscardPendingRoute = {},
         makeRouteID: @escaping @Sendable () -> UUID = UUID.init,
         now: @escaping @Sendable () -> Date = Date.init,
         responsePolicy: ShieldActionResponsePolicy = ShieldActionResponsePolicy()
     ) {
         self.releaseRepresentative = releaseRepresentative
         self.savePendingRoute = savePendingRoute
+        self.discardPendingRoute = discardPendingRoute
         self.makeRouteID = makeRouteID
         self.now = now
         self.responsePolicy = responsePolicy
@@ -106,6 +110,7 @@ actor ShieldCoinActionHandler {
 
         switch await releaseRepresentative(context.representative) {
         case .released(let fundingSource):
+            try? await discardPendingRoute()
             let keepsShield = context.activeRestrictionCount > 1
             return ShieldCoinActionDecision(
                 fundingSource: fundingSource,
@@ -183,32 +188,53 @@ enum ShieldCoinActionContextReaderError: Error, Equatable, Sendable {
 
 struct ShieldCoinActionContextReader: Sendable {
     let containerURL: URL
+    let tokenRefresher: any ShieldTokenRefreshing
     let now: @Sendable () -> Date
 
     init(
         containerURL: URL,
+        tokenRefresher: any ShieldTokenRefreshing = SystemShieldTokenRefresher(),
         now: @escaping @Sendable () -> Date = Date.init
     ) {
         self.containerURL = containerURL
+        self.tokenRefresher = tokenRefresher
         self.now = now
     }
 
     func context(for applicationToken: ApplicationToken) async throws
         -> ShieldCoinActionContext
     {
-        try await context { $0.applicationTokens.contains(applicationToken) }
+        try await context {
+            shieldTokenMatches(
+                applicationToken,
+                storedTokens: $0.applicationTokens,
+                refresh: tokenRefresher.applicationTokens
+            )
+        }
     }
 
     func context(for categoryToken: ActivityCategoryToken) async throws
         -> ShieldCoinActionContext
     {
-        try await context { $0.categoryTokens.contains(categoryToken) }
+        try await context {
+            shieldTokenMatches(
+                categoryToken,
+                storedTokens: $0.categoryTokens,
+                refresh: tokenRefresher.categoryTokens
+            )
+        }
     }
 
     func context(for webDomainToken: WebDomainToken) async throws
         -> ShieldCoinActionContext
     {
-        try await context { $0.webDomainTokens.contains(webDomainToken) }
+        try await context {
+            shieldTokenMatches(
+                webDomainToken,
+                storedTokens: $0.webDomainTokens,
+                refresh: tokenRefresher.webDomainTokens
+            )
+        }
     }
 
     private func context(

@@ -1,5 +1,29 @@
 # 결정 사항
 
+## DEC-106 — CloudKit 컨테이너 명시 주입과 해결된 Shield route 폐기
+
+**날짜**: 2026-09-12
+
+**결정**: 앱과 Shield Action은 `CKContainer.default()`의 bundle 기반 추론에 의존하지 않는다.
+`GETUP_ICLOUD_CONTAINER_IDENTIFIER`를 각 target의 `Info.plist`에
+`GetUpICloudContainerIdentifier`로 주입하고, 검증된 식별자로 생성한 동일 `CKContainer`를 계정 확인,
+`CKSyncEngine`, private database와 setup/reset provider에 전달한다. 값이 비어 있거나 build setting이
+치환되지 않았으면 기본 컨테이너로 fallback하지 않고 시작 또는 Shield action을 실패 닫힘 처리한다.
+
+Shield 해제가 확정되면 그보다 앞선 실패가 남긴 단일 `PendingAppRoute`를 원자 폐기한다. 앱 시작
+재조정 뒤 최신 장부가 `current`이거나 미결 command가 사라졌다면 각각 과거 iCloud 복구·reconciliation
+route는 파일에서 소비하되 화면을 열지 않는다. 재조정이 실패했거나 미결 command가 남으면 기존
+복구 화면을 보존한다.
+
+**근거**: 두 실기기의 Shield Action에서 `CKError.badContainer`가 동일하게 발생했지만 서명
+entitlement와 provisioning profile에는 올바른 컨테이너가 포함돼 있었다. 명시 컨테이너 주입 뒤 실제
+해제가 확정되고 두 기기 잔액이 동기화됐다. 또한 이전 실패 route와 동시 요청 패자의 reconciliation
+route가 이미 해결된 뒤에도 정적 안내를 표시했으므로, route의 생성 당시 원인보다 앱 시작 후 최신
+재조정 결과를 우선해야 한다.
+
+**영향 범위**: CloudKit schema·record 값·보안 권한은 변경하지 않는다. DEBUG 진단은 token, 좌표,
+계정 record ID를 기록하지 않고 안정된 단계·상태·오류 코드만 App Group에 보존한다.
+
 ## DEC-105 — 앱·Shield의 프로세스별 live 장부 조립과 새 epoch 활성화
 
 **날짜**: 2026-09-09

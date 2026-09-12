@@ -2,6 +2,7 @@ import Foundation
 
 enum DependencyContainerError: Error, Equatable, Sendable {
     case missingAppGroupIdentifier
+    case missingICloudContainerIdentifier
     case appGroupContainerUnavailable
 }
 
@@ -221,13 +222,17 @@ actor CoinAppLifecycleCoordinator {
             )
         }
 
-        let destination: PendingAppRouteDestination?
+        let consumedDestination: PendingAppRouteDestination?
         do {
-            destination = try await consumePendingRoute(now, activeOccurrenceIDs)
+            consumedDestination = try await consumePendingRoute(now, activeOccurrenceIDs)
         } catch {
-            destination = nil
+            consumedDestination = nil
             failures.append(.routeConsumption)
         }
+        let destination = actionableDestination(
+            consumedDestination,
+            afterReconciliation: ledger
+        )
 
         _ = trigger
         return CoinAppLifecycleRefreshResult(
@@ -235,6 +240,23 @@ actor CoinAppLifecycleCoordinator {
             destination: destination,
             failures: failures
         )
+    }
+
+    private func actionableDestination(
+        _ destination: PendingAppRouteDestination?,
+        afterReconciliation ledger: CoinLedgerReconciliationSnapshot?
+    ) -> PendingAppRouteDestination? {
+        guard let destination, let ledger else { return destination }
+        switch destination {
+        case .iCloudRecovery where ledger.balance.syncState == .current:
+            return nil
+        case .reconciliation where !ledger.hasPendingReconciliation:
+            return nil
+        case .ledgerReset where ledger.balance.syncState == .current:
+            return nil
+        case .coinStore, .iCloudRecovery, .ledgerReset, .reconciliation:
+            return destination
+        }
     }
 }
 

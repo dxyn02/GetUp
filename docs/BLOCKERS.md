@@ -13,6 +13,17 @@ token이 달랐다. iOS 26.5 이상의 공식 `ManagedSettingsStore.refresh(_:)`
 갱신한 뒤 비교하도록 수정하자 같은 기기에서 상세 Shield와 `Use 1 Release`가 표시됐다. 이 하위
 문제는 해결됐으며 T089의 실제 동시 사용과 서울 월 경계 증적은 계속 남아 있다.
 
+**2026-09-12 다기기 결과**: Shield Action의 계정 식별 단계에서 두 기기 모두 `CKError` code 5
+(`badContainer`)를 반환했다. 서명 entitlement와 provisioning profile에는
+`iCloud.com.dxyn02.GetUp`이 포함돼 있었으므로 기본 컨테이너 추론을 제거하고 build setting의 식별자를
+앱·Shield Action `Info.plist`에서 읽어 계정·sync engine·private database에 명시 주입했다. 이후 첫
+무료 해제가 `releaseCommitted`로 확정돼 양쪽 잔액이 2/0에서 1/0으로 수렴했다. 남은 무료 1회를 두
+기기에서 동시에 요청하자 한 기기만 해제되고 다른 기기는 reconciliation으로 실패 닫혔으며 최종
+잔액은 양쪽 0/0으로 수렴했다. 초과 차감이나 두 기기 동시 해제는 없었다. 해결된 route가 정적 복구
+화면으로 남는 후속 문제는 성공 시 pending route 원자 폐기 및 앱 재조정 결과 기반 route 억제로
+보정했다. 따라서 다기기 동시 사용 항목은 통과했지만 같은 allowance의 실제 동시 생성과 서울 월
+경계 두 항목은 남아 있어 BLK-017은 계속 미해결이다.
+
 T089의 US4 자동 검증은 iPhone 17 Pro iOS 26.5 Simulator에서 24개 모두 통과했다. 같은 record ID
 100회 충돌, 무료 우선 예약, 서울 자정 전후 지연 생성·비이월, 시간대 변경과 reset 뒤 다음 달 재개를
 in-memory CloudKit protocol fake와 UI fixture로 검증했다.

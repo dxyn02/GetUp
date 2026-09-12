@@ -112,12 +112,52 @@ struct CoinAppLifecycleCoordinatorTests {
         #expect(result.destination == nil)
         #expect(result.failures == [.routeConsumption])
     }
+
+    @Test("A completed reconciliation discards its obsolete route without presenting status")
+    func completedReconciliationDiscardsObsoleteRoute() async throws {
+        let recorder = CoinLifecycleRecorder()
+        let coordinator = CoinAppLifecycleCoordinator(
+            startTransactionObservation: {},
+            reconcileLedger: { try Self.ledger(syncState: .current) },
+            loadActiveOccurrenceIDs: { _ in ["occurrence-current"] },
+            consumePendingRoute: { _, activeIDs in
+                await recorder.record(.route(activeIDs))
+                return .reconciliation
+            }
+        )
+
+        let result = await coordinator.refresh(trigger: .launch, now: Self.now)
+
+        #expect(result.destination == nil)
+        #expect(result.failures.isEmpty)
+        #expect(await recorder.events == [.route(["occurrence-current"])])
+    }
+
+    @Test("An unresolved reconciliation keeps its status route")
+    func unresolvedReconciliationKeepsStatusRoute() async throws {
+        let coordinator = CoinAppLifecycleCoordinator(
+            startTransactionObservation: {},
+            reconcileLedger: {
+                try Self.ledger(syncState: .current, hasPendingReconciliation: true)
+            },
+            loadActiveOccurrenceIDs: { _ in ["occurrence-current"] },
+            consumePendingRoute: { _, _ in .reconciliation }
+        )
+
+        let result = await coordinator.refresh(trigger: .launch, now: Self.now)
+
+        #expect(result.destination == .reconciliation)
+        #expect(result.failures.isEmpty)
+    }
 }
 
 private extension CoinAppLifecycleCoordinatorTests {
     static let now = Date(timeIntervalSince1970: 1_788_192_000)
 
-    static func ledger(syncState: CoinBalanceSyncState) throws -> CoinLedgerReconciliationSnapshot {
+    static func ledger(
+        syncState: CoinBalanceSyncState,
+        hasPendingReconciliation: Bool = false
+    ) throws -> CoinLedgerReconciliationSnapshot {
         CoinLedgerReconciliationSnapshot(
             balance: try CoinBalanceSnapshot(
                 purchasedAvailable: 3,
@@ -131,7 +171,7 @@ private extension CoinAppLifecycleCoordinatorTests {
             purchaseGrants: [],
             events: [],
             pendingProductIdentifiers: [],
-            hasPendingReconciliation: false
+            hasPendingReconciliation: hasPendingReconciliation
         )
     }
 }

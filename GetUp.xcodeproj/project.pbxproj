@@ -126,6 +126,9 @@
 		AA0000000000000000000197 /* ShieldActionResponsePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000050 /* ShieldActionResponsePolicy.swift */; };
 		AA0000000000000000000198 /* ShieldActionResponsePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000050 /* ShieldActionResponsePolicy.swift */; };
 		AA0000000000000000000199 /* ShieldActionExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90000000000000000000001 /* ShieldActionExtension.swift */; };
+		AA0000000000000000000334 /* ShieldTokenRefresher.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000000000000000000008F /* ShieldTokenRefresher.swift */; };
+		AA0000000000000000000335 /* ShieldTokenRefresher.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000000000000000000008F /* ShieldTokenRefresher.swift */; };
+		AA0000000000000000000336 /* ShieldTokenRefresher.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000000000000000000008F /* ShieldTokenRefresher.swift */; };
 		AA0000000000000000000200 /* RestrictionStatusModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000025 /* RestrictionStatusModelTests.swift */; };
 		AA0000000000000000000201 /* RestrictionStatusModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000051 /* RestrictionStatusModel.swift */; };
 		AA0000000000000000000202 /* RestrictionStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000053 /* RestrictionStatusView.swift */; };
@@ -379,6 +382,7 @@
 		B4000000000000000000008A /* CoinAppLifecycleComposition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinAppLifecycleComposition.swift; sourceTree = "<group>"; };
 		B40000000000000000000049 /* ShieldContentProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldContentProvider.swift; sourceTree = "<group>"; };
 		B40000000000000000000050 /* ShieldActionResponsePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldActionResponsePolicy.swift; sourceTree = "<group>"; };
+		B4000000000000000000008F /* ShieldTokenRefresher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldTokenRefresher.swift; sourceTree = "<group>"; };
 		B40000000000000000000051 /* RestrictionStatusModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStatusModel.swift; sourceTree = "<group>"; };
 		B40000000000000000000053 /* RestrictionStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionStatusView.swift; sourceTree = "<group>"; };
 		B40000000000000000000054 /* PermissionGuideModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionGuideModel.swift; sourceTree = "<group>"; };
@@ -791,6 +795,7 @@
 				B40000000000000000000074 /* RuleReleaseLocalLease.swift */,
 				B40000000000000000000049 /* ShieldContentProvider.swift */,
 				B40000000000000000000050 /* ShieldActionResponsePolicy.swift */,
+				B4000000000000000000008F /* ShieldTokenRefresher.swift */,
 			);
 			path = ScreenTime;
 			sourceTree = "<group>";
@@ -1413,6 +1418,7 @@
 				AA000000000000000000031F /* CoinAppLifecycleComposition.swift in Sources */,
 				AA0000000000000000000192 /* ShieldContentProvider.swift in Sources */,
 				AA0000000000000000000197 /* ShieldActionResponsePolicy.swift in Sources */,
+				AA0000000000000000000334 /* ShieldTokenRefresher.swift in Sources */,
 				AA0000000000000000000201 /* RestrictionStatusModel.swift in Sources */,
 				AA0000000000000000000202 /* RestrictionStatusView.swift in Sources */,
 				AA0000000000000000000208 /* PermissionGuideModel.swift in Sources */,
@@ -1480,6 +1486,7 @@
 				AA0000000000000000000133 /* ScheduleEvaluator.swift in Sources */,
 				AA0000000000000000000143 /* RestrictionRuleValidator.swift in Sources */,
 				AA0000000000000000000193 /* ShieldContentProvider.swift in Sources */,
+				AA0000000000000000000335 /* ShieldTokenRefresher.swift in Sources */,
 				AA0000000000000000000194 /* ShieldConfigurationExtension.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1527,6 +1534,7 @@
 				AA0000000000000000000134 /* ScheduleEvaluator.swift in Sources */,
 				AA0000000000000000000144 /* RestrictionRuleValidator.swift in Sources */,
 				AA0000000000000000000198 /* ShieldActionResponsePolicy.swift in Sources */,
+				AA0000000000000000000336 /* ShieldTokenRefresher.swift in Sources */,
 				AA0000000000000000000199 /* ShieldActionExtension.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

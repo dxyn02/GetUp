@@ -5,6 +5,7 @@ enum CoinLedgerCloudAccountAvailability: Equatable, Sendable {
     case available(sessionID: String)
     case signedOut
     case temporarilyUnavailable
+    case userIdentityTemporarilyUnavailable(errorCode: Int?)
 }
 
 protocol CoinLedgerCloudAccountProviding: Sendable {
@@ -21,22 +22,31 @@ struct SystemCoinLedgerCloudAccountProvider: CoinLedgerCloudAccountProviding,
     }
 
     func currentAvailability() async -> CoinLedgerCloudAccountAvailability {
+        let status: CKAccountStatus
         do {
-            switch try await container.accountStatus() {
-            case .available:
+            status = try await container.accountStatus()
+        } catch {
+            return .temporarilyUnavailable
+        }
+
+        switch status {
+        case .available:
+            do {
                 let recordID = try await container.userRecordID()
                 guard !recordID.recordName.isEmpty else {
-                    return .temporarilyUnavailable
+                    return .userIdentityTemporarilyUnavailable(errorCode: nil)
                 }
                 return .available(sessionID: recordID.recordName)
-            case .noAccount, .restricted:
-                return .signedOut
-            case .couldNotDetermine, .temporarilyUnavailable:
-                return .temporarilyUnavailable
-            @unknown default:
-                return .temporarilyUnavailable
+            } catch let error as CKError {
+                return .userIdentityTemporarilyUnavailable(errorCode: error.errorCode)
+            } catch {
+                return .userIdentityTemporarilyUnavailable(errorCode: nil)
             }
-        } catch {
+        case .noAccount, .restricted:
+            return .signedOut
+        case .couldNotDetermine, .temporarilyUnavailable:
+            return .temporarilyUnavailable
+        @unknown default:
             return .temporarilyUnavailable
         }
     }
@@ -239,6 +249,31 @@ enum CoinLedgerSyncProviderError: Error, Equatable, Sendable {
 struct CoinLedgerSyncProviderResult: Equatable, Sendable {
     let outcome: CoinLedgerSyncOutcome
     let remoteRecords: [CloudKitRecordSnapshot]
+    let diagnosticReason: CoinLedgerSyncDiagnosticReason?
+    let diagnosticDetail: String?
+
+    init(
+        outcome: CoinLedgerSyncOutcome,
+        remoteRecords: [CloudKitRecordSnapshot],
+        diagnosticReason: CoinLedgerSyncDiagnosticReason? = nil,
+        diagnosticDetail: String? = nil
+    ) {
+        self.outcome = outcome
+        self.remoteRecords = remoteRecords
+        self.diagnosticReason = diagnosticReason
+        self.diagnosticDetail = diagnosticDetail
+    }
+}
+
+enum CoinLedgerSyncDiagnosticReason: String, Equatable, Sendable {
+    case signedOut
+    case accountTemporarilyUnavailable
+    case userIdentityTemporarilyUnavailable
+    case emptyAccountSession
+    case engineUnavailable
+    case emptyRemoteAfterConfirmedLedger
+    case invalidProjection
+    case staleProjection
 }
 
 actor CoinLedgerSyncProvider {
@@ -281,7 +316,8 @@ actor CoinLedgerSyncProvider {
             latestProjection = nil
             return try await applyUnavailable(
                 accountSessionID: "signed-out",
-                localMirror: nil
+                localMirror: nil,
+                reason: .signedOut
             )
 
         case .temporarilyUnavailable:
@@ -289,14 +325,26 @@ actor CoinLedgerSyncProvider {
             latestProjection = nil
             return try await applyUnavailable(
                 accountSessionID: checkpoint?.accountSessionID ?? "account-unavailable",
-                localMirror: checkpoint?.lastMirror
+                localMirror: checkpoint?.lastMirror,
+                reason: .accountTemporarilyUnavailable
+            )
+
+        case .userIdentityTemporarilyUnavailable(let errorCode):
+            let checkpoint = await loadUsableCheckpoint()
+            latestProjection = nil
+            return try await applyUnavailable(
+                accountSessionID: checkpoint?.accountSessionID ?? "identity-unavailable",
+                localMirror: checkpoint?.lastMirror,
+                reason: .userIdentityTemporarilyUnavailable,
+                detail: errorCode.map { "ckErrorCode: \($0)" }
             )
 
         case .available(let accountSessionID):
             guard !accountSessionID.isEmpty else {
                 return try await applyUnavailable(
                     accountSessionID: "account-unavailable",
-                    localMirror: nil
+                    localMirror: nil,
+                    reason: .emptyAccountSession
                 )
             }
             return try await synchronizeAvailableAccount(accountSessionID)
@@ -343,7 +391,8 @@ private extension CoinLedgerSyncProvider {
             latestProjection = nil
             return try await applyUnavailable(
                 accountSessionID: accountSessionID,
-                localMirror: localMirror
+                localMirror: localMirror,
+                reason: .engineUnavailable
             )
         }
 
@@ -365,7 +414,8 @@ private extension CoinLedgerSyncProvider {
                 latestProjection = nil
                 let unavailable = try await applyUnavailable(
                     accountSessionID: accountSessionID,
-                    localMirror: localMirror
+                    localMirror: localMirror,
+                    reason: .emptyRemoteAfterConfirmedLedger
                 )
                 try await checkpointRepository.saveCheckpoint(
                     checkpoint.replacingLastMirror(unavailable.outcome.mirror)
@@ -388,7 +438,8 @@ private extension CoinLedgerSyncProvider {
                 latestProjection = nil
                 let unavailable = try await applyUnavailable(
                     accountSessionID: accountSessionID,
-                    localMirror: localMirror
+                    localMirror: localMirror,
+                    reason: .invalidProjection
                 )
                 try await checkpointRepository.saveCheckpoint(
                     checkpoint.replacingLastMirror(unavailable.outcome.mirror)
@@ -410,15 +461,26 @@ private extension CoinLedgerSyncProvider {
             checkpoint.replacingLastMirror(outcome.mirror)
         )
         try await balanceRepository.saveCoinBalanceSnapshot(outcome.mirror)
+        let staleDetail = outcome.mirror.syncState == .stale
+            ? [
+                "projectionCompleted: \(projectionCompleted(remoteResult))",
+                "pendingReconciliation: \(hasPendingReconciliation(remoteResult))",
+                "pendingChanges: \(checkpoint.hasPendingChanges)"
+            ].joined(separator: ", ")
+            : nil
         return CoinLedgerSyncProviderResult(
             outcome: outcome,
-            remoteRecords: checkpoint.records
+            remoteRecords: checkpoint.records,
+            diagnosticReason: staleDetail == nil ? nil : .staleProjection,
+            diagnosticDetail: staleDetail
         )
     }
 
     func applyUnavailable(
         accountSessionID: String,
-        localMirror: CoinBalanceSnapshot?
+        localMirror: CoinBalanceSnapshot?,
+        reason: CoinLedgerSyncDiagnosticReason,
+        detail: String? = nil
     ) async throws -> CoinLedgerSyncProviderResult {
         let now = wallClockNow()
         let adapter = adapterForAccount(accountSessionID)
@@ -431,7 +493,12 @@ private extension CoinLedgerSyncProvider {
             syncedAt: now
         )
         try await balanceRepository.saveCoinBalanceSnapshot(outcome.mirror)
-        return CoinLedgerSyncProviderResult(outcome: outcome, remoteRecords: [])
+        return CoinLedgerSyncProviderResult(
+            outcome: outcome,
+            remoteRecords: [],
+            diagnosticReason: reason,
+            diagnosticDetail: detail
+        )
     }
 
     func adapterForAccount(_ accountSessionID: String) -> CoinLedgerSyncAdapter {
@@ -449,6 +516,16 @@ private extension CoinLedgerSyncProvider {
             try? await checkpointRepository.clearCheckpoint()
             return nil
         }
+    }
+
+    func projectionCompleted(_ result: CoinLedgerRemoteFetchResult) -> Bool {
+        guard case .ledger(let projection) = result else { return false }
+        return projection.projectionCompleted
+    }
+
+    func hasPendingReconciliation(_ result: CoinLedgerRemoteFetchResult) -> Bool {
+        guard case .ledger(let projection) = result else { return false }
+        return projection.hasPendingReconciliation
     }
 }
 

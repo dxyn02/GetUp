@@ -170,7 +170,7 @@ xcodebuild test \
 | 수동 항목 | 환경 | 결과 |
 |----------|------|------|
 | 같은 iCloud 계정의 iPhone 2대에서 같은 월 allowance 동시 생성 | CloudKit development, 실기기 2대 | 대기 |
-| 두 기기의 무료 해제 동시 요청과 계정 전체 최대 2회 확인 | CloudKit development, 실기기 2대 | 대기 |
+| 두 기기의 무료 해제 동시 요청과 계정 전체 최대 2회 확인 | iPhone 17 iOS 26.6.2, iPhone 15 Pro Max iOS 27, CloudKit development | 완료 — 최초 해제 뒤 양쪽 1/0, 남은 1회를 동시 요청해 한 기기만 해제되고 다른 기기는 reconciliation으로 실패 닫힘, 최종 양쪽 0/0 |
 | 서울 월 경계 전후 비이월 및 구매 잔액 보존 | 서버 creation date를 확인할 수 있는 실제 장부 | 대기 |
 | 월 경계 동안 앱·Shield 미실행 후 첫 foreground 및 별도 첫 Shield 지연 생성 | 실기기 및 실제 장부 | 대기 |
 
@@ -178,8 +178,13 @@ xcodebuild test \
 Shield callback token이 일치하지 않아 일반 fallback이 표시됐다. iOS 26.5 이상의 공식
 `ManagedSettingsStore.refresh(_:)`로 application·category·web domain token을 갱신한 뒤 비교하도록
 수정했고, 같은 규칙과 기기에서 상세 Shield와 `Use 1 Release` 표시를 확인했다. 두 테스트 기기는
-동일한 Debug 빌드 `0.1.0 (6)`으로 맞췄다. 아직 해제권 동시 사용과 월 경계 결과는 위 표의 완료
-증적으로 계산하지 않는다.
+동일한 Debug 빌드 `0.1.0 (6)`으로 맞췄다. 이어 Shield Action이 `CKError.badContainer`를 반환하는
+문제를 확인해 build setting의 CloudKit container ID를 앱·확장 `Info.plist`에서 읽고 계정·sync·database
+provider에 명시 주입했다. 수정 뒤 한 기기의 무료 해제가 `releaseCommitted`로 확정되고 양쪽 잔액이
+2/0에서 1/0으로 수렴했다. 남은 무료 1회를 두 기기에서 동시에 요청하자 한 기기만 해제되고 다른
+기기는 추가 차감 없이 reconciliation route로 실패 닫혔으며, 최종 잔액은 양쪽 모두 0/0이었다.
+성공 뒤 과거 복구 route와 완료된 reconciliation route가 남는 문제는 최신 재조정 결과로 폐기하도록
+보정했다. 같은 월 allowance 동시 생성과 실제 서울 월 경계 두 항목은 계속 대기한다.
 
 ## Live Activity end-to-end
 
