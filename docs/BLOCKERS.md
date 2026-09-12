@@ -13,7 +13,9 @@ iOS Simulator Release 빌드는 통과했고, 첫 `t089-day13-app` 서명 빌드
 
 `t089-day13-app`은 두 기기에서 경계 전 활성화·동기화를 마쳤고 모두 `August 2026`, 무료 2,
 구매 0을 표시했다. 이어 별도 `t089-day13-shield` 서명 빌드를 두 기기에 설치했으며, 해당 장부의
-활성화·제한 시작과 13일 자정 뒤 앱 미실행 Shield 요청은 아직 대기 중이다.
+활성화·동기화를 마쳐 양쪽 모두 `August 2026`, 무료 2, 구매 0을 표시했다. iPhone 15 Pro Max의
+제한 앱에서 상세 Shield와 `Use 1 Release` 버튼도 확인했다. 13일 자정 뒤 앱 미실행 Shield 요청은
+아직 대기 중이다.
 
 **2026-09-12 추가 관찰**: 동일한 당월 무료 2회·구매 0 mirror를 표시하는 두 기기 중 iPhone 15 Pro
 Max에서는 상세 Shield와 `해제권 1회 사용`이 표시되지만 iPhone 17에서는 일반 fallback만 표시됐다.

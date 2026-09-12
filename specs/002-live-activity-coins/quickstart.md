@@ -210,7 +210,9 @@ Release의 매월 1일 경계와 운영 `CoinLedgerZone`은 변경하지 않는�
 
 경계 전 결과: `t089-day13-app`을 두 기기에서 확인했으며 iPhone 17 iOS 26.6.2와 iPhone 15 Pro Max
 iOS 27 모두 `August 2026`, 무료 2, 구매 0으로 수렴했다. `t089-day13-shield` 빌드도 양쪽 설치를
-마쳤으며 활성화와 자정 뒤 실행 결과는 대기 중이다.
+마친 뒤 별도 장부를 활성화했고, 양쪽 모두 `August 2026`, 무료 2, 구매 0으로 수렴했다. iPhone 15
+Pro Max에서 상세 Shield와 `Use 1 Release` 버튼 표시를 확인했다. 버튼은 누르지 않았으며 두 기기의
+나서 앱을 종료한 상태에서 자정 뒤 첫 Shield 요청 결과를 기다린다.
 
 ## Live Activity end-to-end
 
