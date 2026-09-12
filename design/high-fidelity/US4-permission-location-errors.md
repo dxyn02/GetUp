@@ -230,6 +230,25 @@ AX1~AX5, Increase Contrast와 시스템 설정 복귀 focus는 구현 후 물리
 - 위치 요청 목업의 추상 지도는 Figma export imageset을 사용하고 권한 목록 emoji는 같은 행의 text와
   함께 구현한다.
 
+## T086 구현 대조 결과
+
+`2026-09-13`에 `PermissionGuideModel`, `PermissionGuideView`, 권한 onboarding·foreground routing과
+`UserStory4PermissionGuidanceUITests`를 최종 승인 상태와 대조했다.
+
+- 개요와 Family Controls→위치 사용 중→Always→Background App Refresh 순서, 최초 요청 전 중앙
+  alert 목업, 거부·요구 수준 미달의 Settings 복구, 마지막 `시작하기`에서만 onboarding 완료 저장이
+  구현에 유지된다.
+- 권한 목록의 네 emoji는 text 의미와 함께 제공되고, 위치·Background App Refresh 설정 목업,
+  Always·정확한 위치 accent 안내, scroll content와 `safeAreaInset` 하단 행동이 유지된다.
+- 일반 복구는 정상 권한 화면을 반복하지 않고 부족한 권한으로 직접 진입한다. 위치
+  `unavailable / inactive`는 새 제한을 만들지 않으며 `unavailable / active`는 기존 제한을 보존하고
+  시간 종료는 계속 우선한다.
+- `PermissionGuideView`의 system prompt·Settings 목업 내부 semantic blue는 iOS 소유 UI를 설명하기
+  위한 색이고, 앱의 실제 주요 행동은 승인된 GetUp accent를 사용한다.
+
+승인되지 않은 구조·행동 편차는 발견되지 않았다. Accessibility Inspector와 실제 시스템 Settings
+복귀 focus의 물리 기기 검증은 기존 인수 범위에 남는다.
+
 ## 검토 체크리스트
 
 - [x] 승인된 US4 로우파이와 관련 명세·contract를 참조했다.

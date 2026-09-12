@@ -273,6 +273,24 @@ text node 70개를 별도로 감사했다. SF Pro 외 서체, 빈 text, placehol
   전환하는 판정은 `T066`, 정상·활성 삭제 UI test는 `T063`에서 검증한다.
 - 알려진 차이: 실제 지도·시스템 picker·keyboard와 실기기 Dynamic Type은 구현 후 검증한다.
 
+## T086 구현 대조 결과
+
+`2026-09-13`에 `RuleEditorView`, `TimeRangePicker`, `LocationPickerView`, 홈의 규칙 card·pager와
+`UserStory1RuleConfigurationUITests`를 이 문서의 최종 승인 상태와 대조했다.
+
+- Dark Focus hierarchy와 token, 기본 BackButton, 시작→종료 시각의 연속 navigation, 독립 wheel,
+  비활성 완료 CTA, 하단 64pt 완료 행동이 구현에 유지된다. native wheel 숫자를 가리지 않는 세부
+  시각은 `FR-063`에서 승인한 Figma 예외다.
+- 장소 화면은 지도·반경, `집`·`회사`·직접 입력, 56pt 적용 행동, 직접 입력 장소만의 확인형 삭제,
+  참조 중 삭제 거부와 편집 세션 임시 선택 보존을 유지한다.
+- 홈은 규칙 1개일 때 단일 card, 2개 이상일 때만 pager·indicator를 사용하고 마지막 규칙 삭제 뒤
+  빈 상태로 안전하게 전환한다. 활성 규칙의 수정·삭제는 US3 guard로 연결된다.
+- 홈의 코인 화면 진입점과 활성 card의 해제 행동은 이 하이파이 뒤 승인된
+  `002-live-activity-coins`의 범위다. 001의 규칙 작성·편집 hierarchy를 바꾸지 않는 승인된 교차 기능
+  추가이므로 T086에서 제거하지 않는다.
+
+승인되지 않은 구조·행동 편차는 발견되지 않았다. 위 계약은 기존 US1 UI 회귀로 검증한다.
+
 ## 검토 체크리스트
 
 - [x] 승인된 로우파이와 관련 `spec.md`를 참조한다.

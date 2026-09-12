@@ -14,7 +14,7 @@ final class UserStory3AutoReleaseUITests: XCTestCase {
 
         let activeStatus = app.staticTexts["restrictionStatus.active"]
         XCTAssertTrue(activeStatus.waitForExistence(timeout: 2))
-        XCTAssertEqual(activeStatus.label, "현재 활성화됨")
+        XCTAssertEqual(activeStatus.label, "Currently Active")
         XCTAssertEqual(
             app.staticTexts["home.ruleCard.rule-1.schedule"].label,
             "RULE 1 OF 1 · MON-FRI"
@@ -22,17 +22,17 @@ final class UserStory3AutoReleaseUITests: XCTestCase {
 
         let guardedEdit = app.buttons["restrictionStatus.editDisabled"]
         XCTAssertTrue(guardedEdit.waitForExistence(timeout: 2))
-        XCTAssertEqual(guardedEdit.label, "규칙 적용 중 수정 불가")
+        XCTAssertEqual(guardedEdit.label, "Editing Disabled While Active")
         guardedEdit.tap()
 
-        let alert = app.alerts["제한 중에는 수정할 수 없어요"]
+        let alert = app.alerts["You can’t make changes while restrictions are active"]
         XCTAssertTrue(alert.waitForExistence(timeout: 2))
         XCTAssertTrue(
             alert.staticTexts[
-                "집 1km 밖으로 이동하거나 09:00 AM이 지나면 규칙을 수정·끄기·삭제할 수 있어요."
+                "Move 1km away from Home or wait until 09:00 AM to edit, turn off, or delete this rule."
             ].exists
         )
-        alert.buttons["확인"].tap()
+        alert.buttons["OK"].tap()
 
         XCTAssertTrue(app.staticTexts["restrictionStatus.active"].exists)
         XCTAssertFalse(app.textFields["ruleEditor.name"].exists)
@@ -78,9 +78,9 @@ final class UserStory3AutoReleaseUITests: XCTestCase {
         edit.tap()
 
         app.buttons["ruleEditor.delete"].tap()
-        let confirmation = app.alerts["규칙을 삭제할까요?"]
+        let confirmation = app.alerts["Delete this rule?"]
         XCTAssertTrue(confirmation.waitForExistence(timeout: 2))
-        confirmation.buttons["삭제"].tap()
+        confirmation.buttons["Delete"].tap()
 
         XCTAssertTrue(
             app.buttons["ruleEditor.delete"]
