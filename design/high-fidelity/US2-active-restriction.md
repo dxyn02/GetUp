@@ -156,6 +156,24 @@ rendition을 확인했으며, 범용 `figure.stand`와 material blur를 제거�
 실제 system shield의 최종 layout·Dynamic Type·VoiceOver는 entitlement가 적용된 실기기 인수에서
 계속 확인한다.
 
+## T086 구현 대조 결과
+
+`2026-09-13`에 `RestrictionStatusView`, `ShieldContentProvider`,
+`ShieldConfigurationExtension`과 US2 제한 활성화 UI 회귀를 대조했다.
+
+- 활성 홈은 상태 text, 규칙·시간·장소·반경·선택 대상 요약과 수정 불가 행동을 색상 외 정보로
+  제공한다.
+- Shield는 `NaseoShieldLogo` 원본 rendering, 다크 `#08090B`·라이트 `#F5F5F7` 배경, GetUp
+  `#F4D600` 행동 색, material blur 없음, 상세·다중 규칙·fallback 문구와 앱·카테고리·웹 도메인
+  callback 매칭을 유지한다.
+- 이 문서 승인 당시의 “`앱 닫기` 단일 primary”는 후속 `002-live-activity-coins`의
+  `FR-012`, `FR-041`과 `shield-coin-ui-contract.md`가 의도적으로 확장했다. 최신 장부와 대표 규칙을
+  확인한 Shield는 `해제권 1회 사용`을 primary, 기존 `앱 닫기`를 secondary로 제공하고, 확인할 수
+  없는 fallback에서는 기존 `앱 닫기`만 유지한다. 이는 승인된 후속 명세이며 T086 편차가 아니다.
+
+후속 명세를 제외한 승인되지 않은 구조·행동 편차는 발견되지 않았다. system-owned Shield의 실제
+layout·Dynamic Type·VoiceOver 물리 기기 검증은 기존 인수 범위에 남는다.
+
 ## 검토 체크리스트
 
 - [x] 승인된 US2 로우파이와 `shield-ui-contract.md`를 반영했다.

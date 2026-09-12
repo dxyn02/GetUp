@@ -4,32 +4,32 @@
 001-location-app-restriction, 002-live-activity-coins
 
 ## 현재 단계
-001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 5 사용자 스토리 3 구현 진행 중
+001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 별도
+`codex/us4-monthly-lifecycle-tests` 브랜치에서 T089 실기기 월 경계 검증 진행 중
 
 ## 진행 중
-`codex/us3-product-catalog-tests`에서 T077 한국어·영어 구매 한계 고지와 StoreKit Configuration 자동
-테스트를 완료했다. 최초 장부 활성화와 1·3·5개 코인 매 구매 확인에 같은 현지화 고지를 연결했고,
-상품 카드는 StoreKit의 현지화 이름·설명을 표시한다. `.storekit` 상품 ID·유형·가격·가족 공유·한국어·
-영어 metadata 계약과 `SKTestSession` 로드를 검증하는 테스트도 테스트 번들에 추가했다. T059 catalog부터
-T077 구매 고지까지 사용자 스토리 3 구현과 회귀가 GREEN이며, 다음은 T078이다.
-US3 T059~T077 변경은 Pull Request #30으로 `main` 병합 대기 중이다. T078은 별도 US4 브랜치를
-병합된 최신 `main`에서 만들기 위해 PR #30 병합 후 시작한다.
-T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
-운영 활성화·migration은 수행하지 않았다. 출시 호환성 검증 전 live 원격 adapter는
-`.iCloudRecovery`로 fail-closed하며, 검증된 provider 연결은 T097 운영 점검 범위다.
-001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
+001 T086에서 US1 규칙·장소·홈, US2 활성 상태·Shield, US3 활성 guard·자동 해제, US4 권한·위치
+복구 구현을 승인된 네 하이파이 문서와 대조했다. Dark Focus token·navigation·CTA·pager, adaptive
+Shield와 `NaseoShieldLogo`, system Alert guard, 권한 onboarding·Settings 복구·위치 unavailable 안전
+계약이 구현과 일치했다. 홈 코인 진입점과 Shield의 해제권 primary·앱 닫기 secondary는 이후 승인된
+`002-live-activity-coins` 명세의 교차 기능 추가로 기록했으며 001 편차로 되돌리지 않았다.
+승인되지 않은 제품 UI 편차는 발견되지 않아 production code 변경은 없었다.
+
+영어로 강제 실행하던 US3 UI suite가 한국어 label을 기대하던 오래된 테스트 계약을 실제 영어 번역과
+`1km` 표시 계약에 맞게 수정했다. US1~US4 UI 43개와 공통 접근성 5개, 총 48개가 통과했다.
+001의 T083·T085 실기기 후속 확인과 T087·T088 사용성 검증은 남아 있다. 002 T089의 두 실기기 설치본과
+CloudKit DEBUG namespace는 이 별도 작업에서 변경하지 않았다.
 
 ## 마지막 완료 작업
-T077 — 최초 활성화·매 구매의 한국어·영어 한계 고지와 StoreKit Configuration 자동 테스트
+001 T086 — 구현과 승인 하이파이 편차 대조 및 영어 US3 UI 회귀 보정
 
 ## 다음 작업
-T078 — 서울 월 경계·자정 background 미생성·기기 시간대 변경·reset 억제 월의 app lifecycle 인수
-테스트를 먼저 작성한다.
-001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
+001은 T083·T085 실기기 재검증 또는 T087·T088 사용성 평가 계획·결과 기록이 남아 있다.
+002는 별도 브랜치에서 T089의 `t089-day14-final` Shield-first·구매 잔액 보존 검증을 계속한다.
 
 ## 차단 상태
-T078 시작은 Pull Request #30의 `main` 병합을 기다리는 GitHub Flow 절차상 대기 상태다. 제품 결정이나
-구현 차단은 없으며, 병합 뒤 최신 `main`에서 새 기능 브랜치를 만든다.
+001 T086에 새 차단 사항은 없다. Accessibility Inspector, system Shield·Settings 복귀 focus의 물리
+기기 확인은 T085 및 후속 실기기 인수 범위에 남는다.
 BLK-016 해결됨: 명령별 원자 추가·조건부 제거 API와 최신 상태 재평가 계약 보강을 사용자 승인받았다.
 BLK-015 해결됨: occurrence별 예약 소유권 계약·스키마 보강을 사용자 승인받았다.
 T045 보고서 접근 차단은 사용자 허용 후 같은 명령 재시도로 해결됐다.
@@ -45,6 +45,14 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-13 T086: US1~US4 하이파이와 구현을 대조하고 관련 UI suite 43개 및 공통 접근성 suite 5개를
+iPhone 17 Pro iOS 26.5 Simulator에서 실행했다. 첫 실행은 영어로 강제 실행한
+`UserStory3AutoReleaseUITests`가 과거 한국어 label을 기대해 41/43 통과, 2개 실패였다. 영어 활성
+상태·guard·삭제 Alert와 코드의 `1km` 표기에 기대값을 맞춘 뒤 단일 실패 사례와 US3 3개를 재검증하고,
+최종 48/48가 실패·skip 없이 통과했다. Xcode의 `DebuggerVersionStore`와 signed XCTest binary strip,
+Apple `StoreKitTest` deprecated API, 기존 `LocationMonitoringAdapterTests`의 불필요한 `try` 경고는
+제품 동작 실패가 아니다. production code, 실기기 설치본, CloudKit·StoreKit 데이터는 변경하지 않았다.
+
 2026-09-07 T077: 최초 장부 활성화와 1·3·5개 코인 각각의 구매 확인에서 삭제 불이익·같은
 iCloud 계정 복구·App Store 계정 불일치·새 장부 0 초기화·서울 기준 다음 달 무료 2회·서버 없는
 환경의 구분 한계·앱 종료 중 환불 지연·미사용 구매 코인 한정 보정을 한국어와 영어로 모두 확인하는
