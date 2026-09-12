@@ -41,6 +41,11 @@ iOS Simulator Release 빌드는 통과했고, 첫 `t089-day13-app` 서명 빌드
 수렴했다. 따라서 같은 allowance 동시 생성, 중복 지급 방지와 충돌 직후 UI 수렴은 모두 통과했다.
 수정된 Shield-first 지연 생성과 구매 코인의 경계 보존 실기기 증적만 남아 있다.
 
+사용자는 남은 두 항목을 위해 DEBUG 격리 경계를 14일로 한 번 더 이동하고 Sandbox 코인 1개를
+구매하는 절차를 승인했다. 앱·Shield Action의 `t089-day14-final`, boundary day 14와 명시 iCloud
+container 설정을 검사한 서명 빌드를 두 기기에 설치했다. 장부 활성화·구매·제한 준비와 14일 자정 뒤
+Shield-first 결과는 아직 대기 중이다.
+
 **2026-09-12 추가 관찰**: 동일한 당월 무료 2회·구매 0 mirror를 표시하는 두 기기 중 iPhone 15 Pro
 Max에서는 상세 Shield와 `해제권 1회 사용`이 표시되지만 iPhone 17에서는 일반 fallback만 표시됐다.
 iPhone 17의 interval callback은 권한 보완 뒤 제한 적용 완료를 기록했다. 두 기기에 DEBUG 진단을

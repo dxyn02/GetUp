@@ -51,6 +51,9 @@ Max에서 상세 Shield와 `Use 1 Release` 버튼 표시를 확인했다. 버튼
 `t089-day13-concurrent-retry`에서 동시 활성화를 다시 실행한 결과 두 기기 모두 첫 탭 한 번으로
 성공했고, 재실행 없이 양쪽 `September 2026`, 무료 2, 구매 0으로 수렴했다. 같은 allowance 동시
 생성·중복 지급 방지·충돌 직후 UI 수렴 항목은 모두 통과했다.
+남은 Shield-first와 구매 잔액 보존은 사용자 승인에 따라 별도 `t089-day14-final`의 14일 서울 자정
+경계로 재검증한다. 앱·Shield Action의 namespace·경계일·iCloud container 값을 검사한 서명 빌드를
+두 기기에 설치했으며 경계 전 활성화와 Sandbox 코인 1개 준비를 기다리고 있다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 T099에서 실제 `CKContainer.privateCloudDatabase`·`CoinLedgerZone` adapter와 server creation date,
 change-tag CAS, atomic modify, record별 오류 변환을 구현했다. 초기 fetch가 zone을 만들지 않고 실제
