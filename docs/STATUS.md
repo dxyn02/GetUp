@@ -29,7 +29,10 @@ iOS 26.5 이상의 `ManagedSettingsStore.refresh(_:)`로 만료 token을 갱신�
 양쪽 1/0으로 수렴했고, 남은 무료 1회의 동시 요청은 한 기기만 해제·다른 기기 reconciliation 실패
 닫힘·최종 양쪽 0/0으로 수렴했다. 성공 또는 앱 시작 재조정으로 이미 해결된 pending route가 복구
 화면으로 남지 않도록 폐기 정책도 보정했다. 실제 같은 allowance 동시 생성과 서울 월 경계 증적은
-계속 남아 있다.
+계속 남아 있다. 실제 월초까지 기다리지 않는 사용자 승인에 따라 DEC-107의 DEBUG 전용 13일 서울
+자정 대체 경계를 구현했다. 유효한 테스트 namespace와 경계일이 함께 있을 때만 별도 CloudKit zone·
+subscription·checkpoint를 사용하고, Release는 설정을 무시해 기존 매월 1일과 운영 zone을 유지한다.
+`t089-day13-app` 서명 빌드는 두 실기기에 설치됐으며 경계 전 격리 장부 활성화를 기다리고 있다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 T099에서 실제 `CKContainer.privateCloudDatabase`·`CoinLedgerZone` adapter와 server creation date,
 change-tag CAS, atomic modify, record별 오류 변환을 구현했다. 초기 fetch가 zone을 만들지 않고 실제
@@ -71,6 +74,15 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-12 T089 13일 대체 경계 준비: 9월 12일 23:59:59와 13일 00:00 서울 시각의 period가 각각
+`2026-08`, `2026-09`로 전환되고 다음 경계가 정확히 13일 00:00인지 검증하는 core 회귀와 namespace별
+sync checkpoint 격리 회귀를 추가했다. 전체 `GetUpTests` 603개 선언이 동적 실행 포함 723회 모두
+통과했고 실패·skip은 없다. generic iOS Simulator Release 빌드도 통과했다. 첫 sandbox 실행은
+DerivedData/CoreSimulator 접근 제한으로 빌드 전 실패했으며 승인된 동일 명령 재실행에서 통과했다.
+`t089-day13-app` Debug 서명 빌드의 앱·Shield Action `Info.plist`에 namespace, 13일 경계와 명시
+iCloud container가 포함됨을 확인하고 iPhone 17 iOS 26.6.2와 iPhone 15 Pro Max iOS 27에 설치했다.
+격리 장부 활성화와 실제 경계 결과는 아직 대기 중이며 운영 CloudKit record는 변경·삭제하지 않았다.
+
 2026-09-12 T089 다기기 진행: iPhone 17 iOS 26.6.2와 iPhone 15 Pro Max iOS 27의 Shield Action이
 공통으로 반환한 `CKError` code 5를 `badContainer`로 확인했다. 앱·Shield Action의 빌드된
 `Info.plist`와 서명 entitlement에 `iCloud.com.dxyn02.GetUp`이 일치하는지 검사하고, 기본 컨테이너

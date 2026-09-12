@@ -307,6 +307,45 @@ struct CoinLedgerSyncProviderTests {
         #expect(try await shieldRepository.loadCheckpoint()?.accountSessionID == "shield")
     }
 
+    @Test("T089 ledger namespaces keep CloudKit checkpoints isolated")
+    func t089NamespacesKeepCheckpointsIsolated() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(
+            "coin-ledger-sync-\(UUID().uuidString)",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let appBoundary = FileCoinLedgerSyncCheckpointRepository(
+            containerURL: directory,
+            process: .app,
+            ledgerNamespace: "t089-day13-app"
+        )
+        let shieldBoundary = FileCoinLedgerSyncCheckpointRepository(
+            containerURL: directory,
+            process: .app,
+            ledgerNamespace: "t089-day13-shield"
+        )
+        let appCheckpoint = Self.checkpoint(
+            accountSessionID: "app-boundary",
+            records: try Self.ledgerRecords(freeAvailable: 1),
+            hasPendingChanges: false
+        )
+        let shieldCheckpoint = Self.checkpoint(
+            accountSessionID: "shield-boundary",
+            records: try Self.ledgerRecords(freeAvailable: 2),
+            hasPendingChanges: false
+        )
+
+        try await appBoundary.saveCheckpoint(appCheckpoint)
+        try await shieldBoundary.saveCheckpoint(shieldCheckpoint)
+
+        #expect(try await appBoundary.loadCheckpoint() == appCheckpoint)
+        #expect(try await shieldBoundary.loadCheckpoint() == shieldCheckpoint)
+    }
+
     @Test("An incomplete remote projection cannot replace the mirror as current")
     func invalidProjectionFailsClosed() async throws {
         let records = try Self.ledgerRecords(freeAvailable: 2).filter {

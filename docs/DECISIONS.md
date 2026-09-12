@@ -1,5 +1,29 @@
 # 결정 사항
 
+## DEC-107 — T089 월 경계의 DEBUG 전용 13일 대체 검증
+
+**날짜**: 2026-09-12
+
+**상태**: 승인됨 — 실제 월초 대기 대신 사용자 승인
+
+**결정**: T089 실기기 월 경계는 2026-09-13 00:00 `Asia/Seoul`을 대체 경계로 사용한다. 이 동작은
+DEBUG 빌드에서 유효한 `GetUpT089LedgerNamespace`와 1...28 범위의
+`GetUpT089MonthlyBoundaryDay`가 함께 제공될 때만 활성화한다. 테스트 빌드는 namespace별 별도
+CloudKit custom zone, `CKSyncEngine` subscription과 App Group checkpoint를 사용한다. 둘 중 하나라도
+없거나 유효하지 않으면 일반 `CoinLedgerZone`과 매월 1일 경계를 사용한다. Release 컴파일에서는 해당
+Info.plist 값이 존재해도 override를 무조건 무시한다.
+
+13일 경계에서는 날짜에서 12일을 이동한 달을 allowance `monthID`로 사용한다. 따라서 서울 시각
+9월 12일 23:59:59까지는 `2026-08`, 9월 13일 00:00부터는 `2026-09`가 되며, CloudKit 서버
+`creationDate` 검증도 같은 정책을 사용한다. 운영 장부의 실제 9월 allowance와 record를 수정·삭제하지
+않는다. 코인 화면에는 DEBUG 테스트 namespace와 경계일을 노란 배너로 표시해 운영 빌드 오인을 막는다.
+
+**검증 범위**: 이 대체 경계에서 이전 기간 무료분 비이월, 경계 중 무실행, 첫 app foreground 생성,
+별도 첫 Shield 요청의 생성+1회 사용, 두 기기의 같은 allowance 동시 생성을 실제 development private
+database와 서버 시각으로 확인한다. 이는 월 길이와 월초라는 달력 날짜 자체를 검증하는 것이 아니라
+서울 자정 경계 전환 및 서버 권위 생성 계약의 실기기 증적으로 채택한다. 자동 테스트의 실제 월초·
+시간대 변경 회귀는 계속 유지한다.
+
 ## DEC-106 — CloudKit 컨테이너 명시 주입과 해결된 Shield route 폐기
 
 **날짜**: 2026-09-12

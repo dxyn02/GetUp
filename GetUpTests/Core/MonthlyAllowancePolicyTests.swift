@@ -13,6 +13,31 @@ struct MonthlyAllowancePolicyTests {
         #expect(MonthlyAllowancePolicy.monthID(containing: boundary) == "2026-09")
     }
 
+    @Test("The isolated T089 cycle changes at Seoul midnight on day thirteen")
+    func t089DayThirteenBoundary() throws {
+        let beforeBoundary = try #require(Self.date("2026-09-12T14:59:59Z"))
+        let boundary = try #require(Self.date("2026-09-12T15:00:00Z"))
+
+        #expect(
+            MonthlyAllowancePolicy.monthID(
+                containing: beforeBoundary,
+                boundaryDay: 13
+            ) == "2026-08"
+        )
+        #expect(
+            MonthlyAllowancePolicy.monthID(
+                containing: boundary,
+                boundaryDay: 13
+            ) == "2026-09"
+        )
+        #expect(
+            MonthlyAllowancePolicy.nextPeriodStart(
+                after: beforeBoundary,
+                boundaryDay: 13
+            ) == boundary
+        )
+    }
+
     @Test("A normal month has quota two and valid count bounds")
     func quotaAndBalanceInvariant() throws {
         let allowance = try MonthlyAllowancePolicy.makeAllowance(

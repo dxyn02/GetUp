@@ -186,6 +186,28 @@ provider에 명시 주입했다. 수정 뒤 한 기기의 무료 해제가 `rele
 성공 뒤 과거 복구 route와 완료된 reconciliation route가 남는 문제는 최신 재조정 결과로 폐기하도록
 보정했다. 같은 월 allowance 동시 생성과 실제 서울 월 경계 두 항목은 계속 대기한다.
 
+### T089 DEBUG 13일 대체 경계 절차 (2026-09-12 승인)
+
+Release의 매월 1일 경계와 운영 `CoinLedgerZone`은 변경하지 않는다. 아래 빌드는 유효한 namespace와
+경계일을 함께 지정한 DEBUG에서만 동작하며, 코인 화면의 노란 `T089 TEST` 배너로 대상 장부를 확인한다.
+
+1. `t089-day13-app` zone을 9월 12일에 활성화해 이전 기간 `2026-08`, 무료 2회 상태를 두 기기에서
+   확인한다. 앱 경계 검증용 장부는 이후 경계까지 사용하지 않는다.
+2. `t089-day13-shield` 빌드로 교체해 9월 12일에 별도 장부를 활성화하고 제한을 시작한다. 두 기기에서
+   나서 앱을 완전히 닫고 9월 13일 00:00 서울 시각을 통과한다.
+3. 경계 뒤 앱을 먼저 열지 않은 상태에서 제한 앱의 Shield `Use 1 Release`를 누른다. `2026-09`
+   allowance 생성과 무료 1회 사용이 한 요청으로 확정되고 양쪽 잔액이 무료 1회로 수렴하는지 확인한다.
+4. `t089-day13-app` 빌드로 돌아가 첫 foreground에서 `2026-09` allowance가 무료 2회로 생성되고 이전
+   기간 미사용 무료분이 더해지지 않는지 확인한다.
+5. 새 `t089-day13-concurrent` zone을 두 기기에 설치하고 활성화 버튼을 동시에 눌러 동일
+   `allowance:2026-09`가 하나만 생성되며 양쪽 무료 2회로 수렴하는지 확인한다.
+6. CloudKit Console에서 각 격리 zone의 `LedgerEpoch`, `CoinAccount`, `MonthlyAllowance`,
+   `CoinLedgerEvent`를 조회해 record 중복 여부와 서버 `Created` 시각을 기록한다. 테스트 zone을
+   삭제하거나 운영 record를 편집하지 않는다.
+
+이 절차는 실제 CloudKit 서버 시각과 서울 자정 전환을 사용하지만 달력상 월초 대신 13일을 경계로
+이동한 대체 증적이다. 실제 월초·시간대 변경은 자동 테스트가 계속 검증한다.
+
 ## Live Activity end-to-end
 
 1. 앱 foreground에서 시간·위치 조건을 만족시켜 제한을 시작한다.

@@ -1236,10 +1236,13 @@ private struct AppEnvironment {
             throw DependencyContainerError.appGroupContainerUnavailable
         }
         let cloudContainer = CKContainer(identifier: cloudContainerIdentifier)
+        let t089Configuration = SharedIdentifiers.t089LedgerTestConfiguration()
+        let ledgerNamespace = t089Configuration?.ledgerNamespace
         let ledgerRuntime = CoinLedgerLiveRuntime.live(
             containerURL: containerURL,
             process: .app,
-            cloudContainer: cloudContainer
+            cloudContainer: cloudContainer,
+            ledgerNamespace: ledgerNamespace
         )
         let storefront = StoreKitPurchaseAdapter()
         let catalog = try CoinProductCatalog()
@@ -1453,7 +1456,12 @@ private struct AppEnvironment {
             }
         )
         let initializationProvider = CloudKitCoinLedgerInitializationProvider(
-            database: SystemCoinLedgerCloudDatabase(container: cloudContainer)
+            database: SystemCoinLedgerCloudDatabase(
+                container: cloudContainer,
+                zoneName: SharedIdentifiers.coinLedgerZoneName(
+                    ledgerNamespace: ledgerNamespace
+                )
+            )
         )
         let coinStoreConfiguration = CoinStoreConfiguration(
             model: coinStoreModel,

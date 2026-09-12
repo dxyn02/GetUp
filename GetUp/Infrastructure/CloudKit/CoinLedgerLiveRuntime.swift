@@ -35,15 +35,28 @@ actor CoinLedgerLiveRuntime {
     static func live(
         containerURL: URL,
         process: CoinLedgerSyncProcess,
-        cloudContainer: CKContainer
+        cloudContainer: CKContainer,
+        ledgerNamespace: String? = nil
     ) -> CoinLedgerLiveRuntime {
-        let database = SystemCoinLedgerCloudDatabase(container: cloudContainer)
+        let zoneName = SharedIdentifiers.coinLedgerZoneName(
+            ledgerNamespace: ledgerNamespace
+        )
+        let database = SystemCoinLedgerCloudDatabase(
+            container: cloudContainer,
+            zoneName: zoneName
+        )
         let syncProvider = CoinLedgerSyncProvider(
             accountProvider: SystemCoinLedgerCloudAccountProvider(container: cloudContainer),
-            engine: SystemCoinLedgerSyncEngineDriver(container: cloudContainer),
+            engine: SystemCoinLedgerSyncEngineDriver(
+                container: cloudContainer,
+                zoneName: zoneName,
+                subscriptionID: ledgerNamespace.map { "getup.coin-ledger.sync.\($0)" }
+                    ?? "getup.coin-ledger.sync"
+            ),
             checkpointRepository: FileCoinLedgerSyncCheckpointRepository(
                 containerURL: containerURL,
-                process: process
+                process: process,
+                ledgerNamespace: ledgerNamespace
             ),
             balanceRepository: SharedSnapshotRepository(containerURL: containerURL)
         )

@@ -5,6 +5,8 @@ enum SharedIdentifiers {
     static let appGroupIdentifierInfoDictionaryKey = "GetUpAppGroupIdentifier"
     static let iCloudContainerIdentifierInfoDictionaryKey =
         "GetUpICloudContainerIdentifier"
+    static let t089LedgerNamespaceInfoDictionaryKey = "GetUpT089LedgerNamespace"
+    static let t089MonthlyBoundaryDayInfoDictionaryKey = "GetUpT089MonthlyBoundaryDay"
     static let coinProductCatalogInfoDictionaryKey = "GetUpCoinProductCatalog"
     static let coinProductIdentifierCatalogKey = "ProductIdentifier"
     static let coinProductQuantityCatalogKey = "Quantity"
@@ -21,8 +23,17 @@ enum SharedIdentifiers {
 
     static let coinLedgerZoneName = "CoinLedgerZone"
 
-    static func coinLedgerSyncCheckpointFileName(processIdentifier: String) -> String {
-        "coin-ledger-sync-\(processIdentifier).json"
+    static func coinLedgerSyncCheckpointFileName(
+        processIdentifier: String,
+        ledgerNamespace: String? = nil
+    ) -> String {
+        let namespaceComponent = ledgerNamespace.map { "\($0)-" } ?? ""
+        return "coin-ledger-sync-\(namespaceComponent)\(processIdentifier).json"
+    }
+
+    static func coinLedgerZoneName(ledgerNamespace: String?) -> String {
+        guard let ledgerNamespace else { return coinLedgerZoneName }
+        return "\(coinLedgerZoneName).\(ledgerNamespace)"
     }
 
     static let managedSettingsStoreName = "getup.restriction"
@@ -90,9 +101,49 @@ enum SharedIdentifiers {
         return identifier
     }
 
+    /// Paired DEBUG-only overrides for the T089 physical-device boundary test.
+    /// Requiring both values prevents a shifted calendar from addressing the
+    /// production ledger zone.
+    static func t089LedgerTestConfiguration(
+        in bundle: Bundle = .main
+    ) -> T089LedgerTestConfiguration? {
+#if DEBUG
+        let allowedCharacters = CharacterSet.alphanumerics.union(
+            CharacterSet(charactersIn: "-")
+        )
+        guard
+            let namespace = bundle.object(
+                forInfoDictionaryKey: t089LedgerNamespaceInfoDictionaryKey
+            ) as? String,
+            !namespace.isEmpty,
+            !namespace.contains("$("),
+            namespace.count <= 40,
+            namespace.unicodeScalars.allSatisfy({ allowedCharacters.contains($0) }),
+            let boundaryValue = bundle.object(
+                forInfoDictionaryKey: t089MonthlyBoundaryDayInfoDictionaryKey
+            ),
+            let boundaryDay = Int(String(describing: boundaryValue)),
+            (1...28).contains(boundaryDay)
+        else {
+            return nil
+        }
+        return T089LedgerTestConfiguration(
+            ledgerNamespace: namespace,
+            monthlyBoundaryDay: boundaryDay
+        )
+#else
+        return nil
+#endif
+    }
+
     static func deviceActivityName(forWeekdayIdentifier weekdayIdentifier: String) -> String {
         "\(deviceActivityNamePrefix).\(weekdayIdentifier)"
     }
+}
+
+struct T089LedgerTestConfiguration: Equatable, Sendable {
+    let ledgerNamespace: String
+    let monthlyBoundaryDay: Int
 }
 
 enum CoinLedgerRecordType {

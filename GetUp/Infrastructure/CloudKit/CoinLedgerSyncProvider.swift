@@ -137,11 +137,13 @@ actor FileCoinLedgerSyncCheckpointRepository: CoinLedgerSyncCheckpointRepository
     init(
         containerURL: URL,
         process: CoinLedgerSyncProcess = .app,
+        ledgerNamespace: String? = nil,
         fileWriter: any SnapshotFileWriting = AtomicSnapshotFileWriter()
     ) {
         fileURL = containerURL.appendingPathComponent(
             SharedIdentifiers.coinLedgerSyncCheckpointFileName(
-                processIdentifier: process.rawValue
+                processIdentifier: process.rawValue,
+                ledgerNamespace: ledgerNamespace
             )
         )
         self.fileWriter = fileWriter
@@ -638,13 +640,16 @@ private struct CoinLedgerRemoteProjector {
 actor SystemCoinLedgerSyncEngineDriver: CoinLedgerSyncEngineDriving {
     private let database: CKDatabase
     private let zoneID: CKRecordZone.ID
+    private let subscriptionID: String
 
     init(
         container: CKContainer = .default(),
-        zoneName: String = SharedIdentifiers.coinLedgerZoneName
+        zoneName: String = SharedIdentifiers.coinLedgerZoneName,
+        subscriptionID: String = "getup.coin-ledger.sync"
     ) {
         database = container.privateCloudDatabase
         zoneID = CKRecordZone.ID(zoneName: zoneName, ownerName: CKCurrentUserDefaultName)
+        self.subscriptionID = subscriptionID
     }
 
     func synchronize(
@@ -669,7 +674,7 @@ actor SystemCoinLedgerSyncEngineDriver: CoinLedgerSyncEngineDriving {
             delegate: delegate
         )
         configuration.automaticallySync = false
-        configuration.subscriptionID = "getup.coin-ledger.sync"
+        configuration.subscriptionID = subscriptionID
         let syncEngine = CKSyncEngine(configuration)
 
         do {

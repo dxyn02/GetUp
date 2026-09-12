@@ -824,10 +824,7 @@ private extension CloudKitCoinLedgerRepository {
     }
 
     func monthID(for date: Date) -> String {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "Asia/Seoul")!
-        let components = calendar.dateComponents([.year, .month], from: date)
-        return String(format: "%04d-%02d", components.year ?? 0, components.month ?? 0)
+        MonthlyAllowancePolicy.monthID(containing: date)
     }
 
     func adding(_ lhs: Int, _ rhs: Int) throws -> Int {

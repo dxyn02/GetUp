@@ -24,6 +24,10 @@
 	<string>$(GETUP_APP_GROUP_IDENTIFIER)</string>
 	<key>GetUpICloudContainerIdentifier</key>
 	<string>$(GETUP_ICLOUD_CONTAINER_IDENTIFIER)</string>
+	<key>GetUpT089LedgerNamespace</key>
+	<string>$(GETUP_T089_LEDGER_NAMESPACE)</string>
+	<key>GetUpT089MonthlyBoundaryDay</key>
+	<string>$(GETUP_T089_MONTHLY_BOUNDARY_DAY)</string>
 	<key>GetUpCoinProductCatalog</key>
 	<array>
 		<dict>

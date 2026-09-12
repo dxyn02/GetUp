@@ -106,13 +106,15 @@ private final class ShieldCoinActionRuntime: @unchecked Sendable {
 
         let routeRepository = PendingAppRouteRepository(containerURL: containerURL)
         let diagnosticRecorder = ShieldActionDiagnosticRecorder(appGroupIdentifier: identifier)
+        let ledgerNamespace = SharedIdentifiers.t089LedgerTestConfiguration()?.ledgerNamespace
 #if DEBUG
         diagnosticRecorder.record("runtimeReady")
 #endif
         let ledgerRuntime = CoinLedgerLiveRuntime.live(
             containerURL: containerURL,
             process: .shieldAction,
-            cloudContainer: CKContainer(identifier: cloudContainerIdentifier)
+            cloudContainer: CKContainer(identifier: cloudContainerIdentifier),
+            ledgerNamespace: ledgerNamespace
         )
         let container = DependencyContainer(
             containerURL: containerURL,

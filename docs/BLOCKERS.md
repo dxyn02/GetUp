@@ -4,6 +4,13 @@
 
 **상태**: 미해결(OPEN) — 2026-09-09
 
+**2026-09-12 대체 경계 승인 및 준비**: 실제 다음 월초까지 기다리지 않고 2026-09-13 00:00
+`Asia/Seoul`을 DEBUG 전용 대체 경계로 사용하는 방식을 승인받았다. Release의 매월 1일 계약은
+변경하지 않으며, `t089-day13-app`, `t089-day13-shield`, `t089-day13-concurrent`별 CloudKit zone·
+subscription·checkpoint를 운영 장부와 분리한다. 자동 테스트 603개 선언(동적 실행 723회)과 generic
+iOS Simulator Release 빌드는 통과했고, 첫 `t089-day13-app` 서명 빌드를 두 실기기에 설치했다.
+아직 격리 장부 활성화와 13일 경계 전후 실행 결과를 수집하지 않았으므로 차단은 유지한다.
+
 **2026-09-12 추가 관찰**: 동일한 당월 무료 2회·구매 0 mirror를 표시하는 두 기기 중 iPhone 15 Pro
 Max에서는 상세 Shield와 `해제권 1회 사용`이 표시되지만 iPhone 17에서는 일반 fallback만 표시됐다.
 iPhone 17의 interval callback은 권한 보완 뒤 제한 적용 완료를 기록했다. 두 기기에 DEBUG 진단을
@@ -37,9 +44,9 @@ T100 앱·Shield live 조립은 완료됐다. 실제 서울 월 경계 실행과
 
 **해결 조건**: 같은 iCloud 계정의 테스트 iPhone 2대와 development schema를 준비한 뒤
 `quickstart.md`의 T089 수동 표 네 항목을 실행해 기기·OS·장부 monthID, 무료·구매 전후 잔액,
-중복 grant·초과 사용 여부와 서버 creation date 결과를 비식별화해 기록한다. 실제 월 경계를 기다릴 수
-없는 경우에도 production 계약을 낮추거나 fixture 결과를 실기기 결과로 대체하지 않고 T089을 미완료로
-유지한다.
+중복 grant·초과 사용 여부와 서버 creation date 결과를 비식별화해 기록한다. DEC-107에 따라 격리된
+DEBUG 13일 서울 자정 경계의 실제 CloudKit 결과를 월 경계 실기기 증적으로 사용할 수 있다. 결과가
+수집되기 전에는 T089을 미완료로 유지한다.
 
 ## BLK-016 — T049 명령별 해제 예외 수정·보상의 저장 계약
 

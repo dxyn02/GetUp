@@ -67,6 +67,7 @@ struct CoinStoreView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                t089TestBanner
                 balanceSection
                 availabilitySection
                 purchaseStatus
@@ -109,6 +110,24 @@ struct CoinStoreView: View {
         } message: {
             Text("삭제된 iCloud 장부의 구매 잔액과 이번 달 무료 코인은 복원되지 않습니다.")
         }
+    }
+
+    @ViewBuilder
+    private var t089TestBanner: some View {
+#if DEBUG
+        if let configuration = SharedIdentifiers.t089LedgerTestConfiguration() {
+            Text(
+                "T089 TEST · \(configuration.ledgerNamespace) · "
+                    + "서울 매월 \(configuration.monthlyBoundaryDay)일 00:00"
+            )
+            .font(.caption.monospaced().weight(.semibold))
+            .foregroundStyle(.black)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(.yellow, in: .rect(cornerRadius: 8))
+            .accessibilityIdentifier("coinStore.t089TestBanner")
+        }
+#endif
     }
 
     private var balanceSection: some View {
@@ -455,7 +474,7 @@ private struct MonthlyAllowancePresentation {
         self.available = available
 
         guard let monthStart = Self.monthStart(for: monthID),
-              let nextMonth = Self.calendar.date(byAdding: .month, value: 1, to: monthStart)
+              let nextMonth = MonthlyAllowancePolicy.nextPeriodStart(afterMonthID: monthID)
         else {
             monthLabel = monthID
             nextRefreshLabel = AppLocalizedCopy.string(
