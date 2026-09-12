@@ -2165,6 +2165,25 @@ coordinator와 보상을 연결한다. 수정 결과 snapshot만으로 제한 �
 실제 앱/extension 중단·재부팅·잠금 인수는 별도 검증한다. T048은 같은 프로세스의 독립 instance
 50회 경합을 확인했으며 실기기 교차 프로세스 검증 완료를 주장하지 않는다.
 
+## DEC-092 — Shield callback 비교 전 만료된 Family Controls token 갱신
+
+**날짜**: 2026-09-12
+
+**결정**: Shield Configuration은 저장된 application·category·web domain token과 callback token을
+먼저 직접 비교하고, 일치하지 않으면 iOS 26.5 이상의 공식 `ManagedSettingsStore.refresh(_:)`로 저장
+token을 메모리에서 갱신한 뒤 한 번 더 비교한다. refresh 실패와 iOS 26.0~26.4에서는 기존 직접 비교
+결과를 유지하고 상세 내용을 추측하지 않는 일반 fallback으로 닫는다. token 원문·규칙 ID·장소·좌표는
+진단이나 CloudKit에 기록하지 않는다.
+
+**근거**: iPhone 15 Pro Max 실기기에서 유효한 활성 occurrence 1개가 있음에도 Shield 진단이
+`active: 1`, `matching: 0`을 기록했다. 같은 snapshot에 공식 token refresh를 적용한 빌드에서는
+규칙을 다시 선택하지 않고 상세 Shield와 `Use 1 Release`가 표시됐다. Apple은
+`ManagedSettingsStore.TokenExpiryMessage`와 `refresh(_:)`를 만료 token의 저장소 갱신 경계로 제공한다.
+
+**영향 범위**: `ShieldContentProvider`, Shield Configuration 실기기 진단, application token refresh
+회귀에 적용한다. 장기적으로 token expiry message를 받아 영속 규칙 snapshot까지 교체하는 작업은
+별도 수렴 대상으로 남기며, 현재 수정은 Shield 표시 시점의 개인정보 안전한 비교를 복구한다.
+
 ## DEC-086 — Shield Action의 Live Activity 조정은 foreground fallback 사용
 
 **날짜**: 2026-09-04

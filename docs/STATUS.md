@@ -20,6 +20,12 @@ current 상태를 구분하고, 동기화 중 숫자 mirror를 확정값처럼 �
 문자열 키로 전환하고 한국어·영어 번역을 연결했다. 기존 app·Shield 무료 우선 문구의 양 언어 번역도
 함께 검증했다. T089 자동 검증 24개는 통과했지만 실제 동일 iCloud 계정의 iPhone 2대와 CloudKit
 development private database를 사용하는 다기기·서울 월 경계 수동 증적이 없어 BLK-017로 차단됐다.
+두 기기의 당월 무료 2회·구매 0 mirror는 일치했지만 iPhone 17의 Shield만 일반 fallback을 표시해,
+2026-09-12에 토큰·식별자를 남기지 않는 DEBUG Shield 진단을 추가하고 해당 기기에 설치했다. 적용
+규칙을 완전히 제거·재적용한 DEBUG 결과는 iPhone 15 Pro Max에서 `active: 1`, `matching: 0`이었다.
+iOS 26.5 이상의 `ManagedSettingsStore.refresh(_:)`로 만료 token을 갱신한 뒤 비교하도록 수정하자
+같은 기기에서 상세 Shield와 `Use 1 Release`가 복구됐다. 이제 두 실기기의 동시 사용과 장부 결과를
+수집한다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 T099에서 실제 `CKContainer.privateCloudDatabase`·`CoinLedgerZone` adapter와 server creation date,
 change-tag CAS, atomic modify, record별 오류 변환을 구현했다. 초기 fetch가 zone을 만들지 않고 실제
@@ -60,6 +66,18 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-12 T089 진단 진행: `ShieldContentProvider`가 App Group 식별자·파일별 missing/read/decode·
+schema 오류, collection identity, 현재 활성 occurrence 수, callback token 매칭 수와 저장 장소 부재를
+구분해 DEBUG App Group 진단으로 기록하도록 보강했다. Family Controls token, 규칙·장소 ID와 이름,
+좌표, CloudKit 상세는 기록하지 않는다. 새 진단 회귀 3개를 포함한 `ShieldContentProviderTests`가
+iPhone 17 Pro iOS 26.5 Simulator에서 통과했고, 앱과 네 확장을 포함한 iPhone 17 Debug 서명 빌드와
+기존 앱 위 설치도 통과했다. 기존 App Group과 CloudKit 데이터는 삭제·변경하지 않았다. 모든 적용
+규칙을 제거하고 한 규칙을 재적용한 뒤 iPhone 17에서도 상세 Shield와 `Use 1 Release`가 표시됐다.
+이어 iPhone 15 Pro Max에서 `active: 1`, `matching: 0`을 실기기 재현하고 만료 token refresh 회귀를
+추가했다. 구현 전 직접 비교는 fallback이었고, iOS 26.5 가용성 분기와 공식 refresh 적용 후 집중
+테스트가 통과했으며 같은 기기에서 상세 Shield 버튼 표시를 확인했다.
+실제 다기기 동시 사용·서울 월 경계 증적이 남아 있어 T089과 BLK-017은 계속 미완료다.
+
 2026-09-09 T100: `CoinLedgerLiveRuntime`으로 앱과 Shield Action의 실제 private CloudKit database,
 프로세스별 `CKSyncEngine` checkpoint, reservation compatibility verification을 조립했다. 앱 launch·
 foreground는 StoreKit listener 시작, 미종결 command 재조정, 새달 allowance 생성, 재동기화 순서로

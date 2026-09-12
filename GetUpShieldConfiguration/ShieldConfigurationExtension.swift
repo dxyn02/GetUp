@@ -49,11 +49,17 @@ final class ShieldConfigurationExtension: ShieldConfigurationDataSource {
         categoryToken: ActivityCategoryToken? = nil,
         webDomainToken: WebDomainToken? = nil
     ) -> ShieldConfiguration {
-        let content = contentProvider.content(
+        let result = contentProvider.contentResult(
             for: applicationToken,
             categoryToken: categoryToken,
             webDomainToken: webDomainToken
         )
+#if DEBUG
+        ShieldContentDiagnosticRecorder(
+            bundle: Bundle(for: ShieldConfigurationExtension.self)
+        ).record(result.diagnostic)
+#endif
+        let content = result.content
 
         return ShieldConfiguration(
             backgroundBlurStyle: nil,

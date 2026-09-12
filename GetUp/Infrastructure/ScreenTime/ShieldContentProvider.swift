@@ -13,11 +13,56 @@ protocol ShieldSnapshotReading {
     func readSnapshot() throws -> ShieldContentSnapshot
 }
 
+protocol ShieldTokenRefreshing {
+    func applicationTokens(_ tokens: Set<ApplicationToken>) throws -> Set<ApplicationToken>
+    func categoryTokens(
+        _ tokens: Set<ActivityCategoryToken>
+    ) throws -> Set<ActivityCategoryToken>
+    func webDomainTokens(_ tokens: Set<WebDomainToken>) throws -> Set<WebDomainToken>
+}
+
+struct SystemShieldTokenRefresher: ShieldTokenRefreshing {
+    func applicationTokens(
+        _ tokens: Set<ApplicationToken>
+    ) throws -> Set<ApplicationToken> {
+        guard #available(iOS 26.5, *) else {
+            return tokens
+        }
+        var refreshed = Array(tokens)
+        try ManagedSettingsStore.refresh(&refreshed)
+        return Set(refreshed)
+    }
+
+    func categoryTokens(
+        _ tokens: Set<ActivityCategoryToken>
+    ) throws -> Set<ActivityCategoryToken> {
+        guard #available(iOS 26.5, *) else {
+            return tokens
+        }
+        var refreshed = Array(tokens)
+        try ManagedSettingsStore.refresh(&refreshed)
+        return Set(refreshed)
+    }
+
+    func webDomainTokens(
+        _ tokens: Set<WebDomainToken>
+    ) throws -> Set<WebDomainToken> {
+        guard #available(iOS 26.5, *) else {
+            return tokens
+        }
+        var refreshed = Array(tokens)
+        try ManagedSettingsStore.refresh(&refreshed)
+        return Set(refreshed)
+    }
+}
+
 enum ShieldSnapshotReaderError: Error, Equatable, Sendable {
     case missingAppGroupIdentifier
     case appGroupContainerUnavailable
-    case snapshotUnavailable
-    case unsupportedSchema
+    case snapshotMissing(fileName: String)
+    case snapshotReadFailed(fileName: String)
+    case snapshotDecodingFailed(fileName: String)
+    case unsupportedSchema(fileName: String, found: Int, supported: Int)
 }
 
 struct AppGroupShieldSnapshotReader: ShieldSnapshotReading {
@@ -73,14 +118,26 @@ struct AppGroupShieldSnapshotReader: ShieldSnapshotReading {
             ),
             using: decoder
         )
-        guard
-            rules.schemaVersion == RestrictionRuleCollectionSnapshot.currentSchemaVersion,
-            places.schemaVersion == SavedPlaceCollectionSnapshot.currentSchemaVersion,
-            activeRestrictions.schemaVersion == ActiveRestrictionSnapshot.currentSchemaVersion,
-            coinBalance.schemaVersion == CoinBalanceSnapshot.currentSchemaVersion
-        else {
-            throw ShieldSnapshotReaderError.unsupportedSchema
-        }
+        try validateSchema(
+            rules.schemaVersion,
+            supported: RestrictionRuleCollectionSnapshot.currentSchemaVersion,
+            fileName: SharedIdentifiers.restrictionRulesFileName
+        )
+        try validateSchema(
+            places.schemaVersion,
+            supported: SavedPlaceCollectionSnapshot.currentSchemaVersion,
+            fileName: SharedIdentifiers.savedPlacesFileName
+        )
+        try validateSchema(
+            activeRestrictions.schemaVersion,
+            supported: ActiveRestrictionSnapshot.currentSchemaVersion,
+            fileName: SharedIdentifiers.activeRestrictionSnapshotFileName
+        )
+        try validateSchema(
+            coinBalance.schemaVersion,
+            supported: CoinBalanceSnapshot.currentSchemaVersion,
+            fileName: SharedIdentifiers.coinBalanceSnapshotFileName
+        )
 
         return ShieldContentSnapshot(
             rules: rules,
@@ -95,13 +152,35 @@ struct AppGroupShieldSnapshotReader: ShieldSnapshotReading {
         from fileURL: URL,
         using decoder: JSONDecoder
     ) throws -> Value {
-        guard
-            let data = try? Data(contentsOf: fileURL),
-            let value = try? decoder.decode(type, from: data)
-        else {
-            throw ShieldSnapshotReaderError.snapshotUnavailable
+        let fileName = fileURL.lastPathComponent
+        guard fileManager.fileExists(atPath: fileURL.path) else {
+            throw ShieldSnapshotReaderError.snapshotMissing(fileName: fileName)
         }
-        return value
+        let data: Data
+        do {
+            data = try Data(contentsOf: fileURL)
+        } catch {
+            throw ShieldSnapshotReaderError.snapshotReadFailed(fileName: fileName)
+        }
+        do {
+            return try decoder.decode(type, from: data)
+        } catch {
+            throw ShieldSnapshotReaderError.snapshotDecodingFailed(fileName: fileName)
+        }
+    }
+
+    private func validateSchema(
+        _ found: Int,
+        supported: Int,
+        fileName: String
+    ) throws {
+        guard found == supported else {
+            throw ShieldSnapshotReaderError.unsupportedSchema(
+                fileName: fileName,
+                found: found,
+                supported: supported
+            )
+        }
     }
 }
 
@@ -119,19 +198,71 @@ struct ShieldContent: Equatable, Sendable {
     let releaseFundingPolicy: ShieldReleaseFundingPolicy?
 }
 
+enum ShieldContentDiagnosticOutcome: String, Codable, Equatable, Sendable {
+    case releaseContent
+    case fallback
+}
+
+enum ShieldContentFallbackReason: String, Codable, Equatable, Sendable {
+    case none
+    case missingShieldToken
+    case missingAppGroupIdentifier
+    case appGroupContainerUnavailable
+    case snapshotMissing
+    case snapshotReadFailed
+    case snapshotDecodingFailed
+    case unsupportedSchema
+    case unknownSnapshotError
+    case invalidCollectionIdentity
+    case unsupportedCoinBalanceSchema
+    case noMatchingOccurrence
+    case missingSavedPlace
+}
+
+/// DEBUG builds persist only this sanitized decision summary. Family Controls
+/// tokens, rule/place identifiers, names, coordinates, and CloudKit details are
+/// deliberately excluded.
+struct ShieldContentDiagnostic: Codable, Equatable, Sendable {
+    let recordedAt: Date
+    let outcome: ShieldContentDiagnosticOutcome
+    let fallbackReason: ShieldContentFallbackReason
+    let failingFileName: String?
+    let foundSchemaVersion: Int?
+    let supportedSchemaVersion: Int?
+    let rulesSchemaVersion: Int?
+    let savedPlacesSchemaVersion: Int?
+    let activeRestrictionsSchemaVersion: Int?
+    let coinBalanceSchemaVersion: Int?
+    let ruleCount: Int?
+    let savedPlaceCount: Int?
+    let activeOccurrenceCount: Int?
+    let matchingOccurrenceCount: Int?
+    let hasApplicationToken: Bool
+    let hasCategoryToken: Bool
+    let hasWebDomainToken: Bool
+}
+
+struct ShieldContentResult: Equatable, Sendable {
+    let content: ShieldContent
+    let diagnostic: ShieldContentDiagnostic
+}
+
 struct ShieldContentProvider {
     private let snapshotReader: any ShieldSnapshotReading
+    private let tokenRefresher: any ShieldTokenRefreshing
     private let bundle: Bundle
     private let now: () -> Date
     private let calendar: Calendar
 
     init(
         snapshotReader: any ShieldSnapshotReading,
+        tokenRefresher: any ShieldTokenRefreshing = SystemShieldTokenRefresher(),
         bundle: Bundle = .main,
         now: @escaping () -> Date = Date.init,
         calendar: Calendar = .current
     ) {
         self.snapshotReader = snapshotReader
+        self.tokenRefresher = tokenRefresher
         self.bundle = bundle
         self.now = now
         self.calendar = calendar
@@ -142,13 +273,58 @@ struct ShieldContentProvider {
         categoryToken: ActivityCategoryToken? = nil,
         webDomainToken: WebDomainToken? = nil
     ) -> ShieldContent {
-        guard
-            applicationToken != nil || categoryToken != nil || webDomainToken != nil,
-            let snapshot = try? snapshotReader.readSnapshot(),
-            hasValidCollectionIdentity(snapshot),
-            snapshot.coinBalance.schemaVersion == CoinBalanceSnapshot.currentSchemaVersion
-        else {
-            return fallbackContent
+        contentResult(
+            for: applicationToken,
+            categoryToken: categoryToken,
+            webDomainToken: webDomainToken
+        ).content
+    }
+
+    func contentResult(
+        for applicationToken: ApplicationToken?,
+        categoryToken: ActivityCategoryToken? = nil,
+        webDomainToken: WebDomainToken? = nil
+    ) -> ShieldContentResult {
+        let evaluatedAt = now()
+        let tokenState = TokenState(
+            hasApplicationToken: applicationToken != nil,
+            hasCategoryToken: categoryToken != nil,
+            hasWebDomainToken: webDomainToken != nil
+        )
+        guard tokenState.hasAnyToken else {
+            return fallbackResult(
+                reason: .missingShieldToken,
+                recordedAt: evaluatedAt,
+                tokenState: tokenState
+            )
+        }
+
+        let snapshot: ShieldContentSnapshot
+        do {
+            snapshot = try snapshotReader.readSnapshot()
+        } catch {
+            return fallbackResult(
+                snapshotError: error,
+                recordedAt: evaluatedAt,
+                tokenState: tokenState
+            )
+        }
+
+        guard hasValidCollectionIdentity(snapshot) else {
+            return fallbackResult(
+                reason: .invalidCollectionIdentity,
+                recordedAt: evaluatedAt,
+                tokenState: tokenState,
+                snapshot: snapshot
+            )
+        }
+        guard snapshot.coinBalance.schemaVersion == CoinBalanceSnapshot.currentSchemaVersion else {
+            return fallbackResult(
+                reason: .unsupportedCoinBalanceSchema,
+                recordedAt: evaluatedAt,
+                tokenState: tokenState,
+                snapshot: snapshot
+            )
         }
 
         let rulesByID = Dictionary(uniqueKeysWithValues: snapshot.rules.rules.map { ($0.id, $0) })
@@ -157,7 +333,7 @@ struct ShieldContentProvider {
             currentRuleRevisions: Dictionary(
                 uniqueKeysWithValues: snapshot.rules.rules.map { ($0.id, $0.revision) }
             ),
-            now: now()
+            now: evaluatedAt
         )
         let matchingOccurrences: [(
             occurrence: RestrictionOccurrence,
@@ -177,20 +353,151 @@ struct ShieldContentProvider {
             return (occurrence: occurrence, rule: rule)
         }
 
-        guard
-            let representativeMatch = matchingOccurrences.first,
-            let place = snapshot.savedPlaces.places.first(where: {
-                $0.id == representativeMatch.rule.savedPlaceID
-            })
-        else {
-            return fallbackContent
+        guard let representativeMatch = matchingOccurrences.first else {
+            return fallbackResult(
+                reason: .noMatchingOccurrence,
+                recordedAt: evaluatedAt,
+                tokenState: tokenState,
+                snapshot: snapshot,
+                activeOccurrenceCount: evaluation.orderedOccurrences.count,
+                matchingOccurrenceCount: 0
+            )
+        }
+        guard let place = snapshot.savedPlaces.places.first(where: {
+            $0.id == representativeMatch.rule.savedPlaceID
+        }) else {
+            return fallbackResult(
+                reason: .missingSavedPlace,
+                recordedAt: evaluatedAt,
+                tokenState: tokenState,
+                snapshot: snapshot,
+                activeOccurrenceCount: evaluation.orderedOccurrences.count,
+                matchingOccurrenceCount: matchingOccurrences.count
+            )
         }
 
-        return releaseContent(
-            occurrence: representativeMatch.occurrence,
-            rule: representativeMatch.rule,
-            place: place,
-            additionalRestrictionCount: matchingOccurrences.count - 1
+        return ShieldContentResult(
+            content: releaseContent(
+                occurrence: representativeMatch.occurrence,
+                rule: representativeMatch.rule,
+                place: place,
+                additionalRestrictionCount: matchingOccurrences.count - 1
+            ),
+            diagnostic: diagnostic(
+                outcome: .releaseContent,
+                reason: .none,
+                recordedAt: evaluatedAt,
+                tokenState: tokenState,
+                snapshot: snapshot,
+                activeOccurrenceCount: evaluation.orderedOccurrences.count,
+                matchingOccurrenceCount: matchingOccurrences.count
+            )
+        )
+    }
+
+    private struct TokenState {
+        let hasApplicationToken: Bool
+        let hasCategoryToken: Bool
+        let hasWebDomainToken: Bool
+
+        var hasAnyToken: Bool {
+            hasApplicationToken || hasCategoryToken || hasWebDomainToken
+        }
+    }
+
+    private func fallbackResult(
+        snapshotError error: any Error,
+        recordedAt: Date,
+        tokenState: TokenState
+    ) -> ShieldContentResult {
+        let details: (
+            reason: ShieldContentFallbackReason,
+            fileName: String?,
+            found: Int?,
+            supported: Int?
+        )
+        switch error as? ShieldSnapshotReaderError {
+        case .missingAppGroupIdentifier:
+            details = (.missingAppGroupIdentifier, nil, nil, nil)
+        case .appGroupContainerUnavailable:
+            details = (.appGroupContainerUnavailable, nil, nil, nil)
+        case let .snapshotMissing(fileName):
+            details = (.snapshotMissing, fileName, nil, nil)
+        case let .snapshotReadFailed(fileName):
+            details = (.snapshotReadFailed, fileName, nil, nil)
+        case let .snapshotDecodingFailed(fileName):
+            details = (.snapshotDecodingFailed, fileName, nil, nil)
+        case let .unsupportedSchema(fileName, found, supported):
+            details = (.unsupportedSchema, fileName, found, supported)
+        case nil:
+            details = (.unknownSnapshotError, nil, nil, nil)
+        }
+        return ShieldContentResult(
+            content: fallbackContent,
+            diagnostic: diagnostic(
+                outcome: .fallback,
+                reason: details.reason,
+                recordedAt: recordedAt,
+                tokenState: tokenState,
+                failingFileName: details.fileName,
+                foundSchemaVersion: details.found,
+                supportedSchemaVersion: details.supported
+            )
+        )
+    }
+
+    private func fallbackResult(
+        reason: ShieldContentFallbackReason,
+        recordedAt: Date,
+        tokenState: TokenState,
+        snapshot: ShieldContentSnapshot? = nil,
+        activeOccurrenceCount: Int? = nil,
+        matchingOccurrenceCount: Int? = nil
+    ) -> ShieldContentResult {
+        ShieldContentResult(
+            content: fallbackContent,
+            diagnostic: diagnostic(
+                outcome: .fallback,
+                reason: reason,
+                recordedAt: recordedAt,
+                tokenState: tokenState,
+                snapshot: snapshot,
+                activeOccurrenceCount: activeOccurrenceCount,
+                matchingOccurrenceCount: matchingOccurrenceCount
+            )
+        )
+    }
+
+    private func diagnostic(
+        outcome: ShieldContentDiagnosticOutcome,
+        reason: ShieldContentFallbackReason,
+        recordedAt: Date,
+        tokenState: TokenState,
+        snapshot: ShieldContentSnapshot? = nil,
+        activeOccurrenceCount: Int? = nil,
+        matchingOccurrenceCount: Int? = nil,
+        failingFileName: String? = nil,
+        foundSchemaVersion: Int? = nil,
+        supportedSchemaVersion: Int? = nil
+    ) -> ShieldContentDiagnostic {
+        ShieldContentDiagnostic(
+            recordedAt: recordedAt,
+            outcome: outcome,
+            fallbackReason: reason,
+            failingFileName: failingFileName,
+            foundSchemaVersion: foundSchemaVersion,
+            supportedSchemaVersion: supportedSchemaVersion,
+            rulesSchemaVersion: snapshot?.rules.schemaVersion,
+            savedPlacesSchemaVersion: snapshot?.savedPlaces.schemaVersion,
+            activeRestrictionsSchemaVersion: snapshot?.activeRestrictions.schemaVersion,
+            coinBalanceSchemaVersion: snapshot?.coinBalance.schemaVersion,
+            ruleCount: snapshot?.rules.rules.count,
+            savedPlaceCount: snapshot?.savedPlaces.places.count,
+            activeOccurrenceCount: activeOccurrenceCount,
+            matchingOccurrenceCount: matchingOccurrenceCount,
+            hasApplicationToken: tokenState.hasApplicationToken,
+            hasCategoryToken: tokenState.hasCategoryToken,
+            hasWebDomainToken: tokenState.hasWebDomainToken
         )
     }
 
@@ -201,18 +508,41 @@ struct ShieldContentProvider {
         webDomainToken: WebDomainToken?
     ) -> Bool {
         if let applicationToken,
-           selection.applicationTokens.contains(applicationToken) {
+           matches(
+               applicationToken,
+               storedTokens: selection.applicationTokens,
+               refresh: tokenRefresher.applicationTokens
+           ) {
             return true
         }
         if let categoryToken,
-           selection.categoryTokens.contains(categoryToken) {
+           matches(
+               categoryToken,
+               storedTokens: selection.categoryTokens,
+               refresh: tokenRefresher.categoryTokens
+           ) {
             return true
         }
         if let webDomainToken,
-           selection.webDomainTokens.contains(webDomainToken) {
+           matches(
+               webDomainToken,
+               storedTokens: selection.webDomainTokens,
+               refresh: tokenRefresher.webDomainTokens
+           ) {
             return true
         }
         return false
+    }
+
+    private func matches<Token: Hashable>(
+        _ callbackToken: Token,
+        storedTokens: Set<Token>,
+        refresh: (Set<Token>) throws -> Set<Token>
+    ) -> Bool {
+        if storedTokens.contains(callbackToken) {
+            return true
+        }
+        return (try? refresh(storedTokens).contains(callbackToken)) == true
     }
 
     private func releaseContent(
@@ -328,6 +658,39 @@ struct ShieldContentProvider {
         return String(format: "%02d:%02d %@", twelveHour, minute, period)
     }
 }
+
+#if DEBUG
+struct ShieldContentDiagnosticRecorder {
+    private let bundle: Bundle
+
+    init(bundle: Bundle = .main) {
+        self.bundle = bundle
+    }
+
+    func record(_ diagnostic: ShieldContentDiagnostic) {
+        guard
+            let identifier = SharedIdentifiers.appGroupIdentifier(in: bundle),
+            let defaults = UserDefaults(suiteName: identifier)
+        else {
+            return
+        }
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.sortedKeys]
+        guard let data = try? encoder.encode(diagnostic) else {
+            return
+        }
+        defaults.set(data, forKey: SharedIdentifiers.shieldContentDiagnosticDefaultsKey)
+        defaults.set(
+            diagnostic.fallbackReason.rawValue,
+            forKey: "\(SharedIdentifiers.shieldContentDiagnosticDefaultsKey).reason"
+        )
+        // Shield configuration extensions may be suspended immediately after
+        // returning their value, so flush this DEBUG-only evidence eagerly.
+        defaults.synchronize()
+    }
+}
+#endif
 
 struct ShieldMonthlyAllowanceUITestFixture: Equatable, Sendable {
     let initialBalance: CoinBalanceSnapshot

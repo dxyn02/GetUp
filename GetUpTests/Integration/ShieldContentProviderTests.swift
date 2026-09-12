@@ -238,6 +238,99 @@ struct ShieldContentProviderTests {
         #expect(content.secondaryButtonLabel == nil)
     }
 
+    @Test("The diagnostic identifies a missing Shield token before reading snapshots")
+    func missingTokenDiagnosticIsSpecific() {
+        let provider = ShieldContentProvider(
+            snapshotReader: FixedShieldSnapshotReader(error: TestFailure.expected),
+            now: { TestFixtures.now }
+        )
+
+        let result = provider.contentResult(for: nil)
+
+        #expect(result.diagnostic.outcome == .fallback)
+        #expect(result.diagnostic.fallbackReason == .missingShieldToken)
+        #expect(result.diagnostic.recordedAt == TestFixtures.now)
+        #expect(result.diagnostic.ruleCount == nil)
+    }
+
+    @Test("The diagnostic identifies the exact unreadable App Group snapshot")
+    func snapshotDiagnosticIncludesFailingFile() throws {
+        let token = try applicationToken(seed: 31)
+        let provider = ShieldContentProvider(
+            snapshotReader: FixedShieldSnapshotReader(
+                error: ShieldSnapshotReaderError.snapshotDecodingFailed(
+                    fileName: SharedIdentifiers.activeRestrictionSnapshotFileName
+                )
+            ),
+            now: { TestFixtures.now }
+        )
+
+        let result = provider.contentResult(for: token)
+
+        #expect(result.diagnostic.outcome == .fallback)
+        #expect(result.diagnostic.fallbackReason == .snapshotDecodingFailed)
+        #expect(
+            result.diagnostic.failingFileName
+                == SharedIdentifiers.activeRestrictionSnapshotFileName
+        )
+        #expect(result.diagnostic.hasApplicationToken)
+    }
+
+    @Test("The diagnostic separates active occurrences from token matches")
+    func unmatchedTokenDiagnosticIncludesCountsAndSchemas() throws {
+        let selectedToken = try applicationToken(seed: 32)
+        let shieldToken = try applicationToken(seed: 33)
+        let rule = TestFixtures.makeRule(
+            activitySelection: selection(tokens: [selectedToken])
+        )
+        let provider = ShieldContentProvider(
+            snapshotReader: FixedShieldSnapshotReader(
+                snapshot: snapshot(rules: [rule])
+            ),
+            now: { TestFixtures.now },
+            calendar: TestFixtures.calendar
+        )
+
+        let result = provider.contentResult(for: shieldToken)
+
+        #expect(result.diagnostic.fallbackReason == .noMatchingOccurrence)
+        #expect(result.diagnostic.ruleCount == 1)
+        #expect(result.diagnostic.savedPlaceCount == 1)
+        #expect(result.diagnostic.activeOccurrenceCount == 1)
+        #expect(result.diagnostic.matchingOccurrenceCount == 0)
+        #expect(
+            result.diagnostic.rulesSchemaVersion
+                == RestrictionRuleCollectionSnapshot.currentSchemaVersion
+        )
+    }
+
+    @Test("An expired stored application token is refreshed before Shield matching")
+    func expiredApplicationTokenIsRefreshedBeforeMatching() throws {
+        let expiredToken = try applicationToken(seed: 34)
+        let callbackToken = try applicationToken(seed: 35)
+        let rule = TestFixtures.makeRule(
+            activitySelection: selection(tokens: [expiredToken])
+        )
+        let provider = ShieldContentProvider(
+            snapshotReader: FixedShieldSnapshotReader(
+                snapshot: snapshot(rules: [rule])
+            ),
+            tokenRefresher: FixedShieldTokenRefresher(
+                refreshedApplicationTokens: [callbackToken]
+            ),
+            now: { TestFixtures.now },
+            calendar: TestFixtures.calendar
+        )
+
+        let result = provider.contentResult(for: callbackToken)
+
+        #expect(result.diagnostic.outcome == .releaseContent)
+        #expect(result.diagnostic.fallbackReason == .none)
+        #expect(result.diagnostic.activeOccurrenceCount == 1)
+        #expect(result.diagnostic.matchingOccurrenceCount == 1)
+        #expect(result.content.primaryButtonLabel == "해제권 1회 사용")
+    }
+
     @Test("An expired or missing representative occurrence uses the close-only fallback")
     func missingRepresentativeUsesCloseOnlyFallback() throws {
         let token = try applicationToken(seed: 6)
@@ -411,4 +504,28 @@ private struct FixedShieldSnapshotReader: ShieldSnapshotReading {
 
 private enum TestFailure: Error {
     case expected
+}
+
+private struct FixedShieldTokenRefresher: ShieldTokenRefreshing {
+    var refreshedApplicationTokens: Set<ApplicationToken> = []
+    var refreshedCategoryTokens: Set<ActivityCategoryToken> = []
+    var refreshedWebDomainTokens: Set<WebDomainToken> = []
+
+    func applicationTokens(
+        _ tokens: Set<ApplicationToken>
+    ) throws -> Set<ApplicationToken> {
+        refreshedApplicationTokens
+    }
+
+    func categoryTokens(
+        _ tokens: Set<ActivityCategoryToken>
+    ) throws -> Set<ActivityCategoryToken> {
+        refreshedCategoryTokens
+    }
+
+    func webDomainTokens(
+        _ tokens: Set<WebDomainToken>
+    ) throws -> Set<WebDomainToken> {
+        refreshedWebDomainTokens
+    }
 }

@@ -174,6 +174,13 @@ xcodebuild test \
 | 서울 월 경계 전후 비이월 및 구매 잔액 보존 | 서버 creation date를 확인할 수 있는 실제 장부 | 대기 |
 | 월 경계 동안 앱·Shield 미실행 후 첫 foreground 및 별도 첫 Shield 지연 생성 | 실기기 및 실제 장부 | 대기 |
 
+2026-09-12 사전 Shield 검증에서 iPhone 15 Pro Max의 유효 활성 occurrence 1개가 있음에도 저장 token과
+Shield callback token이 일치하지 않아 일반 fallback이 표시됐다. iOS 26.5 이상의 공식
+`ManagedSettingsStore.refresh(_:)`로 application·category·web domain token을 갱신한 뒤 비교하도록
+수정했고, 같은 규칙과 기기에서 상세 Shield와 `Use 1 Release` 표시를 확인했다. 두 테스트 기기는
+동일한 Debug 빌드 `0.1.0 (6)`으로 맞췄다. 아직 해제권 동시 사용과 월 경계 결과는 위 표의 완료
+증적으로 계산하지 않는다.
+
 ## Live Activity end-to-end
 
 1. 앱 foreground에서 시간·위치 조건을 만족시켜 제한을 시작한다.

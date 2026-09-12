@@ -4,6 +4,15 @@
 
 **상태**: 미해결(OPEN) — 2026-09-09
 
+**2026-09-12 추가 관찰**: 동일한 당월 무료 2회·구매 0 mirror를 표시하는 두 기기 중 iPhone 15 Pro
+Max에서는 상세 Shield와 `해제권 1회 사용`이 표시되지만 iPhone 17에서는 일반 fallback만 표시됐다.
+iPhone 17의 interval callback은 권한 보완 뒤 제한 적용 완료를 기록했다. 두 기기에 DEBUG 진단을
+설치하고 적용 규칙을 완전히 제거·재적용해 iPhone 15 Pro Max에서 `active: 1`, `matching: 0`을
+재현했다. 즉 occurrence와 장부 snapshot은 정상이지만 저장된 Family Controls token과 Shield callback
+token이 달랐다. iOS 26.5 이상의 공식 `ManagedSettingsStore.refresh(_:)`로 저장 token을 메모리에서
+갱신한 뒤 비교하도록 수정하자 같은 기기에서 상세 Shield와 `Use 1 Release`가 표시됐다. 이 하위
+문제는 해결됐으며 T089의 실제 동시 사용과 서울 월 경계 증적은 계속 남아 있다.
+
 T089의 US4 자동 검증은 iPhone 17 Pro iOS 26.5 Simulator에서 24개 모두 통과했다. 같은 record ID
 100회 충돌, 무료 우선 예약, 서울 자정 전후 지연 생성·비이월, 시간대 변경과 reset 뒤 다음 달 재개를
 in-memory CloudKit protocol fake와 UI fixture로 검증했다.
