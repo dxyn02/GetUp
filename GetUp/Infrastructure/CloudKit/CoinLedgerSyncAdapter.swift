@@ -172,7 +172,8 @@ actor CoinLedgerSyncAdapter {
         localMirror: CoinBalanceSnapshot?,
         currentMonthID: String,
         fetchedAt: ContinuousClock.Instant,
-        syncedAt: Date
+        syncedAt: Date,
+        pendingLocalChanges: Bool = false
     ) throws -> CoinLedgerSyncOutcome {
         let accountChanged = accountSessionID != session.accountSessionID
         try switchAccount(to: accountSessionID)
@@ -190,6 +191,7 @@ actor CoinLedgerSyncAdapter {
 
             let isConsistent = projection.projectionCompleted
                 && !projection.hasPendingReconciliation
+                && !pendingLocalChanges
                 && projection.ledgerEpochID == projection.accountEpochID
             let nextMirror = try CoinBalanceSnapshot(
                 purchasedAvailable: projection.purchasedAvailable,
@@ -207,6 +209,7 @@ actor CoinLedgerSyncAdapter {
             )
             mirror = nextMirror
             hasPendingLocalChanges = projection.hasPendingReconciliation
+                || pendingLocalChanges
             return CoinLedgerSyncOutcome(
                 mirror: nextMirror,
                 recoveredFromRemote: isolatedLocalMirror == nil && isConsistent

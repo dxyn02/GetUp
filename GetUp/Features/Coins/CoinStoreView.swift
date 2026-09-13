@@ -67,11 +67,14 @@ struct CoinStoreView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                t089TestBanner
                 balanceSection
                 availabilitySection
                 purchaseStatus
                 catalogSection
-                Button("코인 내역 보기") { showsHistory = true }
+                Button(AppLocalizedCopy.string("coinStore.history.open")) {
+                    showsHistory = true
+                }
                     .buttonStyle(.bordered)
                     .accessibilityIdentifier("coinStore.history.open")
                 instrumentationSection
@@ -82,12 +85,13 @@ struct CoinStoreView: View {
         }
         .background(HomeColor.background.ignoresSafeArea())
         .foregroundStyle(HomeColor.textPrimary)
-        .navigationTitle("코인")
+        .navigationTitle(AppLocalizedCopy.string("coinStore.title"))
         .navigationBarTitleDisplayMode(.inline)
         .task { await model.loadProducts() }
         .navigationDestination(isPresented: $showsHistory) {
             CoinLedgerHistoryView(
                 events: model.events,
+                syncState: model.balance.syncState,
                 purchaseGrantStatus: purchaseGrantStatus
             )
         }
@@ -108,19 +112,124 @@ struct CoinStoreView: View {
         }
     }
 
+    @ViewBuilder
+    private var t089TestBanner: some View {
+#if DEBUG
+        if let configuration = SharedIdentifiers.t089LedgerTestConfiguration() {
+            Text(
+                "T089 TEST · \(configuration.ledgerNamespace) · "
+                    + "서울 매월 \(configuration.monthlyBoundaryDay)일 00:00"
+            )
+            .font(.caption.monospaced().weight(.semibold))
+            .foregroundStyle(.black)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(.yellow, in: .rect(cornerRadius: 8))
+            .accessibilityIdentifier("coinStore.t089TestBanner")
+        }
+#endif
+    }
+
     private var balanceSection: some View {
-        HStack(spacing: 12) {
-            balanceCard(title: "이번 달 무료", value: model.balance.freeAvailable, id: "free")
-            balanceCard(title: "구매 잔액", value: model.balance.purchasedAvailable, id: "purchased")
+        VStack(alignment: .leading, spacing: 12) {
+            Text(balanceContentState.message)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(balanceContentState.foregroundStyle)
+                .accessibilityIdentifier("coinStore.balance.state")
+                .accessibilitySortPriority(100)
+
+            HStack(alignment: .firstTextBaseline) {
+                Text(AppLocalizedCopy.string("coinStore.monthly.title"))
+                    .font(.title2.bold())
+                    .accessibilityIdentifier("coinStore.monthly.title")
+                Spacer()
+                Text(monthlyAllowance.monthLabel)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(HomeColor.textSecondary)
+                    .accessibilityIdentifier("coinStore.monthly.month")
+            }
+
+            HStack(spacing: 12) {
+                balanceCard(
+                    title: AppLocalizedCopy.string("coinStore.balance.free.label"),
+                    displayValue: balanceContentState.freeDisplayValue(
+                        monthlyAllowance.available
+                    ),
+                    accessibilityValue: balanceContentState.freeAccessibilityValue(
+                        monthlyAllowance.available
+                    ),
+                    id: "free",
+                    sortPriority: 80
+                )
+                balanceCard(
+                    title: AppLocalizedCopy.string("coinStore.balance.purchased.label"),
+                    displayValue: balanceContentState.purchasedDisplayValue(
+                        model.balance.purchasedAvailable
+                    ),
+                    accessibilityValue: balanceContentState.purchasedAccessibilityValue(
+                        model.balance.purchasedAvailable
+                    ),
+                    id: "purchased",
+                    sortPriority: 70
+                )
+            }
+
+            Text(AppLocalizedCopy.string("coinStore.monthly.nonRollover"))
+                .font(.footnote)
+                .foregroundStyle(HomeColor.textSecondary)
+                .accessibilityIdentifier("coinStore.monthly.nonRollover")
+            Text(monthlyAllowance.nextRefreshLabel)
+                .font(.footnote)
+                .foregroundStyle(HomeColor.textSecondary)
+                .accessibilityIdentifier("coinStore.monthly.nextRefresh")
         }
     }
 
-    private func balanceCard(title: String, value: Int, id: String) -> some View {
+    private var balanceContentState: CoinStoreBalanceContentState {
+        CoinStoreBalanceContentState(
+            balance: model.balance,
+            displayedFreeAvailable: monthlyAllowance.available
+        )
+    }
+
+    private var monthlyAllowance: MonthlyAllowancePresentation {
+        let monthID: String
+        let available: Int
+        switch model.monthlyAllowanceDisplay {
+        case .setupRequired(let value, let availableAfterSetup):
+            monthID = value
+            available = availableAfterSetup
+        case .current(let value, let currentAvailable):
+            monthID = value
+            available = currentAvailable
+        case .resetRequired(let value, let resetAvailable):
+            monthID = value
+            available = resetAvailable
+        case .unavailable(let value, let lastKnownAvailable):
+            monthID = value
+            available = lastKnownAvailable
+        }
+        return MonthlyAllowancePresentation(monthID: monthID, available: available)
+    }
+
+    private func balanceCard(
+        title: String,
+        displayValue: String,
+        accessibilityValue: String,
+        id: String,
+        sortPriority: Double
+    ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.caption).foregroundStyle(HomeColor.textSecondary)
-            Text(String(value))
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(HomeColor.textSecondary)
+                .accessibilityHidden(true)
+            Text(displayValue)
                 .font(.title.bold().monospacedDigit())
+                .accessibilityLabel(title)
+                .accessibilityValue(accessibilityValue)
                 .accessibilityIdentifier("coinStore.balance.\(id)")
+                .accessibilitySortPriority(sortPriority)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -277,6 +386,137 @@ struct CoinStoreView: View {
         } catch {
             lifecycleError = true
         }
+    }
+}
+
+enum CoinStoreBalanceContentState: Equatable {
+    case loading
+    case empty
+    case stale
+    case current
+    case setup
+    case reset
+
+    init(balance: CoinBalanceSnapshot, displayedFreeAvailable: Int) {
+        switch balance.syncState {
+        case .syncing:
+            self = .loading
+        case .stale, .unavailable:
+            self = .stale
+        case .current:
+            self = displayedFreeAvailable == 0 && balance.purchasedAvailable == 0
+                ? .empty
+                : .current
+        case .setupRequired:
+            self = .setup
+        case .deletionConfirmed, .resetRequired:
+            self = .reset
+        }
+    }
+
+    var message: String {
+        switch self {
+        case .loading: AppLocalizedCopy.string("coinStore.balance.state.loading")
+        case .empty: AppLocalizedCopy.string("coinStore.balance.state.empty")
+        case .stale: AppLocalizedCopy.string("coinStore.balance.state.stale")
+        case .current: AppLocalizedCopy.string("coinStore.balance.state.current")
+        case .setup: AppLocalizedCopy.string("coinStore.balance.state.setup")
+        case .reset: AppLocalizedCopy.string("coinStore.balance.state.reset")
+        }
+    }
+
+    var foregroundStyle: Color {
+        switch self {
+        case .stale: HomeColor.error
+        case .loading, .empty, .current, .setup, .reset: HomeColor.textSecondary
+        }
+    }
+
+    func freeDisplayValue(_ value: Int) -> String {
+        self == .loading ? "—" : String(value)
+    }
+
+    func purchasedDisplayValue(_ value: Int) -> String {
+        self == .loading ? "—" : String(value)
+    }
+
+    func freeAccessibilityValue(_ value: Int) -> String {
+        guard self != .loading else {
+            return AppLocalizedCopy.string("coinStore.balance.value.loading")
+        }
+        return value == 1
+            ? AppLocalizedCopy.string("coinStore.balance.free.accessibilityValue.one")
+            : AppLocalizedCopy.format(
+                "coinStore.balance.free.accessibilityValue.other",
+                value
+            )
+    }
+
+    func purchasedAccessibilityValue(_ value: Int) -> String {
+        guard self != .loading else {
+            return AppLocalizedCopy.string("coinStore.balance.value.loading")
+        }
+        return value == 1
+            ? AppLocalizedCopy.string("coinStore.balance.purchased.accessibilityValue.one")
+            : AppLocalizedCopy.format(
+                "coinStore.balance.purchased.accessibilityValue.other",
+                value
+            )
+    }
+}
+
+private struct MonthlyAllowancePresentation {
+    let available: Int
+    let monthLabel: String
+    let nextRefreshLabel: String
+
+    init(monthID: String, available: Int) {
+        self.available = available
+
+        guard let monthStart = Self.monthStart(for: monthID),
+              let nextMonth = MonthlyAllowancePolicy.nextPeriodStart(afterMonthID: monthID)
+        else {
+            monthLabel = monthID
+            nextRefreshLabel = AppLocalizedCopy.string(
+                "coinStore.monthly.nextRefresh.fallback"
+            )
+            return
+        }
+
+        monthLabel = Self.formatted(monthStart, template: "yyyyMMMM")
+        nextRefreshLabel = AppLocalizedCopy.format(
+            "coinStore.monthly.nextRefresh",
+            Self.formatted(nextMonth, template: "yyyyMMMMdHHmm")
+        )
+    }
+
+    private static let seoulTimeZone = TimeZone(identifier: "Asia/Seoul")!
+
+    private static var calendar: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = seoulTimeZone
+        return calendar
+    }
+
+    private static func monthStart(for monthID: String) -> Date? {
+        let components = monthID.split(separator: "-", omittingEmptySubsequences: false)
+        guard components.count == 2,
+              let year = Int(components[0]),
+              let month = Int(components[1]),
+              (1...12).contains(month)
+        else {
+            return nil
+        }
+        return calendar.date(from: DateComponents(year: year, month: month, day: 1))
+    }
+
+    private static func formatted(_ date: Date, template: String) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = .current
+        formatter.calendar = calendar
+        formatter.timeZone = seoulTimeZone
+        formatter.setLocalizedDateFormatFromTemplate(template)
+        return formatter.string(from: date)
     }
 }
 

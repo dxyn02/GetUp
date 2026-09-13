@@ -2,6 +2,7 @@ import Foundation
 
 enum DependencyContainerError: Error, Equatable, Sendable {
     case missingAppGroupIdentifier
+    case missingICloudContainerIdentifier
     case appGroupContainerUnavailable
 }
 
@@ -29,6 +30,134 @@ struct CoinLedgerReconciliationSnapshot: Equatable, Sendable {
     let events: [CoinLedgerEvent]
     let pendingProductIdentifiers: Set<String>
     let hasPendingReconciliation: Bool
+}
+
+enum MonthlyAllowanceUITestFixtureMode: String, Sendable {
+    case persistedOneRemaining = "persisted-one-remaining"
+    case firstApp = "first-app"
+    case firstShield = "first-shield"
+    case firstSetup = "first-setup"
+    case deletionReset = "deletion-reset"
+}
+
+struct MonthlyAllowanceUITestFixtureStore {
+    private struct PersistedState: Codable {
+        var monthID: String
+        var purchasedAvailable: Int
+        var freeAvailable: Int
+    }
+
+    private let fileURL: URL
+
+    init(containerURL: URL) {
+        fileURL = containerURL.appendingPathComponent("ui-test-monthly-allowance.json")
+    }
+
+    func balance(
+        mode: MonthlyAllowanceUITestFixtureMode?,
+        syncState: CoinBalanceSyncState,
+        now: Date
+    ) throws -> CoinBalanceSnapshot {
+        let currentMonthID = MonthlyAllowancePolicy.monthID(containing: now)
+        let state: PersistedState
+
+        switch (mode, syncState) {
+        case (.firstSetup, .setupRequired):
+            state = PersistedState(
+                monthID: currentMonthID,
+                purchasedAvailable: 0,
+                freeAvailable: 0
+            )
+        case (.deletionReset, .deletionConfirmed), (.deletionReset, .resetRequired):
+            state = PersistedState(
+                monthID: currentMonthID,
+                purchasedAvailable: 0,
+                freeAvailable: 0
+            )
+        case (.some(let mode), .current):
+            if let persisted = try load(), persisted.monthID == currentMonthID {
+                state = persisted
+            } else if let persisted = try load() {
+                state = PersistedState(
+                    monthID: currentMonthID,
+                    purchasedAvailable: persisted.purchasedAvailable,
+                    freeAvailable: MonthlyAllowancePolicy.monthlyQuota
+                )
+            } else {
+                state = Self.initialState(for: mode, monthID: currentMonthID)
+            }
+        default:
+            state = PersistedState(
+                monthID: currentMonthID,
+                purchasedAvailable: syncState == .current ? 3 : 0,
+                freeAvailable: syncState == .current ? 1 : 0
+            )
+        }
+
+        if mode != nil {
+            try save(state)
+        }
+        return try snapshot(from: state, syncState: syncState, now: now)
+    }
+
+    func save(_ balance: CoinBalanceSnapshot) throws {
+        try save(PersistedState(
+            monthID: balance.currentMonthID,
+            purchasedAvailable: balance.purchasedAvailable,
+            freeAvailable: balance.freeAvailable
+        ))
+    }
+
+    private func snapshot(
+        from state: PersistedState,
+        syncState: CoinBalanceSyncState,
+        now: Date
+    ) throws -> CoinBalanceSnapshot {
+        try CoinBalanceSnapshot(
+            purchasedAvailable: state.purchasedAvailable,
+            currentMonthID: state.monthID,
+            freeAvailable: state.freeAvailable,
+            syncState: syncState,
+            syncedAt: now,
+            ledgerEpochID: syncState == .current
+                ? UUID(uuidString: "00000000-0000-4000-8000-000000000901")
+                : nil,
+            hadConfirmedLedger: syncState != .setupRequired
+        )
+    }
+
+    private func load() throws -> PersistedState? {
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return nil }
+        return try JSONDecoder().decode(PersistedState.self, from: Data(contentsOf: fileURL))
+    }
+
+    private func save(_ state: PersistedState) throws {
+        try JSONEncoder().encode(state).write(to: fileURL, options: .atomic)
+    }
+
+    private static func initialState(
+        for mode: MonthlyAllowanceUITestFixtureMode,
+        monthID: String
+    ) -> PersistedState {
+        switch mode {
+        case .persistedOneRemaining:
+            PersistedState(monthID: monthID, purchasedAvailable: 3, freeAvailable: 1)
+        case .firstApp, .firstShield:
+            PersistedState(
+                monthID: monthID,
+                purchasedAvailable: 3,
+                freeAvailable: MonthlyAllowancePolicy.monthlyQuota
+            )
+        case .firstSetup:
+            PersistedState(
+                monthID: monthID,
+                purchasedAvailable: 0,
+                freeAvailable: MonthlyAllowancePolicy.monthlyQuota
+            )
+        case .deletionReset:
+            PersistedState(monthID: monthID, purchasedAvailable: 0, freeAvailable: 0)
+        }
+    }
 }
 
 actor CoinAppLifecycleCoordinator {
@@ -93,13 +222,17 @@ actor CoinAppLifecycleCoordinator {
             )
         }
 
-        let destination: PendingAppRouteDestination?
+        let consumedDestination: PendingAppRouteDestination?
         do {
-            destination = try await consumePendingRoute(now, activeOccurrenceIDs)
+            consumedDestination = try await consumePendingRoute(now, activeOccurrenceIDs)
         } catch {
-            destination = nil
+            consumedDestination = nil
             failures.append(.routeConsumption)
         }
+        let destination = actionableDestination(
+            consumedDestination,
+            afterReconciliation: ledger
+        )
 
         _ = trigger
         return CoinAppLifecycleRefreshResult(
@@ -107,6 +240,23 @@ actor CoinAppLifecycleCoordinator {
             destination: destination,
             failures: failures
         )
+    }
+
+    private func actionableDestination(
+        _ destination: PendingAppRouteDestination?,
+        afterReconciliation ledger: CoinLedgerReconciliationSnapshot?
+    ) -> PendingAppRouteDestination? {
+        guard let destination, let ledger else { return destination }
+        switch destination {
+        case .iCloudRecovery where ledger.balance.syncState == .current:
+            return nil
+        case .reconciliation where !ledger.hasPendingReconciliation:
+            return nil
+        case .ledgerReset where ledger.balance.syncState == .current:
+            return nil
+        case .coinStore, .iCloudRecovery, .ledgerReset, .reconciliation:
+            return destination
+        }
     }
 }
 

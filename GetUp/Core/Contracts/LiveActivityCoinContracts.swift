@@ -377,6 +377,7 @@ protocol ReleaseExceptionRepository: Sendable {
 protocol PendingAppRoutePersisting: Sendable {
     func save(_ route: PendingAppRoute) async throws
     func load() async throws -> PendingAppRoute?
+    func discard() async throws
 }
 
 enum ReleaseExceptionRepositoryError: Error, Equatable, Sendable,

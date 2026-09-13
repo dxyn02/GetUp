@@ -38,6 +38,77 @@ struct ReleaseOccurrenceClaim: Equatable, Sendable {
     }
 }
 
+/// Per-command evidence that a writer used the occurrence-claim reservation protocol.
+struct ReservationCompatibilityStamp: Equatable, Sendable {
+    static let currentSchemaVersion = 1
+    static let currentProtocolVersion = 1
+
+    let ledgerEpochID: UUID
+    let commandID: UUID
+    let occurrenceID: String
+    let protocolVersion: Int
+    let createdAt: Date
+
+    init(
+        ledgerEpochID: UUID,
+        commandID: UUID,
+        occurrenceID: String,
+        protocolVersion: Int = Self.currentProtocolVersion,
+        createdAt: Date
+    ) throws {
+        guard !occurrenceID.isEmpty,
+              protocolVersion == Self.currentProtocolVersion,
+              createdAt.timeIntervalSince1970.isFinite else {
+            throw ReleaseOccurrenceClaim.ValidationError.invalidValue
+        }
+        self.ledgerEpochID = ledgerEpochID
+        self.commandID = commandID
+        self.occurrenceID = occurrenceID
+        self.protocolVersion = protocolVersion
+        self.createdAt = createdAt
+    }
+}
+
+/// Epoch-bound remote migration state. `preparing` never authorizes reservations.
+struct ReservationMigrationMarker: Equatable, Sendable {
+    enum State: String, Equatable, Sendable {
+        case preparing
+        case ready
+    }
+
+    static let currentSchemaVersion = 1
+
+    let ledgerEpochID: UUID
+    let protocolVersion: Int
+    let state: State
+    let legacyWritersRetiredAt: Date
+    let evidenceVersion: Int
+    let updatedAt: Date
+
+    init(
+        ledgerEpochID: UUID,
+        protocolVersion: Int = ReservationCompatibilityStamp.currentProtocolVersion,
+        state: State,
+        legacyWritersRetiredAt: Date,
+        evidenceVersion: Int,
+        updatedAt: Date
+    ) throws {
+        guard protocolVersion == ReservationCompatibilityStamp.currentProtocolVersion,
+              evidenceVersion > 0,
+              legacyWritersRetiredAt.timeIntervalSince1970.isFinite,
+              updatedAt.timeIntervalSince1970.isFinite,
+              updatedAt >= legacyWritersRetiredAt else {
+            throw ReleaseOccurrenceClaim.ValidationError.invalidValue
+        }
+        self.ledgerEpochID = ledgerEpochID
+        self.protocolVersion = protocolVersion
+        self.state = state
+        self.legacyWritersRetiredAt = legacyWritersRetiredAt
+        self.evidenceVersion = evidenceVersion
+        self.updatedAt = updatedAt
+    }
+}
+
 enum ReleaseRequestSource: String, Codable, Equatable, Hashable, Sendable {
     case shield
     case app

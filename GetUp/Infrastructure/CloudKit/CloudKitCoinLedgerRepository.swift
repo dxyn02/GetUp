@@ -152,10 +152,17 @@ struct CloudKitCoinLedgerRepository: CoinLedgerRepository, Sendable {
             let event = try reservationEvent(
                 request: request, source: funding == .monthlyFree ? .monthlyFree : .purchased
             )
+            let compatibilityStamp = try ReservationCompatibilityStamp(
+                ledgerEpochID: request.ledgerEpochID,
+                commandID: request.commandID,
+                occurrenceID: request.occurrenceID,
+                createdAt: request.requestedAt
+            )
             var entities: [(CoinLedgerRecordEntity, String?)] = [
                 (.ledgerEpoch(epoch), epochRecord.changeTag),
                 (.releaseOccurrenceClaim(claim), indexed[claimName]?.changeTag),
                 (.releaseCommand(command), nil), (.event(event), nil),
+                (.reservationCompatibilityStamp(compatibilityStamp), nil),
             ]
             let updatedAllowance: MonthlyAllowance
             var updatedAccount: CoinAccount?
@@ -462,6 +469,9 @@ private extension CloudKitCoinLedgerRepository {
         from record: CloudKitRecordSnapshot
     ) throws -> MonthlyAllowance {
         guard case let .monthlyAllowance(value) = try decode(record) else {
+            throw CoinLedgerRepositoryError.database(.invalidRecord)
+        }
+        guard MonthlyAllowancePolicy.monthID(containing: value.creationDate) == value.monthID else {
             throw CoinLedgerRepositoryError.database(.invalidRecord)
         }
         return value
@@ -814,10 +824,7 @@ private extension CloudKitCoinLedgerRepository {
     }
 
     func monthID(for date: Date) -> String {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "Asia/Seoul")!
-        let components = calendar.dateComponents([.year, .month], from: date)
-        return String(format: "%04d-%02d", components.year ?? 0, components.month ?? 0)
+        MonthlyAllowancePolicy.monthID(containing: date)
     }
 
     func adding(_ lhs: Int, _ rhs: Int) throws -> Int {

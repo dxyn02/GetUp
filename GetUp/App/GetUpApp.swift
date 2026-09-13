@@ -1,3 +1,4 @@
+@preconcurrency import CloudKit
 @preconcurrency import CoreLocation
 @preconcurrency import FamilyControls
 import Foundation
@@ -469,6 +470,16 @@ private struct GetUpRootView: View {
         guard !Task.isCancelled else { return }
         if let ledger = result.ledger {
             coinStoreConfiguration?.model.refreshLedger(ledger.coinStoreLedgerState)
+            if coinRouteDestination == .reconciliation,
+               !ledger.hasPendingReconciliation {
+                coinRouteDestination = nil
+            } else if coinRouteDestination == .iCloudRecovery,
+                      ledger.balance.syncState == .current {
+                coinRouteDestination = nil
+            } else if coinRouteDestination == .ledgerReset,
+                      ledger.balance.syncState == .current {
+                coinRouteDestination = nil
+            }
         }
         if let destination = result.destination {
             coinRouteDestination = destination
@@ -1054,6 +1065,8 @@ private struct RestrictionActivationProbeView: View {
                 .accessibilityIdentifier("coinRelease.test.committedCount")
             Text(String(instrumentation.remainingOccurrenceCount))
                 .accessibilityIdentifier("coinRelease.test.remainingOccurrenceCount")
+            Text(String(instrumentation.createsMonthlyAllowanceOnRequest))
+                .accessibilityIdentifier("coinRelease.test.createsMonthlyAllowanceOnRequest")
             if instrumentation.holdsExecution,
                configuration.model.phase == .processing {
                 Button(AppLocalizedCopy.string("coinRelease.test.complete")) {
@@ -1211,16 +1224,53 @@ private struct AppEnvironment {
     let permissionOnboardingStateStore: PermissionOnboardingStateStore
 
     static func live() throws -> AppEnvironment {
+        guard let identifier = SharedIdentifiers.appGroupIdentifier() else {
+            throw DependencyContainerError.missingAppGroupIdentifier
+        }
+        guard let cloudContainerIdentifier = SharedIdentifiers.iCloudContainerIdentifier() else {
+            throw DependencyContainerError.missingICloudContainerIdentifier
+        }
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: identifier
+        ) else {
+            throw DependencyContainerError.appGroupContainerUnavailable
+        }
+        let cloudContainer = CKContainer(identifier: cloudContainerIdentifier)
+        let t089Configuration = SharedIdentifiers.t089LedgerTestConfiguration()
+        let ledgerNamespace = t089Configuration?.ledgerNamespace
+        let ledgerRuntime = CoinLedgerLiveRuntime.live(
+            containerURL: containerURL,
+            process: .app,
+            cloudContainer: cloudContainer,
+            ledgerNamespace: ledgerNamespace
+        )
         let storefront = StoreKitPurchaseAdapter()
-        let transactionObserver = StoreKitTransactionObserver(
+        let catalog = try CoinProductCatalog()
+        let purchaseService = CoinPurchaseService(
+            catalog: catalog,
             storefront: storefront,
-            processVerifiedTransaction: { _ in
-                // The production CloudKit database provider remains closed until T097.
-                // Keep transactions unfinished so a verified provider can recover them later.
-                throw CoinPurchaseServiceError.ledgerNotCurrent
+            repository: ledgerRuntime.repository,
+            fetchLedgerState: {
+                try await ledgerRuntime.refreshBeforeShieldRequest().ledgerState
             }
         )
-        let container = try DependencyContainer.live(
+        let transactionObserver = StoreKitTransactionObserver(
+            storefront: storefront,
+            processVerifiedTransaction: { transaction in
+                try await purchaseService.processVerifiedTransaction(transaction)
+            }
+        )
+        let container = DependencyContainer(
+            containerURL: containerURL,
+            coinLedgerRepository: ledgerRuntime.repository,
+            monthlyAllowanceForegroundContextProvider: {
+                let context = try await ledgerRuntime.refreshBeforeShieldRequest()
+                return MonthlyAllowanceForegroundContext(
+                    monthID: context.snapshot.balance.currentMonthID,
+                    ledgerState: context.ledgerState,
+                    existingAllowance: context.allowance
+                )
+            },
             startCoinTransactionObservation: {
                 try await transactionObserver.start()
             }
@@ -1251,6 +1301,21 @@ private struct AppEnvironment {
             }
         )
         let restrictionAdapter = try ManagedSettingsRestrictionAdapter.live()
+        let releaseExecutor = CoinRuleReleaseLiveExecutor(
+            runtime: ledgerRuntime,
+            sharedRepository: container.sharedSnapshotRepository,
+            applyRestrictions: try container.makeRuleReleaseApplicationProvider(
+                authorizationProvider: SystemAuthorizationProvider.forApplication()
+            ),
+            reconcileLiveActivity: { snapshot in
+                await liveActivityCoordinator.reconcile(
+                    context: .foreground,
+                    desiredActivity: snapshot
+                )
+            },
+            coordinationDirectory: container.coordinationDirectory,
+            clock: SystemRestrictionClock()
+        )
         let appModel = AppModel(
             ruleRepository: container.ruleRepository,
             savedPlaceRepository: container.savedPlaceRepository,
@@ -1275,7 +1340,37 @@ private struct AppEnvironment {
             currentRuleRevisions: [:],
             balance: fallbackBalance,
             hasPendingReconciliation: false,
-            executeRelease: { _ in .iCloudRecoveryRequired }
+            executeRelease: { occurrence in
+                do {
+                    let result = try await releaseExecutor.execute(
+                        occurrence: occurrence,
+                        commandID: UUID(),
+                        source: .app
+                    )
+                    return .released(
+                        fundingSource: result.fundingSource,
+                        balance: result.ledger.balance,
+                        remainingOccurrences: result.remainingOccurrences
+                    )
+                } catch CoinLedgerRepositoryError.insufficientMonthlyAllowance {
+                    let balance = (try? await ledgerRuntime.refresh().balance) ?? fallbackBalance
+                    return .insufficientBalance(balance)
+                } catch CoinLedgerRepositoryError.insufficientPurchasedBalance {
+                    let balance = (try? await ledgerRuntime.refresh().balance) ?? fallbackBalance
+                    return .insufficientBalance(balance)
+                } catch CoinLedgerRepositoryError.reconciliationRequired {
+                    return .reconciliationRequired
+                } catch RuleReleaseCoordinationError.reconciliationRequired {
+                    return .reconciliationRequired
+                } catch {
+                    let state = try? await ledgerRuntime.refresh().balance.syncState
+                    switch state {
+                    case .deletionConfirmed, .resetRequired: return .ledgerResetRequired
+                    case .current: return .rejected
+                    default: return .iCloudRecoveryRequired
+                    }
+                }
+            }
         )
         let pendingRouteRepository = PendingAppRouteRepository(
             containerURL: container.coordinationDirectory
@@ -1313,7 +1408,31 @@ private struct AppEnvironment {
                 await appModel.refreshRestrictionStatus()
             }
         )
-        let coinLifecycleCoordinator = container.makeCoinAppLifecycleCoordinator()
+        let coinLifecycleCoordinator = CoinAppLifecycleCoordinator(
+            startTransactionObservation: {
+                try await transactionObserver.start()
+            },
+            reconcileLedger: {
+                try await ledgerRuntime.refreshForApp { commandIDs in
+                    try await releaseExecutor.reconcilePending(commandIDs)
+                }
+            },
+            loadActiveOccurrenceIDs: { now in
+                let snapshot = try await container.sharedSnapshotRepository
+                    .loadActiveRestrictionSnapshot()
+                let rules = try await container.ruleRepository.loadRuleCollection()?.rules ?? []
+                return Set(RestrictionOccurrenceEvaluator.evaluate(
+                    snapshot: snapshot,
+                    currentRuleRevisions: Dictionary(
+                        uniqueKeysWithValues: rules.map { ($0.id, $0.revision) }
+                    ),
+                    now: now
+                ).orderedOccurrences.map(\.id))
+            },
+            consumePendingRoute: { now, activeIDs in
+                try await pendingRouteRepository.consumeIfEligible(now: now, activeOccurrenceIDs: activeIDs)?.destination
+            }
+        )
         let coinLedger = CoinStoreLedgerState(
             balance: fallbackBalance,
             purchaseGrants: [],
@@ -1321,16 +1440,82 @@ private struct AppEnvironment {
             pendingProductIdentifiers: [],
             hasPendingReconciliation: false
         )
-        let catalog = try CoinProductCatalog()
         let coinStoreModel = CoinStoreModel(
             ledger: coinLedger,
             loadProducts: { try await catalog.loadProducts(from: storefront) },
-            executePurchase: { _ in
-                throw CoinPurchaseServiceError.ledgerNotCurrent
+            executePurchase: { productID in
+                switch try await purchaseService.purchase(productID: productID) {
+                case .granted(let grant):
+                    return .granted(
+                        grant: grant,
+                        ledger: try await ledgerRuntime.refresh().coinStoreLedgerState
+                    )
+                case .pending: return .pending
+                case .cancelled: return .cancelled
+                }
             }
+        )
+        let initializationProvider = CloudKitCoinLedgerInitializationProvider(
+            database: SystemCoinLedgerCloudDatabase(
+                container: cloudContainer,
+                zoneName: SharedIdentifiers.coinLedgerZoneName(
+                    ledgerNamespace: ledgerNamespace
+                )
+            )
         )
         let coinStoreConfiguration = CoinStoreConfiguration(
             model: coinStoreModel,
+            activateLedger: {
+                let before = try await ledgerRuntime.refreshBeforeShieldRequest()
+                if CoinLedgerActivationRacePolicy.shouldUseExistingLedger(
+                    before.snapshot.balance.syncState
+                ) {
+                    return before.snapshot.coinStoreLedgerState
+                }
+                let now = Date()
+                do {
+                    _ = try await CoinLedgerSetupService(
+                        performAtomicSetup: { request in
+                            try await initializationProvider.setup(request)
+                        }
+                    ).activate(
+                        CoinLedgerSetupRequest(
+                            epochID: UUID(),
+                            monthID: MonthlyAllowancePolicy.monthID(containing: now),
+                            confirmedAt: now,
+                            disclosureVersion: 1
+                        ),
+                        ledgerState: before.snapshot.balance.syncState
+                    )
+                } catch {
+                    let afterConflict = try await ledgerRuntime.refreshForApp()
+                    guard CoinLedgerActivationRacePolicy.shouldUseExistingLedger(
+                        afterConflict.balance.syncState
+                    ) else {
+                        throw error
+                    }
+                    return afterConflict.coinStoreLedgerState
+                }
+                return try await ledgerRuntime.refreshForApp().coinStoreLedgerState
+            },
+            resetLedger: {
+                let before = try await ledgerRuntime.refreshBeforeShieldRequest()
+                let now = Date()
+                _ = try await CoinLedgerResetService(
+                    performAtomicReset: { request in
+                        try await initializationProvider.reset(request)
+                    }
+                ).resetAfterConfirmedDeletion(
+                    CoinLedgerResetRequest(
+                        epochID: UUID(),
+                        monthID: MonthlyAllowancePolicy.monthID(containing: now),
+                        confirmedAt: now,
+                        disclosureVersion: 1
+                    ),
+                    ledgerState: before.snapshot.balance.syncState
+                )
+                return try await ledgerRuntime.refreshForApp().coinStoreLedgerState
+            },
             retryLedgerSync: {
                 let ledger = await coinLifecycleCoordinator.refresh(
                     trigger: .foreground,
@@ -1394,6 +1579,10 @@ private enum UITestConfiguration {
         )
         let coinReleaseMode = value(after: "--ui-test-coin-release")
         let coinReleaseResult = value(after: "--ui-test-coin-release-result")
+        let monthlyAllowanceFixture = value(after: "--ui-test-monthly-allowance")
+            .flatMap(MonthlyAllowanceUITestFixtureMode.init(rawValue:))
+        let freeBalanceOverride = value(after: "--ui-test-free-balance").flatMap(Int.init)
+        let purchasedBalanceOverride = value(after: "--ui-test-purchased-balance").flatMap(Int.init)
         let permissionOnboardingStateStore = PermissionOnboardingStateStore(
             key: "permissionOnboarding.hasCompleted.uiTest.\(storeID)"
         )
@@ -1505,6 +1694,7 @@ private enum UITestConfiguration {
         let releaseConfiguration = try makeCoinReleaseConfiguration(
             mode: coinReleaseMode,
             result: coinReleaseResult,
+            monthlyAllowanceFixture: monthlyAllowanceFixture,
             rule: restrictionActivationRule,
             now: fixtureNow
         )
@@ -1513,6 +1703,9 @@ private enum UITestConfiguration {
             ledgerState: value(after: "--ui-test-coin-ledger-state"),
             purchaseResult: value(after: "--ui-test-purchase-result"),
             historyFixture: value(after: "--ui-test-coin-history"),
+            monthlyAllowanceFixture: monthlyAllowanceFixture,
+            freeBalanceOverride: freeBalanceOverride,
+            purchasedBalanceOverride: purchasedBalanceOverride,
             root: root,
             now: fixtureNow
         )
@@ -1542,6 +1735,7 @@ private enum UITestConfiguration {
     private static func makeCoinReleaseConfiguration(
         mode: String?,
         result: String?,
+        monthlyAllowanceFixture: MonthlyAllowanceUITestFixtureMode?,
         rule: RestrictionRuleSnapshot,
         now: Date
     ) throws -> ActiveRestrictionReleaseConfiguration? {
@@ -1568,29 +1762,17 @@ private enum UITestConfiguration {
         )
         let occurrences = mode == "overlapping" ? [primary, overlap] : [primary]
         let remainingOccurrences = mode == "overlapping" ? [overlap] : []
-        let balance = try CoinBalanceSnapshot(
-            purchasedAvailable: 3,
-            currentMonthID: MonthlyAllowancePolicy.monthID(containing: now),
-            freeAvailable: 2,
-            syncState: .current,
-            syncedAt: now,
-            ledgerEpochID: UUID(
-                uuidString: "00000000-0000-4000-8000-000000000592"
-            ),
-            hadConfirmedLedger: true
-        )
-        let updatedBalance = try CoinBalanceSnapshot(
-            purchasedAvailable: 3,
-            currentMonthID: balance.currentMonthID,
-            freeAvailable: 1,
-            syncState: .current,
-            syncedAt: now,
-            ledgerEpochID: balance.ledgerEpochID,
-            hadConfirmedLedger: true
-        )
+        let shieldAllowance = if monthlyAllowanceFixture == .firstShield {
+            try ShieldMonthlyAllowanceUITestFixture.firstRequest(now: now)
+        } else {
+            try ShieldMonthlyAllowanceUITestFixture.existingAllowance(now: now)
+        }
+        let balance = shieldAllowance.initialBalance
+        let updatedBalance = shieldAllowance.balanceAfterAtomicReservation
         let instrumentation = ActiveRestrictionReleaseInstrumentation(
             remainingOccurrenceCount: occurrences.count,
-            holdsExecution: result == "held-success"
+            holdsExecution: result == "held-success",
+            createsMonthlyAllowanceOnRequest: shieldAllowance.createsAllowanceOnRequest
         )
         let fixedNow = now
         let releaseModel = ActiveRestrictionReleaseModel(
@@ -1626,6 +1808,9 @@ private enum UITestConfiguration {
         ledgerState: String?,
         purchaseResult: String?,
         historyFixture: String?,
+        monthlyAllowanceFixture: MonthlyAllowanceUITestFixtureMode?,
+        freeBalanceOverride: Int?,
+        purchasedBalanceOverride: Int?,
         root: URL,
         now: Date
     ) throws -> CoinStoreConfiguration? {
@@ -1635,6 +1820,9 @@ private enum UITestConfiguration {
             ledgerState: ledgerState,
             purchaseResult: purchaseResult,
             historyFixture: historyFixture,
+            monthlyAllowanceFixture: monthlyAllowanceFixture,
+            freeBalanceOverride: freeBalanceOverride,
+            purchasedBalanceOverride: purchasedBalanceOverride,
             root: root,
             now: now
         )
@@ -2179,26 +2367,34 @@ private final class CoinStoreUITestDriver {
     private let purchaseResult: String?
     private let now: Date
     private let pendingMarkerURL: URL
+    private let monthlyAllowanceFixtureStore: MonthlyAllowanceUITestFixtureStore
+    private let monthlyAllowanceFixture: MonthlyAllowanceUITestFixtureMode?
     private var nextTransactionID: UInt64 = 9_001
 
     init(
         ledgerState: String?,
         purchaseResult: String?,
         historyFixture: String?,
+        monthlyAllowanceFixture: MonthlyAllowanceUITestFixtureMode?,
+        freeBalanceOverride: Int?,
+        purchasedBalanceOverride: Int?,
         root: URL,
         now: Date
     ) throws {
         self.purchaseResult = purchaseResult
         self.now = now
+        self.monthlyAllowanceFixture = monthlyAllowanceFixture
+        monthlyAllowanceFixtureStore = MonthlyAllowanceUITestFixtureStore(containerURL: root)
         pendingMarkerURL = root.appendingPathComponent("pending-coin-purchase")
 
         let syncState: CoinBalanceSyncState = switch ledgerState {
         case "setup-required": .setupRequired
+        case "syncing": .syncing
+        case "stale": .stale
         case "deletion-confirmed": .deletionConfirmed
         case "unavailable": .unavailable
         default: .current
         }
-        let isCurrent = syncState == .current
         let events = historyFixture == "full-ledger-events"
             ? try Self.fullHistory(now: now)
             : []
@@ -2206,18 +2402,24 @@ private final class CoinStoreUITestDriver {
             atPath: pendingMarkerURL.path
         ) ? ["com.dxyn02.GetUp.coin.1"] : []
 
+        let fixtureBalance = try monthlyAllowanceFixtureStore.balance(
+            mode: monthlyAllowanceFixture,
+            syncState: syncState,
+            now: now
+        )
+        let balance = try CoinBalanceSnapshot(
+            purchasedAvailable: purchasedBalanceOverride
+                ?? fixtureBalance.purchasedAvailable,
+            currentMonthID: fixtureBalance.currentMonthID,
+            freeAvailable: freeBalanceOverride ?? fixtureBalance.freeAvailable,
+            syncState: fixtureBalance.syncState,
+            syncedAt: fixtureBalance.syncedAt,
+            ledgerEpochID: fixtureBalance.ledgerEpochID,
+            hadConfirmedLedger: fixtureBalance.hadConfirmedLedger
+        )
+
         ledger = CoinStoreLedgerState(
-            balance: try CoinBalanceSnapshot(
-                purchasedAvailable: isCurrent ? 3 : 0,
-                currentMonthID: MonthlyAllowancePolicy.monthID(containing: now),
-                freeAvailable: isCurrent ? 1 : 0,
-                syncState: syncState,
-                syncedAt: now,
-                ledgerEpochID: isCurrent
-                    ? UUID(uuidString: "00000000-0000-4000-8000-000000000901")
-                    : nil,
-                hadConfirmedLedger: syncState != .setupRequired
-            ),
+            balance: balance,
             purchaseGrants: [],
             events: events,
             pendingProductIdentifiers: pendingIdentifiers,
@@ -2241,6 +2443,7 @@ private final class CoinStoreUITestDriver {
             ledgerState: ledger.balance.syncState
         )
         ledger = try Self.ledger(from: result, now: now)
+        try persistMonthlyAllowanceFixture()
         return ledger
     }
 
@@ -2260,6 +2463,7 @@ private final class CoinStoreUITestDriver {
             ledgerState: ledger.balance.syncState
         )
         ledger = try Self.ledger(from: result, now: now)
+        try persistMonthlyAllowanceFixture()
         return ledger
     }
 
@@ -2322,8 +2526,14 @@ private final class CoinStoreUITestDriver {
                 pendingProductIdentifiers: [],
                 hasPendingReconciliation: false
             )
+            try persistMonthlyAllowanceFixture()
             return .granted(grant: grant, ledger: ledger)
         }
+    }
+
+    private func persistMonthlyAllowanceFixture() throws {
+        guard monthlyAllowanceFixture != nil else { return }
+        try monthlyAllowanceFixtureStore.save(ledger.balance)
     }
 
     private static func product(quantity: Int, price: String) -> CoinCatalogProduct {

@@ -26,6 +26,20 @@ struct PendingAppRouteRepositoryTests {
         ) == nil)
     }
 
+    @Test("A newer successful action atomically discards an obsolete route")
+    func successfulActionDiscardsObsoleteRoute() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let repository = PendingAppRouteRepository(containerURL: directory)
+        try await repository.save(makeRoute(destination: .iCloudRecovery))
+
+        try await repository.discard()
+
+        #expect(try await repository.load() == nil)
+        try await repository.discard()
+        #expect(try await repository.load() == nil)
+    }
+
     @Test("A route at exactly five minutes is expired and deleted")
     func exactFiveMinuteBoundaryIsExpired() async throws {
         let directory = try makeTemporaryDirectory()

@@ -6,6 +6,46 @@ import Testing
 @MainActor
 struct CoinStoreModelTests {
     @Test(
+        "Balance presentation distinguishes loading, empty, stale, and current states",
+        arguments: [
+            (CoinBalanceSyncState.syncing, 1, 3, CoinStoreBalanceContentState.loading),
+            (.current, 0, 0, .empty),
+            (.stale, 1, 3, .stale),
+            (.unavailable, 1, 3, .stale),
+            (.current, 1, 3, .current),
+        ]
+    )
+    func mapsBalanceContentState(
+        syncState: CoinBalanceSyncState,
+        free: Int,
+        purchased: Int,
+        expected: CoinStoreBalanceContentState
+    ) throws {
+        let model = makeModel(
+            ledger: try ledger(
+                syncState: syncState,
+                purchased: purchased,
+                free: free
+            )
+        )
+
+        let state = CoinStoreBalanceContentState(
+            balance: model.balance,
+            displayedFreeAvailable: free
+        )
+
+        #expect(state == expected)
+    }
+
+    @Test("Loading balance hides numeric mirrors while accessible values include units")
+    func balanceAccessibilityValues() {
+        #expect(CoinStoreBalanceContentState.loading.freeDisplayValue(2) == "—")
+        #expect(CoinStoreBalanceContentState.loading.freeAccessibilityValue(2) == "확인 중")
+        #expect(CoinStoreBalanceContentState.current.freeAccessibilityValue(2) == "2회")
+        #expect(CoinStoreBalanceContentState.current.purchasedAccessibilityValue(3) == "3개")
+    }
+
+    @Test(
         "Every ledger state maps to a distinct store availability",
         arguments: [
             (CoinBalanceSyncState.current, CoinStoreAvailability.ready),
@@ -24,6 +64,48 @@ struct CoinStoreModelTests {
         let model = makeModel(ledger: try ledger(syncState: syncState))
 
         #expect(model.availability == expected)
+    }
+
+    @Test("A first setup presents the two allowances available after activation")
+    func setupRequiredMonthlyAllowance() throws {
+        let model = makeModel(
+            ledger: try ledger(syncState: .setupRequired, free: 0)
+        )
+
+        #expect(
+            model.monthlyAllowanceDisplay
+                == .setupRequired(monthID: "2026-09", availableAfterSetup: 2)
+        )
+    }
+
+    @Test("A current ledger presents its authoritative monthly allowance balance")
+    func currentMonthlyAllowance() throws {
+        let model = makeModel(
+            ledger: try ledger(syncState: .current, free: 1)
+        )
+
+        #expect(
+            model.monthlyAllowanceDisplay
+                == .current(monthID: "2026-09", available: 1)
+        )
+    }
+
+    @Test(
+        "A confirmed deletion or pending reset suppresses this month's allowance",
+        arguments: [
+            CoinBalanceSyncState.deletionConfirmed,
+            .resetRequired,
+        ]
+    )
+    func resetMonthlyAllowance(syncState: CoinBalanceSyncState) throws {
+        let model = makeModel(
+            ledger: try ledger(syncState: syncState, free: 2)
+        )
+
+        #expect(
+            model.monthlyAllowanceDisplay
+                == .resetRequired(monthID: "2026-09", available: 0)
+        )
     }
 
     @Test("Pending reconciliation blocks purchases before the current balance is considered")
@@ -276,6 +358,7 @@ private extension CoinStoreModelTests {
     func ledger(
         syncState: CoinBalanceSyncState = .current,
         purchased: Int = 3,
+        free: Int = 1,
         purchaseGrants: [PurchaseGrant] = [],
         events: [CoinLedgerEvent] = [],
         pendingProductIdentifiers: Set<String> = [],
@@ -285,7 +368,7 @@ private extension CoinStoreModelTests {
             balance: try CoinBalanceSnapshot(
                 purchasedAvailable: purchased,
                 currentMonthID: "2026-09",
-                freeAvailable: 1,
+                freeAvailable: free,
                 syncState: syncState,
                 syncedAt: Self.now,
                 ledgerEpochID: syncState == .current ? Self.epochID : nil,

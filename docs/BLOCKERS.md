@@ -1,5 +1,88 @@
 # 차단 사항
 
+## BLK-017 — T089 실제 CloudKit 다기기·서울 월 경계 수동 증적
+
+**상태**: 미해결(OPEN) — 2026-09-09
+
+**2026-09-12 대체 경계 승인 및 준비**: 실제 다음 월초까지 기다리지 않고 2026-09-13 00:00
+`Asia/Seoul`을 DEBUG 전용 대체 경계로 사용하는 방식을 승인받았다. Release의 매월 1일 계약은
+변경하지 않으며, `t089-day13-app`, `t089-day13-shield`, `t089-day13-concurrent`별 CloudKit zone·
+subscription·checkpoint를 운영 장부와 분리한다. 자동 테스트 603개 선언(동적 실행 723회)과 generic
+iOS Simulator Release 빌드는 통과했고, 첫 `t089-day13-app` 서명 빌드를 두 실기기에 설치했다.
+아직 격리 장부 활성화와 13일 경계 전후 실행 결과를 수집하지 않았으므로 차단은 유지한다.
+
+`t089-day13-app`은 두 기기에서 경계 전 활성화·동기화를 마쳤고 모두 `August 2026`, 무료 2,
+구매 0을 표시했다. 이어 별도 `t089-day13-shield` 서명 빌드를 두 기기에 설치했으며, 해당 장부의
+활성화·동기화를 마쳐 양쪽 모두 `August 2026`, 무료 2, 구매 0을 표시했다. iPhone 15 Pro Max의
+제한 앱에서 상세 Shield와 `Use 1 Release` 버튼도 확인했다. 13일 자정 뒤 앱 미실행 Shield 요청은
+첫 탭에서 해제되지 않고 Coins 화면을 열었으며 두 번째 탭에서 해제돼 양쪽 `September 2026`, 무료
+1, 구매 0으로 수렴했다. 원인은 fresh sync 뒤 current-period allowance가 아직 없어서 표시 mirror가
+0/0인 상태를 확정 잔액 부족으로 오판한 Shield 선행 guard였다. 첫 앱 foreground가 allowance를 만든
+뒤 두 번째 탭이 성공한 것이므로 서울 경계·비이월·앱 지연 생성은 확인했지만 Shield 지연 생성
+증적으로는 실패다. allowance 부재는 확정 0이 아니므로 권위 있는 atomic reservation까지 진행하도록
+수정했고 자동 회귀를 추가했다. 수정 빌드로 Shield-first 실기기 검증을 다시 해야 하므로 차단은
+유지한다.
+
+수정된 `t089-day13-app` 빌드를 두 기기에 다시 설치하고 경계 뒤 처음 foreground로 열었다. 자정 전
+양쪽 `August 2026`, 무료 2, 구매 0이었던 별도 장부가 자정 뒤 양쪽 `September 2026`, 무료 2,
+구매 0으로 수렴했다. 따라서 첫 app foreground 지연 생성, 이전 기간 무료분 비이월과 다기기 전파는
+통과했다. 같은 allowance 동시 생성과 수정 후 Shield-first 재검증은 남아 있다.
+
+새 `t089-day13-concurrent` zone에서 두 기기가 setup을 동시에 요청했다. 한 기기는 즉시 성공했고
+다른 기기는 `iCloud 장부 작업을 완료하지 못했어요`를 계속 표시했지만, 앱 재실행 후 오류가 사라지고
+양쪽 모두 `September 2026`, 무료 2, 구매 0으로 수렴했다. 원격에는 중복 4회 지급 없이 한 장부만
+남았으므로 같은 allowance 동시 생성의 무결성 항목은 통과했다. 다만 패배한 기기가 다음 탭에서 이미
+`current`로 fetch한 winner 장부를 화면에 적용하지 않고 `setupNotRequired` 오류로 버리는 UI 문제가
+있었다. 활성화 직전과 충돌 후 refreshed state가 `current`이면 기존 권위 장부를 성공 결과로 채택하도록
+수정했다. 새 namespace에서 재실행 없는 UI 수렴 회귀와 Shield-first 재검증은 남아 있다.
+
+수정 빌드의 빈 `t089-day13-concurrent-retry` zone에서 두 기기의 활성화를 다시 동시에 실행했다.
+양쪽 모두 첫 탭 한 번으로 활성화됐고 재시작이나 추가 탭 없이 `September 2026`, 무료 2, 구매 0으로
+수렴했다. 따라서 같은 allowance 동시 생성, 중복 지급 방지와 충돌 직후 UI 수렴은 모두 통과했다.
+수정된 Shield-first 지연 생성과 구매 코인의 경계 보존 실기기 증적만 남아 있다.
+
+사용자는 남은 두 항목을 위해 DEBUG 격리 경계를 14일로 한 번 더 이동하고 Sandbox 코인 1개를
+구매하는 절차를 승인했다. 앱·Shield Action의 `t089-day14-final`, boundary day 14와 명시 iCloud
+container 설정을 검사한 서명 빌드를 두 기기에 설치했다. 장부 활성화·구매·제한 준비와 14일 자정 뒤
+Shield-first 결과는 아직 대기 중이다.
+
+**2026-09-12 추가 관찰**: 동일한 당월 무료 2회·구매 0 mirror를 표시하는 두 기기 중 iPhone 15 Pro
+Max에서는 상세 Shield와 `해제권 1회 사용`이 표시되지만 iPhone 17에서는 일반 fallback만 표시됐다.
+iPhone 17의 interval callback은 권한 보완 뒤 제한 적용 완료를 기록했다. 두 기기에 DEBUG 진단을
+설치하고 적용 규칙을 완전히 제거·재적용해 iPhone 15 Pro Max에서 `active: 1`, `matching: 0`을
+재현했다. 즉 occurrence와 장부 snapshot은 정상이지만 저장된 Family Controls token과 Shield callback
+token이 달랐다. iOS 26.5 이상의 공식 `ManagedSettingsStore.refresh(_:)`로 저장 token을 메모리에서
+갱신한 뒤 비교하도록 수정하자 같은 기기에서 상세 Shield와 `Use 1 Release`가 표시됐다. 이 하위
+문제는 해결됐으며 T089의 실제 동시 사용과 서울 월 경계 증적은 계속 남아 있다.
+
+**2026-09-12 다기기 결과**: Shield Action의 계정 식별 단계에서 두 기기 모두 `CKError` code 5
+(`badContainer`)를 반환했다. 서명 entitlement와 provisioning profile에는
+`iCloud.com.dxyn02.GetUp`이 포함돼 있었으므로 기본 컨테이너 추론을 제거하고 build setting의 식별자를
+앱·Shield Action `Info.plist`에서 읽어 계정·sync engine·private database에 명시 주입했다. 이후 첫
+무료 해제가 `releaseCommitted`로 확정돼 양쪽 잔액이 2/0에서 1/0으로 수렴했다. 남은 무료 1회를 두
+기기에서 동시에 요청하자 한 기기만 해제되고 다른 기기는 reconciliation으로 실패 닫혔으며 최종
+잔액은 양쪽 0/0으로 수렴했다. 초과 차감이나 두 기기 동시 해제는 없었다. 해결된 route가 정적 복구
+화면으로 남는 후속 문제는 성공 시 pending route 원자 폐기 및 앱 재조정 결과 기반 route 억제로
+보정했다. 따라서 다기기 동시 사용 항목은 통과했지만 같은 allowance의 실제 동시 생성과 서울 월
+경계 두 항목은 남아 있어 BLK-017은 계속 미해결이다.
+
+T089의 US4 자동 검증은 iPhone 17 Pro iOS 26.5 Simulator에서 24개 모두 통과했다. 같은 record ID
+100회 충돌, 무료 우선 예약, 서울 자정 전후 지연 생성·비이월, 시간대 변경과 reset 뒤 다음 달 재개를
+in-memory CloudKit protocol fake와 UI fixture로 검증했다.
+
+그러나 `quickstart.md`의 완료 증적은 동일 iCloud 계정의 테스트 iPhone 2대, CloudKit development
+private database와 서버 creation date를 사용한 실제 다기기 충돌 및 서울 월 경계 결과를 요구한다.
+사용자는 두 실기기와 동일 테스트 iCloud 계정, CloudKit development 접근을 준비할 수 있다고
+확인했다. T099의 실제 database adapter, T101 동기화 provider, T102 migration 호환성 provider와
+T100 앱·Shield live 조립은 완료됐다. 실제 서울 월 경계 실행과 결과 기록은 아직 남아 있으므로 fixture
+결과를 실제 CloudKit 수동 결과로 대체하거나 T089을 완료 처리할 수 없다.
+
+**해결 조건**: 같은 iCloud 계정의 테스트 iPhone 2대와 development schema를 준비한 뒤
+`quickstart.md`의 T089 수동 표 네 항목을 실행해 기기·OS·장부 monthID, 무료·구매 전후 잔액,
+중복 grant·초과 사용 여부와 서버 creation date 결과를 비식별화해 기록한다. DEC-107에 따라 격리된
+DEBUG 13일 서울 자정 경계의 실제 CloudKit 결과를 월 경계 실기기 증적으로 사용할 수 있다. 결과가
+수집되기 전에는 T089을 미완료로 유지한다.
+
 ## BLK-016 — T049 명령별 해제 예외 수정·보상의 저장 계약
 
 **상태**: 해결됨(RESOLVED) — 2026-09-04

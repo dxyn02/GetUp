@@ -8,6 +8,8 @@ enum CoinLedgerRecordEntity: Equatable, Sendable {
     case event(CoinLedgerEvent)
     case releaseCommand(ReleaseCommand)
     case releaseOccurrenceClaim(ReleaseOccurrenceClaim)
+    case reservationCompatibilityStamp(ReservationCompatibilityStamp)
+    case reservationMigrationMarker(ReservationMigrationMarker)
 }
 
 enum CoinLedgerRecordMapperError: Error, Equatable, Sendable {
@@ -23,6 +25,37 @@ enum CoinLedgerRecordMapperError: Error, Equatable, Sendable {
 struct CoinLedgerRecordMapper: Sendable {
     func record(for entity: CoinLedgerRecordEntity) throws -> CloudKitRecordSnapshot {
         switch entity {
+        case let .reservationCompatibilityStamp(stamp):
+            return snapshot(
+                recordType: CoinLedgerRecordType.reservationCompatibilityStamp,
+                recordName: CoinLedgerRecordID.reservationCompatibilityStamp(
+                    commandID: stamp.commandID
+                ),
+                fields: [
+                    Field.schemaVersion: .int(ReservationCompatibilityStamp.currentSchemaVersion),
+                    Field.epochID: .uuid(stamp.ledgerEpochID),
+                    Field.commandID: .uuid(stamp.commandID),
+                    Field.occurrenceID: .string(stamp.occurrenceID),
+                    Field.protocolVersion: .int(stamp.protocolVersion),
+                    Field.createdAt: .date(stamp.createdAt),
+                ]
+            )
+        case let .reservationMigrationMarker(marker):
+            return snapshot(
+                recordType: CoinLedgerRecordType.reservationMigrationMarker,
+                recordName: CoinLedgerRecordID.reservationMigrationMarker(
+                    epochID: marker.ledgerEpochID
+                ),
+                fields: [
+                    Field.schemaVersion: .int(ReservationMigrationMarker.currentSchemaVersion),
+                    Field.epochID: .uuid(marker.ledgerEpochID),
+                    Field.protocolVersion: .int(marker.protocolVersion),
+                    Field.state: .string(marker.state.rawValue),
+                    Field.legacyWritersRetiredAt: .date(marker.legacyWritersRetiredAt),
+                    Field.evidenceVersion: .int(marker.evidenceVersion),
+                    Field.updatedAt: .date(marker.updatedAt),
+                ]
+            )
         case let .releaseOccurrenceClaim(claim):
             return snapshot(
                 recordType: CoinLedgerRecordType.releaseOccurrenceClaim,
@@ -185,6 +218,36 @@ struct CoinLedgerRecordMapper: Sendable {
 
         do {
             switch record.recordType {
+            case CoinLedgerRecordType.reservationCompatibilityStamp:
+                let entity = try ReservationCompatibilityStamp(
+                    ledgerEpochID: uuid(Field.epochID, in: record),
+                    commandID: uuid(Field.commandID, in: record),
+                    occurrenceID: string(Field.occurrenceID, in: record),
+                    protocolVersion: int(Field.protocolVersion, in: record),
+                    createdAt: date(Field.createdAt, in: record)
+                )
+                try validateRecordName(
+                    record,
+                    expected: CoinLedgerRecordID.reservationCompatibilityStamp(
+                        commandID: entity.commandID
+                    )
+                )
+                return .reservationCompatibilityStamp(entity)
+            case CoinLedgerRecordType.reservationMigrationMarker:
+                let epochID = try uuid(Field.epochID, in: record)
+                let entity = try ReservationMigrationMarker(
+                    ledgerEpochID: epochID,
+                    protocolVersion: int(Field.protocolVersion, in: record),
+                    state: rawValue(Field.state, in: record),
+                    legacyWritersRetiredAt: date(Field.legacyWritersRetiredAt, in: record),
+                    evidenceVersion: int(Field.evidenceVersion, in: record),
+                    updatedAt: date(Field.updatedAt, in: record)
+                )
+                try validateRecordName(
+                    record,
+                    expected: CoinLedgerRecordID.reservationMigrationMarker(epochID: epochID)
+                )
+                return .reservationMigrationMarker(entity)
             case CoinLedgerRecordType.releaseOccurrenceClaim:
                 let entity = try ReleaseOccurrenceClaim(
                     ledgerEpochID: uuid(Field.epochID, in: record),
@@ -358,6 +421,9 @@ private extension CoinLedgerRecordMapper {
         static let relatedTransactionID = "relatedTransactionID"
         static let relatedCommandID = "relatedCommandID"
         static let occurrenceID = "occurrenceID"
+        static let protocolVersion = "protocolVersion"
+        static let legacyWritersRetiredAt = "legacyWritersRetiredAt"
+        static let evidenceVersion = "evidenceVersion"
         static let commandID = "commandID"
         static let ruleID = "ruleID"
         static let requestedFrom = "requestedFrom"
@@ -394,6 +460,12 @@ private extension CoinLedgerRecordMapper {
 
     func allowedFields(for recordType: String) throws -> Set<String> {
         switch recordType {
+        case CoinLedgerRecordType.reservationCompatibilityStamp:
+            [Field.schemaVersion, Field.epochID, Field.commandID, Field.occurrenceID,
+             Field.protocolVersion, Field.createdAt]
+        case CoinLedgerRecordType.reservationMigrationMarker:
+            [Field.schemaVersion, Field.epochID, Field.protocolVersion, Field.state,
+             Field.legacyWritersRetiredAt, Field.evidenceVersion, Field.updatedAt]
         case CoinLedgerRecordType.releaseOccurrenceClaim:
             [Field.schemaVersion, Field.epochID, Field.occurrenceID, Field.commandID,
              Field.state, Field.updatedAt]

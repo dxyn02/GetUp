@@ -25,8 +25,8 @@ final class UserStory3CoinPurchaseUITests: XCTestCase {
         app.buttons["coinStore.setup.confirm"].tap()
 
         XCTAssertTrue(app.otherElements["coinStore.catalog"].waitForExistence(timeout: 5))
-        XCTAssertEqual(app.staticTexts["coinStore.balance.free"].label, "2")
-        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].label, "0")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.free"].value as? String, "2회")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].value as? String, "0개")
         XCTAssertEqual(app.staticTexts["coinStore.test.setupCount"].label, "1")
     }
 
@@ -52,8 +52,8 @@ final class UserStory3CoinPurchaseUITests: XCTestCase {
         dialog.buttons["새 장부 시작"].tap()
 
         XCTAssertTrue(app.otherElements["coinStore.catalog"].waitForExistence(timeout: 5))
-        XCTAssertEqual(app.staticTexts["coinStore.balance.free"].label, "0")
-        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].label, "0")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.free"].value as? String, "0회")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].value as? String, "0개")
         XCTAssertEqual(app.staticTexts["coinStore.test.resetCount"].label, "1")
     }
 
@@ -62,8 +62,8 @@ final class UserStory3CoinPurchaseUITests: XCTestCase {
         let app = launchApp(storeID: #function, ledgerState: "current")
         openCoinStore(in: app)
 
-        XCTAssertEqual(app.staticTexts["coinStore.balance.free"].label, "1")
-        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].label, "3")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.free"].value as? String, "1회")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].value as? String, "3개")
         assertProduct(in: app, quantity: 1, localizedPrice: "₩1,100")
         assertProduct(in: app, quantity: 3, localizedPrice: "₩2,900")
         assertProduct(in: app, quantity: 5, localizedPrice: "₩4,400")
@@ -81,7 +81,7 @@ final class UserStory3CoinPurchaseUITests: XCTestCase {
             assertRecoveryLimitDisclosure(in: dialog)
             XCTAssertEqual(app.staticTexts["coinStore.test.purchaseCount"].label, "0")
             dialog.buttons["취소"].tap()
-            XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].label, "3")
+            XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].value as? String, "3개")
         }
     }
 
@@ -96,7 +96,7 @@ final class UserStory3CoinPurchaseUITests: XCTestCase {
         confirmPurchase(quantity: 3, in: app)
 
         let balance = app.staticTexts["coinStore.balance.purchased"]
-        let credited = expectation(for: NSPredicate(format: "label == '6'"), evaluatedWith: balance)
+        let credited = expectation(for: NSPredicate(format: "value == '6개'"), evaluatedWith: balance)
         wait(for: [credited], timeout: 5)
         XCTAssertEqual(app.staticTexts["coinStore.test.purchaseCount"].label, "1")
 
@@ -104,7 +104,10 @@ final class UserStory3CoinPurchaseUITests: XCTestCase {
         let purchase = app.otherElements["coinStore.history.purchaseGrant"]
         XCTAssertTrue(purchase.waitForExistence(timeout: 2))
         XCTAssertEqual(purchase.staticTexts["coinStore.history.quantity"].label, "+3")
-        XCTAssertEqual(purchase.staticTexts["coinStore.history.status"].label, "지급 완료")
+        XCTAssertEqual(
+            purchase.staticTexts["coinStore.history.status"].label,
+            "구매 코인 지급 완료"
+        )
         XCTAssertFalse(purchase.staticTexts["coinStore.history.timestamp"].label.isEmpty)
     }
 
@@ -119,7 +122,7 @@ final class UserStory3CoinPurchaseUITests: XCTestCase {
         openCoinStore(in: app)
         confirmPurchase(quantity: 1, in: app)
         XCTAssertTrue(app.staticTexts["coinStore.purchase.pending"].waitForExistence(timeout: 2))
-        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].label, "3")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].value as? String, "3개")
 
         app.terminate()
         app = launchApp(
@@ -130,7 +133,7 @@ final class UserStory3CoinPurchaseUITests: XCTestCase {
         )
         openCoinStore(in: app)
         XCTAssertTrue(app.staticTexts["coinStore.purchase.pending"].waitForExistence(timeout: 2))
-        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].label, "3")
+        XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].value as? String, "3개")
     }
 
     @MainActor
@@ -148,7 +151,7 @@ final class UserStory3CoinPurchaseUITests: XCTestCase {
                 ? "coinStore.purchase.error"
                 : "coinStore.purchase.cancelled"
             XCTAssertTrue(app.staticTexts[statusID].waitForExistence(timeout: 2))
-            XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].label, "3")
+            XCTAssertEqual(app.staticTexts["coinStore.balance.purchased"].value as? String, "3개")
             app.terminate()
         }
     }
@@ -163,12 +166,17 @@ final class UserStory3CoinPurchaseUITests: XCTestCase {
         openCoinStore(in: app)
         app.buttons["coinStore.history.open"].tap()
 
-        assertHistoryRow(in: app, id: "purchaseGrant", quantity: "+5", status: "구매 지급")
-        assertHistoryRow(in: app, id: "freeGrant", quantity: "+2", status: "무료 지급")
-        assertHistoryRow(in: app, id: "spend", quantity: "-1", status: "사용 완료")
-        assertHistoryRow(in: app, id: "release", quantity: "+1", status: "원상 복구")
-        assertHistoryRow(in: app, id: "refundAdjustment", quantity: "-2", status: "환불 보정")
-        assertHistoryRow(in: app, id: "reversal", quantity: "+2", status: "환불 취소")
+        assertHistoryRow(in: app, id: "purchaseGrant", quantity: "+5", status: "구매 코인 지급")
+        assertHistoryRow(in: app, id: "freeGrant", quantity: "+2", status: "월간 무료 지급")
+        assertHistoryRow(in: app, id: "spend", quantity: "-1", status: "월간 무료 사용")
+        assertHistoryRow(in: app, id: "release", quantity: "+1", status: "월간 무료 사용 취소")
+        assertHistoryRow(
+            in: app,
+            id: "refundAdjustment",
+            quantity: "-2",
+            status: "구매 코인 환불 보정"
+        )
+        assertHistoryRow(in: app, id: "reversal", quantity: "+2", status: "구매 코인 환불 취소")
     }
 
     @MainActor

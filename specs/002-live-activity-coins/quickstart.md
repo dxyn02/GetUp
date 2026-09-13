@@ -149,6 +149,99 @@ xcodebuild test \
 - 자정에는 background 생성을 요구하지 않고 첫 앱 foreground에서 quota 2를 생성한다. 별도 첫 Shield
   요청은 quota 2 생성과 무료 1회 사용을 한 command로 확정해 freeAvailable 1이 된다.
 
+### T089 검증 현황 (2026-09-08)
+
+자동 검증은 iPhone 17 Pro iOS 26.5 Simulator에서 다음 suite를 실행했다.
+
+- `MonthlyAllowanceAcceptanceTests`
+- `MonthlyAllowanceLifecycleTests`
+- `MonthlyAllowanceUserStoryTests`
+- `CloudKitMonthlyAllowanceTests`
+- `UserStory4MonthlyAllowanceUITests`
+
+총 24개가 실패·skip 없이 통과했다. 같은 allowance record ID의 100회 요청 집계, 무료 사용 충돌,
+서버 creation date 불일치, 서울 자정 전후 첫 foreground·첫 Shield 지연 생성, 비이월, 구매 잔액 보존,
+기기 시간대 변경, 삭제 reset 뒤 다음 달 재개와 한국어·영어 UI를 포함한다.
+
+이 결과는 in-memory CloudKit protocol fake와 UI test fixture를 사용하므로 실제 private database의
+다기기 전파·충돌 해결 또는 실제 서버 시각 기반 월 경계를 입증하지 않는다. 아래 수동 증적은
+`BLK-017` 해결 뒤 기록한다.
+
+| 수동 항목 | 환경 | 결과 |
+|----------|------|------|
+| 같은 iCloud 계정의 iPhone 2대에서 같은 월 allowance 동시 생성 | CloudKit development, 실기기 2대 | 대기 |
+| 두 기기의 무료 해제 동시 요청과 계정 전체 최대 2회 확인 | iPhone 17 iOS 26.6.2, iPhone 15 Pro Max iOS 27, CloudKit development | 완료 — 최초 해제 뒤 양쪽 1/0, 남은 1회를 동시 요청해 한 기기만 해제되고 다른 기기는 reconciliation으로 실패 닫힘, 최종 양쪽 0/0 |
+| 서울 월 경계 전후 비이월 및 구매 잔액 보존 | 서버 creation date를 확인할 수 있는 실제 장부 | 대기 |
+| 월 경계 동안 앱·Shield 미실행 후 첫 foreground 및 별도 첫 Shield 지연 생성 | 실기기 및 실제 장부 | 대기 |
+
+2026-09-12 사전 Shield 검증에서 iPhone 15 Pro Max의 유효 활성 occurrence 1개가 있음에도 저장 token과
+Shield callback token이 일치하지 않아 일반 fallback이 표시됐다. iOS 26.5 이상의 공식
+`ManagedSettingsStore.refresh(_:)`로 application·category·web domain token을 갱신한 뒤 비교하도록
+수정했고, 같은 규칙과 기기에서 상세 Shield와 `Use 1 Release` 표시를 확인했다. 두 테스트 기기는
+동일한 Debug 빌드 `0.1.0 (6)`으로 맞췄다. 이어 Shield Action이 `CKError.badContainer`를 반환하는
+문제를 확인해 build setting의 CloudKit container ID를 앱·확장 `Info.plist`에서 읽고 계정·sync·database
+provider에 명시 주입했다. 수정 뒤 한 기기의 무료 해제가 `releaseCommitted`로 확정되고 양쪽 잔액이
+2/0에서 1/0으로 수렴했다. 남은 무료 1회를 두 기기에서 동시에 요청하자 한 기기만 해제되고 다른
+기기는 추가 차감 없이 reconciliation route로 실패 닫혔으며, 최종 잔액은 양쪽 모두 0/0이었다.
+성공 뒤 과거 복구 route와 완료된 reconciliation route가 남는 문제는 최신 재조정 결과로 폐기하도록
+보정했다. 같은 월 allowance 동시 생성과 실제 서울 월 경계 두 항목은 계속 대기한다.
+
+### T089 DEBUG 13일 대체 경계 절차 (2026-09-12 승인)
+
+Release의 매월 1일 경계와 운영 `CoinLedgerZone`은 변경하지 않는다. 아래 빌드는 유효한 namespace와
+경계일을 함께 지정한 DEBUG에서만 동작하며, 코인 화면의 노란 `T089 TEST` 배너로 대상 장부를 확인한다.
+
+1. `t089-day13-app` zone을 9월 12일에 활성화해 이전 기간 `2026-08`, 무료 2회 상태를 두 기기에서
+   확인한다. 앱 경계 검증용 장부는 이후 경계까지 사용하지 않는다.
+2. `t089-day13-shield` 빌드로 교체해 9월 12일에 별도 장부를 활성화하고 제한을 시작한다. 두 기기에서
+   나서 앱을 완전히 닫고 9월 13일 00:00 서울 시각을 통과한다.
+3. 경계 뒤 앱을 먼저 열지 않은 상태에서 제한 앱의 Shield `Use 1 Release`를 누른다. `2026-09`
+   allowance 생성과 무료 1회 사용이 한 요청으로 확정되고 양쪽 잔액이 무료 1회로 수렴하는지 확인한다.
+4. `t089-day13-app` 빌드로 돌아가 첫 foreground에서 `2026-09` allowance가 무료 2회로 생성되고 이전
+   기간 미사용 무료분이 더해지지 않는지 확인한다.
+5. 새 `t089-day13-concurrent` zone을 두 기기에 설치하고 활성화 버튼을 동시에 눌러 동일
+   `allowance:2026-09`가 하나만 생성되며 양쪽 무료 2회로 수렴하는지 확인한다.
+6. CloudKit Console에서 각 격리 zone의 `LedgerEpoch`, `CoinAccount`, `MonthlyAllowance`,
+   `CoinLedgerEvent`를 조회해 record 중복 여부와 서버 `Created` 시각을 기록한다. 테스트 zone을
+   삭제하거나 운영 record를 편집하지 않는다.
+
+이 절차는 실제 CloudKit 서버 시각과 서울 자정 전환을 사용하지만 달력상 월초 대신 13일을 경계로
+이동한 대체 증적이다. 실제 월초·시간대 변경은 자동 테스트가 계속 검증한다.
+
+경계 전 결과: `t089-day13-app`을 두 기기에서 확인했으며 iPhone 17 iOS 26.6.2와 iPhone 15 Pro Max
+iOS 27 모두 `August 2026`, 무료 2, 구매 0으로 수렴했다. `t089-day13-shield` 빌드도 양쪽 설치를
+마친 뒤 별도 장부를 활성화했고, 양쪽 모두 `August 2026`, 무료 2, 구매 0으로 수렴했다. iPhone 15
+Pro Max에서 상세 Shield와 `Use 1 Release` 버튼 표시를 확인했다. 버튼은 누르지 않았으며 두 기기의
+나서 앱을 종료한 상태에서 자정 뒤 첫 Shield 요청 결과를 기다린다.
+
+경계 뒤 첫 Shield 실행 결과: 첫 탭은 제한을 해제하지 않고 Coins 화면을 열었고, 두 번째 탭은
+성공하여 양쪽 모두 `September 2026`, 무료 1, 구매 0으로 수렴했다. 첫 탭이 앱 foreground를 만들었기
+때문에 이 결과는 서울 자정 전환, 이전 무료분 비이월과 앱의 첫 foreground allowance 생성은
+입증하지만 Shield-first 원자 생성은 입증하지 않는다. fresh projection에서 current allowance가 없는
+0/0을 확정 잔액 부족으로 처리하던 선행 guard를 발견했다. allowance 부재일 때는 CloudKit의
+생성+reservation 원자 연산을 시도하도록 보정하고 회귀를 추가했으며, 별도 격리 장부에서 재검증한다.
+
+첫 app foreground 결과: 수정 빌드의 `t089-day13-app` 장부는 경계 전 두 기기 모두 `August 2026`,
+무료 2, 구매 0이었고, 경계 뒤 첫 foreground와 두 번째 기기 동기화 후 모두 `September 2026`, 무료 2,
+구매 0이 됐다. 이전 기간의 미사용 2회가 더해지지 않았으므로 첫 app 지연 생성과 비이월을 통과했다.
+
+동시 setup 결과: 빈 `t089-day13-concurrent`에서 두 기기의 활성화 버튼을 동시에 눌렀다. 한 기기는
+즉시 성공했고 다른 기기는 장부 작업 오류를 유지했으나 앱 재실행 후 양쪽 `September 2026`, 무료 2,
+구매 0으로 수렴했다. 중복 지급 없이 하나의 원격 장부에 수렴했으므로 allowance 동시 생성 무결성은
+통과했다. 패배한 기기의 다음 fetch가 이미 `current`여도 이전 화면의 setup 요청을 다시 실행해
+`setupNotRequired`를 표시하는 문제가 있어, fresh winner 장부를 성공 결과로 채택하도록 보정했다.
+재실행 없이 즉시 수렴하는지는 새 `t089-day13-concurrent-retry`에서 다시 확인한다.
+
+동시 setup 수정 재검증: `t089-day13-concurrent-retry`에서 두 기기가 활성화를 다시 동시에 요청했고,
+양쪽 모두 첫 탭 한 번으로 성공했다. 앱 재실행이나 추가 탭 없이 최종 `September 2026`, 무료 2,
+구매 0으로 수렴했으므로 원격 단일 장부, 중복 지급 방지와 즉시 UI 수렴을 모두 통과했다.
+
+Shield-first 최종 재검증은 사용자 승인에 따라 `t089-day14-final`, 서울 14일 00:00 경계를 사용한다.
+13일에 장부를 활성화해 `August 2026`, 무료 2를 확인하고 Sandbox 코인 1개를 구매한다. 두 기기가
+무료 2, 구매 1로 수렴한 뒤 앱을 모두 종료하고 Shield를 유지한다. 14일 자정 뒤 앱을 열지 않고 첫
+Shield 요청을 실행한다. 기대 결과는 `September 2026`, 무료 1, 구매 1이며, 새 allowance 원자 생성,
+무료 우선 사용, 이전 무료분 비이월과 구매 잔액 보존을 함께 입증한다.
+
 ## Live Activity end-to-end
 
 1. 앱 foreground에서 시간·위치 조건을 만족시켜 제한을 시작한다.

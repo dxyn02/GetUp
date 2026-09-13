@@ -23,6 +23,7 @@ enum DiagnosticOperation: String, CaseIterable, Sendable {
 
 enum DiagnosticErrorCode: String, CaseIterable, Sendable {
     case missingAppGroupIdentifier = "missing_app_group_identifier"
+    case missingICloudContainerIdentifier = "missing_icloud_container_identifier"
     case appGroupContainerUnavailable = "app_group_container_unavailable"
     case snapshotEncodingFailed = "snapshot_encoding_failed"
     case snapshotDecodingFailed = "snapshot_decoding_failed"
@@ -137,6 +138,8 @@ enum DiagnosticErrorClassifier {
             switch error {
             case .missingAppGroupIdentifier:
                 return .missingAppGroupIdentifier
+            case .missingICloudContainerIdentifier:
+                return .missingICloudContainerIdentifier
             case .appGroupContainerUnavailable:
                 return .appGroupContainerUnavailable
             }
