@@ -217,7 +217,7 @@ occurrence만 예외 처리되는지, 중복 100회에서 최대 1회만 소모�
 
 **목적**: 네 스토리를 통합 검증하고 개인정보·접근성·출시 운영 조건을 닫는다.
 
-- [ ] T090 [P] 한국어·영어, VoiceOver, 최대 Dynamic Type, Light/Dark의 Live Activity·앱·Shield 회귀를 `GetUpUITests/AccessibilityUITests.swift`, `GetUpUITests/LiveActivityCoinLocalizationUITests.swift`에 추가한다.
+- [X] T090 [P] 한국어·영어, VoiceOver, 최대 Dynamic Type, Light/Dark의 Live Activity·앱·Shield 회귀를 `GetUpUITests/AccessibilityUITests.swift`, `GetUpUITests/LiveActivityCoinLocalizationUITests.swift`에 추가한다.
 - [ ] T091 [P] 위치 좌표·정확도·Family Controls token·상품 이외 앱 식별 정보가 CloudKit record·로그에 없는지 `GetUpTests/Integration/PrivacyLoggingTests.swift`, `GetUpTests/Integration/CoinLedgerPrivacyTests.swift`로 검증한다.
 - [ ] T092 [P] T024~T026의 SC-001 적격 모집단 100회·95회 시작, SC-002 위치 수신 주체별 30초, SC-003 남은 시간 60초·0 clamp와 기존 중복 해제·구매 100회 suite를 재실행해 결과만 집계·보고하도록 `GetUpTests/Performance/LiveActivityCoinPerformanceTests.swift`를 구성하고 동일 계측 로직을 중복 구현하지 않는다.
 - [ ] T093 전체 `GetUpTests`·`GetUpUITests`와 앱·네 확장 Simulator build를 `GetUp.xctestplan`로 실행하고 실패·skip·경고를 `docs/STATUS.md`에 기록한다.

@@ -179,6 +179,7 @@ private struct GetUpRootView: View {
     private let permissionGuideRetryResult: String?
     private let permissionGuideActionUpdate: PermissionGuideUpdate?
     private let permissionOnboardingStateStore: PermissionOnboardingStateStore
+    private let liveActivityPreviewState: RestrictionLiveActivityAttributes.ContentState?
 
     init(environment: AppEnvironment) {
         _model = State(initialValue: environment.model)
@@ -196,6 +197,7 @@ private struct GetUpRootView: View {
         permissionGuideRetryResult = environment.permissionGuideRetryResult
         permissionGuideActionUpdate = environment.permissionGuideActionUpdate
         permissionOnboardingStateStore = environment.permissionOnboardingStateStore
+        liveActivityPreviewState = environment.liveActivityPreviewState
     }
 
     var body: some View {
@@ -250,21 +252,30 @@ private struct GetUpRootView: View {
 
     @ViewBuilder
     private var content: some View {
-        switch model.loadingState {
-        case .idle, .loading:
-            ProgressView("규칙을 불러오는 중")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        if let liveActivityPreviewState {
+            RestrictionLockScreenView(contentState: liveActivityPreviewState)
+                .frame(maxWidth: .infinity)
+                .background(Color.black.opacity(0.88), in: .rect(cornerRadius: 20))
+                .padding()
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .background(HomeColor.background.ignoresSafeArea())
-        case .loaded:
-            HomeView(
-                model: model,
-                showsRestrictionProbe: showsRestrictionProbe,
-                releaseConfiguration: releaseConfiguration,
-                coinStoreConfiguration: coinStoreConfiguration
-            )
-        case .failed:
-            LoadFailureView {
-                Task { await model.load() }
+        } else {
+            switch model.loadingState {
+            case .idle, .loading:
+                ProgressView("규칙을 불러오는 중")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(HomeColor.background.ignoresSafeArea())
+            case .loaded:
+                HomeView(
+                    model: model,
+                    showsRestrictionProbe: showsRestrictionProbe,
+                    releaseConfiguration: releaseConfiguration,
+                    coinStoreConfiguration: coinStoreConfiguration
+                )
+            case .failed:
+                LoadFailureView {
+                    Task { await model.load() }
+                }
             }
         }
     }
@@ -1012,11 +1023,15 @@ private struct RestrictionActivationProbeView: View {
                 .accessibilityIdentifier("restrictionProbe.shield.remainingRestrictions")
 
                 HStack {
-                    Button(AppLocalizedCopy.string("coinRelease.action.release")) {
+                    Button {
                         guard releaseConfiguration.model.requestConfirmation() else {
                             return
                         }
                         Task { await releaseConfiguration.model.confirmRelease() }
+                    } label: {
+                        Text(AppLocalizedCopy.string("coinRelease.action.release"))
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(.rect)
                     }
                     .disabled(releaseConfiguration.model.phase == .processing)
                     .accessibilityIdentifier("restrictionProbe.shield.release")
@@ -1222,6 +1237,7 @@ private struct AppEnvironment {
     let permissionGuideRetryResult: String?
     let permissionGuideActionUpdate: PermissionGuideUpdate?
     let permissionOnboardingStateStore: PermissionOnboardingStateStore
+    let liveActivityPreviewState: RestrictionLiveActivityAttributes.ContentState?
 
     static func live() throws -> AppEnvironment {
         guard let identifier = SharedIdentifiers.appGroupIdentifier() else {
@@ -1540,7 +1556,8 @@ private struct AppEnvironment {
             permissionGuideModel: nil,
             permissionGuideRetryResult: nil,
             permissionGuideActionUpdate: nil,
-            permissionOnboardingStateStore: PermissionOnboardingStateStore()
+            permissionOnboardingStateStore: PermissionOnboardingStateStore(),
+            liveActivityPreviewState: nil
         )
     }
 }
@@ -1710,6 +1727,10 @@ private enum UITestConfiguration {
             now: fixtureNow
         )
         let coinLifecycleCoordinator = container.makeCoinAppLifecycleCoordinator()
+        let liveActivityPreviewState = try makeLiveActivityPreviewState(
+            variant: value(after: "--ui-test-live-activity"),
+            now: fixtureNow
+        )
 
         return AppEnvironment(
             model: appModel,
@@ -1728,7 +1749,27 @@ private enum UITestConfiguration {
             ),
             permissionGuideRetryResult: permissionGuideRetryResult,
             permissionGuideActionUpdate: permissionGuideActionUpdate(for: scenario),
-            permissionOnboardingStateStore: permissionOnboardingStateStore
+            permissionOnboardingStateStore: permissionOnboardingStateStore,
+            liveActivityPreviewState: liveActivityPreviewState
+        )
+    }
+
+    private static func makeLiveActivityPreviewState(
+        variant: String?,
+        now: Date
+    ) throws -> RestrictionLiveActivityAttributes.ContentState? {
+        guard let variant else {
+            return nil
+        }
+        let distance: RestrictionLiveActivityDistance =
+            variant == "unavailable" ? .unavailable : .known(meters: 80)
+        return try RestrictionLiveActivityAttributes.ContentState(
+            occurrenceID: "ui-test-live-activity",
+            ruleDisplayName: variant == "multiple-restrictions" ? "업무 집중" : "아침 루틴",
+            endsAt: now.addingTimeInterval(45 * 60),
+            remainingDistance: distance,
+            distanceObservedAt: distance == .unavailable ? nil : now,
+            hasAdditionalRestrictions: variant == "multiple-restrictions"
         )
     }
 

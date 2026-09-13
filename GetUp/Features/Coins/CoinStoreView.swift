@@ -72,8 +72,12 @@ struct CoinStoreView: View {
                 availabilitySection
                 purchaseStatus
                 catalogSection
-                Button(AppLocalizedCopy.string("coinStore.history.open")) {
+                Button {
                     showsHistory = true
+                } label: {
+                    Text(AppLocalizedCopy.string("coinStore.history.open"))
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(.rect)
                 }
                     .buttonStyle(.bordered)
                     .accessibilityIdentifier("coinStore.history.open")
@@ -325,8 +329,12 @@ struct CoinStoreView: View {
                                 .accessibilityIdentifier("coinStore.product.\(item.quantity).price")
                         }
                         Spacer()
-                        Button("구매") {
+                        Button {
                             _ = model.requestPurchaseConfirmation(productID: item.product.id)
+                        } label: {
+                            Text("구매")
+                                .frame(minWidth: 44, minHeight: 44)
+                                .contentShape(.rect)
                         }
                         .buttonStyle(.borderedProminent)
                         .disabled(!model.isPurchaseEnabled(productID: item.product.id))

@@ -143,6 +143,111 @@ final class AccessibilityUITests: XCTestCase {
     }
 
     @MainActor
+    func testCoinStoreKeepsBalancesAndPrimaryActionsReachableAtLargestDynamicTypeSize() {
+        let app = launchApp(
+            scenario: "coin-store",
+            additionalArguments: [
+                "--ui-test-now", "2026-08-24T07:00:00Z",
+                "--ui-test-coin-ledger-state", "current",
+                "--ui-test-free-balance", "1",
+                "--ui-test-purchased-balance", "3",
+            ],
+            accessibilityArguments: Self.maximumDynamicTypeArguments
+        )
+
+        let open = app.buttons["coinStore.open"]
+        XCTAssertTrue(open.waitForExistence(timeout: 5))
+        open.tap()
+
+        let freeBalance = app.staticTexts["coinStore.balance.free"]
+        let purchasedBalance = app.staticTexts["coinStore.balance.purchased"]
+        XCTAssertTrue(freeBalance.waitForExistence(timeout: 2))
+        XCTAssertEqual(freeBalance.label, "남은 무료 해제권")
+        XCTAssertEqual(freeBalance.value as? String, "1회")
+        XCTAssertEqual(purchasedBalance.label, "구매 코인 잔액")
+        XCTAssertEqual(purchasedBalance.value as? String, "3개")
+
+        let history = app.buttons["coinStore.history.open"]
+        XCTAssertTrue(history.exists)
+        XCTAssertTrue(history.isHittable)
+        assertMinimumTouchTarget(history)
+
+        app.swipeUp()
+        let purchase = app.buttons["coinStore.product.1.purchase"]
+        XCTAssertTrue(purchase.exists)
+        XCTAssertTrue(purchase.isHittable)
+        assertMinimumTouchTarget(purchase)
+    }
+
+    @MainActor
+    func testShieldPreservesVoiceOverOrderAndActionsAtLargestDynamicTypeSize() {
+        let app = launchApp(
+            scenario: "restriction-activation",
+            additionalArguments: [
+                "--ui-test-now", "2026-08-24T07:00:00Z",
+                "--ui-test-location-state", "inside",
+                "--ui-test-coin-release", "overlapping",
+                "--ui-test-coin-release-result", "held-success",
+            ],
+            accessibilityArguments: Self.maximumDynamicTypeArguments
+        )
+
+        let open = app.buttons["restrictionProbe.selectedApplication.open"]
+        XCTAssertTrue(open.waitForExistence(timeout: 5))
+        open.tap()
+
+        let shield = app.otherElements["restrictionProbe.shield"]
+        XCTAssertTrue(shield.waitForExistence(timeout: 2))
+        let target = shield.staticTexts["restrictionProbe.shield.target"]
+        let cost = shield.staticTexts["restrictionProbe.shield.cost"]
+        let endsAt = shield.staticTexts["restrictionProbe.shield.endsAt"]
+        let warning = shield.staticTexts["restrictionProbe.shield.remainingRestrictions"]
+        let release = shield.buttons["restrictionProbe.shield.release"]
+        let close = shield.buttons["restrictionProbe.shield.close"]
+
+        XCTAssertTrue(target.label.contains("출근 준비"))
+        XCTAssertTrue(cost.label.contains("무료"))
+        XCTAssertTrue(endsAt.label.contains("9:00"))
+        XCTAssertTrue(warning.label.contains("다른 규칙"))
+        XCTAssertEqual(release.label, "해제권 1회 사용")
+        XCTAssertEqual(close.label, "앱 닫기")
+        XCTAssertTrue(release.isHittable)
+        XCTAssertTrue(close.isHittable)
+        assertMinimumTouchTarget(release)
+        assertMinimumTouchTarget(close)
+        assertVerticalReadingOrder([target, cost, endsAt, warning, release])
+        XCTAssertLessThan(release.frame.minX, close.frame.minX)
+    }
+
+    @MainActor
+    func testLiveActivityKeepsVoiceOverContentReachableAtLargestDynamicTypeSize() {
+        let app = launchApp(
+            scenario: "live-activity-preview",
+            additionalArguments: [
+                "--ui-test-live-activity", "multiple-restrictions",
+            ],
+            accessibilityArguments: Self.maximumDynamicTypeArguments
+        )
+
+        let preview = app.otherElements["liveActivity.preview"]
+        XCTAssertTrue(preview.waitForExistence(timeout: 5))
+        let elements = app.descendants(matching: .any)
+        let rule = elements["liveActivity.rule"]
+        let countdown = elements["liveActivity.countdown"]
+        let distance = elements["liveActivity.distance"]
+        let additional = elements["liveActivity.additionalRestrictions"]
+
+        XCTAssertEqual(rule.label, "제한 규칙: 업무 집중")
+        XCTAssertEqual(countdown.label, "남은 시간")
+        XCTAssertFalse((countdown.value as? String ?? "").isEmpty)
+        XCTAssertEqual(distance.label, "남은 거리 80미터")
+        XCTAssertEqual(additional.label, "다른 제한도 활성화되어 있어요")
+        XCTAssertLessThan(rule.frame.minX, countdown.frame.minX)
+        XCTAssertLessThan(countdown.frame.midY, distance.frame.midY)
+        XCTAssertLessThan(distance.frame.minX, additional.frame.minX)
+    }
+
+    @MainActor
     private func launchActiveRestriction(
         accessibilityArguments: [String] = []
     ) -> XCUIApplication {

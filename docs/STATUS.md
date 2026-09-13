@@ -4,7 +4,7 @@
 001-location-app-restriction, 002-live-activity-coins
 
 ## 현재 단계
-001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 8 CloudKit 수렴 구현 진행 중
+001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 7 마감과 Phase 8 CloudKit 수렴 구현 병행 중
 
 ## 진행 중
 Pull Request #30으로 US3 T059~T077을 `main`에 병합하고 최신 `main`에서
@@ -54,6 +54,12 @@ Max에서 상세 Shield와 `Use 1 Release` 버튼 표시를 확인했다. 버튼
 남은 Shield-first와 구매 잔액 보존은 사용자 승인에 따라 별도 `t089-day14-final`의 14일 서울 자정
 경계로 재검증한다. 앱·Shield Action의 namespace·경계일·iCloud container 값을 검사한 서명 빌드를
 두 기기에 설치했으며 경계 전 활성화와 Sandbox 코인 1개 준비를 기다리고 있다.
+T090은 T089 경계 대기와 독립적으로 완료했다. extension의 실제 Lock Screen 본문을 앱과 공유하는
+DEBUG UI test preview seam을 추가해 한국어·영어 Live Activity 접근성 label을 같은 렌더링 코드로
+검증한다. 앱의 월간 무료·구매 잔액과 Shield의 대상·비용·종료·겹친 제한·사용·닫기 순서를 함께
+검증하고, 최대 Dynamic Type과 Light/Dark 실행 회귀를 추가했다. 테스트에서 최대 글자 크기의 Shield
+해제 버튼과 Coin Store 내역·구매 버튼 터치 영역이 44pt보다 작아지는 문제를 발견해 세 행동의 최소
+터치 영역을 44pt로 통일했다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 T099에서 실제 `CKContainer.privateCloudDatabase`·`CoinLedgerZone` adapter와 server creation date,
 change-tag CAS, atomic modify, record별 오류 변환을 구현했다. 초기 fetch가 zone을 만들지 않고 실제
@@ -68,12 +74,12 @@ setup/reset/recovery/reconciliation과 5초 Shield 응답 상한을 live 경로�
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T100 — 앱·Shield Action의 실제 CloudKit 장부 서비스와 수명주기 조립
+T090 — Live Activity·앱·Shield 지역화·접근성·화면 모드 회귀
 
 ## 다음 작업
-T089 — 동일 iCloud 계정 실기기 2대의 동시 해제는 통과했다. development private database에서 같은
-allowance 동시 생성과 서울 월 경계·지연 생성 수동 증적을 수집한다. T094·T095의 Shield/StoreKit
-실기기 인수도 이어서 수행한다.
+T091 — 위치 좌표·정확도·Family Controls token·상품 외 앱 식별 정보가 CloudKit record와 로그에
+남지 않는지 개인정보 회귀를 추가한다. T089은 `t089-day14-final`의 Shield-first·구매 잔액 보존
+경계 증적을 계속 기다린다. 이후 T094·T095의 Shield/StoreKit 실기기 인수도 이어서 수행한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
@@ -95,6 +101,13 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-13 T090: iPhone 17 Pro iOS 26.5 Simulator에서 공통 접근성 suite 8개와 새
+`LiveActivityCoinLocalizationUITests` 3개, 총 11개가 실패·skip 없이 통과했다. 한국어·영어에서
+Live Activity·앱·Shield의 동등한 의미와 잔액 단위, VoiceOver label·읽기 순서, 최대 Dynamic Type,
+Light/Dark의 주요 정보·행동 도달성을 검증했다. 터치 영역 보정 뒤 기존 Shield·Coin Store·월간 잔액
+관련 UI 회귀 4개도 실패·skip 없이 통과했다. Xcode의 기존 `DebuggerVersionStore` 경고는 제품 동작
+실패가 아니다.
+
 2026-09-13 T086: US1~US4 하이파이와 구현을 대조하고 관련 UI suite 43개 및 공통 접근성 suite 5개를
 iPhone 17 Pro iOS 26.5 Simulator에서 실행했다. 첫 실행은 영어로 강제 실행한
 `UserStory3AutoReleaseUITests`가 과거 한국어 label을 기대해 41/43 통과, 2개 실패였다. 영어 활성

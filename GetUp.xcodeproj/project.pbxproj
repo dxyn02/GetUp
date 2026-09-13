@@ -10,6 +10,8 @@
 		DK0000000000000000000001 /* GetUpLiveActivityBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DL0000000000000000000001 /* GetUpLiveActivityBundle.swift */; };
 		DK0000000000000000000002 /* RestrictionLiveActivityPreviews.swift in Sources */ = {isa = PBXBuildFile; fileRef = DL0000000000000000000002 /* RestrictionLiveActivityPreviews.swift */; };
 		DK0000000000000000000003 /* RestrictionLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = DL0000000000000000000003 /* RestrictionLiveActivity.swift */; };
+		DK0000000000000000000005 /* RestrictionLiveActivityContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DL0000000000000000000005 /* RestrictionLiveActivityContentView.swift */; };
+		AA900000000000000000001 /* RestrictionLiveActivityContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DL0000000000000000000005 /* RestrictionLiveActivityContentView.swift */; };
 		DK0000000000000000000004 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = DL0000000000000000000004 /* Localizable.xcstrings */; };
 		A10400000000000000000001 /* Resources/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B10400000000000000000001 /* Resources/Assets.xcassets */; };
 		A11000000000000000000001 /* Icon.icon in Resources */ = {isa = PBXBuildFile; fileRef = B11000000000000000000001 /* Icon.icon */; };
@@ -267,6 +269,7 @@
 		AA0000000000000000000323 /* MonthlyAllowanceUserStoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5000000000000000000005B /* MonthlyAllowanceUserStoryTests.swift */; };
 		AA0000000000000000000324 /* MonthlyAllowanceAcceptanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5000000000000000000005C /* MonthlyAllowanceAcceptanceTests.swift */; };
 		AA0000000000000000000325 /* UserStory4MonthlyAllowanceUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000008 /* UserStory4MonthlyAllowanceUITests.swift */; };
+		AB900000000000000000001 /* LiveActivityCoinLocalizationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC900000000000000000001 /* LiveActivityCoinLocalizationUITests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -476,6 +479,7 @@
 		DL0000000000000000000001 /* GetUpLiveActivityBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GetUpLiveActivityBundle.swift; sourceTree = "<group>"; };
 		DL0000000000000000000002 /* RestrictionLiveActivityPreviews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionLiveActivityPreviews.swift; sourceTree = "<group>"; };
 		DL0000000000000000000003 /* RestrictionLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionLiveActivity.swift; sourceTree = "<group>"; };
+		DL0000000000000000000005 /* RestrictionLiveActivityContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionLiveActivityContentView.swift; sourceTree = "<group>"; };
 		DL0000000000000000000004 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Resources/Localizable.xcstrings; sourceTree = "<group>"; };
 		B60000000000000000000006 /* UserStory2CoinReleaseUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory2CoinReleaseUITests.swift; sourceTree = "<group>"; };
 		B40000000000000000000068 /* CoinReservationPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinReservationPolicy.swift; sourceTree = "<group>"; };
@@ -500,6 +504,7 @@
 		B50000000000000000000056 /* CoinLedgerFreshInstallRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinLedgerFreshInstallRecoveryTests.swift; sourceTree = "<group>"; };
 		B60000000000000000000007 /* UserStory3CoinPurchaseUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory3CoinPurchaseUITests.swift; sourceTree = "<group>"; };
 		B60000000000000000000008 /* UserStory4MonthlyAllowanceUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStory4MonthlyAllowanceUITests.swift; sourceTree = "<group>"; };
+		BC900000000000000000001 /* LiveActivityCoinLocalizationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityCoinLocalizationUITests.swift; sourceTree = "<group>"; };
 		B40000000000000000000079 /* CoinProductCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinProductCatalog.swift; sourceTree = "<group>"; };
 		B40000000000000000000080 /* StoreKitPurchaseAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitPurchaseAdapter.swift; sourceTree = "<group>"; };
 		B40000000000000000000081 /* CoinPurchaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinPurchaseService.swift; sourceTree = "<group>"; };
@@ -1053,6 +1058,7 @@
 			children = (
 				DL0000000000000000000001 /* GetUpLiveActivityBundle.swift */,
 				DL0000000000000000000003 /* RestrictionLiveActivity.swift */,
+				DL0000000000000000000005 /* RestrictionLiveActivityContentView.swift */,
 				DL0000000000000000000002 /* RestrictionLiveActivityPreviews.swift */,
 				DL0000000000000000000004 /* Localizable.xcstrings */,
 				DJ0000000000000000000001 /* Info.plist */,
@@ -1085,6 +1091,7 @@
 				B60000000000000000000006 /* UserStory2CoinReleaseUITests.swift */,
 				B60000000000000000000007 /* UserStory3CoinPurchaseUITests.swift */,
 				B60000000000000000000008 /* UserStory4MonthlyAllowanceUITests.swift */,
+				BC900000000000000000001 /* LiveActivityCoinLocalizationUITests.swift */,
 				B60000000000000000000005 /* AccessibilityUITests.swift */,
 			);
 			path = GetUpUITests;
@@ -1346,6 +1353,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA900000000000000000001 /* RestrictionLiveActivityContentView.swift in Sources */,
 				AA000000000000000000032F /* CoinLedgerLiveRuntime.swift in Sources */,
 				AA000000000000000000032D /* ReservationCompatibilityMigrationProvider.swift in Sources */,
 				AA0000000000000000000329 /* CoinLedgerSyncProvider.swift in Sources */,
@@ -1620,6 +1628,7 @@
 				AA0000000000000000000284 /* UserStory2CoinReleaseUITests.swift in Sources */,
 				AA0000000000000000000311 /* UserStory3CoinPurchaseUITests.swift in Sources */,
 				AA0000000000000000000325 /* UserStory4MonthlyAllowanceUITests.swift in Sources */,
+				AB900000000000000000001 /* LiveActivityCoinLocalizationUITests.swift in Sources */,
 				AA0000000000000000000211 /* AccessibilityUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1630,6 +1639,7 @@
 			files = (
 				DK0000000000000000000001 /* GetUpLiveActivityBundle.swift in Sources */,
 				DK0000000000000000000003 /* RestrictionLiveActivity.swift in Sources */,
+				DK0000000000000000000005 /* RestrictionLiveActivityContentView.swift in Sources */,
 				DK0000000000000000000002 /* RestrictionLiveActivityPreviews.swift in Sources */,
 				AA0000000000000000000231 /* RestrictionOccurrenceModels.swift in Sources */,
 				AA0000000000000000000233 /* RestrictionLiveActivityModels.swift in Sources */,
