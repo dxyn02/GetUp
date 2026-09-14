@@ -8,10 +8,9 @@
 5분 경계로 남은 Shield-first 검증을 수행하도록 승인했다. `t089-five-minute-final` 격리 namespace와
 `GetUpT089PeriodMinutes = 5`를 사용하는 DEBUG 경로를 추가했고, 앱·Shield Action의 실기기 산출물에
 동일 값이 포함된 것을 확인했다. 월간 설정을 비운 전체 `GetUpTests`는 610개 선언·동적 실행 730회가
-실패·skip 없이 통과했고 Release 산출물에서는 T089 세 설정이 모두 비어 있었다. 연결된 iPhone 15
-Pro Max에는 서명 빌드를 설치했으나 iPhone 17은 현재 `unavailable`이라 설치하지 못했다. 두 기기에
-같은 빌드를 설치한 뒤 5분 경계 전후 Shield-first 결과와 CloudKit 서버 record를 수집하기 전까지
-BLK-017과 T089은 미완료로 유지한다.
+실패·skip 없이 통과했고 Release 산출물에서는 T089 세 설정이 모두 비어 있었다. 동일한 서명 빌드를
+iPhone 15 Pro Max와 iPhone 17에 설치했고 iPhone 17 실행도 확인했다. 두 기기에서 5분 경계 전후
+Shield-first 결과와 CloudKit 서버 record를 수집하기 전까지 BLK-017과 T089은 미완료로 유지한다.
 
 **2026-09-12 대체 경계 승인 및 준비**: 실제 다음 월초까지 기다리지 않고 2026-09-13 00:00
 `Asia/Seoul`을 DEBUG 전용 대체 경계로 사용하는 방식을 승인받았다. Release의 매월 1일 계약은
