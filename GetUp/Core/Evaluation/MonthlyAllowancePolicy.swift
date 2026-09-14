@@ -8,9 +8,30 @@ enum MonthlyAllowancePolicy {
     static let monthlyQuota = 2
 
     static func monthID(containing date: Date) -> String {
-        monthID(
+        if let intervalMinutes = SharedIdentifiers.t089LedgerTestConfiguration()?.periodMinutes {
+            return periodID(containing: date, intervalMinutes: intervalMinutes)
+        }
+        return monthID(
             containing: date,
             boundaryDay: SharedIdentifiers.t089LedgerTestConfiguration()?.monthlyBoundaryDay ?? 1
+        )
+    }
+
+    static func periodID(containing date: Date, intervalMinutes: Int) -> String {
+        let intervalMinutes = normalizedIntervalMinutes(intervalMinutes)
+        let components = calendar.dateComponents(
+            [.year, .month, .day, .hour, .minute],
+            from: date
+        )
+        let minute = ((components.minute ?? 0) / intervalMinutes) * intervalMinutes
+        return String(
+            format: "%04d-%02d-%02dT%02d-%02d",
+            locale: Locale(identifier: "en_US_POSIX"),
+            components.year ?? 0,
+            components.month ?? 0,
+            components.day ?? 0,
+            components.hour ?? 0,
+            minute
         )
     }
 
@@ -51,6 +72,12 @@ enum MonthlyAllowancePolicy {
     }
 
     static func nextPeriodStart(afterMonthID monthID: String) -> Date? {
+        if let intervalMinutes = SharedIdentifiers.t089LedgerTestConfiguration()?.periodMinutes {
+            return nextPeriodStart(
+                afterPeriodID: monthID,
+                intervalMinutes: intervalMinutes
+            )
+        }
         let components = monthID.split(separator: "-", omittingEmptySubsequences: false)
         guard components.count == 2,
               let year = Int(components[0]),
@@ -66,6 +93,43 @@ enum MonthlyAllowancePolicy {
             return nil
         }
         return calendar.date(byAdding: .month, value: 1, to: periodStart)
+    }
+
+    static func nextPeriodStart(
+        afterPeriodID periodID: String,
+        intervalMinutes: Int
+    ) -> Date? {
+        guard let periodStart = periodStart(
+            forPeriodID: periodID,
+            intervalMinutes: intervalMinutes
+        ) else {
+            return nil
+        }
+        return calendar.date(
+            byAdding: .minute,
+            value: normalizedIntervalMinutes(intervalMinutes),
+            to: periodStart
+        )
+    }
+
+    static func periodStart(
+        forPeriodID periodID: String,
+        intervalMinutes: Int
+    ) -> Date? {
+        let intervalMinutes = normalizedIntervalMinutes(intervalMinutes)
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = calendar.timeZone
+        formatter.dateFormat = "yyyy-MM-dd'T'HH-mm"
+        formatter.isLenient = false
+        guard let date = formatter.date(from: periodID),
+              calendar.component(.minute, from: date).isMultiple(of: intervalMinutes),
+              self.periodID(containing: date, intervalMinutes: intervalMinutes) == periodID
+        else {
+            return nil
+        }
+        return date
     }
 
     static func makeAllowance(
@@ -103,5 +167,11 @@ enum MonthlyAllowancePolicy {
 
     private static func normalizedBoundaryDay(_ boundaryDay: Int) -> Int {
         (1...28).contains(boundaryDay) ? boundaryDay : 1
+    }
+
+    private static func normalizedIntervalMinutes(_ intervalMinutes: Int) -> Int {
+        (1...30).contains(intervalMinutes) && 60.isMultiple(of: intervalMinutes)
+            ? intervalMinutes
+            : 5
     }
 }

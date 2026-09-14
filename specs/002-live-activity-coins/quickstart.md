@@ -280,6 +280,32 @@ day15 원인 확정: 수정 빌드를 Xcode StoreKit 세션으로 실행하자 �
 증적에서 제외하고 T094의 실제 Sandbox 거래로 검증한다. day15 T089은 경계 전 양쪽 `August 2026`,
 무료 2, 구매 0 상태에서 추가 구매 없이 위 Shield-first 절차만 수행한다.
 
+### T089 DEBUG 5분 경계 최종 절차 (2026-09-14 승인)
+
+날짜 경계를 다시 기다리지 않고 `t089-five-minute-final` 격리 zone에서 서울 시각 매 5분 경계를
+사용한다. 이 설정은 DEBUG의 앱과 Shield Action에만 적용되고 Release의 매월 1일·운영 zone에는
+영향을 주지 않는다. 구매 코인은 준비하지 않는다.
+
+1. 두 기기에 동일한 서명 빌드를 설치하고 코인 화면 상단에서
+   `T089 TEST · t089-five-minute-final · 서울 매 5분 경계`를 확인한다.
+2. 한 5분 구간 안에 두 기기에서 새 장부를 활성화한다. 양쪽의 현재 구간 표시가 같고 무료 2,
+   구매 0인지 확인한다.
+3. 같은 구간 안에 상세 Shield와 `Use 1 Release` 버튼이 양쪽에서 표시되는지 확인한 뒤 GetUp 앱을
+   두 기기 모두 완전히 닫는다. 버튼은 아직 누르지 않는다.
+4. 코인 화면에 표시된 `Next refresh` 시각이 지난 뒤에도 GetUp 앱을 열지 않는다. 제한 앱을 열어
+   한 기기의 Shield에서 `Use 1 Release`를 정확히 한 번 누른다.
+5. 해제가 성공한 뒤 두 기기의 GetUp을 열어 새 구간 표시와 무료 1, 구매 0으로 수렴하는지 확인한다.
+   첫 탭이 Coins 또는 복구 화면으로만 이동하거나 두 번째 탭이 필요하면 실패로 기록한다.
+6. CloudKit Console의 `CoinLedgerZone.t089-five-minute-final`에서 새 구간의
+   `MonthlyAllowance`가 하나, `free:<periodID>` 지급 event가 하나인지 확인한다. 해당 allowance의
+   `quota = 2`, `used = 1`, `reserved = 0`과 서버 `Created`가 새 5분 구간 안인지 기록한다. 이전
+   구간 record나 zone을 삭제·수정하지 않는다.
+
+기대 결과는 `yyyy-MM-dd'T'HH-mm` period만 다음 5분 구간으로 바뀌고 무료 잔액은 2에서 1이 되는
+것이다. 이전 구간의 미사용 무료 2회는 더해지지 않고 구매 잔액은 0을 유지한다. 두 기기가 같은
+결과로 수렴하면 Shield-first allowance 생성+무료 예약, 비이월과 다기기 전파의 실기기 증적으로
+채택한다.
+
 ## Live Activity end-to-end
 
 1. 앱 foreground에서 시간·위치 조건을 만족시켜 제한을 시작한다.

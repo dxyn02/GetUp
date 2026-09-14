@@ -118,7 +118,7 @@ struct CoinStoreView: View {
         if let configuration = SharedIdentifiers.t089LedgerTestConfiguration() {
             Text(
                 "T089 TEST · \(configuration.ledgerNamespace) · "
-                    + "서울 매월 \(configuration.monthlyBoundaryDay)일 00:00"
+                    + configuration.boundaryDescription
             )
             .font(.caption.monospaced().weight(.semibold))
             .foregroundStyle(.black)
@@ -483,6 +483,23 @@ private struct MonthlyAllowancePresentation {
     init(monthID: String, available: Int) {
         self.available = available
 
+        if let intervalMinutes = SharedIdentifiers.t089LedgerTestConfiguration()?.periodMinutes,
+           let periodStart = MonthlyAllowancePolicy.periodStart(
+               forPeriodID: monthID,
+               intervalMinutes: intervalMinutes
+           ),
+           let nextPeriod = MonthlyAllowancePolicy.nextPeriodStart(
+               afterPeriodID: monthID,
+               intervalMinutes: intervalMinutes
+           ) {
+            monthLabel = Self.formatted(periodStart, template: "yyyyMMddHHmm")
+            nextRefreshLabel = AppLocalizedCopy.format(
+                "coinStore.monthly.nextRefresh",
+                Self.formatted(nextPeriod, template: "yyyyMMddHHmm")
+            )
+            return
+        }
+
         guard let monthStart = Self.monthStart(for: monthID),
               let nextMonth = MonthlyAllowancePolicy.nextPeriodStart(afterMonthID: monthID)
         else {
@@ -529,6 +546,17 @@ private struct MonthlyAllowancePresentation {
         return formatter.string(from: date)
     }
 }
+
+#if DEBUG
+private extension T089LedgerTestConfiguration {
+    var boundaryDescription: String {
+        if let periodMinutes {
+            return "서울 매 \(periodMinutes)분 경계"
+        }
+        return "서울 매월 \(monthlyBoundaryDay ?? 1)일 00:00"
+    }
+}
+#endif
 
 private struct CoinPurchaseAlertPresenter: UIViewControllerRepresentable {
     let isPresented: Bool

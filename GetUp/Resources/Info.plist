@@ -28,6 +28,8 @@
 	<string>$(GETUP_T089_LEDGER_NAMESPACE)</string>
 	<key>GetUpT089MonthlyBoundaryDay</key>
 	<string>$(GETUP_T089_MONTHLY_BOUNDARY_DAY)</string>
+	<key>GetUpT089PeriodMinutes</key>
+	<string>$(GETUP_T089_PERIOD_MINUTES)</string>
 	<key>GetUpCoinProductCatalog</key>
 	<array>
 		<dict>

@@ -7,6 +7,7 @@ enum SharedIdentifiers {
         "GetUpICloudContainerIdentifier"
     static let t089LedgerNamespaceInfoDictionaryKey = "GetUpT089LedgerNamespace"
     static let t089MonthlyBoundaryDayInfoDictionaryKey = "GetUpT089MonthlyBoundaryDay"
+    static let t089PeriodMinutesInfoDictionaryKey = "GetUpT089PeriodMinutes"
     static let coinProductCatalogInfoDictionaryKey = "GetUpCoinProductCatalog"
     static let coinProductIdentifierCatalogKey = "ProductIdentifier"
     static let coinProductQuantityCatalogKey = "Quantity"
@@ -118,18 +119,30 @@ enum SharedIdentifiers {
             !namespace.isEmpty,
             !namespace.contains("$("),
             namespace.count <= 40,
-            namespace.unicodeScalars.allSatisfy({ allowedCharacters.contains($0) }),
-            let boundaryValue = bundle.object(
-                forInfoDictionaryKey: t089MonthlyBoundaryDayInfoDictionaryKey
-            ),
-            let boundaryDay = Int(String(describing: boundaryValue)),
-            (1...28).contains(boundaryDay)
+            namespace.unicodeScalars.allSatisfy({ allowedCharacters.contains($0) })
         else {
             return nil
         }
+
+        let boundaryDay = bundle.object(
+            forInfoDictionaryKey: t089MonthlyBoundaryDayInfoDictionaryKey
+        ).flatMap { Int(String(describing: $0)) }
+        let periodMinutes = bundle.object(
+            forInfoDictionaryKey: t089PeriodMinutesInfoDictionaryKey
+        ).flatMap { Int(String(describing: $0)) }
+
+        let validBoundaryDay = boundaryDay.flatMap { (1...28).contains($0) ? $0 : nil }
+        let validPeriodMinutes = periodMinutes.flatMap {
+            (1...30).contains($0) && 60.isMultiple(of: $0) ? $0 : nil
+        }
+        guard (validBoundaryDay == nil) != (validPeriodMinutes == nil) else {
+            return nil
+        }
+
         return T089LedgerTestConfiguration(
             ledgerNamespace: namespace,
-            monthlyBoundaryDay: boundaryDay
+            monthlyBoundaryDay: validBoundaryDay,
+            periodMinutes: validPeriodMinutes
         )
 #else
         return nil
@@ -143,7 +156,8 @@ enum SharedIdentifiers {
 
 struct T089LedgerTestConfiguration: Equatable, Sendable {
     let ledgerNamespace: String
-    let monthlyBoundaryDay: Int
+    let monthlyBoundaryDay: Int?
+    let periodMinutes: Int?
 }
 
 enum CoinLedgerRecordType {

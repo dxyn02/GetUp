@@ -7,6 +7,14 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 8 CloudKit 수렴 구현 진행 중
 
 ## 진행 중
+T089의 남은 Shield-first 경계 증적을 빠르게 수집하기 위해 DEC-112의 DEBUG 전용 서울 5분 주기를
+구현했다. `t089-five-minute-final` zone에서 period ID를 `yyyy-MM-dd'T'HH-mm`로 분리하고 앱과 Shield
+Action이 같은 5분 경계·namespace를 사용하도록 구성했다. 코인 화면은 테스트 배너, 현재 구간과 다음
+5분 갱신 시각을 표시한다. 월간 설정을 비운 전체 `GetUpTests` 610개 선언·동적 실행 730회와 generic
+iOS Simulator Release 빌드는 통과했으며, Release 산출물의 T089 값은 앱·Shield 모두 비어 있다.
+서명된 Debug 산출물의 앱·Shield에는 namespace와 5분 값이 동일하게 들어갔고 연결된 iPhone 15 Pro
+Max에 설치했다. iPhone 17은 현재 연결 불가라 동일 빌드 설치와 실제 양 기기 경계 관찰은 남아 있다.
+
 Pull Request #30으로 US3 T059~T077을 `main`에 병합하고 최신 `main`에서
 `codex/us4-monthly-lifecycle-tests`를 분기했다. T078~T080의 월간 core·CloudKit 인수와 T081의 UI
 계약과 T082~T083의 월간 잔액 표시, T084의 월간·구매 내역 분리에 이어 T085에서 월 경계 재실행,
@@ -100,15 +108,16 @@ setup/reset/recovery/reconciliation과 5초 Shield 응답 상한을 live 경로�
 T100 — 앱·Shield Action의 실제 CloudKit 장부 서비스와 수명주기 조립
 
 ## 다음 작업
-T089 — 동일 iCloud 계정 실기기 2대의 동시 해제는 통과했다. development private database에서 같은
-allowance 동시 생성과 서울 월 경계·지연 생성 수동 증적을 수집한다. T094·T095의 Shield/StoreKit
-실기기 인수도 이어서 수행한다.
+T089 — iPhone 17을 연결해 `t089-five-minute-final` 서명 빌드를 설치한다. 두 기기를 같은 5분 구간의
+무료 2·구매 0으로 준비하고 다음 경계까지 앱을 닫은 뒤, 앱을 먼저 열지 않고 제한 앱 Shield에서
+`Use 1 Release`를 한 번 실행한다. 양쪽의 새 period·무료 1·구매 0 수렴과 CloudKit record를 기록한다.
+T094·T095의 Shield/StoreKit 실기기 인수도 이어서 수행한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
 BLK-017 미해결: 동일 iCloud 테스트 iPhone 2대의 동시 해제와 계정 전체 최대 사용은 통과했다.
-T099 database adapter, T101 sync provider, T102 migration provider와 T100 live 연결은 완료됐으며
-같은 allowance 동시 생성과 실제 서울 월 경계·지연 생성 결과 기록이 남았다.
+같은 allowance 동시 생성도 통과했다. 5분 대체 경계 빌드는 iPhone 15 Pro Max에 설치했으나 iPhone
+17이 현재 연결 불가이며, 동일 빌드 설치 후 실제 Shield-first 경계·다기기 수렴 결과 기록이 남았다.
 BLK-016 해결됨: 명령별 원자 추가·조건부 제거 API와 최신 상태 재평가 계약 보강을 사용자 승인받았다.
 BLK-015 해결됨: occurrence별 예약 소유권 계약·스키마 보강을 사용자 승인받았다.
 T045 보고서 접근 차단은 사용자 허용 후 같은 명령 재시도로 해결됐다.
@@ -124,6 +133,13 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-14 T089 5분 경계 준비: 서울 5분 경계와 자정 전환 정책 테스트를 추가했다. 관련 정책·수명
+주기·CloudKit 집중 suite와 T089 설정을 비운 전체 `GetUpTests`가 통과했다. 전체 결과는 610개 선언,
+동적 실행 730회, 실패 0, skip 0이다. generic iOS Simulator Release 빌드도 통과했고 app·Shield
+Action의 Release Info.plist에서 T089 namespace·경계일·분 주기가 모두 빈 값임을 확인했다. 실기기
+Debug 빌드는 양 target에 `t089-five-minute-final`, 분 주기 5가 동일하게 포함됐고 iPhone 15 Pro
+Max 설치까지 성공했다. iPhone 17 설치와 실제 5분 경계 결과는 대기 중이다.
+
 2026-09-14 T089 day15 구매 원인 확정: 수정된 day15 서명 빌드의 app·Shield Action에
 `t089-day15-final`, 경계일 15가 포함된 것을 확인하고 iPhone 15 Pro Max에 설치했다. Xcode StoreKit
 세션에서 unfinished 복구가 `LiveActivityCoinModelError`로 반복 실패했고 거래 관리자에서 미완료
