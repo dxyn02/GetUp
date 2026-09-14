@@ -249,6 +249,13 @@ Shield 요청을 실행한다. 기대 결과는 `September 2026`, 무료 1, 구�
 거래를 먼저 복구한 뒤 새 격리 namespace와 이후 승인된 DEBUG 경계로 절차를 다시 실행한다. 재시도
 중 오류가 남으면 T089 배너 아래 `DEBUG: <stable_error_code>`를 함께 기록하고 추가 결제하지 않는다.
 
+수정 빌드를 Xcode StoreKit 설정으로 실행해도 day14 장부는 `September 2026`, 무료 2, 구매 0을
+유지했고 기존 거래는 unfinished로 재전달되지 않았다. day14 장부는 추가 구매 없이 종료한다. 후속은
+`t089-day15-final`, 서울 15일 00:00 경계를 사용한다. 경계 전에 새 장부를 활성화해 `August 2026`,
+무료 2, 구매 0을 확인하고 Xcode StoreKit 코인 1개를 한 번 구매한다. 양쪽이 무료 2, 구매 1로 수렴한
+경우에만 앱을 모두 종료하고 경계 뒤 첫 Shield를 실행한다. 기대 결과는 양쪽 `September 2026`, 무료
+1, 구매 1이다. 실제 Sandbox 구매 검증은 T094에서 별도로 수행한다.
+
 ## Live Activity end-to-end
 
 1. 앱 foreground에서 시간·위치 조건을 만족시켜 제한을 시작한다.

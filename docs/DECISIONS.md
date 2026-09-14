@@ -50,6 +50,12 @@ Shield-first와 구매 잔액 보존을 다시 검증하기 위해 `t089-day14-f
 14일 00:00으로 이동한다. 테스트 장부에서 Sandbox 코인 1개를 사용자가 직접 구매해 경계 뒤 무료가
 먼저 사용되고 구매 1개가 보존되는지 확인한다. DEBUG·격리·Release 무시 조건은 동일하다.
 
+**2026-09-14 후속 적용**: `t089-day14-final`의 경계 전 구매 준비가 실패했고 수정 빌드에서도 해당
+Xcode StoreKit 거래가 unfinished로 재전달되지 않아 14일 증적을 폐기한다. 동일한 DEBUG·격리·Release
+무시 조건으로 새 `t089-day15-final` namespace와 15일 00:00 경계를 사용한다. T089에서는 Xcode
+StoreKit 검증 거래로 구매 잔액의 CloudKit 지급·월 경계 보존만 확인하고, 실제 Sandbox 구매 수명주기는
+T094에서 별도로 검증한다.
+
 ## DEC-106 — CloudKit 컨테이너 명시 주입과 해결된 Shield route 폐기
 
 **날짜**: 2026-09-12

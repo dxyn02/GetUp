@@ -60,6 +60,11 @@ Max에서 상세 Shield와 `Use 1 Release` 버튼 표시를 확인했다. 버튼
 프로세스 단위로 단일 처리하도록 수정했다. 실패 결과는 캐시하지 않아 unfinished 재시도를 유지하며,
 T089 DEBUG 화면에는 안정 오류 코드를 표시한다. 전체 `GetUpTests` 606개 선언(동적 실행 726회)은
 실패·skip 없이 통과했다. 수정 빌드의 기존 unfinished 거래 복구와 새 격리 경계 재검증이 남아 있다.
+수정 빌드를 같은 `t089-day14-final`과 Xcode StoreKit 설정으로 다시 실행했지만 값은 계속
+`September 2026`, 무료 2, 구매 0이었고 기존 거래는 unfinished로 재전달되지 않았다. 이 장부에는
+추가 구매하지 않고 실패 증적으로 종료했다. 다음 검증을 위해 Debug 설정을 새
+`t089-day15-final`, 서울 15일 00:00으로 준비했으며, Xcode StoreKit 거래로 CloudKit 구매 잔액 지급과
+월 경계 보존을 검증한다. 실제 Sandbox 1·3·5 구매와 pending·환불·철회는 T094 범위를 유지한다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 T099에서 실제 `CKContainer.privateCloudDatabase`·`CoinLedgerZone` adapter와 server creation date,
 change-tag CAS, atomic modify, record별 오류 변환을 구현했다. 초기 fetch가 zone을 만들지 않고 실제
@@ -108,6 +113,9 @@ ID별 in-flight 및 성공 결과 단일 처리를 추가해 동시·지연 중�
 실행하도록 했고, finish 실패 뒤 같은 unfinished 거래 재시도는 계속 허용했다. 집중 테스트와 전체
 `GetUpTests` 606개 선언(동적 실행 726회)이 실패·skip 없이 통과했다. 실기기 수정 빌드 재검증은
 대기 중이다.
+같은 namespace의 수정 빌드를 Xcode StoreKit 설정으로 재실행해도 `September 2026`, 무료 2,
+구매 0이 유지돼 기존 거래가 unfinished로 재전달되지 않음을 확인했다. 추가 구매 없이 day14 장부를
+종료하고 `t089-day15-final`, 15일 서울 경계를 Debug에 준비했다.
 
 2026-09-13 T089 경계 후 관찰 및 수정: 자정 뒤 앱 미실행 상태의 첫 Shield 탭이 Coins를 열고, 두 번째
 탭이 성공해 두 기기 모두 `September 2026`, 무료 1, 구매 0으로 수렴했다. `CloudKitCoinLedgerRepository`
