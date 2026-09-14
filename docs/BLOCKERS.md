@@ -69,6 +69,17 @@ StoreKit 코인 1개를 한 번 구매했지만 `DEBUG: unknown`이 표시되고
 비운 기본 월초 정책에서 608개 선언·동적 실행 728회가 통과했다. 수정 실기기 빌드가 기존 unfinished
 거래를 복구해 양쪽 구매 1로 수렴하는지 확인하기 전까지 BLK-017은 계속 미해결이다.
 
+수정 빌드에서 기존 거래가 복구되지 않아 CloudKit Console의 day15 `CoinAccount.purchasedAvailable =
+0`을 확인한 뒤 코인 1개를 한 번만 재구매했지만 다시 `DEBUG: unknown`이 발생했다. 추가 구매는
+중단했다. CloudKit atomic modify의 실제 record 오류가 종속 `batchRequestFailed`에 가려지는 매핑을
+보정하고 DEBUG unfinished 복구에 안정 코드·오류 타입 console 기록을 추가했다. 수정 빌드를 Xcode
+StoreKit 세션으로 실행한 결과 미완료 거래 복구는 모두 `LiveActivityCoinModelError`로 실패했다.
+`Manage StoreKit Transactions`에서 해당 거래가 `ID = 0`, `Line Item ID = 0`, `State = Unfinished`인
+것을 확인해 원인을 확정했다. 양수 transaction ID와 원격 멱등 키를 약화하지 않으므로 이 로컬 거래는
+T089 증적에서 제외한다. T089은 명세대로 StoreKit 없이 15일 서울 경계 뒤 무료분 비이월과
+Shield-first 결과만 확인하며, 실제 Sandbox 구매는 T094에서 검증한다. 따라서 BLK-017은 15일 경계
+관찰이 남아 계속 미해결이다.
+
 **2026-09-12 추가 관찰**: 동일한 당월 무료 2회·구매 0 mirror를 표시하는 두 기기 중 iPhone 15 Pro
 Max에서는 상세 Shield와 `해제권 1회 사용`이 표시되지만 iPhone 17에서는 일반 fallback만 표시됐다.
 iPhone 17의 interval callback은 권한 보완 뒤 제한 적용 완료를 기록했다. 두 기기에 DEBUG 진단을

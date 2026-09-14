@@ -1045,6 +1045,24 @@ struct SystemCoinLedgerCloudDatabaseTests {
                 recordsToSave: [record]
             ))
         }
+
+        let dependentID = CKRecord.ID(recordName: "dependent-event", zoneID: zoneID)
+        let dependentRecord = CloudKitRecordSnapshot(
+            recordType: CoinLedgerRecordType.event,
+            recordName: dependentID.recordName,
+            changeTag: nil,
+            fields: ["schemaVersion": .int(1)]
+        )
+        let atomicClient = RecordingSystemCloudKitClient(modifyResults: [
+            recordID: .failure(CKError(.batchRequestFailed)),
+            dependentID: .failure(CKError(.serverRejectedRequest)),
+        ])
+        let atomicDatabase = SystemCoinLedgerCloudDatabase(client: atomicClient)
+        await #expect(throws: CoinLedgerDatabaseError.invalidRecord) {
+            _ = try await atomicDatabase.modify(CoinLedgerModifyRequest(
+                recordsToSave: [record, dependentRecord]
+            ))
+        }
     }
 
     @Test("Every ledger entity survives the system CloudKit value conversion")

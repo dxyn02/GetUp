@@ -1,5 +1,47 @@
 # 결정 사항
 
+## DEC-111 — Xcode StoreKit의 0번 거래는 장부 지급에서 제외
+
+**날짜**: 2026-09-14
+
+**상태**: 승인됨 — T089 day15 구매 실패 원인 확정
+
+**결정**: `Transaction.id == 0`인 Xcode 로컬 StoreKit 거래를 합성 ID로 바꾸거나 장부에 지급하지
+않는다. `PurchaseGrant`의 양수 transaction ID 불변식과 transaction ID 기반 원격 멱등 키를 유지한다.
+T089은 명세대로 StoreKit 구매 없이 월간 무료분의 다기기 생성·사용·서울 경계·비이월을 검증하고,
+실제 Sandbox 거래 ID를 사용하는 구매 수명주기는 T094에서 검증한다.
+
+**근거**: Xcode의 `Manage StoreKit Transactions`에서 day15 미완료 거래가 `ID = 0`,
+`Line Item ID = 0`, `State = Unfinished`임을 직접 확인했다. Xcode 실행 console에서 같은 거래의 복구가
+세 번 모두 `LiveActivityCoinModelError`로 실패했고 CloudKit `CoinAccount.purchasedAvailable`은 0을
+유지했다. 0을 허용하면 여러 테스트 구매가 같은 지급 키로 충돌하고 실제 결제 안전 경계를 약화한다.
+
+**영향 범위**: 운영·Sandbox StoreKit 거래 처리와 CloudKit schema는 변경하지 않는다. day15의
+구매 1 준비 및 구매 잔액 보존 결과는 T089 증적으로 사용하지 않으며, 남은 T089은 15일 경계 뒤
+무료 잔액과 Shield-first 결과만 확인한다.
+
+## DEC-110 — CloudKit 원자 저장 실패의 실제 record 오류 우선 선택
+
+**날짜**: 2026-09-14
+
+**상태**: 승인됨 — 원자 저장 오류 진단 보강(실제 day15 원인은 DEC-111로 확정)
+
+**결정**: CloudKit atomic modify의 record별 결과에 `batchRequestFailed`와 다른 구체적인 오류가 함께
+있으면 구체적인 오류를 우선 변환한다. `batchRequestFailed`만 존재할 때만 결과 불명으로 처리한다.
+컨테이너·권한 오류는 `cloud_account_unavailable`, 서버·네트워크 오류는
+`cloud_server_unavailable`, 요청·record 제약 오류는 `cloud_record_invalid`로 분류한다. DEBUG
+unfinished 복구 실패는 transaction ID나 시스템 오류 문자열 없이 안정 오류 코드와 Swift 오류 타입만
+Xcode console에 기록한다.
+
+**근거**: 원자 저장에서 실제 실패 record 외의 종속 record가 반환하는 `CKError.batchRequestFailed`를
+배열 순서상 먼저 읽으면 실제 원인이 가려지고 `unexpectedRequest`로 축약될 수 있다. 회귀 테스트로
+이 경계를 보강했다. 다만 day15 재구매는 CloudKit modify 전에 Xcode 거래 ID 0을 모델이 거부한 것이
+원인으로 확인됐으므로 이 변경을 해당 실패의 직접 수정으로 간주하지 않는다.
+
+**영향 범위**: CloudKit 쓰기 내용·원자성·멱등 키는 변경하지 않는다. 기존 unfinished 거래는
+finish하지 않은 채 다음 launch·foreground에서 재시도하며, 안정 코드가 확인되기 전에는 추가 구매하지
+않는다.
+
 ## DEC-109 — StoreKit 미완료 거래의 foreground 복구와 커밋 후 새로고침 분리
 
 **날짜**: 2026-09-14

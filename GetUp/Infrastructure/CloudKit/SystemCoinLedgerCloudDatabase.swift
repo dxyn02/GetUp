@@ -159,6 +159,16 @@ actor SystemCoinLedgerCloudDatabase: CoinLedgerCloudDatabase {
         }
 
         var snapshots: [CloudKitRecordSnapshot] = []
+        let saveFailures = recordsToSave.compactMap { record -> Error? in
+            guard let result = result.saveResults[record.recordID],
+                  case .failure(let error) = result else {
+                return nil
+            }
+            return error
+        }
+        if let failure = Self.preferredAtomicFailure(from: saveFailures) {
+            throw Self.map(failure)
+        }
         for record in recordsToSave {
             guard let saveResult = result.saveResults[record.recordID] else {
                 throw CoinLedgerDatabaseError.resultUnknown
@@ -169,6 +179,8 @@ actor SystemCoinLedgerCloudDatabase: CoinLedgerCloudDatabase {
                 cachedRecords[record.recordID.recordName] = envelope
                 snapshots.append(snapshot)
             case .failure(let error):
+                // All failures were handled together above so an atomic
+                // batchRequestFailed cannot hide the record that actually failed.
                 throw Self.map(error)
             }
         }
@@ -319,6 +331,12 @@ private extension SystemCoinLedgerCloudDatabase {
         (error as? CKError)?.code == .unknownItem
     }
 
+    static func preferredAtomicFailure(from errors: [Error]) -> Error? {
+        errors.first { error in
+            (error as? CKError)?.code != .batchRequestFailed
+        } ?? errors.first
+    }
+
     static func map(_ error: Error) -> CoinLedgerDatabaseError {
         if let error = error as? CoinLedgerDatabaseError { return error }
         guard let cloudError = error as? CKError else { return .unexpectedRequest }
@@ -329,17 +347,20 @@ private extension SystemCoinLedgerCloudDatabase {
             return map(first)
         }
         switch cloudError.code {
-        case .notAuthenticated, .accountTemporarilyUnavailable, .quotaExceeded:
+        case .notAuthenticated, .accountTemporarilyUnavailable, .quotaExceeded,
+             .badContainer, .badDatabase, .missingEntitlement, .permissionFailure,
+             .managedAccountRestricted:
             return .accountUnavailable
         case .networkUnavailable, .networkFailure, .serviceUnavailable,
-             .requestRateLimited, .zoneBusy:
+             .requestRateLimited, .zoneBusy, .internalError:
             return .serverUnavailable
         case .serverRecordChanged:
             return .serverRecordChanged
-        case .serverResponseLost, .operationCancelled:
+        case .serverResponseLost, .operationCancelled, .batchRequestFailed:
             return .resultUnknown
         case .unknownItem, .zoneNotFound, .userDeletedZone, .constraintViolation,
-             .invalidArguments, .assetFileNotFound, .assetFileModified:
+             .invalidArguments, .assetFileNotFound, .assetFileModified,
+             .serverRejectedRequest, .limitExceeded, .referenceViolation:
             return .invalidRecord
         case .incompatibleVersion:
             return .unsupportedSchema

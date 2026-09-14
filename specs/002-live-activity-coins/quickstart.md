@@ -252,17 +252,33 @@ Shield 요청을 실행한다. 기대 결과는 `September 2026`, 무료 1, 구�
 수정 빌드를 Xcode StoreKit 설정으로 실행해도 day14 장부는 `September 2026`, 무료 2, 구매 0을
 유지했고 기존 거래는 unfinished로 재전달되지 않았다. day14 장부는 추가 구매 없이 종료한다. 후속은
 `t089-day15-final`, 서울 15일 00:00 경계를 사용한다. 경계 전에 새 장부를 활성화해 `August 2026`,
-무료 2, 구매 0을 확인하고 Xcode StoreKit 코인 1개를 한 번 구매한다. 양쪽이 무료 2, 구매 1로 수렴한
-경우에만 앱을 모두 종료하고 경계 뒤 첫 Shield를 실행한다. 기대 결과는 양쪽 `September 2026`, 무료
-1, 구매 1이다. 실제 Sandbox 구매 검증은 T094에서 별도로 수행한다.
+무료 2, 구매 0을 확인한 뒤 앱을 모두 종료하고 경계 뒤 첫 Shield를 실행한다. 기대 결과는 해제 요청
+직후 양쪽 `September 2026`, 무료 1, 구매 0이다. 이전 기간의 미사용 무료 2회가 더해지지 않고 새
+allowance가 Shield 요청에서 원자 생성되면 통과한다. T089은 명세대로 StoreKit 구매 없이 수행하며,
+실제 Sandbox 구매 검증은 T094에서 별도로 수행한다.
 
 day15 1차 결과: 두 기기 모두 경계 전 `August 2026`, 무료 2, 구매 0으로 준비한 뒤 한 기기에서만
 Xcode StoreKit 코인 1개를 구매했다. 시스템 성공 창 뒤 앱은 `DEBUG: unknown`을 표시했고 재실행 뒤에도
 양쪽 값은 무료 2, 구매 0이었다. 추가 구매는 실행하지 않았다. 일시적 거래 처리 실패 뒤 listener가
 종료되고 foreground에서 unfinished를 다시 조회하지 않던 복구 경로와, grant 커밋 뒤 projection
 refresh 실패를 전체 구매 실패로 표시하던 경계를 수정했다. 수정 빌드는 새 구매보다 먼저 기존
-unfinished 거래를 launch 또는 foreground에서 복구해야 한다. 성공 기준은 양쪽 `August 2026`, 무료 2,
-구매 1이며, 안정 오류가 표시되면 그 코드만 기록하고 추가 구매하지 않는다.
+unfinished 거래를 launch 또는 foreground에서 복구하도록 했다.
+
+day15 2차 결과: CloudKit Console에서 `CoinAccount.purchasedAvailable = 0`을 확인한 뒤 한 기기에서
+코인 1개를 한 번만 재구매했지만 앱은 다시 `DEBUG: unknown`을 표시했다. 추가 구매는 중단한다.
+atomic modify의 record별 결과에서 구체적인 실패보다 종속 `batchRequestFailed`가 먼저 선택되는
+오류 매핑을 수정했고, 다음 DEBUG 빌드는 launch·foreground의 unfinished 재시도 실패를 Xcode console에
+`unfinished_purchase_failed code=<stable_code> type=<error_type>` 형식으로 기록한다. transaction ID와
+CloudKit 시스템 오류 문자열은 기록하지 않는다. 새 구매 없이 이 로그와 CloudKit의
+`purchasedAvailable`, `PurchaseGrant` 개수를 먼저 확인한다.
+
+day15 원인 확정: 수정 빌드를 Xcode StoreKit 세션으로 실행하자 미완료 거래 복구가 세 번 모두
+`LiveActivityCoinModelError`로 실패했다. Xcode `Manage StoreKit Transactions`의 상세값은 `ID = 0`,
+`Line Item ID = 0`, `State = Unfinished`였다. 앱은 여러 지급이 같은 원격 키로 충돌하지 않도록
+`PurchaseGrant.transactionID > 0`을 요구하므로 CloudKit modify 전에 이 테스트 거래를 거부한 것이다.
+0번 거래에 합성 ID를 부여하거나 불변식을 완화하지 않는다. 구매 1 준비와 구매 잔액 보존은 T089
+증적에서 제외하고 T094의 실제 Sandbox 거래로 검증한다. day15 T089은 경계 전 양쪽 `August 2026`,
+무료 2, 구매 0 상태에서 추가 구매 없이 위 Shield-first 절차만 수행한다.
 
 ## Live Activity end-to-end
 

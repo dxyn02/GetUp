@@ -72,6 +72,17 @@ unfinished를 다시 조회하지 않던 복구 단절을 수정했다. grant·f
 실패한 경우에는 구매 성공을 보존하고 다음 lifecycle 동기화에 잔액 반영을 맡기며, sync provider 오류를
 안정 코드로 변환했다. 관련 집중 테스트와 T089 설정을 비운 전체 `GetUpTests` 608개 선언(동적 실행
 728회)은 실패·skip 없이 통과했다. 수정 실기기 빌드에서 기존 unfinished 거래 복구를 먼저 확인한다.
+수정 빌드에서도 양쪽 `August 2026`, 무료 2, 구매 0이 유지됐고 CloudKit Console에서 day15
+`CoinAccount.purchasedAvailable = 0`을 확인했다. 이 상태에서 승인된 코인 1개 재구매를 한 번만
+실행했으나 다시 `DEBUG: unknown`이 발생해 추가 구매를 중단했다. CloudKit atomic modify의 record별
+결과에서 종속 `batchRequestFailed`가 실제 실패를 가릴 수 있는 매핑을 수정해 구체 오류를 우선
+선택하고, unfinished 복구 오류의 안정 코드·오류 타입을 DEBUG Xcode console에 기록하도록 보강했다.
+집중 테스트와 기본 월초 정책의 전체 `GetUpTests` 실행은 종료 코드 0으로 통과했다. 수정 빌드를
+iPhone 15 Pro Max에 설치하고 Xcode StoreKit 세션으로 실행하자 기존 미완료 거래 세 건이 모두
+`LiveActivityCoinModelError`로 실패했다. 거래 관리자에서 해당 거래의 `ID = 0`, `Line Item ID = 0`,
+`State = Unfinished`를 확인해 양수 transaction ID 불변식이 CloudKit 이전에 거부한 원인을 확정했다.
+0번 ID를 합성하거나 허용하지 않으며 구매 준비는 T089에서 제외한다. T089은 명세대로 StoreKit 없이
+15일 경계 뒤 무료분 비이월과 Shield-first 결과만 확인하고 실제 Sandbox 구매는 T094에서 검증한다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 T099에서 실제 `CKContainer.privateCloudDatabase`·`CoinLedgerZone` adapter와 server creation date,
 change-tag CAS, atomic modify, record별 오류 변환을 구현했다. 초기 fetch가 zone을 만들지 않고 실제
@@ -113,6 +124,19 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-14 T089 day15 구매 원인 확정: 수정된 day15 서명 빌드의 app·Shield Action에
+`t089-day15-final`, 경계일 15가 포함된 것을 확인하고 iPhone 15 Pro Max에 설치했다. Xcode StoreKit
+세션에서 unfinished 복구가 `LiveActivityCoinModelError`로 반복 실패했고 거래 관리자에서 미완료
+거래의 ID와 line item ID가 모두 0임을 확인했다. CloudKit 구매 잔액은 0으로 유지됐으며 추가 구매는
+하지 않는다. 실제 거래와 같은 양수 ID·멱등 키 불변식은 유지하고 T089은 StoreKit 없는 US4 절차로
+복귀한다. 원자 CloudKit 실패 선별과 개인정보 없는 DEBUG 오류 타입 기록은 회귀 보강으로 유지한다.
+
+2026-09-14 T089 day15 두 번째 구매 진단: CloudKit의 구매 잔액 0을 확인한 뒤 허용된 1회 재구매도
+`DEBUG: unknown`으로 실패했다. atomic modify 결과 중 `batchRequestFailed`가 먼저 열거돼 실제 record
+오류를 숨기는 경우를 재현하는 테스트를 추가하고 구체 오류 우선 선택과 CKError 안정 분류를
+보강했다. `SystemCoinLedgerCloudDatabaseTests`·`StoreKitTransactionObserverTests` 집중 실행과
+T089 설정을 비운 전체 `GetUpTests` 실행은 모두 종료 코드 0이었다.
+
 2026-09-14 T089 day15 구매 복구 보강: 경계 전 양쪽 `August 2026`, 무료 2, 구매 0에서 한 기기만
 Xcode StoreKit 코인 1개를 구매했으나 `DEBUG: unknown` 뒤 재실행해도 잔액이 변하지 않았다. 추가 구매는
 하지 않았다. observer가 개별 CloudKit 실패를 unfinished로 보존하면서 다음 update를 계속 관찰하고,
