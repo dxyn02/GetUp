@@ -54,6 +54,12 @@ Max에서 상세 Shield와 `Use 1 Release` 버튼 표시를 확인했다. 버튼
 남은 Shield-first와 구매 잔액 보존은 사용자 승인에 따라 별도 `t089-day14-final`의 14일 서울 자정
 경계로 재검증한다. 앱·Shield Action의 namespace·경계일·iCloud container 값을 검사한 서명 빌드를
 두 기기에 설치했으며 경계 전 활성화와 Sandbox 코인 1개 준비를 기다리고 있다.
+14일 실기기 준비에서는 StoreKit Xcode 환경 성공 창 뒤 앱이 구매 실패를 표시하고 구매 잔액이 0에
+머물러 경계 전 구매 1 준비가 실패했다. 직접 구매 반환과 `Transaction.updates`가 같은 검증 거래를
+동시에 또는 연속 처리해 grant·finish를 반복하는 경쟁을 확인했고, transaction ID별 성공 결과를
+프로세스 단위로 단일 처리하도록 수정했다. 실패 결과는 캐시하지 않아 unfinished 재시도를 유지하며,
+T089 DEBUG 화면에는 안정 오류 코드를 표시한다. 전체 `GetUpTests` 606개 선언(동적 실행 726회)은
+실패·skip 없이 통과했다. 수정 빌드의 기존 unfinished 거래 복구와 새 격리 경계 재검증이 남아 있다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 T099에서 실제 `CKContainer.privateCloudDatabase`·`CoinLedgerZone` adapter와 server creation date,
 change-tag CAS, atomic modify, record별 오류 변환을 구현했다. 초기 fetch가 zone을 만들지 않고 실제
@@ -95,6 +101,14 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-14 T089 구매 준비 실패 및 수정: `t089-day14-final`에서 StoreKit은 Xcode 환경 구매 성공을
+표시했지만 앱은 구매 실패와 무료 2·구매 0을 표시했다. 기존 자동 테스트의 unfinished+updates 중복
+전달도 실제 grant와 finish를 두 번 호출하고 있었음을 확인했다. `CoinPurchaseService`에 transaction
+ID별 in-flight 및 성공 결과 단일 처리를 추가해 동시·지연 중복 전달이 grant와 finish를 한 번만
+실행하도록 했고, finish 실패 뒤 같은 unfinished 거래 재시도는 계속 허용했다. 집중 테스트와 전체
+`GetUpTests` 606개 선언(동적 실행 726회)이 실패·skip 없이 통과했다. 실기기 수정 빌드 재검증은
+대기 중이다.
+
 2026-09-13 T089 경계 후 관찰 및 수정: 자정 뒤 앱 미실행 상태의 첫 Shield 탭이 Coins를 열고, 두 번째
 탭이 성공해 두 기기 모두 `September 2026`, 무료 1, 구매 0으로 수렴했다. `CloudKitCoinLedgerRepository`
 는 allowance 부재 시 생성+무료 reservation을 원자 처리하지만 Shield Action이 그 전에 mirror 0/0을

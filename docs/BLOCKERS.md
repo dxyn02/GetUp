@@ -46,6 +46,15 @@ iOS Simulator Release 빌드는 통과했고, 첫 `t089-day13-app` 서명 빌드
 container 설정을 검사한 서명 빌드를 두 기기에 설치했다. 장부 활성화·구매·제한 준비와 14일 자정 뒤
 Shield-first 결과는 아직 대기 중이다.
 
+**2026-09-14 구매 준비 실패**: `t089-day14-final`에서 장부 활성화와 무료 2·구매 0은 확인했지만,
+StoreKit의 `[Environment: Xcode]` 성공 창 뒤 앱이 구매 실패를 표시했고 구매 잔액은 0에 머물렀다.
+따라서 경계 전 구매 1 준비가 성립하지 않아 14일 Shield-first의 구매 잔액 보존 결과는 증적으로 쓸 수
+없다. 직접 구매 결과와 `Transaction.updates`가 같은 검증 거래를 중복 grant·finish하는 경쟁을
+단일 처리로 수정했고, 실패 작업은 unfinished 재시도가 가능하도록 유지했다. T089 DEBUG에는 다음
+실패가 CloudKit·ledger·StoreKit finish 중 어디인지 구분할 안정 오류 코드도 추가했다. 자동 테스트
+606개 선언(동적 실행 726회)은 실패·skip 없이 통과했다. 수정 빌드에서 기존 unfinished 거래 복구와
+새 격리 경계 전 구매 1·양 기기 수렴을 다시 확인해야 하므로 BLK-017은 계속 미해결이다.
+
 **2026-09-12 추가 관찰**: 동일한 당월 무료 2회·구매 0 mirror를 표시하는 두 기기 중 iPhone 15 Pro
 Max에서는 상세 Shield와 `해제권 1회 사용`이 표시되지만 iPhone 17에서는 일반 fallback만 표시됐다.
 iPhone 17의 interval callback은 권한 보완 뒤 제한 적용 완료를 기록했다. 두 기기에 DEBUG 진단을

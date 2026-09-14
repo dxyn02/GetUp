@@ -33,6 +33,7 @@ struct CoinPurchaseService: Sendable {
     private let storefront: any CoinStorefront
     private let repository: any CoinLedgerRepository
     private let fetchLedgerState: FetchLedgerState
+    private let transactionProcessor: CoinPurchaseTransactionProcessor
 
     init(
         catalog: CoinProductCatalog,
@@ -44,6 +45,7 @@ struct CoinPurchaseService: Sendable {
         self.storefront = storefront
         self.repository = repository
         self.fetchLedgerState = fetchLedgerState
+        transactionProcessor = CoinPurchaseTransactionProcessor()
     }
 
     func purchase(productID: String) async throws -> CoinPurchaseOutcome {
@@ -71,6 +73,14 @@ struct CoinPurchaseService: Sendable {
     func processVerifiedTransaction(
         _ transaction: VerifiedCoinTransaction
     ) async throws -> PurchaseGrant {
+        try await transactionProcessor.process(transactionID: transaction.id) {
+            try await performVerifiedTransaction(transaction)
+        }
+    }
+
+    private func performVerifiedTransaction(
+        _ transaction: VerifiedCoinTransaction
+    ) async throws -> PurchaseGrant {
         try await requireCurrentLedger()
 
         guard transaction.revocationDate == nil else {
@@ -94,5 +104,44 @@ struct CoinPurchaseService: Sendable {
         guard case .current = try await fetchLedgerState() else {
             throw CoinPurchaseServiceError.ledgerNotCurrent
         }
+    }
+}
+
+/// Coalesces StoreKit's direct purchase result and `Transaction.updates` delivery.
+/// Both paths can receive the same verified transaction at nearly the same time;
+/// allowing them to finish independently can turn a successful grant into a
+/// user-visible `finishFailed` when one path finishes first.
+private actor CoinPurchaseTransactionProcessor {
+    private struct InFlight: Sendable {
+        let token: UUID
+        let task: Task<PurchaseGrant, any Error>
+    }
+
+    private var inFlightByTransactionID: [UInt64: InFlight] = [:]
+    private var completedByTransactionID: [UInt64: PurchaseGrant] = [:]
+
+    func process(
+        transactionID: UInt64,
+        operation: @escaping @Sendable () async throws -> PurchaseGrant
+    ) async throws -> PurchaseGrant {
+        if let completed = completedByTransactionID[transactionID] {
+            return completed
+        }
+        if let existing = inFlightByTransactionID[transactionID] {
+            return try await existing.task.value
+        }
+
+        let token = UUID()
+        let task = Task { try await operation() }
+        inFlightByTransactionID[transactionID] = InFlight(token: token, task: task)
+
+        defer {
+            if inFlightByTransactionID[transactionID]?.token == token {
+                inFlightByTransactionID[transactionID] = nil
+            }
+        }
+        let grant = try await task.value
+        completedByTransactionID[transactionID] = grant
+        return grant
     }
 }

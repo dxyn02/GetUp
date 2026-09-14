@@ -293,10 +293,20 @@ struct CoinStoreView: View {
         case .cancelled:
             Text("구매를 취소했어요")
                 .accessibilityIdentifier("coinStore.purchase.cancelled")
-        case .failed:
-            Text("구매를 완료하지 못했어요")
-                .foregroundStyle(HomeColor.error)
-                .accessibilityIdentifier("coinStore.purchase.error")
+        case .failed(let code):
+            VStack(alignment: .leading, spacing: 6) {
+                Text("구매를 완료하지 못했어요")
+                    .foregroundStyle(HomeColor.error)
+                    .accessibilityIdentifier("coinStore.purchase.error")
+#if DEBUG
+                if SharedIdentifiers.t089LedgerTestConfiguration() != nil {
+                    Text("DEBUG: \(code.rawValue)")
+                        .font(.caption.monospaced())
+                        .foregroundStyle(HomeColor.textSecondary)
+                        .accessibilityIdentifier("coinStore.purchase.errorCode")
+                }
+#endif
+            }
         case .purchasing:
             ProgressView("구매 처리 중")
         case .idle, .confirmationRequested, .purchased:

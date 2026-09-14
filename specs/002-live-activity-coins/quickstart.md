@@ -242,6 +242,13 @@ Shield-first 최종 재검증은 사용자 승인에 따라 `t089-day14-final`, 
 Shield 요청을 실행한다. 기대 결과는 `September 2026`, 무료 1, 구매 1이며, 새 allowance 원자 생성,
 무료 우선 사용, 이전 무료분 비이월과 구매 잔액 보존을 함께 입증한다.
 
+14일 결과: 장부 활성화 후 양쪽 무료 2·구매 0은 확인했지만, 코인 1개 구매에서 StoreKit Xcode 환경
+성공 창 뒤 앱이 구매 실패를 표시하고 구매 잔액이 0에 머물렀다. 경계 전 구매 1 준비가 성립하지
+않았으므로 이 실행은 Shield-first 구매 잔액 보존 증적으로 채택하지 않는다. 같은 transaction의 직접
+구매 결과와 updates/unfinished 중복 처리를 단일 처리하도록 수정했으며, 수정 빌드에서 기존 unfinished
+거래를 먼저 복구한 뒤 새 격리 namespace와 이후 승인된 DEBUG 경계로 절차를 다시 실행한다. 재시도
+중 오류가 남으면 T089 배너 아래 `DEBUG: <stable_error_code>`를 함께 기록하고 추가 결제하지 않는다.
+
 ## Live Activity end-to-end
 
 1. 앱 foreground에서 시간·위치 조건을 만족시켜 제한을 시작한다.

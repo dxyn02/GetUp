@@ -120,7 +120,7 @@ struct StoreKitTransactionObserverTests {
         #expect(await storefront.finishRequests == [404])
     }
 
-    @Test("The same transaction from unfinished and updates creates one grant")
+    @Test("The same transaction from unfinished and updates is processed once")
     func duplicateLifecycleDeliveryIsIdempotent() async throws {
         let recorder = PurchaseLifecycleRecorder()
         let transaction = Self.transaction(id: 405)
@@ -137,8 +137,8 @@ struct StoreKitTransactionObserverTests {
         try await observer.waitForUpdatesToFinish()
 
         #expect(await ledger.createdGrantCount == 1)
-        #expect(await ledger.grantRequests.count == 2)
-        #expect(await storefront.finishRequests == [405, 405])
+        #expect(await ledger.grantRequests.count == 1)
+        #expect(await storefront.finishRequests == [405])
     }
 
     @Test("Every finish attempt occurs after the corresponding grant commit")

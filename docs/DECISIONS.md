@@ -1,5 +1,26 @@
 # 결정 사항
 
+## DEC-108 — 검증된 StoreKit 거래의 프로세스 단위 단일 처리
+
+**날짜**: 2026-09-14
+
+**상태**: 승인됨 — T089 실기기 결제 실패의 명백한 동시 처리 결함 수정
+
+**결정**: 하나의 `CoinPurchaseService`가 같은 StoreKit transaction ID를 직접 구매 결과와
+`Transaction.updates` 또는 unfinished 전달로 동시에 받으면 CloudKit grant와 StoreKit `finish()`를
+한 작업으로 합친다. 성공한 transaction ID와 `PurchaseGrant`는 해당 프로세스 수명 동안 기억해 뒤늦은
+중복 전달도 다시 grant·finish하지 않는다. grant 또는 finish가 실패한 작업은 성공 캐시에 넣지 않아
+동일 unfinished 거래가 다음 전달에서 재시도될 수 있게 한다.
+
+**근거**: `t089-day14-final`에서 StoreKit Xcode 환경은 구매 성공을 표시했지만 앱은 구매 실패와
+구매 잔액 0을 표시했다. 기존 구조는 `purchase()` 반환 경로와 시작 시 연 `Transaction.updates`가 같은
+검증 거래를 각각 CloudKit에 지급하고 `finish()`할 수 있었다. 자동 회귀에서도 unfinished와 updates가
+같은 거래를 두 번 처리하는 것이 확인됐으며, 한 경로가 먼저 finish하면 다른 경로가
+`store_finish_failed`를 사용자 실패로 표시할 수 있다.
+
+**진단 범위**: T089 DEBUG namespace 빌드의 구매 실패 문구 아래에 개인정보 없는 안정 오류 코드만
+표시한다. Release UI와 StoreKit·CloudKit schema, transaction ID 기반 원격 멱등 키는 변경하지 않는다.
+
 ## DEC-107 — T089 월 경계의 DEBUG 전용 13일 대체 검증
 
 **날짜**: 2026-09-12
