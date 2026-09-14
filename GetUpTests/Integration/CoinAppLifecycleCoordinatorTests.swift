@@ -37,8 +37,8 @@ struct CoinAppLifecycleCoordinatorTests {
         ])
     }
 
-    @Test("Foreground keeps one listener and repeats authoritative ledger reconciliation")
-    func foregroundDoesNotDuplicateTransactionListener() async {
+    @Test("Foreground repeats transaction recovery and authoritative ledger reconciliation")
+    func foregroundRepeatsTransactionRecovery() async {
         let recorder = CoinLifecycleRecorder()
         let coordinator = CoinAppLifecycleCoordinator(
             startTransactionObservation: { await recorder.record(.transaction) },
@@ -53,7 +53,7 @@ struct CoinAppLifecycleCoordinatorTests {
         _ = await coordinator.refresh(trigger: .launch, now: Self.now)
         _ = await coordinator.refresh(trigger: .foreground, now: Self.now)
 
-        #expect(await recorder.events.filter { $0 == .transaction }.count == 1)
+        #expect(await recorder.events.filter { $0 == .transaction }.count == 2)
         #expect(await recorder.events.filter { $0 == .ledger }.count == 2)
     }
 

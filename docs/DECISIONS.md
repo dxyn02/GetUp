@@ -1,5 +1,27 @@
 # 결정 사항
 
+## DEC-109 — StoreKit 미완료 거래의 foreground 복구와 커밋 후 새로고침 분리
+
+**날짜**: 2026-09-14
+
+**상태**: 승인됨 — T089 day15 구매의 `unknown` 실패 후 자동 복구 보강
+
+**결정**: StoreKit 거래 observer는 `Transaction.updates` listener를 프로세스당 하나만 유지하되 앱
+launch·foreground마다 unfinished 거래를 다시 조회한다. 개별 거래의 CloudKit 처리 실패는 해당 거래를
+unfinished로 남기고 이후 update 관찰을 종료하지 않는다. CloudKit grant와 StoreKit `finish()`가 모두
+성공한 뒤 장부 projection 새로고침만 실패하면 구매를 실패로 되돌리지 않고 grant 성공을 표시하며,
+권위 잔액은 다음 lifecycle 동기화에서 갱신한다. `CoinLedgerSyncProviderError`는 각각
+`cloud_server_unavailable`, `cloud_account_unavailable`, `cloud_record_invalid`로 안정 변환한다.
+
+**근거**: `t089-day15-final`의 Xcode StoreKit 거래는 성공 창 뒤 앱에서 `DEBUG: unknown`을 표시하고,
+재실행 뒤에도 경계 전 `August 2026`, 무료 2, 구매 0을 유지했다. 기존 구조는 일시적 CloudKit 실패가
+updates task 전체를 끝냈고 lifecycle coordinator는 observer 시작을 다시 요청하지 않았다. 또한 grant가
+이미 커밋된 경우에도 직후 projection refresh 실패를 전체 구매 실패로 표시할 수 있었다.
+
+**영향 범위**: 원격 schema, transaction ID 멱등 키, 무료 우선 정책은 변경하지 않는다. 화면은 신뢰할
+수 없는 잔액을 낙관적으로 증가시키지 않으며, 최신 projection을 받을 때까지 직전 권위 잔액을 유지한다.
+unfinished 재처리는 기존 transaction ID 단일 처리와 CloudKit grant 멱등성 경계를 그대로 사용한다.
+
 ## DEC-108 — 검증된 StoreKit 거래의 프로세스 단위 단일 처리
 
 **날짜**: 2026-09-14

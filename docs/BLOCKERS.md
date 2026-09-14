@@ -61,6 +61,14 @@ StoreKit의 `[Environment: Xcode]` 성공 창 뒤 앱이 구매 실패를 표시
 15일 경계 전에 새 장부 활성화, Xcode 검증 거래 1개 지급과 양 기기 무료 2·구매 1 수렴을 다시 확인한
 뒤 앱 미실행 Shield-first를 수행해야 한다.
 
+day15 장부는 두 기기 모두 경계 전 `August 2026`, 무료 2, 구매 0으로 준비됐다. 한 기기에서 Xcode
+StoreKit 코인 1개를 한 번 구매했지만 `DEBUG: unknown`이 표시되고 재실행 뒤에도 같은 값이어서 추가
+구매를 중단했다. 개별 거래 처리 실패가 updates listener를 종료하고 foreground에서도 unfinished를
+다시 조회하지 않던 복구 단절과, grant 커밋 뒤 projection refresh 실패가 구매 실패로 보이던 경계를
+수정했다. 동기화 오류도 개인정보 없는 안정 코드로 변환했다. 전체 자동 테스트는 T089 override를
+비운 기본 월초 정책에서 608개 선언·동적 실행 728회가 통과했다. 수정 실기기 빌드가 기존 unfinished
+거래를 복구해 양쪽 구매 1로 수렴하는지 확인하기 전까지 BLK-017은 계속 미해결이다.
+
 **2026-09-12 추가 관찰**: 동일한 당월 무료 2회·구매 0 mirror를 표시하는 두 기기 중 iPhone 15 Pro
 Max에서는 상세 Shield와 `해제권 1회 사용`이 표시되지만 iPhone 17에서는 일반 fallback만 표시됐다.
 iPhone 17의 interval callback은 권한 보완 뒤 제한 적용 완료를 기록했다. 두 기기에 DEBUG 진단을

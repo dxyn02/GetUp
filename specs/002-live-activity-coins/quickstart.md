@@ -256,6 +256,14 @@ Shield 요청을 실행한다. 기대 결과는 `September 2026`, 무료 1, 구�
 경우에만 앱을 모두 종료하고 경계 뒤 첫 Shield를 실행한다. 기대 결과는 양쪽 `September 2026`, 무료
 1, 구매 1이다. 실제 Sandbox 구매 검증은 T094에서 별도로 수행한다.
 
+day15 1차 결과: 두 기기 모두 경계 전 `August 2026`, 무료 2, 구매 0으로 준비한 뒤 한 기기에서만
+Xcode StoreKit 코인 1개를 구매했다. 시스템 성공 창 뒤 앱은 `DEBUG: unknown`을 표시했고 재실행 뒤에도
+양쪽 값은 무료 2, 구매 0이었다. 추가 구매는 실행하지 않았다. 일시적 거래 처리 실패 뒤 listener가
+종료되고 foreground에서 unfinished를 다시 조회하지 않던 복구 경로와, grant 커밋 뒤 projection
+refresh 실패를 전체 구매 실패로 표시하던 경계를 수정했다. 수정 빌드는 새 구매보다 먼저 기존
+unfinished 거래를 launch 또는 foreground에서 복구해야 한다. 성공 기준은 양쪽 `August 2026`, 무료 2,
+구매 1이며, 안정 오류가 표시되면 그 코드만 기록하고 추가 구매하지 않는다.
+
 ## Live Activity end-to-end
 
 1. 앱 foreground에서 시간·위치 조건을 만족시켜 제한을 시작한다.

@@ -23,6 +23,32 @@ struct StoreKitTransactionObserverTests {
         #expect(recorder.events == [.grantAttempt(401), .grantFailed(401)])
     }
 
+    @Test("A transient unfinished failure is retried without duplicating the updates listener")
+    func transientFailureRetriesOnNextStart() async throws {
+        let recorder = PurchaseLifecycleRecorder()
+        let transaction = Self.transaction(id: 408)
+        let storefront = ObserverStorefrontSpy(
+            recorder: recorder,
+            unfinished: [.verified(transaction)],
+            finishScripts: [.success(())]
+        )
+        let ledger = ObserverPurchaseLedgerFake(
+            recorder: recorder,
+            grantFailures: [.database(.serverUnavailable), nil]
+        )
+        let observer = try Self.observer(storefront: storefront, ledger: ledger)
+
+        try await observer.start()
+        try await observer.start()
+        try await observer.waitForUpdatesToFinish()
+
+        #expect(await ledger.grantRequests.map(\.transaction.id) == [408, 408])
+        #expect(await ledger.createdGrantCount == 1)
+        #expect(await storefront.finishRequests == [408])
+        #expect(recorder.events.filter { $0 == .listenerOpened }.count == 1)
+        #expect(recorder.events.filter { $0 == .unfinishedRequested }.count == 2)
+    }
+
     @Test("A finish failure is recovered from unfinished transactions without another grant")
     func finishFailureRecoversOnNextLaunch() async throws {
         let recorder = PurchaseLifecycleRecorder()
@@ -319,7 +345,7 @@ private actor ObserverStorefrontSpy: CoinStorefront {
 
 private actor ObserverPurchaseLedgerFake: CoinLedgerRepository {
     private let recorder: PurchaseLifecycleRecorder
-    private let grantFailure: CoinLedgerRepositoryError?
+    private var grantFailures: [CoinLedgerRepositoryError?]
     private var grantsByKey: [String: PurchaseGrant] = [:]
 
     private(set) var grantRequests: [PurchaseGrantRequest] = []
@@ -330,13 +356,22 @@ private actor ObserverPurchaseLedgerFake: CoinLedgerRepository {
         grantFailure: CoinLedgerRepositoryError? = nil
     ) {
         self.recorder = recorder
-        self.grantFailure = grantFailure
+        grantFailures = [grantFailure]
+    }
+
+    init(
+        recorder: PurchaseLifecycleRecorder,
+        grantFailures: [CoinLedgerRepositoryError?]
+    ) {
+        self.recorder = recorder
+        self.grantFailures = grantFailures
     }
 
     func grantPurchase(_ request: PurchaseGrantRequest) async throws -> PurchaseGrant {
         let transaction = request.transaction
         grantRequests.append(request)
         recorder.record(.grantAttempt(transaction.id))
+        let grantFailure = grantFailures.isEmpty ? nil : grantFailures.removeFirst()
         if let grantFailure {
             recorder.record(.grantFailed(transaction.id))
             throw grantFailure

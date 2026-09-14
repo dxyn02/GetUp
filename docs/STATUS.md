@@ -65,6 +65,13 @@ T089 DEBUG 화면에는 안정 오류 코드를 표시한다. 전체 `GetUpTests
 추가 구매하지 않고 실패 증적으로 종료했다. 다음 검증을 위해 Debug 설정을 새
 `t089-day15-final`, 서울 15일 00:00으로 준비했으며, Xcode StoreKit 거래로 CloudKit 구매 잔액 지급과
 월 경계 보존을 검증한다. 실제 Sandbox 1·3·5 구매와 pending·환불·철회는 T094 범위를 유지한다.
+`t089-day15-final`에서 양쪽 경계 전 `August 2026`, 무료 2, 구매 0을 확인한 뒤 한 기기에서 Xcode
+StoreKit 코인 1개를 한 번 구매했으나 앱은 `DEBUG: unknown`을 표시했고 재실행 뒤에도 같은 값이었다.
+추가 구매는 중단했다. 일시적 CloudKit 처리 오류가 updates listener 전체를 종료하고 이후 foreground가
+unfinished를 다시 조회하지 않던 복구 단절을 수정했다. grant·finish 성공 뒤 projection refresh만
+실패한 경우에는 구매 성공을 보존하고 다음 lifecycle 동기화에 잔액 반영을 맡기며, sync provider 오류를
+안정 코드로 변환했다. 관련 집중 테스트와 T089 설정을 비운 전체 `GetUpTests` 608개 선언(동적 실행
+728회)은 실패·skip 없이 통과했다. 수정 실기기 빌드에서 기존 unfinished 거래 복구를 먼저 확인한다.
 T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
 T099에서 실제 `CKContainer.privateCloudDatabase`·`CoinLedgerZone` adapter와 server creation date,
 change-tag CAS, atomic modify, record별 오류 변환을 구현했다. 초기 fetch가 zone을 만들지 않고 실제
@@ -106,6 +113,15 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-14 T089 day15 구매 복구 보강: 경계 전 양쪽 `August 2026`, 무료 2, 구매 0에서 한 기기만
+Xcode StoreKit 코인 1개를 구매했으나 `DEBUG: unknown` 뒤 재실행해도 잔액이 변하지 않았다. 추가 구매는
+하지 않았다. observer가 개별 CloudKit 실패를 unfinished로 보존하면서 다음 update를 계속 관찰하고,
+launch·foreground마다 unfinished를 재조회하도록 수정했다. grant·finish 뒤 projection refresh 실패는
+이미 확정된 구매를 실패로 바꾸지 않으며 잔액은 후속 권위 동기화로만 갱신한다. 관련 3개 suite 집중
+테스트가 통과했다. T089 경계일 15 설정을 그대로 적용한 전체 실행은 정책상 기존 월초 기대값을 바꿔
+42개 선언이 실패했고, 해당 두 build setting만 비운 정상 정책 재실행은 608개 선언·동적 실행 728회가
+모두 통과했으며 실패·skip은 없다. 이는 실기기 override 격리 확인 결과이며 제품 회귀가 아니다.
+
 2026-09-14 T089 구매 준비 실패 및 수정: `t089-day14-final`에서 StoreKit은 Xcode 환경 구매 성공을
 표시했지만 앱은 구매 실패와 무료 2·구매 0을 표시했다. 기존 자동 테스트의 unfinished+updates 중복
 전달도 실제 grant와 finish를 두 번 호출하고 있었음을 확인했다. `CoinPurchaseService`에 transaction

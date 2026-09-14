@@ -1446,9 +1446,10 @@ private struct AppEnvironment {
             executePurchase: { productID in
                 switch try await purchaseService.purchase(productID: productID) {
                 case .granted(let grant):
+                    let refreshedLedger = try? await ledgerRuntime.refresh()
                     return .granted(
                         grant: grant,
-                        ledger: try await ledgerRuntime.refresh().coinStoreLedgerState
+                        ledger: refreshedLedger?.coinStoreLedgerState
                     )
                 case .pending: return .pending
                 case .cancelled: return .cancelled

@@ -48,7 +48,9 @@ enum CoinStorePurchaseState: Equatable, Sendable {
 }
 
 enum CoinStorePurchaseExecutionResult: Equatable, Sendable {
-    case granted(grant: PurchaseGrant, ledger: CoinStoreLedgerState)
+    /// The grant is authoritative once CloudKit commits it and StoreKit finishes.
+    /// A missing ledger means only the post-commit projection refresh failed.
+    case granted(grant: PurchaseGrant, ledger: CoinStoreLedgerState?)
     case pending
     case cancelled
 }
@@ -192,7 +194,9 @@ final class CoinStoreModel {
         do {
             switch try await executePurchase(productID) {
             case .granted(let grant, let ledger):
-                apply(ledger)
+                if let ledger {
+                    apply(ledger)
+                }
                 purchaseState = .purchased(grant)
             case .pending:
                 pendingProductIdentifiers.insert(productID)

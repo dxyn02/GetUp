@@ -242,10 +242,23 @@ protocol CoinLedgerSyncEngineDriving: Sendable {
     ) async throws -> CoinLedgerSyncEngineResult
 }
 
-enum CoinLedgerSyncProviderError: Error, Equatable, Sendable {
+enum CoinLedgerSyncProviderError: Error, Equatable, Sendable,
+    StableLiveActivityCoinError
+{
     case syncUnavailable
     case accountChanged
     case invalidProjection
+
+    var errorCode: LiveActivityCoinErrorCode {
+        switch self {
+        case .syncUnavailable:
+            .cloudServerUnavailable
+        case .accountChanged:
+            .cloudAccountUnavailable
+        case .invalidProjection:
+            .cloudRecordInvalid
+        }
+    }
 }
 
 struct CoinLedgerSyncProviderResult: Equatable, Sendable {

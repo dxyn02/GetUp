@@ -221,6 +221,29 @@ struct CoinStoreModelTests {
         #expect(await executor.requests == [Self.threeCoinProductID])
     }
 
+    @Test("A committed purchase remains successful when its projection refresh is unavailable")
+    func committedPurchaseSurvivesProjectionRefreshFailure() async throws {
+        let initialLedger = try ledger(purchased: 0)
+        let grant = try Self.grant()
+        let executor = PurchaseExecutorSpy(
+            result: .granted(grant: grant, ledger: nil)
+        )
+        let model = makeModel(
+            ledger: initialLedger,
+            executePurchase: { productID in
+                try await executor.execute(productID)
+            }
+        )
+        await model.loadProducts()
+
+        #expect(model.requestPurchaseConfirmation(productID: Self.threeCoinProductID))
+        await model.confirmPurchase()
+
+        #expect(model.purchaseState == .purchased(grant))
+        #expect(model.balance == initialLedger.balance)
+        #expect(await executor.requests == [Self.threeCoinProductID])
+    }
+
     @Test("Pending, cancellation, and errors never synthesize a balance change")
     func nonGrantedOutcomesPreserveBalance() async throws {
         let initialLedger = try ledger(purchased: 3)

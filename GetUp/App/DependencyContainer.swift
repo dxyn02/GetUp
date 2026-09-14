@@ -173,7 +173,6 @@ actor CoinAppLifecycleCoordinator {
     private let reconcileLedger: ReconcileLedger
     private let loadActiveOccurrenceIDs: LoadActiveOccurrenceIDs
     private let consumePendingRoute: ConsumePendingRoute
-    private var transactionObservationStarted = false
 
     init(
         startTransactionObservation: @escaping StartTransactionObservation,
@@ -193,13 +192,12 @@ actor CoinAppLifecycleCoordinator {
     ) async -> CoinAppLifecycleRefreshResult {
         var failures: [CoinAppLifecycleFailure] = []
 
-        if !transactionObservationStarted {
-            transactionObservationStarted = true
-            do {
-                try await startTransactionObservation()
-            } catch {
-                failures.append(.transactionObservation)
-            }
+        do {
+            // The observer keeps one updates listener, while each lifecycle pass
+            // rescans unfinished StoreKit transactions for transient recovery.
+            try await startTransactionObservation()
+        } catch {
+            failures.append(.transactionObservation)
         }
 
         let ledger: CoinLedgerReconciliationSnapshot?
