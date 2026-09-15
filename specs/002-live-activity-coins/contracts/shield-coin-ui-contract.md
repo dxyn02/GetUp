@@ -26,32 +26,38 @@ Shield Configuration은 App Group의 활성 occurrence와 confirmed balance mirr
 
 ## Action 처리
 
-- primary action은 동일한 `RuleReleaseService`에 안정적인 command를 전달한다. 최신 현재 월
-  allowance가 없으면 생성과 무료분 reservation을 한 atomic command에서 수행한다.
-- 성공 뒤 현재 대상에 남은 제한이 없으면 `.none`으로 system Shield 갱신을 허용한다.
-- 다른 규칙 제한이 남거나 실패하면 Shield를 유지하고 configuration snapshot을 갱신한다.
-- 최신 장부가 `current`이고 잔액만 부족하면 `PendingAppRoute.coinStore`, iCloud·장부 불가이면 해당
-  복구 route를 App Group에 기록한다. iOS 26.5 이상은 `.openParentalControlsApp`을 반환한다.
+- primary action은 안정적인 command ID·occurrence를 포함한 `PendingAppRoute.releaseProcessing`을
+  App Group에 원자적으로 기록한다. Shield extension은 FR-037 전체 동기화, allowance 생성, 예약,
+  ReleaseException 적용이나 제한 read-back을 실행하지 않는다.
+- iOS 26.5 이상은 route 저장 성공 뒤 `.openParentalControlsApp`을 즉시 반환한다. route 저장 실패는
+  제한을 유지하는 fail-closed 결과로 끝내며 성공으로 표시하지 않는다.
 - 메인 앱은 route 생성 후 5분 이내, 미소비, 연결 occurrence 활성 조건을 모두 만족할 때만 route를
-  한 번 소비한다. 성공한 소비와 삭제는 atomic하며 만료·중복·종료 occurrence route는 이동 없이
-  삭제한다.
+  한 번 소비한다. 소비 뒤 처리 중 UI를 표시하고 `RuleReleaseService`로 FR-037 전체 동기화·월간
+  allowance 생성·무료 우선 예약·예외 적용·제한 read-back·장부 commit을 수행한다. 성공한 소비와
+  삭제는 atomic하며 만료·중복·종료 occurrence route는 이동 없이 삭제한다.
+- 메인 앱은 확정 결과에 따라 완료, 같은 command ID 재시도, 코인 부족 후 구매 유도, iCloud·장부
+  복구 화면 중 하나로 전환한다. `coinStore`는 앱의 권위 확인에서 잔액 부족이 확정된 경우에만 쓴다.
 - iOS 26.0~26.4는 공식 앱 열기 응답이 없으므로 안내 상태를 기록한 뒤 `.close`를 반환한다. custom
   URL, `UIApplication`, 임의 `NSExtensionContext` 우회는 사용하지 않는다.
 - secondary action은 `.close`다.
-- primary action이 release service에 전달된 시점부터 최대 5초 동안 CloudKit 성공을 기다린다.
-  5초 안에 성공을 확인하지 못하면 실패 닫힘으로 Shield를 유지하고 `PendingAppRoute.reconciliation`을
-  기록한다. 이는 coin store route가 아니다.
-- 5초 뒤 늦은 성공 응답이 도착해도 해당 Shield action에서 자동 해제하지 않는다. 같은 command ID를
-  다음 앱 foreground에서 재조정하고, 제한이 적용되지 않은 reservation은 보상한다.
+- 동일 route나 command가 재전달돼도 앱은 새 차감 없이 기존 결과를 재조정한다.
 
 ## 앱 내 표면
 
+- Shield release route 진입은 처리 중 화면으로 시작한다. 중복 tap을 막고 VoiceOver live 상태로
+  동기화·해제 진행 중임을 전달한다.
+- 제한 read-back과 장부 commit이 모두 확인되면 해제 완료 화면에서 사용한 수단, 현재 구간 종료와
+  다른 규칙으로 남는 제한을 표시한다.
+- 네트워크·CloudKit·적용 실패 또는 결과 불명은 제한 유지와 동일 command 재시도를 제공한다.
+- 무료 해제권과 구매 코인이 모두 부족하면 제한 유지와 코인 구매 CTA를 제공한다.
 - 활성 제한 카드에서 대표 또는 사용자가 선택한 occurrence의 상세, 무료·구매 잔액, 사용할 수단,
   종료 시각, 겹친 규칙 영향을 보여준 뒤 별도 확인 dialog로 확정한다.
 - 잔액 0이면 구매 화면으로 이동할 수 있다.
 - pending reconciliation이 있으면 새 사용보다 처리 상태와 재시도를 먼저 표시한다.
 - 장부 삭제가 확정되면 메인 앱에서만 삭제 불이익 고지와 새 장부 시작 선택을 제공한다. Shield는
   local mirror로 복구하거나 reset·구매를 시작하지 않는다.
+- 위 앱 내 네 상태의 layout·motion·문구·초점 이동은 승인된 하이파이를 기준으로 구현한다. 하이파이
+  승인 기록 전에는 제품 UI를 변경하지 않는다.
 
 ## 접근성·지역화
 
@@ -65,11 +71,11 @@ Shield Configuration은 App Group의 활성 occurrence와 confirmed balance mirr
 - 무료분·구매분·잔액 없음·stale mirror에서 동일한 해제권 버튼과 정확한 비용·실패 안내
 - deletionConfirmed/resetRequired에서 해제·구매·reset 행동이 없고 앱 안내만 표시됨
 - 단일 규칙과 같은 앱의 다중 규칙 경고
-- primary 성공·실패·timeout·중복 tap, secondary close
-- 주입 가능한 monotonic clock 기준 4.9초 성공, 5초 성공 미확인, 5초 초과 late commit의 Shield 유지·
-  reconciliation route·최종 미적용 차감 0
+- release route 저장 성공·실패·중복 tap, secondary close와 iOS 26.5 즉시 앱 진입
+- 앱 처리 중·완료·재시도·잔액 부족의 상태 전이, 앱 종료 뒤 command 재조정과 최종 미적용 차감 0
 - 해제 성공 후 Shield 제거 또는 다른 규칙 Shield 유지
-- 새달 최초 Shield action의 무료분 생성·우선 차감, 잔액 부족·장부 불가 route 분기
+- 새달 최초 Shield action 뒤 메인 앱의 무료분 생성·우선 차감, 잔액 부족·장부 불가 결과 분기
 - iOS 26.5 앱 직접 열기와 iOS 26.0~26.4 `.close` fallback
 - PendingAppRoute의 5분 경계, 일회 소비, 중복 소비 거부, 종료 occurrence route 폐기
 - 한국어·영어, VoiceOver, Dynamic Type, Light/Dark
+- 승인된 해제 결과 하이파이와 스냅샷·실기기 결과의 시각 대조

@@ -2396,3 +2396,30 @@ primary action을 실행했지만 `Activity<RestrictionLiveActivityAttributes>.a
 
 **영향 범위**: `ActivityKitFeasibilityProbe`, `ShieldActionExtension`, T055의 Live Activity 조정 분기,
 T096 실기기 회귀와 `quickstart.md`의 Shield 선행 게이트에 적용한다.
+
+## DEC-114 — Shield release를 메인 앱에서 완료하고 UI는 하이파이 승인 뒤 구현
+
+**날짜**: 2026-09-15
+
+**상태**: 승인됨 — BLK-018 사용자 승인
+
+**결정**: Shield Action은 FR-037 전체 CloudKit 동기화나 코인 예약·제한 해제를 실행하지 않는다.
+안정적인 command ID와 occurrence를 포함한 `PendingAppRoute.releaseProcessing`을 App Group에
+원자적으로 저장하고, iOS 26.5 이상에서는 `openParentalControlsApp`으로 메인 앱을 즉시 연다.
+iOS 26.0~26.4에서는 같은 route를 남기되 공식 직접 열기 API가 없으므로 기존 fail-closed 안내를
+유지한다. 메인 앱은 route를 한 번 소비해 전체 동기화, occurrence 재검증, 무료 우선 원자 예약,
+ReleaseException 적용, Managed Settings read-back, 장부 commit과 결과 불명 재조정을 수행한다.
+
+메인 앱은 처리 중, 해제 완료, 실패·결과 불명 후 같은 command 재시도, 무료 해제권·구매 코인 부족
+후 코인 구매 유도의 네 결과 상태를 제공한다. read-back과 commit 전에는 완료를 표시하지 않는다.
+이 화면 묶음과 잠금화면·Dynamic Island minimal·compact·expanded Live Activity 개편은 각각
+로우파이 흐름 기록, 하이파이 제작, 사용자 명시 승인 순서를 거친 뒤에만 구현한다.
+
+**근거**: T089의 iPhone 15 Pro Max에서 `initialRefresh.syncEngineCaptureCompleted` 뒤 extension이
+projection·예약 전에 종료됐다. iPhone 17의 성공 여부와 무관하게 extension 실행 시간은 전체 동기화를
+안정적으로 보장하지 않는다. 부분 record fetch는 서버 권위와 pending reconciliation 계약을 약화하고,
+첫 탭 실패 뒤 재시도는 T089와 사용자 피드백 요구를 충족하지 못한다.
+
+**영향 범위**: BLK-018을 해결하며 `spec.md` FR-012·FR-013·FR-041~FR-044와 SC-013~SC-014,
+`plan.md`, `data-model.md`, Shield·rule release·Live Activity contract, T089와 T103~T119에 적용한다.
+T105 전에는 release 결과 UI와 handoff 구현을, T116 전에는 Live Activity UI 개편을 시작하지 않는다.

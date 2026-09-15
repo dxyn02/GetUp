@@ -395,8 +395,10 @@ Shield Action extension에서 앱이 만든 활동을 직접 열거하는 경로
 
 1. 당월 무료분이 아직 생성되지 않은 상태와 무료 해제권이 2회인 상태에서 각각 제한 앱 Shield를
    연다.
-2. 기존 Shield 내용, `해제권 1회 사용`, `앱 닫기`를 확인하고 primary 버튼을 누른다.
-3. 앱 내역과 CloudKit·App Group snapshot을 확인한다.
+2. 기존 Shield 내용, `해제권 1회 사용`, `앱 닫기`를 확인하고 primary 버튼을 한 번 누른다.
+3. iOS 26.5 이상에서 메인 앱 처리 중 화면이 즉시 열리는지 확인한다. iOS 26.0~26.4에서는 안내 뒤
+   GetUp을 직접 열어 저장된 route를 소비한다.
+4. 처리 완료 화면 뒤 앱 내역과 CloudKit·App Group snapshot, 실제 제한 해제를 확인한다.
 
 ### 구매 코인
 
@@ -406,15 +408,17 @@ Shield Action extension에서 앱이 만든 활동을 직접 열거하는 경로
 
 ### 실패·복구
 
-1. reservation 뒤 App Group write, Managed Settings write, CloudKit commit을 각각 실패시킨다.
-2. 각 지점에서 앱 또는 extension을 종료하고 다시 실행한다.
+1. release route 저장, reservation 뒤 App Group write, Managed Settings write, CloudKit commit을
+   각각 실패시킨다.
+2. 각 지점에서 앱 또는 extension을 종료하고 다시 실행해 같은 command가 재조정되는지 확인한다.
 3. 무료분과 구매 코인이 모두 0인 `current` 장부에서 Shield 버튼을 누른다.
 4. iCloud unavailable·장부 삭제 확정·재조정 중인 상태에서 같은 버튼을 누른다.
 5. iOS 26.5 이상과 iOS 26.0~26.4 기기에서 잔액 부족·복구 route를 각각 실행한다.
-6. 주입 시계와 CloudKit fake로 4.9초 성공, 정확히 5초까지 성공 미확인, 5초 초과 뒤 late commit을
-   각각 실행한다.
-7. `PendingAppRoute`를 생성 직후, 정확히 5분 경계, 5분 초과, 중복 소비, occurrence 종료 뒤 각각
+6. 기존 직접 해제 fixture에서 4.9초·5초·late commit 회귀를 유지하되 제품 Shield 경로가 CloudKit을
+   호출하지 않는지 확인한다.
+7. `PendingAppRoute.releaseProcessing`을 생성 직후, 정확히 5분 경계, 5분 초과, 중복 소비, occurrence 종료 뒤 각각
    앱에서 소비한다.
+8. 처리 중·완료·재시도·잔액 부족 화면을 승인된 하이파이와 대조한다.
 
 기대 결과:
 
@@ -424,13 +428,13 @@ Shield Action extension에서 앱이 만든 활동을 직접 열거하는 경로
 - 같은 occurrence는 최대 한 번만 해제·소모된다.
 - 다른 규칙이 같은 앱을 제한하면 안내대로 Shield가 남는다.
 - 실패한 해제는 확정 차감으로 남지 않고 보상되거나 `처리 확인 중`에서 재조정된다.
-- 4.9초 안에 확인된 성공은 적용할 수 있지만 5초 안에 성공을 확인하지 못한 요청은 Shield를
-  유지하고 상태 확인 route로 이동한다. 늦은 commit은 같은 command ID로 재조정돼 제한이 해제되지
-  않았다면 최종 차감 0으로 수렴한다.
+- Shield는 CloudKit을 기다리지 않고 release route 저장 뒤 앱을 열며, 메인 앱이 전체 동기화와 원자
+  해제를 수행한다. 처리 실패·중단은 같은 command ID로 재조정돼 제한이 해제되지 않았다면 최종
+  차감 0으로 수렴한다.
 - `current` 장부의 잔액 부족만 coin store로 이동하며 iCloud·장부 불확실 상태는 결제를 시작하지
   않고 해당 복구 화면으로 이동한다.
-- iOS 26.5 이상은 공식 응답으로 앱을 직접 열고, iOS 26.0~26.4는 Shield를 닫은 뒤 표시된 안내에
-  따라 사용자가 앱을 열면 저장된 route가 소비된다.
+- iOS 26.5 이상은 첫 Shield 탭 한 번으로 앱 처리 중 화면을 열고, iOS 26.0~26.4는 Shield를 닫은 뒤
+  표시된 안내에 따라 사용자가 앱을 열면 저장된 route가 소비된다.
 - route는 생성 후 5분 이내의 활성 occurrence에서 한 번만 소비되고 만료·중복·종료 route는 이동 없이
   삭제된다.
 - 해제 성공 직후 대표 Live Activity가 갱신되거나 모든 제한 종료 시 즉시 끝나며, ActivityKit 실패는

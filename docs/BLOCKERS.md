@@ -165,7 +165,7 @@ DEBUG 13일 서울 자정 경계의 실제 CloudKit 결과를 월 경계 실기�
 
 ## BLK-018 — Shield 시간 제한과 해제 직전 전체 CloudKit 동기화 충돌
 
-**상태**: 미해결(OPEN) — 2026-09-15
+**상태**: 해결됨(RESOLVED) — 2026-09-15
 
 iPhone 15 Pro Max의 T089 5분 경계 첫 탭에서 마지막 진단이
 `initialRefresh.syncEngineCaptureCompleted`였고 잔액은 2/0으로 유지됐다. 계정 확인과 서버 변경
@@ -190,6 +190,12 @@ extension이 시스템에 의해 종료됐다. 따라서 CloudKit 오류나 차�
 **권장안**: 1안. 서버 권위·pending reconciliation·무료 우선·원자 예약 계약을 약화하지 않고 시스템
 시간 제한을 벗어나는 유일한 안정 경로다. 선택되면 spec·plan의 Shield 동작과 T055/T089 인수 절차,
 pending route destination, 메인 앱 release coordinator 및 UI를 함께 갱신해야 한다.
+
+**해결**: 사용자가 1안을 승인했다. Shield는 `releaseProcessing` route를 원자 저장하고 iOS 26.5
+이상에서 즉시 메인 앱을 열며, 메인 앱이 FR-037 전체 동기화와 원자 해제·재조정을 수행한다. 처리
+중·완료·재시도·잔액 부족 UI와 Live Activity 잠금화면·Dynamic Island 개편은 각각 로우파이 기록과
+하이파이 제작·사용자 승인 뒤 구현한다. T103~T113에서 release handoff와 T089 재검증을, T114~T119에서
+Live Activity 시각 개편을 수행한다.
 
 ## BLK-016 — T049 명령별 해제 예외 수정·보상의 저장 계약
 

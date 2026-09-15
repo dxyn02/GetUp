@@ -329,5 +329,36 @@ fixture를 사용하고 실기기 결과와 Simulator 결과를 분리해 기록
 
 명확화된 Live Activity 계측 모집단·위치 갱신 기산점, 동일 iCloud `current` 장부의 새 설치 복구,
 Shield 5초 fail-closed·늦은 결과 재조정, 새달 첫 앱·Shield 요청의 무료분 지연 생성까지 결정했다.
+
+## 12. Shield release route와 승인 기반 UI 변경
+
+**결정**: Shield Action extension의 실행 시간 안에서 FR-037 전체 CloudKit projection과 원자 해제를
+완료하지 않는다. Shield primary는 안정적인 command ID와 occurrence를 담은 release route를 App
+Group에 원자적으로 저장한다. iOS 26.5 이상에서는 공식 `openParentalControlsApp` 응답으로 메인 앱을
+즉시 열고, iOS 26.0~26.4에서는 같은 route를 남긴 뒤 기존 fail-closed 안내를 사용한다. 메인 앱은
+route를 한 번 소비해 전체 동기화, occurrence 재검증, 무료 우선 예약, 로컬 예외와 제한 read-back,
+장부 commit과 재조정을 수행한다.
+
+메인 앱 UI는 `처리 중`, `해제 완료`, `실패·결과 불명 재시도`, `무료분·구매 코인 부족과 코인 구매
+유도`를 서로 다른 상태로 표시한다. 제한 read-back과 commit이 확인되기 전에는 완료를 표시하지 않고,
+중복 route·앱 종료 뒤 재실행도 같은 command ID로 수렴시킨다.
+
+해제 결과 UI와 Live Activity 잠금화면·Dynamic Island UI는 각각 로우파이 흐름 기록, 하이파이 제작,
+사용자 승인 순서를 거친다. 구현 task는 해당 하이파이의 `구현 승인`이 `승인됨`으로 기록된 뒤에만
+시작한다.
+
+**근거**: T089 실기기에서 iPhone 15 Pro Max의 마지막 Shield 진단이
+`initialRefresh.syncEngineCaptureCompleted`에 머물렀다. 계정 확인과 서버 fetch·capture는 끝났지만
+projection·checkpoint·mirror와 예약 전에 extension이 종료됐으므로, 서버 권위 계약을 축소하거나
+기기별 재시도를 요구하는 대신 제한된 extension 밖에서 권위 처리를 완료해야 한다.
+
+**검토한 대안**:
+
+- Shield에서 필요한 record만 부분 fetch하면 빠를 수 있지만 FR-037 projection·pending command 확인을
+  약화하므로 제외한다.
+- 느린 기기에서 첫 탭 실패 뒤 재시도를 요구하면 T089의 첫 탭 계약과 사용자 피드백 요구를 충족하지
+  못하므로 제외한다.
+- 승인 전 UI를 바로 구현하면 처리 결과와 Live Activity 정보 우선순위가 확정되지 않은 채 코드가
+  기준이 되므로 제외한다.
 공식 앱 진입 API의 iOS 26.5 가용성과 iOS 26.0~26.4 호환 경로도 검증 항목에 반영했으며 남은 제품
 미확정 항목은 없다.

@@ -193,10 +193,9 @@ reconciliationRequired
 ```
 
 동일 occurrence에 이미 `reserved | applied | committed` 명령이 있으면 새 예약을 만들지 않는다.
-Shield 실행의 5초 deadline은 서버 시각 필드가 아니라 primary action이 service에 전달된 순간부터
-주입 가능한 monotonic clock으로 측정한다. 5초 안에 성공을 확인하지 못한 명령은 로컬 예외를 새로
-적용하지 않고 `reconciliationRequired`로 조회하며, 늦은 reservation이 확인되면 제한 미적용 상태에서
-`compensated`로 수렴한다.
+기존 Shield 직접 해제 경로의 5초 deadline 모델은 회귀·진단 fixture로만 유지한다. 새 제품 경로에서
+Shield는 CloudKit 명령을 시작하지 않고 release route를 기록하며, 메인 앱이 같은 command ID로
+전체 동기화와 상태 전이를 수행한다.
 
 ### ReleaseOccurrenceClaim
 
@@ -319,18 +318,25 @@ Shield Action이 메인 앱을 열기 전에 App Group에 기록하는 일회성
 | 필드 | 형식 | 규칙 |
 |------|------|------|
 | `routeID` | UUID | 같은 Shield action의 중복 처리를 막는다. |
-| `destination` | `coinStore` / `iCloudRecovery` / `ledgerReset` / `reconciliation` | 최신 실패 원인으로 결정한다. |
+| `destination` | `releaseProcessing` / `coinStore` / `iCloudRecovery` / `ledgerReset` / `reconciliation` | Shield 확정 요청 또는 최신 실패 원인으로 결정한다. |
+| `commandID` | UUID? | `releaseProcessing`과 `reconciliation`에서 동일 해제 시도를 재사용하는 안정 식별자다. |
 | `createdAt` | Date | `createdAt <= now < createdAt + 5분`일 때만 유효하다. |
 | `occurrenceID` | 문자열? | 사용자에게 돌아갈 활성 제한 맥락이 있을 때만 기록한다. |
 | `consumedAt` | Date? | `nil`인 route만 소비할 수 있고 성공한 소비와 삭제를 하나의 atomic repository 연산으로 처리한다. |
 
-잔액 부족이면서 장부가 `current`일 때만 `coinStore`를 사용한다. iCloud·장부 불가, 삭제 확정,
-재조정 상태를 구매 화면으로 보내지 않는다. iOS 26.0~26.4 fallback에서도 route를 남겨 사용자가 앱을
-직접 열면 같은 목적지로 이동하게 한다.
+Shield에서 해제를 확정하면 잔액 mirror와 무관하게 `releaseProcessing`을 사용한다. 메인 앱이
+FR-037 전체 동기화를 완료한 뒤 잔액 부족이 확정된 경우에만 `coinStore`로 전환한다. iCloud·장부
+불가, 삭제 확정, 재조정 상태를 구매 화면으로 보내지 않는다. iOS 26.0~26.4 fallback에서도 route를
+남겨 사용자가 앱을 직접 열면 같은 command와 목적지를 처리하게 한다.
 
 repository의 `consumeIfEligible(now:activeOccurrenceIDs:)`는 유효 기간, 미소비, occurrence 활성 조건을
 모두 만족한 route 하나만 반환하고 즉시 삭제한다. 만료·이미 소비·종료 occurrence route는 반환하지
 않고 삭제하며, 같은 `routeID`의 중복 소비는 항상 실패한다.
+
+`releaseProcessing` route를 소비한 앱은 별도의 UI 상태 머신을 `processing → completed | retryable |
+insufficient | recoveryRequired`로 전이한다. `completed`는 Managed Settings read-back과 장부 commit이
+모두 확인된 뒤에만 허용하며, `retryable`은 같은 `commandID`를 유지한다. UI 상태는 서버 권위 장부를
+대체하지 않고 재실행 때 command 재조정 결과로 다시 파생한다.
 
 ## 관계
 
@@ -370,8 +376,7 @@ ActiveRestrictionSnapshot 1 ── 0..1 RestrictionLiveActivityAttributes.Conten
 - 로컬 mirror 부재만으로 initial epoch 또는 구매 지급 event를 생성하지 않는다.
 - 복구된 모든 PurchaseGrant는 기존의 검증된 StoreKit transaction ID와 연결되며, 잔액 복구 자체는
   새 grant·event를 만들지 않는다.
-- Shield에서 5초 안에 성공이 확인되지 않아 제한을 유지한 command는 사용 불가능한 확정 차감으로
-  남지 않는다.
+- Shield route 저장 실패 또는 메인 앱 처리 실패·중단은 사용 불가능한 확정 차감으로 남지 않는다.
 
 ## 영속성 경계
 

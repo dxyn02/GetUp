@@ -4,9 +4,16 @@
 001-location-app-restriction, 002-live-activity-coins
 
 ## 현재 단계
-001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 8 CloudKit 수렴 구현 진행 중
+001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 승인 기반 후속 작업 준비 중
 
 ## 진행 중
+2026-09-15 BLK-018 해결 및 후속 작업 계획: 사용자가 Shield에서 전체 CloudKit 동기화를 수행하지 않고
+`releaseProcessing` route로 메인 앱을 열어 권위 있는 해제를 완료하는 권장안을 승인했다. 메인 앱은
+처리 중·해제 완료·실패 후 재시도·잔액 부족 후 코인 구매 유도 상태를 제공한다. 또한 잠금화면과
+Dynamic Island Live Activity UI를 앱 무드에 맞게 개편한다. 두 UI 묶음은 각각 로우파이 기록,
+하이파이 제작, 사용자 명시 승인 후에만 구현하도록 T103~T119를 추가했다. 이번 세션은 명세·계획·
+계약·작업·운영 문서만 갱신했으며 제품 UI 코드는 변경하지 않았다.
+
 T089 세분화 진단에서 iPhone 15 Pro Max의 마지막 단계가
 `initialRefresh.syncEngineCaptureCompleted`, 잔액 2/0으로 확인됐다. 전체 CloudKit 변경 fetch는
 끝났지만 Shield 시스템 시간 안에 projection과 예약까지 도달하지 못했다. FR-037 최신 projection을
@@ -122,16 +129,16 @@ setup/reset/recovery/reconciliation과 5초 Shield 응답 상한을 live 경로�
 T100 — 앱·Shield Action의 실제 CloudKit 장부 서비스와 수명주기 조립
 
 ## 다음 작업
-T089 — timeout 마지막 단계를 표시하는 진단 빌드를 설치하고 다음 5분 경계에서 Shield-first를 한 번
-재현한다. `outerDeadline, lastStage: ...` 결과로 병목을 확정한 뒤 5초 계약을 유지하는 최소 수정과
-실기기 재검증을 진행한다.
+T103 — 메인 앱 release handoff의 처리 중·완료·재시도·잔액 부족 흐름을 로우파이 문서로 만들고
+사용자 검토를 받는다. 이어 T104 하이파이 제작과 T105 구현 승인을 완료하기 전에는 제품 UI·handoff
+구현을 시작하지 않는다. Live Activity는 T114~T116 설계·승인을 별도로 진행한다.
+T089 — T103~T113의 승인된 handoff 구현과 두 실기기 첫 탭 검증이 끝난 뒤 재개한다.
 T094·T095의 Shield/StoreKit 실기기 인수도 이어서 수행한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
-BLK-018 미해결: Shield primary에서 전체 CloudKit 동기화를 계속 수행할지, 서버 권위 계약을 유지한 채
-메인 앱으로 pending release를 넘겨 완료할지 결정이 필요하다. 권장안은 iOS 26.5 이상에서 Shield 탭이
-메인 앱을 열고 앱이 전체 동기화·원자 해제를 완료하는 방식이다.
+BLK-018 해결됨: Shield는 release route 저장과 앱 열기만 수행하고 메인 앱이 전체 동기화·원자 해제를
+완료한다. 처리 결과 UI와 Live Activity 개편은 각각 하이파이 사용자 승인 뒤 구현한다.
 
 BLK-017 미해결: 동일 iCloud 테스트 iPhone 2대의 동시 해제와 계정 전체 최대 사용은 통과했다.
 같은 allowance 동시 생성도 통과했다. 5분 대체 경계 빌드는 두 iPhone에 설치했으며, 실제
