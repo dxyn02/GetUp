@@ -66,9 +66,25 @@ enum ShieldReleaseAttemptResult: Equatable, Sendable {
 }
 
 struct ShieldCoinActionDecision: Equatable, Sendable {
+    enum Reason: String, Equatable, Sendable {
+        case released
+        case releasedOtherRestrictionsRemain
+        case alreadyHandling
+        case pendingReconciliation
+        case ledgerResetRequired
+        case ledgerUnavailable
+        case insufficientBalance
+        case iCloudRecoveryRequired
+        case releaseLedgerResetRequired
+        case releaseReconciliationRequired
+        case releaseRejected
+        case routePersistenceFailed
+    }
+
     let fundingSource: ReleaseFundingSource?
     let response: ShieldActionResponse
     let keepsShield: Bool
+    let reason: Reason
 }
 
 actor ShieldCoinActionHandler {
@@ -107,7 +123,7 @@ actor ShieldCoinActionHandler {
         operatingSystemVersion: OperatingSystemVersion
     ) async -> ShieldCoinActionDecision {
         guard !isHandlingPrimaryAction else {
-            return failClosedDecision
+            return failClosedDecision(reason: .alreadyHandling)
         }
         isHandlingPrimaryAction = true
         defer { isHandlingPrimaryAction = false }
@@ -115,6 +131,7 @@ actor ShieldCoinActionHandler {
         if context.hasPendingReconciliation {
             return await route(
                 to: .reconciliation,
+                reason: .pendingReconciliation,
                 occurrenceID: context.representative.id,
                 operatingSystemVersion: operatingSystemVersion
             )
@@ -126,12 +143,14 @@ actor ShieldCoinActionHandler {
         case .deletionConfirmed, .resetRequired:
             return await route(
                 to: .ledgerReset,
+                reason: .ledgerResetRequired,
                 occurrenceID: context.representative.id,
                 operatingSystemVersion: operatingSystemVersion
             )
         case .setupRequired, .syncing, .stale, .unavailable:
             return await route(
                 to: .iCloudRecovery,
+                reason: .ledgerUnavailable,
                 occurrenceID: context.representative.id,
                 operatingSystemVersion: operatingSystemVersion
             )
@@ -144,39 +163,45 @@ actor ShieldCoinActionHandler {
             return ShieldCoinActionDecision(
                 fundingSource: fundingSource,
                 response: keepsShield ? .defer : .none,
-                keepsShield: keepsShield
+                keepsShield: keepsShield,
+                reason: keepsShield ? .releasedOtherRestrictionsRemain : .released
             )
         case .insufficientBalance:
             return await route(
                 to: .coinStore,
+                reason: .insufficientBalance,
                 occurrenceID: context.representative.id,
                 operatingSystemVersion: operatingSystemVersion
             )
         case .iCloudRecoveryRequired:
             return await route(
                 to: .iCloudRecovery,
+                reason: .iCloudRecoveryRequired,
                 occurrenceID: context.representative.id,
                 operatingSystemVersion: operatingSystemVersion
             )
         case .ledgerResetRequired:
             return await route(
                 to: .ledgerReset,
+                reason: .releaseLedgerResetRequired,
                 occurrenceID: context.representative.id,
                 operatingSystemVersion: operatingSystemVersion
             )
         case .reconciliationRequired:
             return await route(
                 to: .reconciliation,
+                reason: .releaseReconciliationRequired,
                 occurrenceID: context.representative.id,
                 operatingSystemVersion: operatingSystemVersion
             )
         case .rejected:
-            return failClosedDecision
+            return failClosedDecision(reason: .releaseRejected)
         }
     }
 
     private func route(
         to destination: PendingAppRouteDestination,
+        reason: ShieldCoinActionDecision.Reason,
         occurrenceID: String,
         operatingSystemVersion: OperatingSystemVersion
     ) async -> ShieldCoinActionDecision {
@@ -189,7 +214,7 @@ actor ShieldCoinActionHandler {
                 consumedAt: nil
             ))
         } catch {
-            return failClosedDecision
+            return failClosedDecision(reason: .routePersistenceFailed)
         }
 
         return ShieldCoinActionDecision(
@@ -197,15 +222,19 @@ actor ShieldCoinActionHandler {
             response: responsePolicy.responseAfterSavingRoute(
                 operatingSystemVersion: operatingSystemVersion
             ),
-            keepsShield: true
+            keepsShield: true,
+            reason: reason
         )
     }
 
-    private var failClosedDecision: ShieldCoinActionDecision {
+    private func failClosedDecision(
+        reason: ShieldCoinActionDecision.Reason
+    ) -> ShieldCoinActionDecision {
         ShieldCoinActionDecision(
             fundingSource: nil,
             response: .defer,
-            keepsShield: true
+            keepsShield: true,
+            reason: reason
         )
     }
 }

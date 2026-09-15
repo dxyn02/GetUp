@@ -30,6 +30,16 @@ entitlement를 검사한 동일 서명 수정 빌드는 iPhone 15 Pro Max와 iPh
 통과했고 동일 서명 진단 산출물을 두 실기기에 설치했다. Release 계약과 원격 장부는 변경하지 않았으며
 차단을 유지한다.
 
+**2026-09-15 단계 진단 빌드 추가 관찰**: iPhone 17은 첫 탭에서 해제됐지만 iPhone 15 Pro Max는
+Shield만 닫히고 제한은 유지됐으며 잔액도 2/0으로 남았다. Coins를 직접 열었을 때 DEBUG가 없었던
+이유는 기존 진단 UI가 pending iCloud 복구 route에만 표시되고, 확장의 fail-closed `.defer` 결정은
+route 없이 종료되기 때문이다. 잔액이 유지됐으므로 다른 활성 규칙이 남은 성공 응답이 아니라 예약
+커밋 전 실패로 판정한다. 제품 응답은 바꾸지 않고 모든 action 결정에 안정 reason과 response,
+active restriction 수를 기록하고 T089 Coins 배너 아래에서 마지막 Shield 진단을 항상 확인하도록
+보강했다. 전체 `GetUpTests` 613개 선언·동적 실행 733회와 generic iOS Debug 서명 빌드는 통과했다.
+iPhone 15 Pro Max 설치는 기기 연결 timeout으로 대기 중이다. 새 진단 빌드로 다음 5분 경계에서 한 번
+더 재현해 원인을 확정하기 전까지 차단을 유지한다.
+
 **2026-09-12 대체 경계 승인 및 준비**: 실제 다음 월초까지 기다리지 않고 2026-09-13 00:00
 `Asia/Seoul`을 DEBUG 전용 대체 경계로 사용하는 방식을 승인받았다. Release의 매월 1일 계약은
 변경하지 않으며, `t089-day13-app`, `t089-day13-shield`, `t089-day13-concurrent`별 CloudKit zone·

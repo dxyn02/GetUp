@@ -318,6 +318,11 @@ day15 원인 확정: 수정 빌드를 Xcode StoreKit 세션으로 실행하자 �
 - 수정 빌드 재실행: 첫 탭이 다시 복구 화면으로 이동했고
   `DEBUG: savingRecoveryRoute, outerDeadline`을 표시했다. 다음 진단 빌드에서는
   `outerDeadline, lastStage: <stage>` 값을 기록해 병목 단계를 확정한다.
+- 단계 진단 빌드 재실행에서 iPhone 17은 첫 탭 해제에 성공했지만 iPhone 15 Pro Max는 Shield만
+  닫히고 제한과 잔액 2/0이 유지됐다. 이는 차감 성공 후 다른 제한이 남은 경우가 아니라 route 없는
+  fail-closed `.defer`이다. 다음 빌드의 Coins 화면에서
+  `SHIELD DEBUG: actionDecision, reason: <reason>, response: defer, active: <count>`를 기록한다.
+  다음 5분 경계까지 추가 탭하지 않고, 첫 탭 뒤 이 문자열과 잔액을 함께 증적으로 남긴다.
 
 ## Live Activity end-to-end
 

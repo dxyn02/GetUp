@@ -143,6 +143,15 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-15 T089 silent fail-closed 진단: iPhone 15 Pro Max에서 Shield만 닫히고 제한과 무료 2/0이
+그대로인 결과를 확인했다. 기존 DEBUG는 복구 route 화면에서만 노출돼 `.defer` 원인을 확인할 수
+없었다. `ShieldCoinActionDecision`에 안정 reason을 추가하고 extension의 최종 decision
+reason·response·active 수를 App Group에 기록하며, T089 Coins 화면이 마지막 Shield 진단을 항상
+표시하도록 보강했다. 제품의 차감·해제·fail-closed 동작은 변경하지 않았다. 기본 월초 정책의 전체
+`GetUpTests`는 613개 선언·동적 실행 733회가 실패·skip 없이 통과했고 generic iOS Debug 서명 빌드도
+통과했다. iPhone 15 Pro Max 설치는 기기 연결 timeout으로 대기 중이며, 설치 후 실기기 재현 전까지
+T089과 BLK-017은 계속 미완료다.
+
 2026-09-15 T089 중복 refresh 수정 실기기 결과: 다음 5분 경계의 첫 탭도
 `savingRecoveryRoute, outerDeadline`으로 실패했다. 단계 식별 정보가 최종 route 기록에 덮여 정확한
 병목을 확정할 수 없어 DEBUG 단계 진단을 추가 중이다. T089과 BLK-017은 계속 미완료다.

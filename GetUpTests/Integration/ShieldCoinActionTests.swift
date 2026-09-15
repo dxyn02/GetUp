@@ -41,6 +41,7 @@ struct ShieldCoinActionTests {
         #expect(decision.fundingSource == .monthlyFree)
         #expect(decision.response == .none)
         #expect(decision.keepsShield == false)
+        #expect(decision.reason == .released)
         #expect(await fixture.release.requests == [fixture.context.representative])
         #expect(await fixture.routes.savedRoutes.isEmpty)
         #expect(await fixture.routes.discardCount == 1)
@@ -104,6 +105,7 @@ struct ShieldCoinActionTests {
 
         expectOpenParentApp(decision.response)
         #expect(decision.keepsShield)
+        #expect(decision.reason == .insufficientBalance)
         #expect(decision.fundingSource == nil)
         #expect(await fixture.routes.destinations == [.coinStore])
     }
@@ -197,6 +199,7 @@ struct ShieldCoinActionTests {
 
         #expect(decision.response == .defer)
         #expect(decision.keepsShield)
+        #expect(decision.reason == .releasedOtherRestrictionsRemain)
         #expect(await fixture.release.requests == [fixture.context.representative])
         #expect(await fixture.release.requests.count == 1)
     }
@@ -259,7 +262,26 @@ struct ShieldCoinActionTests {
 
         #expect(decision.response == .defer)
         #expect(decision.keepsShield)
+        #expect(decision.reason == .routePersistenceFailed)
         #expect(await fixture.routes.savedRoutes.isEmpty)
+    }
+
+    @Test("A rejected release records the fail-closed reason")
+    func rejectedReleaseRecordsFailClosedReason() async throws {
+        let fixture = try Fixture(
+            balance: .fixture(freeAvailable: 2, purchasedAvailable: 0),
+            releaseResult: .rejected
+        )
+
+        let decision = await fixture.handler.handlePrimaryAction(
+            context: fixture.context,
+            operatingSystemVersion: Self.iOS26_5
+        )
+
+        #expect(decision.response == .defer)
+        #expect(decision.keepsShield)
+        #expect(decision.reason == .releaseRejected)
+        #expect(await fixture.release.requests == [fixture.context.representative])
     }
 }
 

@@ -339,10 +339,21 @@ private final class ShieldCoinActionRuntime: @unchecked Sendable {
                     allowance: ledger.allowance
                 )
             )
-            return await handler.handlePrimaryAction(
+            let decision = await handler.handlePrimaryAction(
                 context: context,
                 operatingSystemVersion: ProcessInfo.processInfo.operatingSystemVersion
-            ).response
+            )
+#if DEBUG
+            diagnosticRecorder.record(
+                "actionDecision",
+                detail: [
+                    "reason: \(decision.reason.rawValue)",
+                    "response: \(diagnosticName(for: decision.response))",
+                    "active: \(context.activeRestrictionCount)"
+                ].joined(separator: ", ")
+            )
+#endif
+            return decision.response
         } catch {
 #if DEBUG
             let detail = diagnosticRecorder.errorDetail(error)
@@ -353,6 +364,18 @@ private final class ShieldCoinActionRuntime: @unchecked Sendable {
 #endif
         }
     }
+
+#if DEBUG
+    private func diagnosticName(for response: ShieldActionResponse) -> String {
+        switch response {
+        case .none: return "none"
+        case .close: return "close"
+        case .defer: return "defer"
+        case .openParentalControlsApp: return "openParentApp"
+        @unknown default: return "openParentApp"
+        }
+    }
+#endif
 
     private func saveRecoveryRoute(reason: String? = nil) async -> ShieldActionResponse {
 #if DEBUG

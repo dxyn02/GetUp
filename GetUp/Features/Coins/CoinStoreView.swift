@@ -116,19 +116,47 @@ struct CoinStoreView: View {
     private var t089TestBanner: some View {
 #if DEBUG
         if let configuration = SharedIdentifiers.t089LedgerTestConfiguration() {
-            Text(
-                "T089 TEST · \(configuration.ledgerNamespace) · "
-                    + configuration.boundaryDescription
-            )
-            .font(.caption.monospaced().weight(.semibold))
-            .foregroundStyle(.black)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(.yellow, in: .rect(cornerRadius: 8))
-            .accessibilityIdentifier("coinStore.t089TestBanner")
+            VStack(alignment: .leading, spacing: 8) {
+                Text(
+                    "T089 TEST · \(configuration.ledgerNamespace) · "
+                        + configuration.boundaryDescription
+                )
+                .font(.caption.monospaced().weight(.semibold))
+                .foregroundStyle(.black)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(.yellow, in: .rect(cornerRadius: 8))
+                .accessibilityIdentifier("coinStore.t089TestBanner")
+
+                if let diagnosticText = shieldActionDiagnosticText {
+                    Text("SHIELD DEBUG: \(diagnosticText)")
+                        .font(.caption.monospaced())
+                        .foregroundStyle(HomeColor.textSecondary)
+                        .textSelection(.enabled)
+                        .accessibilityIdentifier("coinStore.shieldActionDiagnostic")
+                }
+            }
         }
 #endif
     }
+
+#if DEBUG
+    private var shieldActionDiagnosticText: String? {
+        guard
+            let identifier = SharedIdentifiers.appGroupIdentifier(),
+            let value = UserDefaults(suiteName: identifier)?.dictionary(
+                forKey: SharedIdentifiers.shieldActionDiagnosticDefaultsKey
+            ),
+            let stage = value["stage"] as? String
+        else {
+            return nil
+        }
+        if let detail = value["detail"] as? String {
+            return "\(stage), \(detail)"
+        }
+        return stage
+    }
+#endif
 
     private var balanceSection: some View {
         VStack(alignment: .leading, spacing: 12) {
