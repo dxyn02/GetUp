@@ -7,6 +7,14 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 승인 기반 후속 작업 준비 중
 
 ## 진행 중
+2026-09-15 T104 Figma 작업 차단: T103 승인·푸시 뒤 `figma-generate-design`, `figma-swiftui`,
+`figma-use`, `figma-generate-library` 지침으로 기존 GetUp Figma 파일을 조사했다. Code Connect는 없고,
+기존 `GetUp Focus` semantic color·layout variable과 SF Pro text style, Apple iOS 26 Liquid Glass
+button·progress indicator·status bar를 재사용 대상으로 확인했다. 로컬 변수의 값·scope·code syntax를
+확인하는 읽기 호출이 Figma 계정 사용량 한도로 거부되어 BLK-019를 열었다. 도구가 안내한 재시도
+가능 시각은 오후 8:23이며, 이번 재개에서 Figma 캔버스 변경은 없다. 한도 갱신 전에는 T104의 캔버스
+작성이나 우회 실행을 하지 않는다.
+
 2026-09-15 T103 완료: 사용자가 `design/low-fidelity/US2-release-handoff.md`의 네 신규 상태와 기존
 iCloud 복구 연결 방향을 승인하고 Figma 스킬을 사용한 하이파이 제작을 요청했다. 검토 기록과 승인
 상태를 갱신하고 T103을 완료 처리했다. 제품 코드는 변경하지 않았으며 다음 작업은 승인된 로우파이를
@@ -173,6 +181,9 @@ T094·T095의 Shield/StoreKit 실기기 인수도 이어서 수행한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
+BLK-019 미해결: T104 Figma 하이파이 조사 중 계정 사용량 한도로 `use_figma`가 거부됐다. 오후
+8:23 이후 Phase 0 변수 검사부터 재개해야 하며 캔버스 변경은 아직 없다.
+
 BLK-018 해결됨: Shield는 release route 저장과 앱 열기만 수행하고 메인 앱이 전체 동기화·원자 해제를
 완료한다. 처리 결과 UI와 Live Activity 개편은 각각 하이파이 사용자 승인 뒤 구현한다.
 
