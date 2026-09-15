@@ -7,6 +7,16 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 승인 기반 후속 작업 준비 중
 
 ## 진행 중
+2026-09-15 T107 완료(예상 RED): `AppReleaseHandoffTests` 8개로 claim 직후 processing, 실행 중 중복
+차단, read-back·commit 확인 뒤 completed, transient `retryAfter`, 결과 불명 processing 유지,
+계정·장부 복구와 확정 잔액 부족 분기, foreground에서 확인된 중단 command만 retryable, 동일
+`commandID` 재시도를 고정했다. `UserStory2ReleaseResultUITests` 6개는 T105 승인본의 processing,
+completed, retryable ready·waiting, `xmark` insufficient와 기존 iCloud 복구 연결의 문구·action·
+접근성 식별자를 고정했다. 두 파일의 Swift 구문, GetUpTests/GetUpUITests target membership, project
+plist와 diff 검사는 통과했다. iPhone 17 Pro iOS 26.5 집중 실행은 새 handoff model·execution result
+타입이 없어 예상한 T107 compile RED로 실패했으며 UI runtime은 그 선행 RED 때문에 실행되지 않았다.
+T108에서 T106·T107의 모델·repository RED를 함께 GREEN으로 전환한다.
+
 2026-09-15 T106 완료(예상 RED): `RuleReleaseRouteTests` 5개와
 `PendingAppRouteRepositoryTests` 신규 8개로 `releaseProcessing`의 안정 `commandID`,
 `pending → processing → terminal`, `terminal(retryable) → processing`, 5분 claim 경계,
@@ -196,12 +206,12 @@ setup/reset/recovery/reconciliation과 5초 Shield 응답 상한을 live 경로�
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T106 — release handoff route 수명주기와 repository 원자 전이 실패 테스트 작성
+T107 — release handoff 결과 상태·오류 분류·승인 하이파이 식별자 실패 테스트 작성
 
 ## 다음 작업
-T107 — 처리 결과 상태·안정 오류 분류·승인 하이파이 식별자 UI 실패 테스트를 먼저 작성한다. T106의
-예상 compile RED는 T108 모델·repository 구현에서 GREEN으로 전환한다. Live Activity는 T114~T116
-설계·승인을 별도로 진행한다.
+T108 — `PendingAppRoute.releaseProcessing`의 영속 상태·migration, repository 원자 전이와 메인 앱
+release handoff 상태 모델을 구현해 T106·T107 Core/Integration RED를 GREEN으로 전환한다. UI runtime
+GREEN은 T111~T112에서 완료한다. Live Activity는 T114~T116 설계·승인을 별도로 진행한다.
 T089 — T103~T113의 승인된 handoff 구현과 두 실기기 첫 탭 검증이 끝난 뒤 재개한다.
 T094·T095의 Shield/StoreKit 실기기 인수도 이어서 수행한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
