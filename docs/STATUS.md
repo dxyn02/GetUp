@@ -7,13 +7,20 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 승인 기반 후속 작업 준비 중
 
 ## 진행 중
+2026-09-15 T105 완료: 사용자가 T104 피드백 반영본을 별도 조건 없이 구현 기준으로 명시 승인했다.
+Light appearance에서도 GetUp Dark surface를 유지하고, `insufficient` 상태에 SF Symbol `xmark`를
+사용하는 수정 사항을 최종 승인 범위로 확정했다. Figma 최상위 node `288:2014`를 `구현 승인`으로
+갱신하고 승인일·의견을 하이파이 문서와 DEC-116에 기록했다. 문서 전용 승인 task이므로 제품 코드
+테스트는 실행하지 않았고 문서 diff 검사를 수행한다. T105 승인 게이트가 해제됐으며 다음 작업은
+테스트 우선의 T106이다.
+
 2026-09-15 T104 사용자 피드백 반영: 사용자가 다른 GetUp 화면처럼 시스템 appearance가 Light여도
 검은 배경을 유지하도록 요청해 `288:2018`의 4개 화면을 대응 Dark 화면과 동일한 semantic token·문구·
 component property로 통일했다. `Release Status Card`와 `Primary Action`의 `Theme` 축을 제거해 각각
 6개와 4개 variant로 축소했고, 해제권 부족 상태의 Dark·Light appearance·AX5 아이콘을 원형에서 SF
 Symbol `xmark`로 변경했다. 최종 감사에서 네 Light/Dark 쌍의 동등성, X 아이콘 3개, 누락 폰트 0,
-텍스트 경계 초과 0, 44pt 미만 action 0, 잔여 placeholder 0을 확인했다. T104는 완료 상태를 유지하고
-T105 구현 승인은 계속 대기한다.
+텍스트 경계 초과 0, 44pt 미만 action 0, 잔여 placeholder 0을 확인했다. T104는 완료 상태를 유지하며
+수정본은 이후 T105에서 구현 기준으로 승인됐다.
 
 2026-09-15 T104 완료: 승인된 T103 로우파이를 기준으로 기존 GetUp Figma 파일의 `288:2014`에
 `processing`, `completed`, `retryable`, `insufficient` 네 상태의 Dark·Light·Dynamic Type AX5
@@ -179,19 +186,19 @@ setup/reset/recovery/reconciliation과 5초 Shield 응답 상한을 live 경로�
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T104 — Shield 해제 메인 앱 handoff Light/Dark/AX5 Figma 하이파이와 구현 인계 작성
+T105 — 수정된 Shield 해제 메인 앱 handoff 하이파이의 사용자 구현 승인 기록
 
 ## 다음 작업
-T105 — [T104 Figma 하이파이](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=288-2014)를
-사용자에게 제시해 명시적 구현 승인과 의견을 기록한다. 승인 전에는 제품 UI·handoff 구현을 시작하지
-않는다. Live Activity는 T114~T116 설계·승인을 별도로 진행한다.
+T106 — 승인된 handoff 상태 머신의 영속 route 수명주기 실패 테스트를 먼저 작성한다. 이어 T107에서
+결과 상태·오류 분류·승인 하이파이 식별자 UI 실패 테스트를 작성한다. Live Activity는 T114~T116
+설계·승인을 별도로 진행한다.
 T089 — T103~T113의 승인된 handoff 구현과 두 실기기 첫 탭 검증이 끝난 뒤 재개한다.
 T094·T095의 Shield/StoreKit 실기기 인수도 이어서 수행한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
 BLK-019 해결됨: Figma 계정 호출이 정상화된 뒤 Phase 0부터 재개해 T104 하이파이와 자동 감사를
-완료했다. T105의 사용자 구현 승인만 남아 있다.
+완료했고, 2026-09-15 사용자가 수정본을 구현 기준으로 승인해 T105도 완료했다.
 
 BLK-018 해결됨: Shield는 release route 저장과 앱 열기만 수행하고 메인 앱이 전체 동기화·원자 해제를
 완료한다. 처리 결과 UI와 Live Activity 개편은 각각 하이파이 사용자 승인 뒤 구현한다.

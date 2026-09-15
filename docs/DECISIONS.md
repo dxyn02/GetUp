@@ -2466,3 +2466,25 @@ sign-out·notAuthenticated·권한·잘못된 container 설정·장부 삭제는
 **영향 범위**: `spec.md` FR-007·FR-041~FR-045와 SC-013·SC-015, `plan.md`, `data-model.md`,
 `shield-coin-ui-contract.md`, T057의 대체 표시와 T103~T113에 적용한다. 실제 모델·repository migration은
 T106·T108, 앱 claim·재조정은 T110, UI·오류 분류 검증은 T107·T111~T113에서 수행한다.
+
+## DEC-116 — Release handoff 하이파이 구현 승인
+
+**날짜**: 2026-09-15
+
+**상태**: 승인됨 — T105 사용자 명시 승인
+
+**결정**: Figma 최상위 node `288:2014`와 `design/high-fidelity/US2-release-handoff.md`에 정의한
+`processing`, `completed`, `retryable`, `insufficient` 네 신규 상태를 T106~T113의 구현 기준으로
+사용한다. 시스템 appearance가 Light여도 GetUp의 검은 Dark surface를 유지하며 별도 Light component
+variant를 만들지 않는다. `insufficient` 상태 아이콘은 원형이 아니라 SF Symbol `xmark`를 사용한다.
+`recoveryRequired`는 새 화면을 만들지 않고 기존 iCloud 장부 복구 화면으로 연결한다.
+
+**승인 결과와 의견**: 사용자는 2026-09-15 Light appearance의 검은 배경 유지와 `xmark` 반영본을
+확인한 뒤 별도 조건 없이 구현을 승인했다. 완료 확인, 재시도 닫기, 코인 구매 뒤 새 해제 요청,
+처리 중 앱 종료 복원 설명을 포함한 T105 검토 항목도 현재 하이파이 흐름 그대로 승인 범위에 둔다.
+
+**근거**: 승인 전 UI 구현을 금지한 DEC-114와 T105 게이트를 충족하면서, 직전 사용자 피드백이
+최종 시각 규칙과 구현 인계에 반영됐음을 추적 가능하게 남겨야 한다.
+
+**영향 범위**: T105를 완료하고 T106~T113의 승인 게이트를 해제한다. T106·T107의 실패 테스트부터
+순서대로 진행하며, 구현 중 화면 구조나 제품 동작을 바꿔야 하면 T104·T105 검토로 돌아간다.
