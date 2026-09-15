@@ -37,8 +37,9 @@ route 없이 종료되기 때문이다. 잔액이 유지됐으므로 다른 활�
 커밋 전 실패로 판정한다. 제품 응답은 바꾸지 않고 모든 action 결정에 안정 reason과 response,
 active restriction 수를 기록하고 T089 Coins 배너 아래에서 마지막 Shield 진단을 항상 확인하도록
 보강했다. 전체 `GetUpTests` 613개 선언·동적 실행 733회와 generic iOS Debug 서명 빌드는 통과했다.
-iPhone 15 Pro Max 설치는 기기 연결 timeout으로 대기 중이다. 새 진단 빌드로 다음 5분 경계에서 한 번
-더 재현해 원인을 확정하기 전까지 차단을 유지한다.
+멈춘 CoreDeviceService를 재시작한 뒤 동일 서명 진단 빌드를 USB로 iPhone 15 Pro Max에 설치하고 앱
+실행까지 확인했다. 새 진단 빌드로 다음 5분 경계에서 한 번 더 재현해 원인을 확정하기 전까지 차단을
+유지한다.
 
 **2026-09-12 대체 경계 승인 및 준비**: 실제 다음 월초까지 기다리지 않고 2026-09-13 00:00
 `Asia/Seoul`을 DEBUG 전용 대체 경계로 사용하는 방식을 승인받았다. Release의 매월 1일 계약은

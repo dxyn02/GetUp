@@ -149,8 +149,9 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 reason·response·active 수를 App Group에 기록하며, T089 Coins 화면이 마지막 Shield 진단을 항상
 표시하도록 보강했다. 제품의 차감·해제·fail-closed 동작은 변경하지 않았다. 기본 월초 정책의 전체
 `GetUpTests`는 613개 선언·동적 실행 733회가 실패·skip 없이 통과했고 generic iOS Debug 서명 빌드도
-통과했다. iPhone 15 Pro Max 설치는 기기 연결 timeout으로 대기 중이며, 설치 후 실기기 재현 전까지
-T089과 BLK-017은 계속 미완료다.
+통과했다. 멈춘 CoreDeviceService를 재시작한 뒤 동일 서명 진단 빌드를 USB로 iPhone 15 Pro Max에
+설치하고 앱 실행까지 확인했다. 다음 5분 경계의 첫 탭 실기기 재현 전까지 T089과 BLK-017은 계속
+미완료다.
 
 2026-09-15 T089 중복 refresh 수정 실기기 결과: 다음 5분 경계의 첫 탭도
 `savingRecoveryRoute, outerDeadline`으로 실패했다. 단계 식별 정보가 최종 route 기록에 덮여 정확한
