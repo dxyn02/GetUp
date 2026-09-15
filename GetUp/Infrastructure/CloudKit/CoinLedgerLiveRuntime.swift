@@ -42,7 +42,8 @@ actor CoinLedgerLiveRuntime {
         containerURL: URL,
         process: CoinLedgerSyncProcess,
         cloudContainer: CKContainer,
-        ledgerNamespace: String? = nil
+        ledgerNamespace: String? = nil,
+        recordSyncStage: @escaping @Sendable (String) -> Void = { _ in }
     ) -> CoinLedgerLiveRuntime {
         let zoneName = SharedIdentifiers.coinLedgerZoneName(
             ledgerNamespace: ledgerNamespace
@@ -52,12 +53,16 @@ actor CoinLedgerLiveRuntime {
             zoneName: zoneName
         )
         let syncProvider = CoinLedgerSyncProvider(
-            accountProvider: SystemCoinLedgerCloudAccountProvider(container: cloudContainer),
+            accountProvider: SystemCoinLedgerCloudAccountProvider(
+                container: cloudContainer,
+                recordStage: recordSyncStage
+            ),
             engine: SystemCoinLedgerSyncEngineDriver(
                 container: cloudContainer,
                 zoneName: zoneName,
                 subscriptionID: ledgerNamespace.map { "getup.coin-ledger.sync.\($0)" }
-                    ?? "getup.coin-ledger.sync"
+                    ?? "getup.coin-ledger.sync",
+                recordStage: recordSyncStage
             ),
             checkpointRepository: FileCoinLedgerSyncCheckpointRepository(
                 containerURL: containerURL,

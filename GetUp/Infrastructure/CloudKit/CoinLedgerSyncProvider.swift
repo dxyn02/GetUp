@@ -16,30 +16,42 @@ struct SystemCoinLedgerCloudAccountProvider: CoinLedgerCloudAccountProviding,
     @unchecked Sendable
 {
     private let container: CKContainer
+    private let recordStage: @Sendable (String) -> Void
 
-    init(container: CKContainer = .default()) {
+    init(
+        container: CKContainer = .default(),
+        recordStage: @escaping @Sendable (String) -> Void = { _ in }
+    ) {
         self.container = container
+        self.recordStage = recordStage
     }
 
     func currentAvailability() async -> CoinLedgerCloudAccountAvailability {
         let status: CKAccountStatus
         do {
+            recordStage("accountStatusStarted")
             status = try await container.accountStatus()
+            recordStage("accountStatusCompleted")
         } catch {
+            recordStage("accountStatusFailed")
             return .temporarilyUnavailable
         }
 
         switch status {
         case .available:
             do {
+                recordStage("userRecordIDStarted")
                 let recordID = try await container.userRecordID()
+                recordStage("userRecordIDCompleted")
                 guard !recordID.recordName.isEmpty else {
                     return .userIdentityTemporarilyUnavailable(errorCode: nil)
                 }
                 return .available(sessionID: recordID.recordName)
             } catch let error as CKError {
+                recordStage("userRecordIDFailed")
                 return .userIdentityTemporarilyUnavailable(errorCode: error.errorCode)
             } catch {
+                recordStage("userRecordIDFailed")
                 return .userIdentityTemporarilyUnavailable(errorCode: nil)
             }
         case .noAccount, .restricted:
@@ -654,15 +666,18 @@ actor SystemCoinLedgerSyncEngineDriver: CoinLedgerSyncEngineDriving {
     private let database: CKDatabase
     private let zoneID: CKRecordZone.ID
     private let subscriptionID: String
+    private let recordStage: @Sendable (String) -> Void
 
     init(
         container: CKContainer = .default(),
         zoneName: String = SharedIdentifiers.coinLedgerZoneName,
-        subscriptionID: String = "getup.coin-ledger.sync"
+        subscriptionID: String = "getup.coin-ledger.sync",
+        recordStage: @escaping @Sendable (String) -> Void = { _ in }
     ) {
         database = container.privateCloudDatabase
         zoneID = CKRecordZone.ID(zoneName: zoneName, ownerName: CKCurrentUserDefaultName)
         self.subscriptionID = subscriptionID
+        self.recordStage = recordStage
     }
 
     func synchronize(
@@ -694,14 +709,20 @@ actor SystemCoinLedgerSyncEngineDriver: CoinLedgerSyncEngineDriving {
             if !syncEngine.state.pendingDatabaseChanges.isEmpty
                 || !syncEngine.state.pendingRecordZoneChanges.isEmpty
                 || syncEngine.state.hasPendingUntrackedChanges {
+                recordStage("syncEngineSendStarted")
                 try await syncEngine.sendChanges()
+                recordStage("syncEngineSendCompleted")
             }
             var options = CKSyncEngine.FetchChangesOptions(scope: .all)
             options.prioritizedZoneIDs = [zoneID]
+            recordStage("syncEngineFetchStarted")
             try await syncEngine.fetchChanges(options)
+            recordStage("syncEngineFetchCompleted")
+            recordStage("syncEngineCaptureStarted")
             let captured = try await delegate.capturedState(
                 fallbackStateSerialization: checkpoint?.stateSerialization
             )
+            recordStage("syncEngineCaptureCompleted")
             if let changedAccount = captured.changedAccountSessionID,
                changedAccount != accountSessionID {
                 throw CoinLedgerSyncProviderError.accountChanged

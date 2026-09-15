@@ -143,6 +143,14 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-15 T089 최초 refresh 세분화: iPhone 15 Pro Max에서 실패 뒤 10초가 지나도
+`SHIELD DEBUG: initialRefreshStarted`, 잔액 2/0이 유지됐다. extension이 자체 timeout보다 먼저
+종료됐으므로 예약 전 CloudKit refresh 내부 병목으로 확정했다. FR-037의 최신 서버 확인 계약은
+유지하고 계정 상태·사용자 record ID·CKSyncEngine send/fetch/capture별 진입·완료 단계를 추가했다.
+기본 월초 정책의 전체 `GetUpTests` 613개 선언·동적 실행 733회가 실패·skip 없이 통과했고 generic
+iOS Debug 서명 빌드도 통과했다. 세분화 진단 빌드를 iPhone 15 Pro Max에 설치·실행했으며 T089과
+BLK-017은 계속 미완료다.
+
 2026-09-15 T089 silent fail-closed 진단: iPhone 15 Pro Max에서 Shield만 닫히고 제한과 무료 2/0이
 그대로인 결과를 확인했다. 기존 DEBUG는 복구 route 화면에서만 노출돼 `.defer` 원인을 확인할 수
 없었다. `ShieldCoinActionDecision`에 안정 reason을 추가하고 extension의 최종 decision

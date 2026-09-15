@@ -41,6 +41,15 @@ active restriction 수를 기록하고 T089 Coins 배너 아래에서 마지막 
 실행까지 확인했다. 새 진단 빌드로 다음 5분 경계에서 한 번 더 재현해 원인을 확정하기 전까지 차단을
 유지한다.
 
+**2026-09-15 최초 refresh 병목 확정 및 세분화**: 새 빌드에서 5분 경계 첫 탭 뒤 Shield만 닫히고
+잔액 2/0이 유지됐으며, 10초 뒤 Coins를 다시 열어도 마지막 단계가 `initialRefreshStarted`였다. 이는
+Shield 프로세스가 자체 5초 timeout을 기록하기 전에 `refreshBeforeShieldRequest()` 내부에서 종료된
+것으로, 예약·로컬 제한 적용에는 도달하지 않은 증거다. FR-037의 최신 서버 확인은 유지하면서
+`accountStatus`, `userRecordID`, `CKSyncEngine` send·fetch·capture를 각각 기록하도록 세분화했다. 기본
+월초 정책 전체 `GetUpTests` 613개 선언·동적 실행 733회와 generic iOS Debug 서명 빌드는 통과했고,
+세분화 진단 빌드를 iPhone 15 Pro Max에 설치·실행했다. 다음 재현의 마지막 하위 단계를 확인하기 전까지
+차단을 유지한다.
+
 **2026-09-12 대체 경계 승인 및 준비**: 실제 다음 월초까지 기다리지 않고 2026-09-13 00:00
 `Asia/Seoul`을 DEBUG 전용 대체 경계로 사용하는 방식을 승인받았다. Release의 매월 1일 계약은
 변경하지 않으며, `t089-day13-app`, `t089-day13-shield`, `t089-day13-concurrent`별 CloudKit zone·

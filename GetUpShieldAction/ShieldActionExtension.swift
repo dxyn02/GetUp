@@ -120,7 +120,12 @@ private final class ShieldCoinActionRuntime: @unchecked Sendable {
             containerURL: containerURL,
             process: .shieldAction,
             cloudContainer: CKContainer(identifier: cloudContainerIdentifier),
-            ledgerNamespace: ledgerNamespace
+            ledgerNamespace: ledgerNamespace,
+            recordSyncStage: { stage in
+#if DEBUG
+                diagnosticRecorder.record("initialRefresh.\(stage)")
+#endif
+            }
         )
         let container = DependencyContainer(
             containerURL: containerURL,

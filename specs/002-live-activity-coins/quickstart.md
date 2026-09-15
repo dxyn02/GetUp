@@ -323,6 +323,12 @@ day15 원인 확정: 수정 빌드를 Xcode StoreKit 세션으로 실행하자 �
   fail-closed `.defer`이다. 다음 빌드의 Coins 화면에서
   `SHIELD DEBUG: actionDecision, reason: <reason>, response: defer, active: <count>`를 기록한다.
   다음 5분 경계까지 추가 탭하지 않고, 첫 탭 뒤 이 문자열과 잔액을 함께 증적으로 남긴다.
+- 실제 결과는 10초 뒤에도 `SHIELD DEBUG: initialRefreshStarted`, 잔액 2/0이었다. 따라서 extension이
+  자체 timeout을 남기기 전에 최초 refresh 내부에서 종료됐다. 다음 진단 빌드는
+  `initialRefresh.accountStatus*`, `initialRefresh.userRecordID*`,
+  `initialRefresh.syncEngineSend*`, `initialRefresh.syncEngineFetch*`,
+  `initialRefresh.syncEngineCapture*` 중 마지막 단계를 남긴다. 새 5분 경계에서 첫 탭 한 번만 실행하고
+  10초 뒤 Coins를 다시 열어 마지막 단계와 잔액을 기록한다.
 
 ## Live Activity end-to-end
 
