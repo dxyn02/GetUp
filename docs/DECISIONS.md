@@ -1,5 +1,29 @@
 # 결정 사항
 
+## DEC-113 — Shield 첫 해제는 최초 권위 장부 문맥을 예약까지 재사용
+
+**날짜**: 2026-09-15
+
+**상태**: 승인됨 — T089 5분 경계 첫 탭 실패의 명백한 지연 원인 수정
+
+**결정**: Shield Action은 primary action 시작 시 한 번 수행한 `refreshBeforeShieldRequest()`의 epoch,
+account, current-period allowance를 `CoinRuleReleasePrefetchedLedger`로 예약 executor에 전달한다.
+`RuleReleaseService.reserve`는 이 문맥을 첫 시도의 `initialContext`로 사용하므로 정상 경로에서는 예약
+전에 CloudKit을 다시 조회하지 않는다. 월간 무료 예약이 서버에서 확정
+`insufficientMonthlyAllowance` 충돌을 반환한 경우에만 기존 command ID를 유지한 채 fresh context를
+한 번 다시 읽고 구매분 fallback 여부를 판단한다. 결과 불명은 재조회나 구매 fallback으로 바꾸지 않고
+기존 reconciliation 계약을 유지한다.
+
+**근거**: `t089-five-minute-final`의 새 구간에서 첫 Shield 탭은 Coins로 이동하고 2/0을 유지했지만,
+앱 foreground가 장부를 준비한 뒤 두 번째 탭은 즉시 성공해 양쪽 1/0으로 수렴했다. 기존 정상 경로는
+Shield 초기 refresh, release closure refresh, epoch refresh, reservation context refresh가 중첩될 수
+있어 전체 5초 응답 상한을 소모했다. 최초 refresh는 primary action 직전에 완료된 권위 문맥이므로 같은
+요청의 첫 예약에 재사용할 수 있다.
+
+**영향 범위**: CloudKit schema, 원자 modify, 무료 우선·구매 fallback, command 멱등성 및 Shield의
+전체 5초 fail-closed 상한은 변경하지 않는다. 정상 첫 탭의 중복 네트워크 왕복만 제거하며 서버 충돌은
+반드시 fresh refetch로 재평가한다.
+
 ## DEC-112 — T089 잔여 경계 검증의 DEBUG 전용 5분 주기
 
 **날짜**: 2026-09-14

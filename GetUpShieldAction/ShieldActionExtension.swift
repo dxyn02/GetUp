@@ -136,45 +136,15 @@ private final class ShieldCoinActionRuntime: @unchecked Sendable {
             clock: SystemRestrictionClock()
         )
         let handler = ShieldCoinActionHandler(
-            releaseRepresentative: { occurrence in
-                do {
-#if DEBUG
-                    diagnosticRecorder.record("releaseRefreshStarted")
-#endif
-                    let context = try await ledgerRuntime.refreshBeforeShieldRequest()
-#if DEBUG
-                    diagnosticRecorder.record(
-                        "releaseRefreshCompleted",
-                        detail: [
-                            "state: \(context.snapshot.balance.syncState.rawValue)",
-                            context.syncDiagnosticReason.map { "reason: \($0.rawValue)" },
-                            context.syncDiagnosticDetail
-                        ].compactMap { $0 }.joined(separator: ", ")
-                    )
-#endif
-                    guard case .current = context.ledgerState else {
-                        switch context.snapshot.balance.syncState {
-                        case .deletionConfirmed, .resetRequired: return .ledgerResetRequired
-                        default: return .iCloudRecoveryRequired
-                        }
-                    }
-                    guard !context.snapshot.hasPendingReconciliation else {
-                        return .reconciliationRequired
-                    }
-                    guard ShieldFreshLedgerReleaseGate.shouldAttemptRelease(
-                        balance: context.snapshot.balance,
-                        hasCurrentAllowance: context.allowance != nil
-                    ) else {
-                        return .insufficientBalance
-                    }
-                } catch {
-#if DEBUG
-                    diagnosticRecorder.record(
-                        "releaseRefreshFailed",
-                        detail: diagnosticRecorder.errorDetail(error)
-                    )
-#endif
+            releaseRepresentative: { context in
+                guard let prefetchedLedger = context.prefetchedLedger else {
                     return .iCloudRecoveryRequired
+                }
+                guard ShieldFreshLedgerReleaseGate.shouldAttemptRelease(
+                    balance: context.balance,
+                    hasCurrentAllowance: prefetchedLedger.allowance != nil
+                ) else {
+                    return .insufficientBalance
                 }
                 let commandID = UUID()
                 let policy = ShieldReleaseDeadlinePolicy(
@@ -182,15 +152,16 @@ private final class ShieldCoinActionRuntime: @unchecked Sendable {
                     monotonicNow: { ContinuousClock().now },
                     attemptRelease: { commandID in
                         .confirmed(try await releaseExecutor.reserve(
-                            occurrence: occurrence,
+                            occurrence: context.representative,
                             commandID: commandID,
-                            source: .shield
+                            source: .shield,
+                            prefetchedLedger: prefetchedLedger
                         ))
                     },
                     applyConfirmedRelease: { reservation in
                         try await releaseExecutor.apply(
                             reservation: reservation,
-                            occurrence: occurrence
+                            occurrence: context.representative
                         )
                     },
                     reconcileUnapplied: { commandID in
@@ -215,7 +186,7 @@ private final class ShieldCoinActionRuntime: @unchecked Sendable {
 #endif
                     switch try await policy.perform(
                         commandID: commandID,
-                        occurrenceID: occurrence.id
+                        occurrenceID: context.representative.id
                     ) {
                     case .released:
 #if DEBUG
@@ -342,7 +313,12 @@ private final class ShieldCoinActionRuntime: @unchecked Sendable {
                 representative: localContext.representative,
                 activeRestrictionCount: localContext.activeRestrictionCount,
                 balance: ledger.snapshot.balance,
-                hasPendingReconciliation: ledger.snapshot.hasPendingReconciliation
+                hasPendingReconciliation: ledger.snapshot.hasPendingReconciliation,
+                prefetchedLedger: CoinRuleReleasePrefetchedLedger(
+                    ledgerState: ledger.ledgerState,
+                    account: ledger.account,
+                    allowance: ledger.allowance
+                )
             )
             return await handler.handlePrimaryAction(
                 context: context,

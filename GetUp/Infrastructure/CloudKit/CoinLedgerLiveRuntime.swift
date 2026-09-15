@@ -12,6 +12,12 @@ struct CoinLedgerLiveContext: Sendable {
     let syncDiagnosticDetail: String?
 }
 
+struct CoinRuleReleasePrefetchedLedger: Equatable, Sendable {
+    let ledgerState: MonthlyAllowanceLedgerState
+    let account: CoinAccount?
+    let allowance: MonthlyAllowance?
+}
+
 /// Process-local production composition for the CloudKit ledger.
 /// Every public read performs the T101 initial/fresh fetch; the App Group balance
 /// mirror is written by `CoinLedgerSyncProvider` before the result is returned.
@@ -274,8 +280,30 @@ struct CoinRuleReleaseLiveExecutor: Sendable {
     func reserve(
         occurrence: RestrictionOccurrence,
         commandID: UUID,
-        source: ReleaseRequestSource
+        source: ReleaseRequestSource,
+        prefetchedLedger: CoinRuleReleasePrefetchedLedger? = nil
     ) async throws -> CoinReleaseReservation {
+        let ledger: CoinRuleReleasePrefetchedLedger
+        if let prefetchedLedger {
+            ledger = prefetchedLedger
+        } else {
+            ledger = try await freshLedgerForRelease()
+        }
+        guard case .current(let epoch) = ledger.ledgerState else {
+            throw CoinLedgerRepositoryError.ledgerNotCurrent
+        }
+        let request = RuleReleaseRequest(
+            commandID: commandID,
+            occurrenceID: occurrence.id,
+            ruleID: occurrence.ruleID,
+            ruleRevision: occurrence.ruleRevision,
+            endsAt: occurrence.endAt,
+            ledgerEpochID: epoch.epochID,
+            monthID: MonthlyAllowancePolicy.monthID(containing: clock.now),
+            requestedFrom: source,
+            requestedAt: clock.now
+        )
+        let initialContext = try await currentContext(for: request, ledger: ledger)
         let service = RuleReleaseService(
             repository: runtime.repository,
             now: { clock.now },
@@ -283,17 +311,7 @@ struct CoinRuleReleaseLiveExecutor: Sendable {
                 try await currentContext(for: request)
             }
         )
-        return try await service.reserve(RuleReleaseRequest(
-            commandID: commandID,
-            occurrenceID: occurrence.id,
-            ruleID: occurrence.ruleID,
-            ruleRevision: occurrence.ruleRevision,
-            endsAt: occurrence.endAt,
-            ledgerEpochID: try await requiredEpochID(),
-            monthID: MonthlyAllowancePolicy.monthID(containing: clock.now),
-            requestedFrom: source,
-            requestedAt: clock.now
-        ))
+        return try await service.reserve(request, initialContext: initialContext)
     }
 
     func apply(
@@ -329,18 +347,25 @@ struct CoinRuleReleaseLiveExecutor: Sendable {
         ).reconcilePending(commandIDs: commandIDs)
     }
 
-    private func requiredEpochID() async throws -> UUID {
+    private func freshLedgerForRelease() async throws -> CoinRuleReleasePrefetchedLedger {
         let context = try await runtime.refreshBeforeShieldRequest()
-        guard case .current(let epoch) = context.ledgerState else {
-            throw CoinLedgerRepositoryError.ledgerNotCurrent
-        }
-        return epoch.epochID
+        return CoinRuleReleasePrefetchedLedger(
+            ledgerState: context.ledgerState,
+            account: context.account,
+            allowance: context.allowance
+        )
     }
 
     private func currentContext(
-        for request: RuleReleaseRequest
+        for request: RuleReleaseRequest,
+        ledger prefetchedLedger: CoinRuleReleasePrefetchedLedger? = nil
     ) async throws -> RuleReleaseReservationContext {
-        let ledger = try await runtime.refreshBeforeShieldRequest()
+        let ledger: CoinRuleReleasePrefetchedLedger
+        if let prefetchedLedger {
+            ledger = prefetchedLedger
+        } else {
+            ledger = try await freshLedgerForRelease()
+        }
         guard let account = ledger.account else {
             throw CoinLedgerRepositoryError.ledgerNotCurrent
         }

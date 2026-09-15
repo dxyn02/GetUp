@@ -92,6 +92,38 @@ struct RuleReleaseServiceTests {
         #expect(await repository.operations == [.reserveMonthlyFree])
     }
 
+    @Test("A freshly prefetched Shield context reaches reservation without another server fetch")
+    func prefetchedShieldContextAvoidsDuplicateFetch() async throws {
+        let repository = AtomicOccurrenceReservationRepository()
+        let source = RuleReleaseContextSource(
+            context: try .fixture(ledgerState: .unavailable)
+        )
+        let service = RuleReleaseService(
+            repository: repository,
+            now: { .reservationFixture },
+            fetchCurrentContext: { request in
+                await source.fetch(for: request)
+            }
+        )
+        let prefetched = RuleReleaseReservationContext(
+            ledgerState: .current(epoch: .reservationFixture()),
+            occurrence: .reservationFixture,
+            currentRuleRevision: 7,
+            hasReleaseException: false,
+            allowance: nil,
+            account: try .reservationFixture(available: 0)
+        )
+
+        let result = try await service.reserve(
+            .fixture(),
+            initialContext: prefetched
+        )
+
+        #expect(result.command.fundingSource == .monthlyFree)
+        #expect(await source.requests.isEmpty)
+        #expect(await repository.operations == [.reserveMonthlyFree])
+    }
+
     @Test("A free reservation conflict refetches context and keeps the command ID for fallback")
     func freeConflictRefetches() async throws {
         let repository = AtomicOccurrenceReservationRepository(freeError: .insufficientMonthlyAllowance)
@@ -104,6 +136,30 @@ struct RuleReleaseServiceTests {
         let result = try await service.reserve(request)
         #expect(result.command.commandID == request.commandID)
         #expect(await source.requests == [request, request])
+        #expect(await repository.operations == [.reserveMonthlyFree, .reservePurchased])
+    }
+
+    @Test("A prefetched Shield conflict performs exactly one fresh retry")
+    func prefetchedShieldConflictRefetchesOnce() async throws {
+        let repository = AtomicOccurrenceReservationRepository(freeError: .insufficientMonthlyAllowance)
+        let source = RuleReleaseContextSource(context: try .fixture(freeAvailable: 0))
+        let service = RuleReleaseService(
+            repository: repository,
+            now: { .reservationFixture },
+            fetchCurrentContext: { request in
+                await source.fetch(for: request)
+            }
+        )
+        let request = RuleReleaseRequest.fixture()
+
+        let result = try await service.reserve(
+            request,
+            initialContext: try .fixture()
+        )
+
+        #expect(result.command.commandID == request.commandID)
+        #expect(result.command.fundingSource == .purchased)
+        #expect(await source.requests == [request])
         #expect(await repository.operations == [.reserveMonthlyFree, .reservePurchased])
     }
 

@@ -55,12 +55,22 @@ struct RuleReleaseService: Sendable {
         self.fetchCurrentContext = fetchCurrentContext
     }
 
-    func reserve(_ request: RuleReleaseRequest) async throws -> CoinReleaseReservation {
+    func reserve(
+        _ request: RuleReleaseRequest,
+        initialContext: RuleReleaseReservationContext? = nil
+    ) async throws -> CoinReleaseReservation {
         // Only a definitive free-balance conflict warrants one fresh-context retry.
         // Unknown results must retain this command ID for the separate reconciler.
         for attempt in 0...1 {
             try Task.checkCancellation()
-            let context = try await fetchCurrentContext(request)
+            // A caller operating under a strict deadline may supply the context
+            // fetched immediately before this call. A definitive free-balance
+            // conflict still forces the second attempt through the fresh provider.
+            let context = if attempt == 0, let initialContext {
+                initialContext
+            } else {
+                try await fetchCurrentContext(request)
+            }
             try Task.checkCancellation()
             let date = now()
             let epoch = try validate(request, context: context, at: date)

@@ -7,14 +7,15 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 8 CloudKit 수렴 구현 진행 중
 
 ## 진행 중
-T089의 남은 Shield-first 경계 증적을 빠르게 수집하기 위해 DEC-112의 DEBUG 전용 서울 5분 주기를
-구현했다. `t089-five-minute-final` zone에서 period ID를 `yyyy-MM-dd'T'HH-mm`로 분리하고 앱과 Shield
-Action이 같은 5분 경계·namespace를 사용하도록 구성했다. 코인 화면은 테스트 배너, 현재 구간과 다음
-5분 갱신 시각을 표시한다. 월간 설정을 비운 전체 `GetUpTests` 610개 선언·동적 실행 730회와 generic
-iOS Simulator Release 빌드는 통과했으며, Release 산출물의 T089 값은 앱·Shield 모두 비어 있다.
-서명된 Debug 산출물의 앱·Shield에는 namespace와 5분 값이 동일하게 들어갔고 iPhone 15 Pro Max와
-iPhone 17에 같은 빌드를 설치했다. iPhone 17의 앱 실행도 확인했으며 실제 양 기기 경계 관찰은 남아
-있다.
+T089의 DEBUG 전용 서울 5분 경계에서 첫 Shield 해제를 검증했다. 새 구간의 첫 `Use 1 Release`는
+해제되지 않고 Coins로 이동했으며 잔액도 2/0을 유지했다. 두 번째 탭은 성공해 두 기기가 1/0으로
+수렴했으므로 첫 탭 원자 생성+예약 항목은 실패로 기록했다. 원인은 Shield가 이미 수행한 권위 있는
+CloudKit refresh를 해제 executor와 reservation context가 다시 수행해 최대 네 번의 동기화가 5초
+응답 상한 안에 중첩된 구조였다. DEC-113에 따라 첫 refresh 결과를 예약의 initial context로 재사용하고,
+월간 무료 예약이 확정 충돌한 경우에만 서버를 한 번 다시 조회하도록 수정했다. 관련 회귀군과 전체
+`GetUpTests` 612개 선언·동적 실행 732회는 실패·skip 없이 통과했고, Release 빌드도 통과했다. 수정된
+동일 서명 빌드의 앱·Shield Action에 namespace·5분 주기와 entitlement가 일치함을 확인하고 iPhone
+15 Pro Max와 iPhone 17에 설치했다. 다음 5분 경계에서 첫 탭만으로 즉시 해제되는지 다시 확인해야 한다.
 
 Pull Request #30으로 US3 T059~T077을 `main`에 병합하고 최신 `main`에서
 `codex/us4-monthly-lifecycle-tests`를 분기했다. T078~T080의 월간 core·CloudKit 인수와 T081의 UI
@@ -109,16 +110,17 @@ setup/reset/recovery/reconciliation과 5초 Shield 응답 상한을 live 경로�
 T100 — 앱·Shield Action의 실제 CloudKit 장부 서비스와 수명주기 조립
 
 ## 다음 작업
-T089 — 두 기기를 `t089-five-minute-final`의 같은 5분 구간에서 무료 2·구매 0으로 준비하고 다음
-경계까지 앱을 닫은 뒤, 앱을 먼저 열지 않고 제한 앱 Shield에서
-`Use 1 Release`를 한 번 실행한다. 양쪽의 새 period·무료 1·구매 0 수렴과 CloudKit record를 기록한다.
+T089 — 첫 탭 중복 CloudKit refresh를 제거한 수정 빌드를 두 기기에 설치한다. 다음 5분 경계까지
+앱을 닫은 뒤 앱을 먼저 열지 않고 제한 앱 Shield에서 `Use 1 Release`를 정확히 한 번 실행한다.
+즉시 해제, 양쪽의 새 period·무료 1·구매 0 수렴과 CloudKit record를 기록한다.
 T094·T095의 Shield/StoreKit 실기기 인수도 이어서 수행한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
 BLK-017 미해결: 동일 iCloud 테스트 iPhone 2대의 동시 해제와 계정 전체 최대 사용은 통과했다.
 같은 allowance 동시 생성도 통과했다. 5분 대체 경계 빌드는 두 iPhone에 설치했으며, 실제
-Shield-first 경계·다기기 수렴 결과 기록이 남았다.
+첫 탭은 Coins로 이동하고 두 번째 탭에서만 성공했다. 중복 refresh 제거 수정 빌드의 Shield-first
+재검증과 서버 record 기록이 남았다.
 BLK-016 해결됨: 명령별 원자 추가·조건부 제거 API와 최신 상태 재평가 계약 보강을 사용자 승인받았다.
 BLK-015 해결됨: occurrence별 예약 소유권 계약·스키마 보강을 사용자 승인받았다.
 T045 보고서 접근 차단은 사용자 허용 후 같은 명령 재시도로 해결됐다.
@@ -134,6 +136,17 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-15 T089 Shield-first 첫 탭 지연 수정: 실기기 5분 경계에서 첫 탭은 Coins 이동·2/0 유지,
+두 번째 탭은 해제·양쪽 1/0 수렴으로 관찰돼 실패로 기록했다. Shield가 최초 최신 장부 조회 결과를
+예약까지 전달하고 확정 무료분 충돌에서만 1회 재조회하도록 변경했다. 선행 실패 테스트는 새 API
+부재로 실패했고 구현 뒤 집중·관련 회귀군이 통과했다. T089 설정을 비운 전체 `GetUpTests`는 612개
+선언·동적 실행 732회, 실패 0, skip 0으로 통과했다. 스킴 전체 실행은 Xcode UI test launcher의
+`no debugger version` 반복으로 중단했으나 제품 테스트 타깃 전체는 별도 실행으로 통과했다. 첫 Release
+빌드는 sandbox의 CoreSimulatorService 접근 차단으로 실패했고 권한 확장 재실행은 통과했다. 실기기
+산출물의 앱·Shield Action은 같은 `t089-five-minute-final`, 5분 주기, iCloud container와 App Group
+entitlement를 포함하며 두 실기기에 동일 산출물을 설치했다. 재검증 전이므로 T089과 BLK-017은 완료
+처리하지 않는다.
+
 2026-09-14 T089 5분 경계 준비: 서울 5분 경계와 자정 전환 정책 테스트를 추가했다. 관련 정책·수명
 주기·CloudKit 집중 suite와 T089 설정을 비운 전체 `GetUpTests`가 통과했다. 전체 결과는 610개 선언,
 동적 실행 730회, 실패 0, skip 0이다. generic iOS Simulator Release 빌드도 통과했고 app·Shield

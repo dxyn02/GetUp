@@ -25,6 +25,21 @@ struct ShieldCoinActionContext: Equatable, Sendable {
     let activeRestrictionCount: Int
     let balance: CoinBalanceSnapshot
     let hasPendingReconciliation: Bool
+    let prefetchedLedger: CoinRuleReleasePrefetchedLedger?
+
+    init(
+        representative: RestrictionOccurrence,
+        activeRestrictionCount: Int,
+        balance: CoinBalanceSnapshot,
+        hasPendingReconciliation: Bool,
+        prefetchedLedger: CoinRuleReleasePrefetchedLedger? = nil
+    ) {
+        self.representative = representative
+        self.activeRestrictionCount = activeRestrictionCount
+        self.balance = balance
+        self.hasPendingReconciliation = hasPendingReconciliation
+        self.prefetchedLedger = prefetchedLedger
+    }
 }
 
 enum ShieldFreshLedgerReleaseGate {
@@ -58,7 +73,7 @@ struct ShieldCoinActionDecision: Equatable, Sendable {
 
 actor ShieldCoinActionHandler {
     typealias ReleaseRepresentative = @Sendable (
-        RestrictionOccurrence
+        ShieldCoinActionContext
     ) async -> ShieldReleaseAttemptResult
     typealias SavePendingRoute = @Sendable (PendingAppRoute) async throws -> Void
     typealias DiscardPendingRoute = @Sendable () async throws -> Void
@@ -122,7 +137,7 @@ actor ShieldCoinActionHandler {
             )
         }
 
-        switch await releaseRepresentative(context.representative) {
+        switch await releaseRepresentative(context) {
         case .released(let fundingSource):
             try? await discardPendingRoute()
             let keepsShield = context.activeRestrictionCount > 1

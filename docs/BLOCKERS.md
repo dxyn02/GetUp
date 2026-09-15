@@ -12,6 +12,16 @@
 iPhone 15 Pro Max와 iPhone 17에 설치했고 iPhone 17 실행도 확인했다. 두 기기에서 5분 경계 전후
 Shield-first 결과와 CloudKit 서버 record를 수집하기 전까지 BLK-017과 T089은 미완료로 유지한다.
 
+**2026-09-15 5분 경계 첫 실행 결과와 수정**: 경계 뒤 앱을 먼저 열지 않고 실행한 첫
+`Use 1 Release`는 해제되지 않고 Coins로 이동했으며 두 기기 잔액도 2/0이었다. Shield로 돌아가 두
+번째 탭을 실행하자 해제됐고 양쪽이 1/0으로 수렴했다. 따라서 원격 원자 예약 자체는 성공하지만 첫
+탭 완료 계약은 실패했다. 실행 경로가 Shield의 최초 권위 refresh 뒤 동일 장부를 최대 세 번 더
+refresh해 5초 응답 상한을 소모하는 원인을 확인했다. 최초 refresh 결과를 reservation initial context로
+전달하고, 확정 `insufficientMonthlyAllowance` 충돌에서만 1회 fresh refetch하도록 수정했다. 전체
+`GetUpTests` 612개 선언·동적 실행 732회와 Release 빌드는 통과했다. 수정 빌드로 다음 5분 경계의
+첫 탭 즉시 해제와 CloudKit record를 확인하기 전까지 차단을 유지한다. 앱·Shield Action 설정과
+entitlement를 검사한 동일 서명 수정 빌드는 iPhone 15 Pro Max와 iPhone 17에 설치했다.
+
 **2026-09-12 대체 경계 승인 및 준비**: 실제 다음 월초까지 기다리지 않고 2026-09-13 00:00
 `Asia/Seoul`을 DEBUG 전용 대체 경계로 사용하는 방식을 승인받았다. Release의 매월 1일 계약은
 변경하지 않으며, `t089-day13-app`, `t089-day13-shield`, `t089-day13-concurrent`별 CloudKit zone·

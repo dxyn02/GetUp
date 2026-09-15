@@ -310,8 +310,8 @@ private struct Fixture {
         self.release = release
         self.routes = routes
         self.handler = ShieldCoinActionHandler(
-            releaseRepresentative: { occurrence in
-                await release.release(occurrence)
+            releaseRepresentative: { context in
+                await release.release(context.representative)
             },
             savePendingRoute: { route in
                 try await routes.save(route)
