@@ -77,8 +77,8 @@ Activity 1개, 월간 무료 해제권 2회, 코인 1개·3개·5개의 consumab
 
 | 원칙 | 사전 점검 | 설계 근거 및 필수 조치 |
 |------|-----------|------------------------|
-| I. 명세 기반 구현 | PASS | BLK-013·BLK-014·BLK-018과 DEC-071~DEC-077·DEC-114로 대표 규칙, 사용 표면, iCloud 복구·삭제, 월 정책, 상품 catalog, 메인 앱 release handoff와 승인 기반 UI 경계를 명세에 반영했다. 모든 계약은 FR·SC를 역추적한다. |
-| II. 핵심 비즈니스 로직 테스트 | PASS | 대표 규칙 선택, 거리·남은 시간 상태, 무료 우선 차감, 월 경계, 구매·사용 멱등성, CloudKit 충돌, 해제 보상 전이와 PendingAppRoute의 5분·일회 소비·종료 구간 폐기를 순수 로직과 adapter fake로 검증한다. |
+| I. 명세 기반 구현 | PASS | BLK-013·BLK-014·BLK-018과 DEC-071~DEC-077·DEC-114·DEC-115로 대표 규칙, 사용 표면, iCloud 복구·삭제, 월 정책, 상품 catalog, 영속 release handoff와 승인 기반 UI 경계를 명세에 반영했다. 모든 계약은 FR·SC를 역추적한다. |
+| II. 핵심 비즈니스 로직 테스트 | PASS | 대표 규칙 선택, 거리·남은 시간 상태, 무료 우선 차감, 월 경계, 구매·사용 멱등성, CloudKit 충돌, 해제 보상 전이와 PendingAppRoute의 5분 pending claim·processing 복원·terminal action을 순수 로직과 adapter fake로 검증한다. |
 | III. 구조 변경 문서화 | PASS | 새 Widget Extension, ActivityKit coordinator, StoreKit adapter, CloudKit zone·장부, App Group 해제 예외의 책임과 흐름을 `research.md`, `data-model.md`, `contracts/`에 기록한다. |
 | IV. 완료 전 테스트 게이트 | PASS | 자동 테스트, StoreKit sandbox, CloudKit 다기기, Simulator preview, 실기기 Shield·Live Activity 인수 결과가 모두 기록되기 전에는 기능 완료로 표시하지 않는다. |
 
@@ -176,8 +176,9 @@ mirror·해제 예외를 보관한다. 별도 서버와 외부 패키지는 도�
 - 월 ID·quota 2·비이월 정책, 새달 첫 상호작용의 지연 생성과 Shield의 allowance 생성+무료 1회
   reservation 원자성을 공통 기반에서 구현한다. 이 최소 기반이 완료되기 전에는 Shield·앱 코인
   해제를 구현하지 않는다.
-- `PendingAppRoute` repository는 생성 후 5분, 활성 occurrence 일치, 미소비 조건을 한 정책으로
-  평가하고 성공 시 한 번만 소비하며 만료·중복·종료된 route를 atomic하게 삭제한다.
+- `PendingAppRoute` repository는 생성 후 5분, 활성 occurrence 일치, `pending` 조건을 한 정책으로
+  평가하고 성공 시 `processing`으로 원자 claim한다. claim 전 만료·종료 route만 삭제하고 claim된
+  handoff는 terminal 결과 제시 전까지 보존한다.
 
 ### 2. Live Activity 표시
 
@@ -245,11 +246,9 @@ mirror·해제 예외를 보관한다. 별도 서버와 외부 패키지는 도�
 
 ### 5. 규칙 1회 해제와 Shield
 
-- US1의 공유 attributes·system adapter·coordinator 구현이 완료된 뒤 Shield Action extension이 메인
-  앱에서 시작한 ActivityKit 활동을 직접 조회·갱신·종료할 수 있는지 지원 OS별 실기기 probe로
-  확인하고 증적을 남긴다. 성공한 경로만 직접 조정에 사용하며,
-  미지원·실패·timeout이면 앱 진입 또는 다음 foreground 재조정을 기본 경로로 확정한다. 이 게이트를
-  통과하기 전에는 직접 ActivityKit 조정 코드를 제품 흐름에 연결하지 않는다.
+- US1의 공유 attributes·system adapter·coordinator 구현 뒤 수행한 Shield Action ActivityKit 실기기
+  probe는 과거 feasibility 회귀 증적으로 보존한다. DEC-114 이후 production에서는 Shield가 활동을
+  직접 조정하지 않고, 제한 read-back을 완료한 메인 앱이 대표 교체·종료를 수행한다.
 - Shield와 앱의 해제 요청은 동일한 command service와 command ID를 사용하되, Shield extension은
   전체 CloudKit 동기화와 원자 해제를 실행하지 않는다. iOS 26.5 이상에서는 release route를 App
   Group에 원자적으로 저장하고 즉시 메인 앱을 열며, iOS 26.0~26.4에서는 같은 route를 저장한 뒤
@@ -294,7 +293,7 @@ mirror·해제 예외를 보관한다. 별도 서버와 외부 패키지는 도�
   명시적 확정이다.
 - CloudKit reservation이 성공한 뒤 App Group에 규칙 구간 예외를 기록하고 현재 활성 규칙 합집합을
   다시 계산한다. 실패 시 보상 이벤트 또는 pending reconciliation으로 잔액 유실을 막는다.
-- 메인 앱은 release route 소비 즉시 처리 중 UI를 표시하고 전체 동기화·원자 예약·예외 적용·제한
+- 메인 앱은 release route를 `processing`으로 claim한 즉시 처리 중 UI를 표시하고 전체 동기화·원자 예약·예외 적용·제한
   read-back·commit을 순서대로 수행한다. read-back과 commit이 확인된 경우에만 완료 UI를 표시하고,
   재시도 가능한 오류 또는 foreground 재조정에서 완료되지 않은 중단 command는 같은 command ID의
   재시도 UI, 확정 잔액 부족은 코인 구매 유도 UI로 전환한다.
@@ -302,6 +301,11 @@ mirror·해제 예외를 보관한다. 별도 서버와 외부 패키지는 도�
 - 한 command의 서비스 호출이 실행 중일 때는 처리 중 상태와 중복 차단을 유지한다. 명시적인 재시도
   가능 오류 또는 다음 foreground에서 완료를 확인할 수 없는 중단 command로 분류됐을 때만 같은
   command ID 재시도를 활성화한다. 성공·잔액 부족·장부 복구 필요는 각 확정 결과로 바로 분기한다.
+- 서비스 오류는 UI가 직접 `CKError`를 해석하지 않고 안정적인 release 결과로 분류한다. 일시적인
+  transport·service·rate limit·account 또는 identity availability는 `retryable`이며 `retryAfter`가
+  있으면 그 전까지 CTA를 비활성화한다. 결과 불명·충돌은 재조정하는 동안 `processing`, sign-out·
+  인증·권한·잘못된 container 설정·장부 삭제는
+  `recoveryRequired`, 확정 잔액 부족은 `insufficient`로 분기한다.
 - 제한 read-back 성공 뒤 앱이 foreground이면 Live Activity 대표를 교체하거나 종료한다. ActivityKit
   실패는 해제·장부 commit을 취소하지 않는 비치명적 실패로 기록한다.
 - Shield는 가장 먼저 활성화된 대표 규칙, 무료 우선·없으면 구매 코인 1개라는 비용 순서, 구간 종료
@@ -311,9 +315,13 @@ mirror·해제 예외를 보관한다. 별도 서버와 외부 패키지는 도�
 - 최신 장부가 정상이고 잔액만 부족하면 App Group에 구매 화면 route를 기록한 뒤 iOS 26.5 이상에서
   `openParentalControlsApp`으로 앱을 연다. 장부 불가 상태는 복구 route로 분리한다. iOS 26.0~26.4는
   안내 후 차단 앱을 닫는 공식 fallback을 사용하고 비공개 URL 우회는 사용하지 않는다.
-- 앱은 `PendingAppRoute`를 생성 후 5분 이내이고 연결 occurrence가 여전히 활성이며 아직 소비되지
-  않았을 때만 한 번 사용한다. 소비 성공과 폐기는 atomic하게 처리하고 만료·중복·종료 route는
-  목적지 이동 없이 삭제한다.
+- 앱은 `PendingAppRoute`를 생성 후 5분 이내이고 연결 occurrence가 여전히 활성이며 `pending`일 때만
+  `processing`으로 원자 claim한다. claim 전 만료·종료 route와 중복 `pending` 사본만 삭제하고 같은
+  command의 기존 `processing | terminal` handoff를 재사용한다. claim된 handoff는
+  앱 종료 뒤에도 같은 command ID를 재조정할 수 있도록 보존한다. terminal 결과와 화면 제시 여부를
+  영속화하되 단순 화면 제시만으로 삭제하지 않는다. 완료 확인·재시도 또는 취소·구매 이동 또는 닫기·
+  복구 이동 또는 닫기의 명시적 action에서 삭제하거나 `terminal(retryable) → processing`으로 같은
+  command를 재시작하는 전이를 하나의 repository 연산으로 수행한다.
 - 처리 중·완료·재시도·잔액 부족의 화면 구조와 시각 명세를 로우파이에 기록하고 하이파이로 만든 뒤
   사용자 승인을 받는다. 승인 기록 전에는 release flow SwiftUI 구현을 시작하지 않는다.
 

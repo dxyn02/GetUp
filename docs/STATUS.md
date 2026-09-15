@@ -7,6 +7,17 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 승인 기반 후속 작업 준비 중
 
 ## 진행 중
+2026-09-15 정합성 재분석 보정: 사용자 승인에 따라 `$speckit-analyze`에서 발견한 High 2건과 Medium
+3건을 문서에 반영했다. Shield 직접 ActivityKit 경로는 회귀·진단 전용으로 통일했고,
+`PendingAppRoute.releaseProcessing`을 즉시 삭제하지 않는 `pending → processing → terminal` 영속
+handoff, `terminal(retryable) → processing`, 명시적 결과 action 뒤 삭제와 legacy `consumedAt`
+migration을 DEC-115로 확정했다. 신규 하이파이 대상은 처리 중·완료·
+재시도·잔액 부족 네 화면이며 `recoveryRequired`는 기존 iCloud 복구 화면을 재사용한다. 안정 오류
+분류와 `retryAfter`, T113→T089 의존성도 명세·계획·모델·계약·작업에 연결했다. 아직 제품 코드는
+변경하지 않았다. 보정 후 재분석은 FR 45개·SC 15개와 task 119개의 60/60(100%) 커버리지,
+헌법 위반 0건, Critical·High·Medium 정합성 문제 0건을 확인했다. `git diff --check`, task ID 중복과
+placeholder 검사도 통과했으며 다음 작업은 T103이다.
+
 2026-09-15 구현 전 정합성 검증: `$speckit-analyze` 재실행으로 `spec.md`의 FR 45개·SC 15개와
 `tasks.md`의 119개 작업을 대조했다. 요구사항 작업 커버리지는 60/60(100%)이며 헌법 위반,
 Critical·High 불일치는 0건이다. 과거 T043·T044·T055·T100의 Shield 직접 CloudKit 경로는

@@ -2427,3 +2427,42 @@ projection·예약 전에 종료됐다. iPhone 17의 성공 여부와 무관하�
 **영향 범위**: BLK-018을 해결하며 `spec.md` FR-012·FR-013·FR-041~FR-045와 SC-013~SC-015,
 `plan.md`, `data-model.md`, Shield·rule release·Live Activity contract, T089와 T103~T119에 적용한다.
 T105 전에는 release 결과 UI와 handoff 구현을, T116 전에는 Live Activity UI 개편을 시작하지 않는다.
+
+## DEC-115 — Release handoff 영속 수명주기와 안정 오류 분류
+
+**날짜**: 2026-09-15
+
+**상태**: 승인됨 — `$speckit-analyze` 보정 승인
+
+**결정**: `PendingAppRoute.releaseProcessing`은 앱이 읽는 즉시 삭제하지 않는다. 적격 `pending` route를
+`processing`으로 원자 claim하고, 같은 command ID의 장부·제한 결과를 terminal 상태로 영속화한다.
+앱이 어느 처리 단계에서 종료돼도 다음 foreground에서 `processing` handoff를 새 요청보다 먼저
+재조정한다. terminal 결과는 단순 화면 제시만으로 삭제하지 않고 사용자가 결과 CTA 또는 닫기를
+명시적으로 선택할 때 확인 처리와 삭제를 원자적으로 수행한다. 재시도는 `retryAfter`가 지난
+`terminal(retryable)`만 같은 command ID의 `processing`으로 원자 전이한다. `pending`의 5분 유효
+기간은 유지하지만 이미 claim한 `processing`에는 적용하지 않는다.
+
+기존 `consumedAt == nil` payload는 `pending`으로, 소비 시각과 유효한 release command ID가 있는
+payload는 `processing`으로 migration한다. 그 밖의 이미 소비된 legacy route와 불완전한 release
+route는 새 차감이나 앱 이동을 합성하지 않고 fail-closed로 폐기한다.
+
+UI는 원본 `CKError`를 직접 분기하지 않고 서비스의 안정 분류를 사용한다. 일시적인 transport·service·
+rate limit·account 또는 identity availability는 `retryable`이며 `retryAfter`를 지킨다. 결과 불명·충돌·
+부분 실패는 재조정 중
+`processing`을 유지하고 완료되지 않은 중단 command로 확인된 뒤에만 `retryable`로 전환한다.
+sign-out·notAuthenticated·권한·잘못된 container 설정·장부 삭제는 `recoveryRequired`, 확정 잔액 부족은
+`insufficient`, read-back과 commit 확인은 `completed`다.
+
+하이파이 승인 대상은 신규 `processing`, `completed`, `retryable`, `insufficient` 네 화면이다.
+`recoveryRequired`는 기존 iCloud 장부 복구 화면을 재사용하되 상태 전이·지역화·접근성 회귀에는
+포함한다. 코인 해제 뒤 Live Activity 갱신·종료는 메인 앱이 담당하며 Shield 직접 ActivityKit 경로는
+과거 회귀·진단 전용으로만 보존한다.
+
+**검토한 대안**: route claim과 동시에 삭제하는 방식은 CloudKit command 생성 전 앱 종료 시 요청
+식별자를 잃으므로 기각했다. 별도 새 handoff 저장소를 추가하는 방식은 동일 App Group 데이터의
+이중 소유권과 migration 복잡도를 만들므로 기존 route의 상태 머신 확장을 선택했다. 복구 화면까지
+다섯 번째 신규 하이파이로 다시 만드는 방식은 이미 구현된 복구 계약을 중복하므로 기각했다.
+
+**영향 범위**: `spec.md` FR-007·FR-041~FR-045와 SC-013·SC-015, `plan.md`, `data-model.md`,
+`shield-coin-ui-contract.md`, T057의 대체 표시와 T103~T113에 적용한다. 실제 모델·repository migration은
+T106·T108, 앱 claim·재조정은 T110, UI·오류 분류 검증은 T107·T111~T113에서 수행한다.

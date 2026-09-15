@@ -142,10 +142,12 @@ occurrence만 예외 처리되는지, 중복 100회에서 최대 1회만 소모�
 - [X] T057 [US2] 활성 제한 카드의 해제 확인 dialog와 `PendingAppRouteRepository.consumeIfEligible` 결과에 따른 잔액 부족 coin store·장부 복구 진입을 `GetUp/Features/RestrictionStatus/RestrictionStatusView.swift`, `GetUp/Features/Coins/ActiveRestrictionReleaseView.swift`에 구현한다.
 - [X] T058 [US2] 한국어·영어 비용·대상·유효 기간·다중 규칙·처리 확인 문구를 `GetUp/Resources/Localizable.xcstrings`, `GetUpShieldConfiguration/Resources/Localizable.xcstrings`에 추가하고 US2 관련 자동 테스트를 통과시킨다.
 
-**DEC-114 대체 표시**: T043·T044·T055는 Shield 안에서 CloudKit 해제를 완료하던 이전 제품 경로의
+**DEC-114·DEC-115 대체 표시**: T008·T016·T043·T044·T055·T057·T076은 Shield 안에서 CloudKit
+해제를 완료하거나 route를 즉시 소비·삭제하던 이전 제품 경로의
 구현·회귀 기록이다. T044의 deadline fixture는 진단 회귀로 유지하지만 production Shield의 직접
 CloudKit 호출은 T109가 대체한다. T100의 앱 장부 조립은 재사용하고 Shield 직전 전체 refresh 연결은
-T109~T110이 대체한다.
+T109~T110이 대체한다. 기존 `consumeIfEligible` 삭제 방식은 T106·T108·T110의 영속
+`pending → processing → terminal` handoff와 migration이 대체한다.
 
 **체크포인트**: fake 장부 잔액만으로 Shield·앱의 현재 구간 1회 해제와 모든 실패 보상을 검증할 수 있다.
 
@@ -259,9 +261,10 @@ T109~T110이 대체한다.
 
 ```text
 Phase 1 설정 → Phase 2 공통 기반·월 최소 기반 ┬→ US1 기존 Live Activity ─→ T114~T116 승인 → T117~T119 ─┐
-                                               ├→ US2 기존 해제 core ─→ T103~T105 승인 → T106~T113 ─────┤
-                                               └→ US3 StoreKit 구매·복구 → US4 월 UI·인수 → T089 ────────┤
-                                                                                                          └→ Phase 7·T098
+                                               ├→ US2 기존 해제 core ─→ T103~T105 승인 → T106~T113 ─┐    │
+                                               └→ US3 StoreKit 구매·복구 → US4 월 UI·인수 ──────────┴→ T089
+                                                                                                      │    │
+                                                                                                      └────┴→ Phase 7·T098
 ```
 
 - US1은 코인 계층을 사용하지 않는다.
@@ -363,17 +366,17 @@ T088 지역화
 foreground에서 확인된 중단 command는 차감 없이 동일 command 재시도, 잔액 부족은 제한 유지와
 코인 구매 CTA로 수렴한다.
 
-- [ ] T103 [US2] 처리 중·해제 완료·재시도 가능한 실패 또는 중단 command 확인 후 재시도·잔액 부족 후 코인 구매 유도의 사용자 흐름과 상태·초점 이동을 `design/low-fidelity/US2-release-handoff.md`에 작성하고 사용자 검토 결과를 승인 상태로 기록한다.
-- [ ] T104 [US2] T103 승인 뒤 네 해제 상태의 Light/Dark, 최대 Dynamic Type, VoiceOver, Reduce Motion, loading·중복 tap·앱 재실행 상태를 포함한 하이파이를 제작하고 Figma node·시각 token·문구·구현 인계를 `design/high-fidelity/US2-release-handoff.md`에 기록한다.
+- [ ] T103 [US2] 신규 처리 중·해제 완료·재시도 가능한 실패 또는 중단 command 확인 후 재시도·잔액 부족 후 코인 구매 유도의 네 흐름과 기존 iCloud 장부 복구 화면 연결, 상태·초점 이동을 `design/low-fidelity/US2-release-handoff.md`에 작성하고 사용자 검토 결과를 승인 상태로 기록한다.
+- [ ] T104 [US2] T103 승인 뒤 신규 네 해제 상태의 Light/Dark, 최대 Dynamic Type, VoiceOver, Reduce Motion, loading·중복 tap·앱 재실행 상태와 기존 `recoveryRequired` 화면 연결을 포함한 하이파이를 제작하고 Figma node·시각 token·문구·구현 인계를 `design/high-fidelity/US2-release-handoff.md`에 기록한다.
 - [ ] T105 [US2] T104 하이파이를 사용자에게 제시해 명시적 구현 승인을 받고 결과·의견·승인일을 `design/high-fidelity/US2-release-handoff.md`, `docs/DECISIONS.md`, `docs/STATUS.md`에 기록한다. 승인 전에는 T106~T113을 시작하지 않는다.
-- [ ] T106 [P] [US2] `releaseProcessing` route의 안정 command ID, 5분·일회 소비, 중복·만료·종료 occurrence 폐기와 앱 종료 뒤 동일 command 재조정 실패 테스트를 `GetUpTests/Core/RuleReleaseRouteTests.swift`, `GetUpTests/Persistence/PendingAppRouteRepositoryTests.swift`에 먼저 작성한다.
-- [ ] T107 [P] [US2] 처리 중→완료·재시도·잔액 부족·복구 필요 상태 전이, 실행 중 재시도 비노출, 재시도 가능 오류·foreground 중단 command에서만 동일 command 재시도 활성화, 완료 전 제한 유지와 승인 하이파이 식별자 UI 테스트를 `GetUpTests/Integration/AppReleaseHandoffTests.swift`, `GetUpUITests/UserStory2ReleaseResultUITests.swift`에 먼저 작성한다.
-- [ ] T108 [US2] `PendingAppRoute.releaseProcessing`과 command ID codec·호환 migration, 메인 앱 release 상태 모델을 `GetUp/Core/Models/RuleReleaseModels.swift`, `GetUp/Infrastructure/Persistence/SharedSnapshotRepository.swift`, `GetUp/Features/Coins/ActiveRestrictionReleaseModel.swift`에 구현한다.
+- [ ] T106 [P] [US2] `releaseProcessing` route의 안정 command ID, 5분 pending 유효성, `pending → processing → terminal`과 `terminal(retryable) → processing` 원자 전이, claim 전 만료·종료 폐기, processing 보존·중복 claim·단순 제시 후 보존·명시적 terminal action 뒤 삭제와 앱 종료 뒤 동일 command 재조정 실패 테스트를 `GetUpTests/Core/RuleReleaseRouteTests.swift`, `GetUpTests/Persistence/PendingAppRouteRepositoryTests.swift`에 먼저 작성한다.
+- [ ] T107 [P] [US2] 처리 중→완료·재시도·잔액 부족·복구 필요 상태 전이, 실행 중 재시도 비노출, transient·결과 불명·계정/장부 복구·잔액 부족 안정 오류 분류와 `retryAfter`, foreground 중단 command에서만 동일 command 재시도 활성화, 완료 전 제한 유지와 승인 하이파이 식별자 UI 테스트를 `GetUpTests/Integration/AppReleaseHandoffTests.swift`, `GetUpUITests/UserStory2ReleaseResultUITests.swift`에 먼저 작성한다.
+- [ ] T108 [US2] `PendingAppRoute.releaseProcessing`의 `pending | processing | terminal`, claim·terminal outcome·제시·명시적 확인 필드와 command ID codec, legacy 미소비→`pending`·유효한 소비 중 release→`processing`·그 외 fail-closed 폐기 migration, 메인 앱 release 상태 모델을 `GetUp/Core/Models/RuleReleaseModels.swift`, `GetUp/Infrastructure/Persistence/SharedSnapshotRepository.swift`, `GetUp/Features/Coins/ActiveRestrictionReleaseModel.swift`에 구현한다.
 - [ ] T109 [US2] Shield primary가 CloudKit을 호출하지 않고 release route를 원자 저장한 뒤 iOS 26.5 이상에서 즉시 `.openParentalControlsApp`, iOS 26.0~26.4에서 공식 fail-closed fallback을 반환하도록 `GetUpShieldAction/ShieldActionExtension.swift`, `GetUp/Infrastructure/ScreenTime/ShieldActionResponsePolicy.swift`를 변경한다.
-- [ ] T110 [US2] 메인 앱이 release route를 한 번 소비해 FR-037 전체 refresh·occurrence 재검증·동일 command 재조정·무료 우선 원자 해제·Managed Settings read-back·commit을 수행하도록 `GetUp/App/AppLifecycleCoordinator.swift`, `GetUp/App/DependencyContainer.swift`, `GetUp/Infrastructure/ScreenTime/RuleReleaseCoordinator.swift`를 연결한다.
-- [ ] T111 [US2] T105에서 승인된 하이파이만 기준으로 처리 중·완료·재시도·잔액 부족 화면과 재시도·코인 구매 CTA를 `GetUp/Features/Coins/ActiveRestrictionReleaseView.swift`, `GetUp/Features/Coins/CoinStoreView.swift`에 구현한다.
-- [ ] T112 [US2] 승인된 네 상태의 한국어·영어 문구, VoiceOver 진행 상태·focus 이동, 최대 Dynamic Type·Light/Dark·Reduce Motion 회귀를 `GetUp/Resources/Localizable.xcstrings`, `GetUpUITests/UserStory2ReleaseResultUITests.swift`, `GetUpUITests/AccessibilityUITests.swift`에 구현하고 관련 자동 테스트를 통과시킨다.
-- [ ] T113 [US2] 동일 iCloud 계정의 iPhone 15 Pro Max와 iPhone 17에서 일반 활성 occurrence의 Shield 첫 탭 한 번 앱 진입, 처리 중·완료·재시도·잔액 부족, 제한·잔액·내역 다기기 수렴을 검증하고 release handoff 결과를 `specs/002-live-activity-coins/quickstart.md`, `docs/STATUS.md`, `docs/HANDOFF.md`에 기록한다. 월 경계의 allowance 지연 생성·비이월 판정은 T089에서 별도로 검증한다.
+- [ ] T110 [US2] 메인 앱이 release route를 `processing`으로 원자 claim하고 앱 종료 뒤 남은 handoff를 먼저 재조정한 뒤 FR-037 전체 refresh·occurrence 재검증·동일 command 재조정·무료 우선 원자 해제·Managed Settings read-back·commit·terminal 결과 영속화와 명시적 결과 action의 삭제 또는 재시작을 수행하도록 `GetUp/App/AppLifecycleCoordinator.swift`, `GetUp/App/DependencyContainer.swift`, `GetUp/Infrastructure/ScreenTime/RuleReleaseCoordinator.swift`를 연결한다.
+- [ ] T111 [US2] T105에서 승인된 하이파이만 기준으로 신규 처리 중·완료·재시도·잔액 부족 화면과 재시도·코인 구매 CTA를 구현하고 `recoveryRequired`는 기존 복구 화면으로 연결하도록 `GetUp/Features/Coins/ActiveRestrictionReleaseView.swift`, `GetUp/Features/Coins/CoinStoreView.swift`를 변경한다.
+- [ ] T112 [US2] 승인된 신규 네 상태와 기존 복구 연결의 한국어·영어 문구, VoiceOver 진행 상태·focus 이동, 최대 Dynamic Type·Light/Dark·Reduce Motion 회귀를 `GetUp/Resources/Localizable.xcstrings`, `GetUpUITests/UserStory2ReleaseResultUITests.swift`, `GetUpUITests/AccessibilityUITests.swift`에 구현하고 관련 자동 테스트를 통과시킨다.
+- [ ] T113 [US2] 동일 iCloud 계정의 iPhone 15 Pro Max와 iPhone 17에서 일반 활성 occurrence의 Shield 첫 탭 한 번 앱 진입, 처리 중·완료·재시도·잔액 부족·기존 복구 화면 연결, 앱 강제 종료 뒤 동일 command 복원, 제한·잔액·내역 다기기 수렴을 검증하고 release handoff 결과를 `specs/002-live-activity-coins/quickstart.md`, `docs/STATUS.md`, `docs/HANDOFF.md`에 기록한다. 월 경계의 allowance 지연 생성·비이월 판정은 T089에서 별도로 검증한다.
 
 **체크포인트**: 해제 UI 하이파이 승인 증적과 두 실기기의 첫 탭 해제·실패 안전성 증적이 모두
 있을 때만 US2 후속과 T089을 완료한다.

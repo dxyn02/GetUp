@@ -320,26 +320,51 @@ Shield Action이 메인 앱을 열기 전에 App Group에 기록하는 일회성
 | `routeID` | UUID | 같은 Shield action의 중복 처리를 막는다. |
 | `destination` | `releaseProcessing` / `coinStore` / `iCloudRecovery` / `ledgerReset` / `reconciliation` | Shield 확정 요청 또는 최신 실패 원인으로 결정한다. |
 | `commandID` | UUID? | `releaseProcessing`과 `reconciliation`에서 동일 해제 시도를 재사용하는 안정 식별자다. |
-| `createdAt` | Date | `createdAt <= now < createdAt + 5분`일 때만 유효하다. |
+| `createdAt` | Date | `pending` claim 자격에서만 `createdAt <= now < createdAt + 5분`을 요구한다. |
 | `occurrenceID` | 문자열? | 사용자에게 돌아갈 활성 제한 맥락이 있을 때만 기록한다. |
-| `consumedAt` | Date? | `nil`인 route만 소비할 수 있고 성공한 소비와 삭제를 하나의 atomic repository 연산으로 처리한다. |
+| `state` | `pending` / `processing` / `terminal` | `pending → processing`, `processing → terminal`, 사용자 재시도에 의한 `terminal(retryable) → processing`만 허용한다. |
+| `claimedAt` | Date? | `processing` 전이 시 기록하며 앱 종료 뒤 재조정 기준이 된다. |
+| `terminalOutcome` | `completed` / `retryable` / `insufficient` / `recoveryRequired`? | terminal 결과 화면을 재실행 뒤에도 복원한다. |
+| `presentedAt` | Date? | terminal 화면을 처음 제시한 시각이며 사용자 확인을 뜻하지 않는다. |
+| `acknowledgedAt` | Date? | 사용자가 terminal CTA 또는 닫기를 명시적으로 선택한 시각이다. 단순 표시로 설정하지 않는다. |
 
 Shield에서 해제를 확정하면 잔액 mirror와 무관하게 `releaseProcessing`을 사용한다. 메인 앱이
 FR-037 전체 동기화를 완료한 뒤 잔액 부족이 확정된 경우에만 `coinStore`로 전환한다. iCloud·장부
 불가, 삭제 확정, 재조정 상태를 구매 화면으로 보내지 않는다. iOS 26.0~26.4 fallback에서도 route를
 남겨 사용자가 앱을 직접 열면 같은 command와 목적지를 처리하게 한다.
 
-repository의 `consumeIfEligible(now:activeOccurrenceIDs:)`는 유효 기간, 미소비, occurrence 활성 조건을
-모두 만족한 route 하나만 반환하고 즉시 삭제한다. 만료·이미 소비·종료 occurrence route는 반환하지
-않고 삭제하며, 같은 `routeID`의 중복 소비는 항상 실패한다.
+repository의 `claimIfEligible(now:activeOccurrenceIDs:)`는 유효 기간, `pending`, occurrence 활성 조건을
+모두 만족한 route 하나를 `processing`으로 원자 전이해 반환하고 삭제하지 않는다. claim 전 만료·종료
+route는 삭제하고 같은 `routeID`·`commandID`의 중복 claim은 기존 `processing | terminal` handoff를
+반환한다. `processing`은 생성 후 5분이 지나도 폐기하지 않고 다음 foreground에서 먼저 재조정한다.
+terminal 결과와 화면 제시 여부를 저장하되 단순 표시만으로 삭제하지 않는다. 완료 확인, 재시도 취소,
+구매 이동 또는 닫기, 복구 이동 또는 닫기의 명시적 action은 `acknowledgeAndDelete(routeID:)`로 확인
+처리와 삭제를 원자적으로 수행한다. 재시도 CTA는 outcome이 `retryable`이고 `retryAfter`가 지났을 때만
+`retry(routeID:)`로 같은 command ID를 유지한 채 `terminal → processing` 전이와 terminal 표시 필드
+초기화를 원자적으로 수행한다.
 
-`releaseProcessing` route를 소비한 앱은 별도의 UI 상태 머신을 `processing → completed | retryable |
+기존 `consumedAt` payload migration은 `consumedAt == nil`을 `pending`으로 옮긴다. `consumedAt`이 있고
+`destination == releaseProcessing`이며 유효한 `commandID`가 있으면 `processing`으로 옮겨 다음
+foreground에서 재조정한다. 그 밖의 이미 소비된 legacy route와 식별자가 불완전한 release route는
+새 해제나 이동을 합성하지 않고 fail-closed로 폐기한다.
+
+`releaseProcessing` route를 claim한 앱은 별도의 UI 상태 머신을 `processing → completed | retryable |
 insufficient | recoveryRequired`로 전이한다. `completed`는 Managed Settings read-back과 장부 commit이
 모두 확인된 뒤에만 허용한다. 하나의 command가 실행 중일 때는 `processing`을 유지하고 중복 요청을
 허용하지 않는다. 서비스가 재시도 가능한 오류를 반환하거나 다음 foreground 재조정에서 완료가
 확인되지 않은 중단 command로 판정한 경우에만 `retryable`로 전이하며 같은 `commandID`를 유지한다.
 확정 성공·잔액 부족·복구 필요는 재시도 화면을 거치지 않고 해당 상태로 전이한다. UI 상태는 서버
 권위 장부를 대체하지 않고 재실행 때 command 재조정 결과로 다시 파생한다.
+
+UI에 노출할 release 오류 분류는 다음과 같다.
+
+| 안정 분류 | 대표 원인 | UI 상태·행동 |
+|-----------|-----------|--------------|
+| `transientRetryable` | 일시적인 network·service unavailable·rate limit·account/identity availability | `retryable`; `retryAfter`가 있으면 해당 시각까지 CTA 비활성화 |
+| `outcomeUnknown` | CloudKit 결과 불명·server conflict·부분 실패 | 재조정 중 `processing`; 확인되지 않은 중단 command로 확정된 뒤에만 `retryable` |
+| `accountOrLedgerRecovery` | sign-out·notAuthenticated·권한·잘못된 container 설정·장부 삭제 | `recoveryRequired`; 기존 iCloud 장부 복구 화면 사용 |
+| `insufficientBalance` | 현재 월 무료분과 구매 코인 모두 0으로 확정 | `insufficient`; 코인 구매 CTA 제공 |
+| `committed` | 제한 read-back과 장부 commit 확인 | `completed` |
 
 ## 관계
 
