@@ -129,6 +129,7 @@
 		AA0000000000000000000334 /* ShieldTokenRefresher.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000000000000000000008F /* ShieldTokenRefresher.swift */; };
 		AA0000000000000000000335 /* ShieldTokenRefresher.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000000000000000000008F /* ShieldTokenRefresher.swift */; };
 		AA0000000000000000000336 /* ShieldTokenRefresher.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000000000000000000008F /* ShieldTokenRefresher.swift */; };
+		AA0000000000000000000337 /* RuleReleaseRouteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000060 /* RuleReleaseRouteTests.swift */; };
 		AA0000000000000000000200 /* RestrictionStatusModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000025 /* RestrictionStatusModelTests.swift */; };
 		AA0000000000000000000201 /* RestrictionStatusModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000051 /* RestrictionStatusModel.swift */; };
 		AA0000000000000000000202 /* RestrictionStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000053 /* RestrictionStatusView.swift */; };
@@ -441,6 +442,7 @@
 		B50000000000000000000039 /* CloudKitMonthlyAllowanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitMonthlyAllowanceTests.swift; sourceTree = "<group>"; };
 		B5000000000000000000005E /* CoinLedgerSyncProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinLedgerSyncProviderTests.swift; sourceTree = "<group>"; };
 		B5000000000000000000005F /* ReservationCompatibilityMigrationProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReservationCompatibilityMigrationProviderTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000060 /* RuleReleaseRouteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleReleaseRouteTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000041 /* RestrictionOccurrenceEvaluatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionOccurrenceEvaluatorTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000042 /* LiveActivityDistancePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityDistancePolicyTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000043 /* LiveActivityTimePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityTimePolicyTests.swift; sourceTree = "<group>"; };
@@ -867,6 +869,7 @@
 		B50000000000000000000011 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				B50000000000000000000060 /* RuleReleaseRouteTests.swift */,
 				B50000000000000000000054 /* PurchaseRefundReconcilerTests.swift */,
 				B5000000000000000000004F /* ActiveRestrictionReleaseRouterTests.swift */,
 				B5000000000000000000004E /* ActiveRestrictionReleaseModelTests.swift */,
@@ -1543,6 +1546,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000337 /* RuleReleaseRouteTests.swift in Sources */,
 				AA0000000000000000000328 /* CoinLedgerSyncProviderTests.swift in Sources */,
 				AA000000000000000000032C /* ReservationCompatibilityMigrationProviderTests.swift in Sources */,
 				AA0000000000000000000324 /* MonthlyAllowanceAcceptanceTests.swift in Sources */,
