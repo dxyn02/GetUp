@@ -315,6 +315,9 @@ day15 원인 확정: 수정 빌드를 Xcode StoreKit 세션으로 실행하자 �
   fresh refetch한다.
 - 재검증: 수정 빌드 설치 후 다음 5분 경계에서 위 절차 3~6을 반복한다. 첫 탭이 즉시 해제되고 양쪽
   1/0과 서버 allowance `quota = 2`, `used = 1`, `reserved = 0`이 확인돼야 통과한다.
+- 수정 빌드 재실행: 첫 탭이 다시 복구 화면으로 이동했고
+  `DEBUG: savingRecoveryRoute, outerDeadline`을 표시했다. 다음 진단 빌드에서는
+  `outerDeadline, lastStage: <stage>` 값을 기록해 병목 단계를 확정한다.
 
 ## Live Activity end-to-end
 

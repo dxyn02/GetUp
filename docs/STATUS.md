@@ -7,6 +7,13 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 8 CloudKit 수렴 구현 진행 중
 
 ## 진행 중
+수정 빌드의 다음 5분 경계에서도 첫 탭이 `savingRecoveryRoute, outerDeadline`으로 복구 화면을 열어
+실패했다. 이는 primary action 전체가 5초 상한을 넘었다는 뜻이지만 기존 단일 진단 값이 구체 단계까지
+덮어써 initial refresh·원자 예약·로컬 적용 중 병목을 구분할 수 없다. DEBUG에 reserve/apply 시작·완료
+단계와 timeout 직전 마지막 단계를 보존하는 진단을 추가해 다음 재현에서 정확한 병목을 확정한다.
+집중 테스트와 전체 `GetUpTests` 612개 선언·동적 실행 732회, Release 빌드가 통과했으며 동일 서명
+진단 빌드를 두 iPhone에 설치했다.
+
 T089의 DEBUG 전용 서울 5분 경계에서 첫 Shield 해제를 검증했다. 새 구간의 첫 `Use 1 Release`는
 해제되지 않고 Coins로 이동했으며 잔액도 2/0을 유지했다. 두 번째 탭은 성공해 두 기기가 1/0으로
 수렴했으므로 첫 탭 원자 생성+예약 항목은 실패로 기록했다. 원인은 Shield가 이미 수행한 권위 있는
@@ -110,9 +117,9 @@ setup/reset/recovery/reconciliation과 5초 Shield 응답 상한을 live 경로�
 T100 — 앱·Shield Action의 실제 CloudKit 장부 서비스와 수명주기 조립
 
 ## 다음 작업
-T089 — 첫 탭 중복 CloudKit refresh를 제거한 수정 빌드를 두 기기에 설치한다. 다음 5분 경계까지
-앱을 닫은 뒤 앱을 먼저 열지 않고 제한 앱 Shield에서 `Use 1 Release`를 정확히 한 번 실행한다.
-즉시 해제, 양쪽의 새 period·무료 1·구매 0 수렴과 CloudKit record를 기록한다.
+T089 — timeout 마지막 단계를 표시하는 진단 빌드를 설치하고 다음 5분 경계에서 Shield-first를 한 번
+재현한다. `outerDeadline, lastStage: ...` 결과로 병목을 확정한 뒤 5초 계약을 유지하는 최소 수정과
+실기기 재검증을 진행한다.
 T094·T095의 Shield/StoreKit 실기기 인수도 이어서 수행한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
@@ -136,6 +143,10 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-15 T089 중복 refresh 수정 실기기 결과: 다음 5분 경계의 첫 탭도
+`savingRecoveryRoute, outerDeadline`으로 실패했다. 단계 식별 정보가 최종 route 기록에 덮여 정확한
+병목을 확정할 수 없어 DEBUG 단계 진단을 추가 중이다. T089과 BLK-017은 계속 미완료다.
+
 2026-09-15 T089 Shield-first 첫 탭 지연 수정: 실기기 5분 경계에서 첫 탭은 Coins 이동·2/0 유지,
 두 번째 탭은 해제·양쪽 1/0 수렴으로 관찰돼 실패로 기록했다. Shield가 최초 최신 장부 조회 결과를
 예약까지 전달하고 확정 무료분 충돌에서만 1회 재조회하도록 변경했다. 선행 실패 테스트는 새 API

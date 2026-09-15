@@ -33,6 +33,12 @@ private final class ShieldActionDiagnosticRecorder: @unchecked Sendable {
         defaults?.synchronize()
     }
 
+    func latestStage() -> String? {
+        (defaults?.dictionary(
+            forKey: SharedIdentifiers.shieldActionDiagnosticDefaultsKey
+        )?["stage"] as? String)
+    }
+
     func errorDetail(_ error: any Error) -> String {
         if let error = error as? ShieldCoinActionContextReaderError {
             switch error {
@@ -151,18 +157,23 @@ private final class ShieldCoinActionRuntime: @unchecked Sendable {
                     deadline: .seconds(5),
                     monotonicNow: { ContinuousClock().now },
                     attemptRelease: { commandID in
-                        .confirmed(try await releaseExecutor.reserve(
+                        diagnosticRecorder.record("releaseReserveStarted")
+                        let reservation = try await releaseExecutor.reserve(
                             occurrence: context.representative,
                             commandID: commandID,
                             source: .shield,
                             prefetchedLedger: prefetchedLedger
-                        ))
+                        )
+                        diagnosticRecorder.record("releaseReserveCompleted")
+                        return .confirmed(reservation)
                     },
                     applyConfirmedRelease: { reservation in
+                        diagnosticRecorder.record("releaseApplyStarted")
                         try await releaseExecutor.apply(
                             reservation: reservation,
                             occurrence: context.representative
                         )
+                        diagnosticRecorder.record("releaseApplyCompleted")
                     },
                     reconcileUnapplied: { commandID in
                         if try await ledgerRuntime.repository.fetchReleaseCommand(
@@ -281,9 +292,17 @@ private final class ShieldCoinActionRuntime: @unchecked Sendable {
         }
         if let response { return response.value }
 #if DEBUG
-        diagnosticRecorder.record("actionDeadlineExceeded")
+        let lastStage = diagnosticRecorder.latestStage() ?? "unknown"
+        diagnosticRecorder.record(
+            "actionDeadlineExceeded",
+            detail: "lastStage: \(lastStage)"
+        )
+        return await saveRecoveryRoute(
+            reason: "outerDeadline, lastStage: \(lastStage)"
+        )
+#else
+        return await saveRecoveryRoute()
 #endif
-        return await saveRecoveryRoute(reason: "outerDeadline")
     }
 
     private func handleWithinDeadline(

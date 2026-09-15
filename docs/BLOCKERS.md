@@ -22,6 +22,14 @@ refresh해 5초 응답 상한을 소모하는 원인을 확인했다. 최초 ref
 첫 탭 즉시 해제와 CloudKit record를 확인하기 전까지 차단을 유지한다. 앱·Shield Action 설정과
 entitlement를 검사한 동일 서명 수정 빌드는 iPhone 15 Pro Max와 iPhone 17에 설치했다.
 
+**2026-09-15 수정 빌드 재실행 결과**: 다음 5분 경계의 첫 탭도
+`DEBUG: savingRecoveryRoute, outerDeadline`으로 복구 화면을 열었다. 첫 tap 전체 5초 상한 초과는
+확정됐지만 단일 진단 값이 직전 단계를 덮어써 initial refresh·원자 예약·로컬 적용 중 병목은 아직
+구분되지 않는다. DEBUG에 각 단계와 timeout 직전 `lastStage`를 남기는 빌드를 설치해 한 번 더
+재현한 뒤 최소 수정 범위를 결정한다. 전체 `GetUpTests` 612개 선언·동적 실행 732회와 Release 빌드가
+통과했고 동일 서명 진단 산출물을 두 실기기에 설치했다. Release 계약과 원격 장부는 변경하지 않았으며
+차단을 유지한다.
+
 **2026-09-12 대체 경계 승인 및 준비**: 실제 다음 월초까지 기다리지 않고 2026-09-13 00:00
 `Asia/Seoul`을 DEBUG 전용 대체 경계로 사용하는 방식을 승인받았다. Release의 매월 1일 계약은
 변경하지 않으며, `t089-day13-app`, `t089-day13-shield`, `t089-day13-concurrent`별 CloudKit zone·
