@@ -366,7 +366,7 @@ T088 지역화
 foreground에서 확인된 중단 command는 차감 없이 동일 command 재시도, 잔액 부족은 제한 유지와
 코인 구매 CTA로 수렴한다.
 
-- [ ] T103 [US2] 신규 처리 중·해제 완료·재시도 가능한 실패 또는 중단 command 확인 후 재시도·잔액 부족 후 코인 구매 유도의 네 흐름과 기존 iCloud 장부 복구 화면 연결, 상태·초점 이동을 `design/low-fidelity/US2-release-handoff.md`에 작성하고 사용자 검토 결과를 승인 상태로 기록한다.
+- [X] T103 [US2] 신규 처리 중·해제 완료·재시도 가능한 실패 또는 중단 command 확인 후 재시도·잔액 부족 후 코인 구매 유도의 네 흐름과 기존 iCloud 장부 복구 화면 연결, 상태·초점 이동을 `design/low-fidelity/US2-release-handoff.md`에 작성하고 사용자 검토 결과를 승인 상태로 기록한다.
 - [ ] T104 [US2] T103 승인 뒤 신규 네 해제 상태의 Light/Dark, 최대 Dynamic Type, VoiceOver, Reduce Motion, loading·중복 tap·앱 재실행 상태와 기존 `recoveryRequired` 화면 연결을 포함한 하이파이를 제작하고 Figma node·시각 token·문구·구현 인계를 `design/high-fidelity/US2-release-handoff.md`에 기록한다.
 - [ ] T105 [US2] T104 하이파이를 사용자에게 제시해 명시적 구현 승인을 받고 결과·의견·승인일을 `design/high-fidelity/US2-release-handoff.md`, `docs/DECISIONS.md`, `docs/STATUS.md`에 기록한다. 승인 전에는 T106~T113을 시작하지 않는다.
 - [ ] T106 [P] [US2] `releaseProcessing` route의 안정 command ID, 5분 pending 유효성, `pending → processing → terminal`과 `terminal(retryable) → processing` 원자 전이, claim 전 만료·종료 폐기, processing 보존·중복 claim·단순 제시 후 보존·명시적 terminal action 뒤 삭제와 앱 종료 뒤 동일 command 재조정 실패 테스트를 `GetUpTests/Core/RuleReleaseRouteTests.swift`, `GetUpTests/Persistence/PendingAppRouteRepositoryTests.swift`에 먼저 작성한다.

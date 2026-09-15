@@ -7,6 +7,20 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 승인 기반 후속 작업 준비 중
 
 ## 진행 중
+2026-09-15 T103 완료: 사용자가 `design/low-fidelity/US2-release-handoff.md`의 네 신규 상태와 기존
+iCloud 복구 연결 방향을 승인하고 Figma 스킬을 사용한 하이파이 제작을 요청했다. 검토 기록과 승인
+상태를 갱신하고 T103을 완료 처리했다. 제품 코드는 변경하지 않았으며 다음 작업은 승인된 로우파이를
+기준으로 Figma 하이파이와 구현 인계 문서를 만드는 T104다. T105의 별도 구현 승인 전에는
+T106~T113을 시작하지 않는다.
+
+2026-09-15 T103 로우파이 초안: Shield의 `releaseProcessing` route를 메인 앱이 이어받는
+`processing`, `completed`, `retryable`, `insufficient` 네 신규 상태와 기존 `recoveryRequired`
+iCloud 복구 화면 연결을 `design/low-fidelity/US2-release-handoff.md`에 작성했다. 처리 중 중복 행동
+차단, read-back·commit 뒤에만 완료, 같은 command ID 재시도와 `retryAfter`, 앱 종료 뒤 재조정,
+명시적 terminal action 뒤 handoff 삭제를 DEC-114·DEC-115와 일치시켰다. 로우파이는 사용자 검토
+대기 상태이며 T103은 아직 완료 처리하지 않았다. 승인 전에는 T104 하이파이와 T106~T113 구현을
+시작하지 않는다. 문서 task이므로 제품 코드 테스트는 실행하지 않았으며 문서 검사를 수행한다.
+
 2026-09-15 정합성 재분석 보정: 사용자 승인에 따라 `$speckit-analyze`에서 발견한 High 2건과 Medium
 3건을 문서에 반영했다. Shield 직접 ActivityKit 경로는 회귀·진단 전용으로 통일했고,
 `PendingAppRoute.releaseProcessing`을 즉시 삭제하지 않는 `pending → processing → terminal` 영속
@@ -147,11 +161,12 @@ setup/reset/recovery/reconciliation과 5초 Shield 응답 상한을 live 경로�
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T100 — 앱·Shield Action의 실제 CloudKit 장부 서비스와 수명주기 조립
+T103 — Shield 해제 메인 앱 handoff 로우파이 작성과 사용자 승인
 
 ## 다음 작업
-T103 — 메인 앱 release handoff의 처리 중·완료·재시도·잔액 부족 흐름을 로우파이 문서로 만들고
-사용자 검토를 받는다. 이어 T104 하이파이 제작과 T105 구현 승인을 완료하기 전에는 제품 UI·handoff
+T104 — 승인된 `design/low-fidelity/US2-release-handoff.md`를 기준으로 네 신규 상태의 Light/Dark,
+최대 Dynamic Type, VoiceOver, Reduce Motion, loading·중복 tap·앱 재실행 상태와 기존 복구 화면
+연결을 포함한 Figma 하이파이와 구현 인계 문서를 만든다. T105 구현 승인 전에는 제품 UI·handoff
 구현을 시작하지 않는다. Live Activity는 T114~T116 설계·승인을 별도로 진행한다.
 T089 — T103~T113의 승인된 handoff 구현과 두 실기기 첫 탭 검증이 끝난 뒤 재개한다.
 T094·T095의 Shield/StoreKit 실기기 인수도 이어서 수행한다.
