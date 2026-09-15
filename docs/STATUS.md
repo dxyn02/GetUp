@@ -7,6 +7,11 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 8 CloudKit 수렴 구현 진행 중
 
 ## 진행 중
+T089 세분화 진단에서 iPhone 15 Pro Max의 마지막 단계가
+`initialRefresh.syncEngineCaptureCompleted`, 잔액 2/0으로 확인됐다. 전체 CloudKit 변경 fetch는
+끝났지만 Shield 시스템 시간 안에 projection과 예약까지 도달하지 못했다. FR-037 최신 projection을
+유지하면서 이 실행 제한을 피할 제품 경로 선택이 필요해 BLK-018을 열었으며 사용자 결정을 기다린다.
+
 수정 빌드의 다음 5분 경계에서도 첫 탭이 `savingRecoveryRoute, outerDeadline`으로 복구 화면을 열어
 실패했다. 이는 primary action 전체가 5초 상한을 넘었다는 뜻이지만 기존 단일 진단 값이 구체 단계까지
 덮어써 initial refresh·원자 예약·로컬 적용 중 병목을 구분할 수 없다. DEBUG에 reserve/apply 시작·완료
@@ -124,6 +129,10 @@ T094·T095의 Shield/StoreKit 실기기 인수도 이어서 수행한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
+BLK-018 미해결: Shield primary에서 전체 CloudKit 동기화를 계속 수행할지, 서버 권위 계약을 유지한 채
+메인 앱으로 pending release를 넘겨 완료할지 결정이 필요하다. 권장안은 iOS 26.5 이상에서 Shield 탭이
+메인 앱을 열고 앱이 전체 동기화·원자 해제를 완료하는 방식이다.
+
 BLK-017 미해결: 동일 iCloud 테스트 iPhone 2대의 동시 해제와 계정 전체 최대 사용은 통과했다.
 같은 allowance 동시 생성도 통과했다. 5분 대체 경계 빌드는 두 iPhone에 설치했으며, 실제
 첫 탭은 Coins로 이동하고 두 번째 탭에서만 성공했다. 중복 refresh 제거 수정 빌드의 Shield-first

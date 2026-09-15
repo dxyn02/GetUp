@@ -163,6 +163,34 @@ T100 앱·Shield live 조립은 완료됐다. 실제 서울 월 경계 실행과
 DEBUG 13일 서울 자정 경계의 실제 CloudKit 결과를 월 경계 실기기 증적으로 사용할 수 있다. 결과가
 수집되기 전에는 T089을 미완료로 유지한다.
 
+## BLK-018 — Shield 시간 제한과 해제 직전 전체 CloudKit 동기화 충돌
+
+**상태**: 미해결(OPEN) — 2026-09-15
+
+iPhone 15 Pro Max의 T089 5분 경계 첫 탭에서 마지막 진단이
+`initialRefresh.syncEngineCaptureCompleted`였고 잔액은 2/0으로 유지됐다. 계정 확인과 서버 변경
+fetch·capture는 끝났지만 projection·checkpoint·mirror 처리와 원자 예약에 도달하기 전에 Shield
+extension이 시스템에 의해 종료됐다. 따라서 CloudKit 오류나 차감 충돌이 아니라, T055·FR-037이
+요구하는 해제 직전 전체 서버 projection과 Shield Action의 제한된 실행 시간이 실제 기기에서
+양립하지 않는 문제다. iPhone 17에서 성공하더라도 네트워크·기기 상태에 따라 재발하므로 단순 timeout
+증가나 재시도만으로 완료 처리할 수 없다.
+
+**선택지**:
+
+1. Shield primary는 pending release route를 저장하고 즉시 메인 앱을 연다. 메인 앱이 시간 제한 없이
+   FR-037 전체 동기화·원자 예약·제한 재적용을 수행하고 성공 또는 복구 결과를 표시한다. iOS 26.5
+   이상에서는 한 번의 Shield 탭으로 시작되지만 제한 앱 대신 GetUp 화면으로 이동한다. iOS 26.0~26.4는
+   직접 앱 열기 API가 없어 기존 fail-closed 안내를 유지한다.
+2. Shield extension에서 `LedgerEpoch`·`CoinAccount`·현재 allowance 등 예약에 필요한 record만 직접
+   fetch한 뒤 원자 예약한다. 빠를 가능성은 높지만 전체 PurchaseGrant·event projection과 다른 pending
+   command 확인을 생략하므로 FR-037의 `current` 계약을 약화하고, 네트워크 지연 시 종료 가능성도 남는다.
+3. 현재 전체 동기화를 유지하고 느린 기기에서는 첫 탭 fail-closed 후 재시도를 요구한다. 계약 변경은
+   없지만 T089의 첫 탭 해제 인수를 충족하지 못하며 사용자에게 무응답처럼 보이는 현상이 재발한다.
+
+**권장안**: 1안. 서버 권위·pending reconciliation·무료 우선·원자 예약 계약을 약화하지 않고 시스템
+시간 제한을 벗어나는 유일한 안정 경로다. 선택되면 spec·plan의 Shield 동작과 T055/T089 인수 절차,
+pending route destination, 메인 앱 release coordinator 및 UI를 함께 갱신해야 한다.
+
 ## BLK-016 — T049 명령별 해제 예외 수정·보상의 저장 계약
 
 **상태**: 해결됨(RESOLVED) — 2026-09-04

@@ -329,6 +329,10 @@ day15 원인 확정: 수정 빌드를 Xcode StoreKit 세션으로 실행하자 �
   `initialRefresh.syncEngineSend*`, `initialRefresh.syncEngineFetch*`,
   `initialRefresh.syncEngineCapture*` 중 마지막 단계를 남긴다. 새 5분 경계에서 첫 탭 한 번만 실행하고
   10초 뒤 Coins를 다시 열어 마지막 단계와 잔액을 기록한다.
+- 세분화 결과는 `initialRefresh.syncEngineCaptureCompleted`, 잔액 2/0이었다. 서버 fetch는
+  완료됐지만 projection·예약 전에 extension이 종료돼 BLK-018을 열었다. Shield 실행 시간 안에서 전체
+  FR-037 동기화를 유지할 수 없는 구조를 해결할 제품 경로가 결정될 때까지 추가 5분 경계 탭은
+  중단한다.
 
 ## Live Activity end-to-end
 
