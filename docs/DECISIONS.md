@@ -2410,8 +2410,12 @@ iOS 26.0~26.4에서는 같은 route를 남기되 공식 직접 열기 API가 없
 유지한다. 메인 앱은 route를 한 번 소비해 전체 동기화, occurrence 재검증, 무료 우선 원자 예약,
 ReleaseException 적용, Managed Settings read-back, 장부 commit과 결과 불명 재조정을 수행한다.
 
-메인 앱은 처리 중, 해제 완료, 실패·결과 불명 후 같은 command 재시도, 무료 해제권·구매 코인 부족
-후 코인 구매 유도의 네 결과 상태를 제공한다. read-back과 commit 전에는 완료를 표시하지 않는다.
+메인 앱은 처리 중, 해제 완료, 재시도 가능 오류·중단 command 확인 후 같은 command 재시도,
+무료 해제권·구매 코인 부족 후 코인 구매 유도의 네 결과 상태를 제공한다. read-back과 commit 전에는
+완료를 표시하지 않는다.
+하나의 command 처리 중에는 중복 요청을 막고, 서비스의 재시도 가능 오류 또는 다음 foreground에서
+완료를 확인할 수 없는 중단 command에만 같은 command ID의 재시도를 노출한다. 확정 성공·잔액 부족·
+복구 필요는 재시도 화면을 거치지 않는다.
 이 화면 묶음과 잠금화면·Dynamic Island minimal·compact·expanded Live Activity 개편은 각각
 로우파이 흐름 기록, 하이파이 제작, 사용자 명시 승인 순서를 거친 뒤에만 구현한다.
 
@@ -2420,6 +2424,6 @@ projection·예약 전에 종료됐다. iPhone 17의 성공 여부와 무관하�
 안정적으로 보장하지 않는다. 부분 record fetch는 서버 권위와 pending reconciliation 계약을 약화하고,
 첫 탭 실패 뒤 재시도는 T089와 사용자 피드백 요구를 충족하지 못한다.
 
-**영향 범위**: BLK-018을 해결하며 `spec.md` FR-012·FR-013·FR-041~FR-044와 SC-013~SC-014,
+**영향 범위**: BLK-018을 해결하며 `spec.md` FR-012·FR-013·FR-041~FR-045와 SC-013~SC-015,
 `plan.md`, `data-model.md`, Shield·rule release·Live Activity contract, T089와 T103~T119에 적용한다.
 T105 전에는 release 결과 UI와 handoff 구현을, T116 전에는 Live Activity UI 개편을 시작하지 않는다.

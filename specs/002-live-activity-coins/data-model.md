@@ -335,8 +335,11 @@ repository의 `consumeIfEligible(now:activeOccurrenceIDs:)`는 유효 기간, �
 
 `releaseProcessing` route를 소비한 앱은 별도의 UI 상태 머신을 `processing → completed | retryable |
 insufficient | recoveryRequired`로 전이한다. `completed`는 Managed Settings read-back과 장부 commit이
-모두 확인된 뒤에만 허용하며, `retryable`은 같은 `commandID`를 유지한다. UI 상태는 서버 권위 장부를
-대체하지 않고 재실행 때 command 재조정 결과로 다시 파생한다.
+모두 확인된 뒤에만 허용한다. 하나의 command가 실행 중일 때는 `processing`을 유지하고 중복 요청을
+허용하지 않는다. 서비스가 재시도 가능한 오류를 반환하거나 다음 foreground 재조정에서 완료가
+확인되지 않은 중단 command로 판정한 경우에만 `retryable`로 전이하며 같은 `commandID`를 유지한다.
+확정 성공·잔액 부족·복구 필요는 재시도 화면을 거치지 않고 해당 상태로 전이한다. UI 상태는 서버
+권위 장부를 대체하지 않고 재실행 때 command 재조정 결과로 다시 파생한다.
 
 ## 관계
 

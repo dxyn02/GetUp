@@ -296,8 +296,12 @@ mirror·해제 예외를 보관한다. 별도 서버와 외부 패키지는 도�
   다시 계산한다. 실패 시 보상 이벤트 또는 pending reconciliation으로 잔액 유실을 막는다.
 - 메인 앱은 release route 소비 즉시 처리 중 UI를 표시하고 전체 동기화·원자 예약·예외 적용·제한
   read-back·commit을 순서대로 수행한다. read-back과 commit이 확인된 경우에만 완료 UI를 표시하고,
-  실패·결과 불명은 같은 command ID의 재시도 UI, 확정 잔액 부족은 코인 구매 유도 UI로 전환한다.
+  재시도 가능한 오류 또는 foreground 재조정에서 완료되지 않은 중단 command는 같은 command ID의
+  재시도 UI, 확정 잔액 부족은 코인 구매 유도 UI로 전환한다.
   앱 종료·중복 route는 재조정해 새 차감 없이 하나의 최종 결과로 수렴시킨다.
+- 한 command의 서비스 호출이 실행 중일 때는 처리 중 상태와 중복 차단을 유지한다. 명시적인 재시도
+  가능 오류 또는 다음 foreground에서 완료를 확인할 수 없는 중단 command로 분류됐을 때만 같은
+  command ID 재시도를 활성화한다. 성공·잔액 부족·장부 복구 필요는 각 확정 결과로 바로 분기한다.
 - 제한 read-back 성공 뒤 앱이 foreground이면 Live Activity 대표를 교체하거나 종료한다. ActivityKit
   실패는 해제·장부 commit을 취소하지 않는 비치명적 실패로 기록한다.
 - Shield는 가장 먼저 활성화된 대표 규칙, 무료 우선·없으면 구매 코인 1개라는 비용 순서, 구간 종료
@@ -326,8 +330,8 @@ mirror·해제 예외를 보관한다. 별도 서버와 외부 패키지는 도�
   extension-only 위치의 다음 foreground 반영을 기존 전용 테스트에서 자동 계측하고, 마감 단계는
   그 결과를 중복 구현하지 않고 집계·보고한다. 남은 시간 60초 정확도와 0 clamp도 함께 보고한다.
 - iOS 26.5의 `openParentalControlsApp` release·구매·복구 route와 iOS 26.0~26.4 fallback을 각각
-  실기기에서 검증한다. release route는 첫 Shield 탭 한 번으로 처리 중 UI에 진입하고, 성공·실패·
-  잔액 부족 결과와 두 기기 장부 수렴까지 확인한다.
+  실기기에서 검증한다. release route는 첫 Shield 탭 한 번으로 처리 중 UI에 진입하고, 성공·재시도
+  가능 오류·중단 command·잔액 부족 결과와 두 기기 장부 수렴까지 확인한다.
 - 실제 유료 판매 전 App Store Connect 상품·세금·계약·가격, iCloud container production schema,
   privacy disclosure와 서버 없는 한계 문구를 검토한다.
 

@@ -142,6 +142,11 @@ occurrence만 예외 처리되는지, 중복 100회에서 최대 1회만 소모�
 - [X] T057 [US2] 활성 제한 카드의 해제 확인 dialog와 `PendingAppRouteRepository.consumeIfEligible` 결과에 따른 잔액 부족 coin store·장부 복구 진입을 `GetUp/Features/RestrictionStatus/RestrictionStatusView.swift`, `GetUp/Features/Coins/ActiveRestrictionReleaseView.swift`에 구현한다.
 - [X] T058 [US2] 한국어·영어 비용·대상·유효 기간·다중 규칙·처리 확인 문구를 `GetUp/Resources/Localizable.xcstrings`, `GetUpShieldConfiguration/Resources/Localizable.xcstrings`에 추가하고 US2 관련 자동 테스트를 통과시킨다.
 
+**DEC-114 대체 표시**: T043·T044·T055는 Shield 안에서 CloudKit 해제를 완료하던 이전 제품 경로의
+구현·회귀 기록이다. T044의 deadline fixture는 진단 회귀로 유지하지만 production Shield의 직접
+CloudKit 호출은 T109가 대체한다. T100의 앱 장부 조립은 재사용하고 Shield 직전 전체 refresh 연결은
+T109~T110이 대체한다.
+
 **체크포인트**: fake 장부 잔액만으로 Shield·앱의 현재 구간 1회 해제와 모든 실패 보상을 검증할 수 있다.
 
 ---
@@ -213,7 +218,7 @@ occurrence만 예외 처리되는지, 중복 100회에서 최대 1회만 소모�
 
 ---
 
-## Phase 7: 마감 및 교차 관심사
+## Phase 7: 마감 및 교차 관심사 *(Phase 9 완료 뒤 실행)*
 
 **목적**: 네 스토리를 통합 검증하고 개인정보·접근성·출시 운영 조건을 닫는다.
 
@@ -225,7 +230,7 @@ occurrence만 예외 처리되는지, 중복 100회에서 최대 1회만 소모�
 - [ ] T095 같은 iCloud 계정 두 실기기에서 장부 충돌·로컬 빈 새 설치 복구·account switch·zone 삭제·명시적 reset·첫 상호작용 다음 달 지급을 검증하고 결과를 `specs/002-live-activity-coins/quickstart.md`, `docs/HANDOFF.md`에 기록한다.
 - [ ] T096 T039의 Shield Action ActivityKit 선행 probe 결과를 회귀 확인하고 실기기에서 Live Activity foreground 시작·위치 수신 주체별 30초·10m 거리·5분 stale·대표 교체·수동 제거 재생성·메인 앱 코인 해제 직후 갱신/종료, iOS 26.5 release route 직접 앱 진입·iOS 26.0~26.4 호환 경로를 검증해 `specs/002-live-activity-coins/quickstart.md`, `docs/HANDOFF.md`에 기록한다.
 - [ ] T097 App Store Connect IAP 계약·세금·상품 판매 상태, CloudKit production schema, capability·privacy manifest를 점검하고 `docs/HANDOFF.md`, `docs/BLOCKERS.md`를 갱신한다.
-- [ ] T098 모든 FR-001~FR-044·SC-001~SC-014의 구현·검증 추적성을 확인하고 특히 FR-041~FR-044 release route·승인 기반 UI와 SC-003 시간 정확도의 자동 테스트 증적을 연결한 뒤 `specs/002-live-activity-coins/tasks.md`, `docs/STATUS.md`, `docs/DECISIONS.md`를 완료 상태로 갱신한다.
+- [ ] T098 T113·T119 완료 뒤 모든 FR-001~FR-045·SC-001~SC-015의 구현·검증 추적성을 확인하고 특히 FR-041~FR-045 release route·승인 기반 UI와 SC-003 시간 정확도의 자동 테스트 증적을 연결한 뒤 `specs/002-live-activity-coins/tasks.md`, `docs/STATUS.md`, `docs/DECISIONS.md`를 완료 상태로 갱신한다.
 
 ---
 
@@ -236,15 +241,16 @@ occurrence만 예외 처리되는지, 중복 100회에서 최대 1회만 소모�
 - **Phase 1 설정**: 즉시 시작할 수 있다.
 - **Phase 2 공통 기반**: Phase 1 완료 후 진행하며 모든 사용자 스토리를 차단한다.
 - **US1**: Phase 2 완료 후 독립적으로 시작할 수 있다.
-- **US2**: 장부·해제 core 테스트와 구현은 Phase 2 뒤 시작할 수 있다. Live Activity 직접 조정 경로의
-  T039 실기기 feasibility gate는 US1의 T011·T032·T033 완료 후 실행하며 T055의 직접 조정 연결만
-  차단한다. fallback을 포함한 해제 core는 US1과 병렬 진행할 수 있다.
+- **US2**: 장부·해제 core 테스트와 구현은 Phase 2 뒤 시작할 수 있다. T039·T055의 Shield 직접
+  조정 경로는 완료된 과거 feasibility·회귀 증적으로만 유지한다. 현재 제품 경로는 T103~T113이며,
+  T105 하이파이 승인 뒤 T106~T113을 순서대로 수행한다.
 - **US3**: Phase 2 완료 후 US1·US2와 기능적으로 독립 개발할 수 있지만
   `CoinLedgerSyncAdapter`·`DependencyContainer` 변경은 US2와 파일 단위로 순차 적용한다.
 - **US4**: 월 정책·원자 예약 구현은 Phase 2에서 이미 완료한다. US4의 app lifecycle·Shield UI·인수
   연결은 US2의 `RuleReleaseService`·`ShieldContentProvider` 완료 후 진행하며 US3의
   `CoinStoreModel` 변경과도 파일 단위로 순차 적용한다.
-- **Phase 7 마감**: 출시하려는 모든 사용자 스토리와 관련 자동 테스트 완료 후 진행한다.
+- **Phase 7 마감**: 번호는 기존 문서 이력을 유지하지만 실행은 Phase 9와 T089 완료 후 진행한다.
+  T098은 T113·T119의 승인 UI·실기기 증적까지 포함한 최종 추적성 gate다.
 - **Phase 9 승인 기반 후속 작업**: BLK-018 해결 경로를 먼저 구현·검증한 뒤 T089을 재개한다. US2의
   T106~T113은 T105 해제 UI 하이파이 승인 뒤에만 시작한다. US1의 T117~T119는 T116 Live Activity
   하이파이 승인 뒤에만 시작한다. 두 승인 게이트는 서로 독립적으로 진행할 수 있다.
@@ -252,16 +258,16 @@ occurrence만 예외 처리되는지, 중복 100회에서 최대 1회만 소모�
 ### 사용자 스토리 의존성 그래프
 
 ```text
-Phase 1 설정 → Phase 2 공통 기반·월 최소 기반 ┬→ US1 T011·T032·T033 → T039 gate ─┐
-                                               ├→ US2 해제 core·fallback ─────────┼→ T055 직접 조정 ─┐
-                                               └→ US3 StoreKit 구매·복구 ─────────┴─────────────────┤
-                                                                       US2 완료 → US4 월 UI·인수 ───┤
-                                                                                                      └→ Phase 7
+Phase 1 설정 → Phase 2 공통 기반·월 최소 기반 ┬→ US1 기존 Live Activity ─→ T114~T116 승인 → T117~T119 ─┐
+                                               ├→ US2 기존 해제 core ─→ T103~T105 승인 → T106~T113 ─────┤
+                                               └→ US3 StoreKit 구매·복구 → US4 월 UI·인수 → T089 ────────┤
+                                                                                                          └→ Phase 7·T098
 ```
 
 - US1은 코인 계층을 사용하지 않는다.
 - US2 해제 core는 Phase 2에서 검증된 무료분·fixture 구매 잔액과 ActivityKit fake로 독립 검증한다.
-  T039는 T011·T032·T033 뒤 실행하며 그 결과는 T055의 직접 ActivityKit 조정 활성화 여부만 결정한다.
+  완료된 T039 결과와 T055 직접 ActivityKit 경로는 회귀 증적으로만 보존하며, DEC-114 이후 production
+  해제는 T109의 app handoff와 T110~T112의 메인 앱 실행·UI가 담당한다.
 - US3은 규칙 해제를 수행하지 않고 구매 지급·복구만 독립 검증한다.
 - US4는 StoreKit 없이 월간 무료 지급·비이월을 검증하지만 Shield UI 연결은 US2 뒤에 수행한다.
 
@@ -288,7 +294,7 @@ T028 occurrence evaluator || T029 content policy || T032 ActivityKit adapter
 T040 reservation·상태 머신 테스트 || T041 예외 저장 테스트 || T042 조정 테스트 || T043 Shield 테스트 || T044 deadline 테스트 || T045 UI 테스트
 T046 reservation policy || T048 release exception repository || T056 앱 model
 US1 T011·T032·T033 완료 → T039 실기기 feasibility gate
-해제 core 완료 + T039 결과 → T055 직접 조정 또는 foreground fallback 연결
+DEC-114 이후: T103~T105 설계·승인 → T106·T107 실패 테스트 → T108~T112 구현 → T113 실기기 검증
 ```
 
 ### US3
@@ -353,20 +359,21 @@ T088 지역화
 ### 사용자 스토리 2 후속 — Shield 요청을 메인 앱에서 완료
 
 **독립 테스트**: iOS 26.5 이상에서 Shield `해제권 1회 사용`을 한 번 누르면 메인 앱의 처리 중 화면이
-열리고, 성공 시 현재 occurrence만 해제·1회 차감·완료 화면으로 수렴한다. 실패는 차감 없이 재시도,
-잔액 부족은 제한 유지와 코인 구매 CTA로 수렴한다.
+열리고, 성공 시 현재 occurrence만 해제·1회 차감·완료 화면으로 수렴한다. 재시도 가능한 오류 또는
+foreground에서 확인된 중단 command는 차감 없이 동일 command 재시도, 잔액 부족은 제한 유지와
+코인 구매 CTA로 수렴한다.
 
-- [ ] T103 [US2] 처리 중·해제 완료·실패 후 재시도·잔액 부족 후 코인 구매 유도의 사용자 흐름과 상태·초점 이동을 `design/low-fidelity/US2-release-handoff.md`에 작성하고 사용자 검토 결과를 승인 상태로 기록한다.
+- [ ] T103 [US2] 처리 중·해제 완료·재시도 가능한 실패 또는 중단 command 확인 후 재시도·잔액 부족 후 코인 구매 유도의 사용자 흐름과 상태·초점 이동을 `design/low-fidelity/US2-release-handoff.md`에 작성하고 사용자 검토 결과를 승인 상태로 기록한다.
 - [ ] T104 [US2] T103 승인 뒤 네 해제 상태의 Light/Dark, 최대 Dynamic Type, VoiceOver, Reduce Motion, loading·중복 tap·앱 재실행 상태를 포함한 하이파이를 제작하고 Figma node·시각 token·문구·구현 인계를 `design/high-fidelity/US2-release-handoff.md`에 기록한다.
 - [ ] T105 [US2] T104 하이파이를 사용자에게 제시해 명시적 구현 승인을 받고 결과·의견·승인일을 `design/high-fidelity/US2-release-handoff.md`, `docs/DECISIONS.md`, `docs/STATUS.md`에 기록한다. 승인 전에는 T106~T113을 시작하지 않는다.
 - [ ] T106 [P] [US2] `releaseProcessing` route의 안정 command ID, 5분·일회 소비, 중복·만료·종료 occurrence 폐기와 앱 종료 뒤 동일 command 재조정 실패 테스트를 `GetUpTests/Core/RuleReleaseRouteTests.swift`, `GetUpTests/Persistence/PendingAppRouteRepositoryTests.swift`에 먼저 작성한다.
-- [ ] T107 [P] [US2] 처리 중→완료·재시도·잔액 부족·복구 필요 상태 전이, 완료 전 제한 유지, 중복 action 차단과 승인 하이파이 식별자 UI 테스트를 `GetUpTests/Integration/AppReleaseHandoffTests.swift`, `GetUpUITests/UserStory2ReleaseResultUITests.swift`에 먼저 작성한다.
+- [ ] T107 [P] [US2] 처리 중→완료·재시도·잔액 부족·복구 필요 상태 전이, 실행 중 재시도 비노출, 재시도 가능 오류·foreground 중단 command에서만 동일 command 재시도 활성화, 완료 전 제한 유지와 승인 하이파이 식별자 UI 테스트를 `GetUpTests/Integration/AppReleaseHandoffTests.swift`, `GetUpUITests/UserStory2ReleaseResultUITests.swift`에 먼저 작성한다.
 - [ ] T108 [US2] `PendingAppRoute.releaseProcessing`과 command ID codec·호환 migration, 메인 앱 release 상태 모델을 `GetUp/Core/Models/RuleReleaseModels.swift`, `GetUp/Infrastructure/Persistence/SharedSnapshotRepository.swift`, `GetUp/Features/Coins/ActiveRestrictionReleaseModel.swift`에 구현한다.
 - [ ] T109 [US2] Shield primary가 CloudKit을 호출하지 않고 release route를 원자 저장한 뒤 iOS 26.5 이상에서 즉시 `.openParentalControlsApp`, iOS 26.0~26.4에서 공식 fail-closed fallback을 반환하도록 `GetUpShieldAction/ShieldActionExtension.swift`, `GetUp/Infrastructure/ScreenTime/ShieldActionResponsePolicy.swift`를 변경한다.
 - [ ] T110 [US2] 메인 앱이 release route를 한 번 소비해 FR-037 전체 refresh·occurrence 재검증·동일 command 재조정·무료 우선 원자 해제·Managed Settings read-back·commit을 수행하도록 `GetUp/App/AppLifecycleCoordinator.swift`, `GetUp/App/DependencyContainer.swift`, `GetUp/Infrastructure/ScreenTime/RuleReleaseCoordinator.swift`를 연결한다.
 - [ ] T111 [US2] T105에서 승인된 하이파이만 기준으로 처리 중·완료·재시도·잔액 부족 화면과 재시도·코인 구매 CTA를 `GetUp/Features/Coins/ActiveRestrictionReleaseView.swift`, `GetUp/Features/Coins/CoinStoreView.swift`에 구현한다.
 - [ ] T112 [US2] 승인된 네 상태의 한국어·영어 문구, VoiceOver 진행 상태·focus 이동, 최대 Dynamic Type·Light/Dark·Reduce Motion 회귀를 `GetUp/Resources/Localizable.xcstrings`, `GetUpUITests/UserStory2ReleaseResultUITests.swift`, `GetUpUITests/AccessibilityUITests.swift`에 구현하고 관련 자동 테스트를 통과시킨다.
-- [ ] T113 [US2] 동일 iCloud 계정의 iPhone 15 Pro Max와 iPhone 17에서 Shield 첫 탭 한 번의 앱 진입, 처리 중·완료·재시도·잔액 부족, 제한·잔액·내역 다기기 수렴을 검증하고 T089 결과를 `specs/002-live-activity-coins/quickstart.md`, `docs/STATUS.md`, `docs/HANDOFF.md`에 기록한다.
+- [ ] T113 [US2] 동일 iCloud 계정의 iPhone 15 Pro Max와 iPhone 17에서 일반 활성 occurrence의 Shield 첫 탭 한 번 앱 진입, 처리 중·완료·재시도·잔액 부족, 제한·잔액·내역 다기기 수렴을 검증하고 release handoff 결과를 `specs/002-live-activity-coins/quickstart.md`, `docs/STATUS.md`, `docs/HANDOFF.md`에 기록한다. 월 경계의 allowance 지연 생성·비이월 판정은 T089에서 별도로 검증한다.
 
 **체크포인트**: 해제 UI 하이파이 승인 증적과 두 실기기의 첫 탭 해제·실패 안전성 증적이 모두
 있을 때만 US2 후속과 T089을 완료한다.
