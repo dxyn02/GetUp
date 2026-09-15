@@ -7,13 +7,15 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 승인 기반 후속 작업 준비 중
 
 ## 진행 중
-2026-09-15 T104 Figma 작업 차단: T103 승인·푸시 뒤 `figma-generate-design`, `figma-swiftui`,
-`figma-use`, `figma-generate-library` 지침으로 기존 GetUp Figma 파일을 조사했다. Code Connect는 없고,
-기존 `GetUp Focus` semantic color·layout variable과 SF Pro text style, Apple iOS 26 Liquid Glass
-button·progress indicator·status bar를 재사용 대상으로 확인했다. 로컬 변수의 값·scope·code syntax를
-확인하는 읽기 호출이 Figma 계정 사용량 한도로 거부되어 BLK-019를 열었다. 도구가 안내한 재시도
-가능 시각은 오후 8:23이며, 이번 재개에서 Figma 캔버스 변경은 없다. 한도 갱신 전에는 T104의 캔버스
-작성이나 우회 실행을 하지 않는다.
+2026-09-15 T104 완료: 승인된 T103 로우파이를 기준으로 기존 GetUp Figma 파일의 `288:2014`에
+`processing`, `completed`, `retryable`, `insufficient` 네 상태의 Dark·Light·Dynamic Type AX5
+하이파이 총 12개를 구성했다. 기존 `GetUp Focus` semantic color·layout variable과 SF Pro text style,
+Apple iOS progress indicator를 재사용했고, `GetUp / Release Status Card` 12개 variant와
+`GetUp / Primary Action` 8개 variant를 추가했다. retryAfter 비활성 상태, processing 중 중복 행동
+차단, 앱 재실행 복원 설명, 기존 `PendingAppRouteDestination.iCloudRecovery` 연결, VoiceOver focus와
+Reduce Motion·SwiftUI scroll 인계를 `design/high-fidelity/US2-release-handoff.md`에 기록했다. Figma
+자동 감사에서 12개 화면의 누락 폰트·텍스트 경계 초과·44pt 미만 action이 모두 0임을 확인했다.
+BLK-019는 해결됐으며 다음 작업은 사용자에게 하이파이를 제시해 명시적 구현 승인을 받는 T105다.
 
 2026-09-15 T103 완료: 사용자가 `design/low-fidelity/US2-release-handoff.md`의 네 신규 상태와 기존
 iCloud 복구 연결 방향을 승인하고 Figma 스킬을 사용한 하이파이 제작을 요청했다. 검토 기록과 승인
@@ -169,20 +171,19 @@ setup/reset/recovery/reconciliation과 5초 Shield 응답 상한을 live 경로�
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T103 — Shield 해제 메인 앱 handoff 로우파이 작성과 사용자 승인
+T104 — Shield 해제 메인 앱 handoff Light/Dark/AX5 Figma 하이파이와 구현 인계 작성
 
 ## 다음 작업
-T104 — 승인된 `design/low-fidelity/US2-release-handoff.md`를 기준으로 네 신규 상태의 Light/Dark,
-최대 Dynamic Type, VoiceOver, Reduce Motion, loading·중복 tap·앱 재실행 상태와 기존 복구 화면
-연결을 포함한 Figma 하이파이와 구현 인계 문서를 만든다. T105 구현 승인 전에는 제품 UI·handoff
-구현을 시작하지 않는다. Live Activity는 T114~T116 설계·승인을 별도로 진행한다.
+T105 — [T104 Figma 하이파이](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04?node-id=288-2014)를
+사용자에게 제시해 명시적 구현 승인과 의견을 기록한다. 승인 전에는 제품 UI·handoff 구현을 시작하지
+않는다. Live Activity는 T114~T116 설계·승인을 별도로 진행한다.
 T089 — T103~T113의 승인된 handoff 구현과 두 실기기 첫 탭 검증이 끝난 뒤 재개한다.
 T094·T095의 Shield/StoreKit 실기기 인수도 이어서 수행한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
-BLK-019 미해결: T104 Figma 하이파이 조사 중 계정 사용량 한도로 `use_figma`가 거부됐다. 오후
-8:23 이후 Phase 0 변수 검사부터 재개해야 하며 캔버스 변경은 아직 없다.
+BLK-019 해결됨: Figma 계정 호출이 정상화된 뒤 Phase 0부터 재개해 T104 하이파이와 자동 감사를
+완료했다. T105의 사용자 구현 승인만 남아 있다.
 
 BLK-018 해결됨: Shield는 release route 저장과 앱 열기만 수행하고 메인 앱이 전체 동기화·원자 해제를
 완료한다. 처리 결과 UI와 Live Activity 개편은 각각 하이파이 사용자 승인 뒤 구현한다.
