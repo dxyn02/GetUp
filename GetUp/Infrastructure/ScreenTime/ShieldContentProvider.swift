@@ -142,8 +142,8 @@ struct AppGroupShieldSnapshotReader: ShieldSnapshotReading {
 }
 
 enum ShieldReleaseFundingPolicy: Equatable, Sendable {
-    /// The balance snapshot is presentation-only. The action extension asks the
-    /// latest ledger to reserve the monthly allowance first, then this quantity.
+    /// The balance snapshot is presentation-only. After Shield saves a release
+    /// route, the containing app checks the latest ledger and spends free first.
     case latestLedgerFreeFirst(purchasedFallbackQuantity: Int)
 }
 

@@ -5,6 +5,141 @@ import Testing
 
 @Suite("Shield coin action")
 struct ShieldCoinActionTests {
+    @Test("Production primary stores a release handoff without executing ledger work")
+    func productionPrimaryStoresReleaseHandoff() async throws {
+        let routes = PendingRouteSpy()
+        let handler = ShieldReleaseRouteHandler(
+            loadRoute: { nil },
+            saveRoute: { try await routes.save($0) },
+            makeRouteID: { Self.routeID },
+            makeCommandID: { Self.commandID },
+            now: { Self.now }
+        )
+
+        let response = await handler.handlePrimaryAction(
+            occurrenceID: "occurrence-1",
+            operatingSystemVersion: Self.iOS26_5
+        )
+
+        expectOpenParentApp(response)
+        let route = try #require(await routes.savedRoutes.first)
+        #expect(route.destination == .releaseProcessing)
+        #expect(route.state == .pending)
+        #expect(route.commandID == Self.commandID)
+        #expect(route.occurrenceID == "occurrence-1")
+    }
+
+    @Test("Production primary preserves an existing command on duplicate delivery")
+    func productionDuplicateReusesCommand() async throws {
+        let existing = try PendingAppRoute.releaseProcessing(
+            routeID: Self.routeID,
+            commandID: Self.commandID,
+            createdAt: Self.now,
+            occurrenceID: "occurrence-1"
+        ).claiming(at: Self.now)
+        let routes = PendingRouteSpy()
+        let handler = ShieldReleaseRouteHandler(
+            loadRoute: { existing },
+            saveRoute: { try await routes.save($0) },
+            makeRouteID: UUID.init,
+            makeCommandID: UUID.init,
+            now: { Self.now }
+        )
+
+        let response = await handler.handlePrimaryAction(
+            occurrenceID: "occurrence-1",
+            operatingSystemVersion: Self.iOS26_5
+        )
+
+        expectOpenParentApp(response)
+        #expect(await routes.savedRoutes.isEmpty)
+    }
+
+    @Test("A pending duplicate reuses its command within five minutes")
+    func pendingDuplicateReusesCommand() async throws {
+        let existing = try PendingAppRoute.releaseProcessing(
+            routeID: Self.routeID,
+            commandID: Self.commandID,
+            createdAt: Self.now,
+            occurrenceID: "occurrence-1"
+        )
+        let routes = PendingRouteSpy()
+        let handler = ShieldReleaseRouteHandler(
+            loadRoute: { existing },
+            saveRoute: { try await routes.save($0) },
+            now: { Self.now.addingTimeInterval(299) }
+        )
+
+        let response = await handler.handlePrimaryAction(
+            occurrenceID: "occurrence-1",
+            operatingSystemVersion: Self.iOS26_5
+        )
+
+        expectOpenParentApp(response)
+        #expect(await routes.savedRoutes.isEmpty)
+    }
+
+    @Test("An expired pending route receives a new command rather than opening a dead handoff")
+    func expiredPendingRouteIsReplaced() async throws {
+        let existing = try PendingAppRoute.releaseProcessing(
+            routeID: Self.routeID,
+            commandID: Self.commandID,
+            createdAt: Self.now,
+            occurrenceID: "occurrence-1"
+        )
+        let routes = PendingRouteSpy()
+        let handler = ShieldReleaseRouteHandler(
+            loadRoute: { existing },
+            saveRoute: { try await routes.save($0) },
+            makeCommandID: { Self.replacementCommandID },
+            now: { Self.now.addingTimeInterval(300) }
+        )
+
+        let response = await handler.handlePrimaryAction(
+            occurrenceID: "occurrence-1",
+            operatingSystemVersion: Self.iOS26_5
+        )
+
+        expectOpenParentApp(response)
+        #expect(await routes.savedRoutes.first?.commandID == Self.replacementCommandID)
+    }
+
+    @Test("Production primary keeps a saved route on the iOS 26.4 fallback")
+    func productionLegacyFallbackKeepsRoute() async throws {
+        let routes = PendingRouteSpy()
+        let handler = ShieldReleaseRouteHandler(
+            loadRoute: { nil },
+            saveRoute: { try await routes.save($0) },
+            now: { Self.now }
+        )
+
+        let response = await handler.handlePrimaryAction(
+            occurrenceID: "occurrence-1",
+            operatingSystemVersion: Self.iOS26_4
+        )
+
+        #expect(response == .close)
+        #expect(await routes.destinations == [.releaseProcessing])
+    }
+
+    @Test("Production route write failure never reports an unlock")
+    func productionWriteFailureStaysClosed() async throws {
+        let routes = PendingRouteSpy(shouldFailSave: true)
+        let handler = ShieldReleaseRouteHandler(
+            loadRoute: { nil },
+            saveRoute: { try await routes.save($0) },
+            now: { Self.now }
+        )
+
+        let response = await handler.handlePrimaryAction(
+            occurrenceID: "occurrence-1",
+            operatingSystemVersion: Self.iOS26_5
+        )
+
+        #expect(response == .defer)
+        #expect(await routes.savedRoutes.isEmpty)
+    }
+
     @Test("A missing current-period allowance reaches atomic Shield reservation")
     func missingAllowanceBypassesConfirmedZeroShortcut() throws {
         let balance = try CoinBalanceSnapshot.fixture(
@@ -288,6 +423,8 @@ struct ShieldCoinActionTests {
 private extension ShieldCoinActionTests {
     static let now = Date(timeIntervalSince1970: 1_788_192_000)
     static let routeID = UUID(uuidString: "00000000-0000-4000-8000-000000000701")!
+    static let commandID = UUID(uuidString: "00000000-0000-4000-8000-000000000704")!
+    static let replacementCommandID = UUID(uuidString: "00000000-0000-4000-8000-000000000705")!
     static let iOS26_5 = OperatingSystemVersion(majorVersion: 26, minorVersion: 5, patchVersion: 0)
     static let iOS26_4 = OperatingSystemVersion(majorVersion: 26, minorVersion: 4, patchVersion: 0)
 

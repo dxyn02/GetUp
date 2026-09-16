@@ -20,6 +20,78 @@ struct ShieldActionResponsePolicy {
     }
 }
 
+/// The production Shield path only hands a stable request to the containing app.
+/// It does not inspect a cached balance or perform CloudKit, reservation, or unlock work.
+actor ShieldReleaseRouteHandler {
+    typealias LoadRoute = @Sendable () async throws -> PendingAppRoute?
+    typealias SaveRoute = @Sendable (PendingAppRoute) async throws -> Void
+
+    private let loadRoute: LoadRoute
+    private let saveRoute: SaveRoute
+    private let makeRouteID: @Sendable () -> UUID
+    private let makeCommandID: @Sendable () -> UUID
+    private let now: @Sendable () -> Date
+    private let responsePolicy: ShieldActionResponsePolicy
+    private var isHandling = false
+
+    init(
+        loadRoute: @escaping LoadRoute,
+        saveRoute: @escaping SaveRoute,
+        makeRouteID: @escaping @Sendable () -> UUID = UUID.init,
+        makeCommandID: @escaping @Sendable () -> UUID = UUID.init,
+        now: @escaping @Sendable () -> Date = Date.init,
+        responsePolicy: ShieldActionResponsePolicy = ShieldActionResponsePolicy()
+    ) {
+        self.loadRoute = loadRoute
+        self.saveRoute = saveRoute
+        self.makeRouteID = makeRouteID
+        self.makeCommandID = makeCommandID
+        self.now = now
+        self.responsePolicy = responsePolicy
+    }
+
+    func handlePrimaryAction(
+        occurrenceID: String,
+        operatingSystemVersion: OperatingSystemVersion
+    ) async -> ShieldActionResponse {
+        guard !isHandling, !occurrenceID.isEmpty else { return .defer }
+        isHandling = true
+        defer { isHandling = false }
+
+        do {
+            if let existing = try await loadRoute(),
+               existing.destination == .releaseProcessing {
+                if existing.state != .pending {
+                    guard existing.occurrenceID == occurrenceID else { return .defer }
+                    return responsePolicy.responseAfterSavingRoute(
+                        operatingSystemVersion: operatingSystemVersion
+                    )
+                }
+                let age = now().timeIntervalSince(existing.createdAt)
+                if existing.occurrenceID == occurrenceID,
+                   age >= 0,
+                   age < PendingAppRouteRepository.validityDuration {
+                    return responsePolicy.responseAfterSavingRoute(
+                        operatingSystemVersion: operatingSystemVersion
+                    )
+                }
+            }
+            let route = try PendingAppRoute.releaseProcessing(
+                routeID: makeRouteID(),
+                commandID: makeCommandID(),
+                createdAt: now(),
+                occurrenceID: occurrenceID
+            )
+            try await saveRoute(route)
+            return responsePolicy.responseAfterSavingRoute(
+                operatingSystemVersion: operatingSystemVersion
+            )
+        } catch {
+            return .defer
+        }
+    }
+}
+
 struct ShieldCoinActionContext: Equatable, Sendable {
     let representative: RestrictionOccurrence
     let activeRestrictionCount: Int
@@ -269,6 +341,70 @@ struct ShieldCoinActionContextReader: Sendable {
                 refresh: tokenRefresher.applicationTokens
             )
         }
+    }
+
+    func releaseOccurrence(for applicationToken: ApplicationToken) throws -> RestrictionOccurrence {
+        try releaseOccurrence {
+            shieldTokenMatches(
+                applicationToken,
+                storedTokens: $0.applicationTokens,
+                refresh: tokenRefresher.applicationTokens
+            )
+        }
+    }
+
+    func releaseOccurrence(for categoryToken: ActivityCategoryToken) throws -> RestrictionOccurrence {
+        try releaseOccurrence {
+            shieldTokenMatches(
+                categoryToken,
+                storedTokens: $0.categoryTokens,
+                refresh: tokenRefresher.categoryTokens
+            )
+        }
+    }
+
+    func releaseOccurrence(for webDomainToken: WebDomainToken) throws -> RestrictionOccurrence {
+        try releaseOccurrence {
+            shieldTokenMatches(
+                webDomainToken,
+                storedTokens: $0.webDomainTokens,
+                refresh: tokenRefresher.webDomainTokens
+            )
+        }
+    }
+
+    private func releaseOccurrence(
+        matches: (FamilyActivitySelection) -> Bool
+    ) throws -> RestrictionOccurrence {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let rules = try decode(
+            RestrictionRuleCollectionSnapshot.self,
+            fileName: SharedIdentifiers.restrictionRulesFileName,
+            decoder: decoder
+        )
+        let active = try decode(
+            ActiveRestrictionSnapshot.self,
+            fileName: SharedIdentifiers.activeRestrictionSnapshotFileName,
+            decoder: decoder
+        )
+        guard rules.schemaVersion == RestrictionRuleCollectionSnapshot.currentSchemaVersion,
+              active.schemaVersion == ActiveRestrictionSnapshot.currentSchemaVersion else {
+            throw ShieldCoinActionContextReaderError.snapshotUnavailable
+        }
+        let rulesByID = Dictionary(uniqueKeysWithValues: rules.rules.map { ($0.id, $0) })
+        guard let representative = RestrictionOccurrenceEvaluator.evaluate(
+            snapshot: active,
+            currentRuleRevisions: Dictionary(
+                uniqueKeysWithValues: rules.rules.map { ($0.id, $0.revision) }
+            ),
+            now: now()
+        ).orderedOccurrences.first(where: { occurrence in
+            rulesByID[occurrence.ruleID].map { matches($0.activitySelection) } ?? false
+        }) else {
+            throw ShieldCoinActionContextReaderError.noMatchingOccurrence
+        }
+        return representative
     }
 
     func context(for categoryToken: ActivityCategoryToken) async throws

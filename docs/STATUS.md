@@ -7,6 +7,16 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-16 T109 완료: Shield Action의 production 진입점에서 CloudKit runtime·전체 refresh·예약·
+제한 변경을 제거했다. 로컬 규칙·활성 occurrence와 Shield token을 확인한 뒤 안정 command ID를 담은
+`releaseProcessing` route만 App Group에 원자 저장한다. 유효한 동일 pending 및 기존 processing·
+terminal handoff는 중복 탭에서 재사용하고, 만료 pending은 새 command로 교체한다. 저장 성공 시 iOS
+26.5 이상은 `.openParentalControlsApp`, iOS 26.0~26.4는 route를 남긴 채 `.close`를 반환하며 저장·
+로컬 문맥 실패는 `.defer`로 제한을 유지한다. 직접 CloudKit 해제 handler는 과거 회귀 fixture로만
+남고 extension runtime에서 생성하지 않는다. T089 설정을 명령행에서만 비운 iPhone 17 Pro Max
+iOS 26.5 전체 `GetUpTests`는 선언 643개·동적 실행 763회가 실패·skip 없이 통과했다. 사용자 소유
+설정·지역화 변경은 보존했다. 다음 작업은 메인 앱 claim·재조정·원자 해제 연결인 T110이다.
+
 2026-09-16 T108 완료: `PendingAppRoute.releaseProcessing`에 안정 `commandID`와
 `pending → processing → terminal`, `terminal(retryable) → processing` 상태·claim·결과·제시·확인
 필드를 구현했다. repository는 5분·활성 occurrence를 확인해 원자 claim하고 processing·terminal을
@@ -218,11 +228,11 @@ setup/reset/recovery/reconciliation과 5초 Shield 응답 상한을 live 경로�
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T108 — release route 영속 상태·legacy migration·원자 repository 전이와 메인 앱 handoff 상태 모델 구현
+T109 — Shield의 CloudKit 없는 release route 저장과 iOS 버전별 fail-closed 응답 연결
 
 ## 다음 작업
-T109 — Shield primary가 CloudKit을 호출하지 않고 안정 command ID의 release route를 원자 저장한 뒤
-iOS 26.5 이상에서 앱을 열고, iOS 26.0~26.4에서는 공식 fail-closed fallback을 반환하도록 변경한다.
+T110 — 메인 앱이 release route를 영속 claim하고 앱 종료 뒤 같은 command를 먼저 재조정한 다음
+권위 장부 refresh·occurrence 재검증·원자 해제·read-back·commit·terminal 저장을 연결한다.
 UI runtime GREEN은 T111~T112에서 완료한다. Live Activity는 T114~T116 설계·승인을 별도로 진행한다.
 T089 — T103~T113의 승인된 handoff 구현과 두 실기기 첫 탭 검증이 끝난 뒤 재개한다.
 T094·T095의 Shield/StoreKit 실기기 인수도 이어서 수행한다.
@@ -254,6 +264,12 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-16 T109 자동 검증: iPhone 17 Pro Max iOS 26.5에서 전체 `GetUpTests` 선언 643개·
+동적 실행 763회가 실패·skip 없이 통과했다. 현재 사용자 소유 `Debug.xcconfig`의 T089 5분 설정은
+수정하지 않고 테스트 명령의 `GETUP_T089_*`만 비워 월 정책 fixture 충돌을 피했다. 새 Shield
+route 저장·중복 command·만료 pending·저장 실패·iOS 26.4 fallback 회귀를 포함한다. 실제 Shield
+첫 탭 앱 진입과 iOS 26.0~26.4 사용성은 T113 실기기 인수에서 확인한다.
+
 2026-09-16 T108 자동 검증: iPhone 17 Pro Max iOS 26.5에서 route lifecycle·repository·app handoff
 집중 테스트 36/36이 통과했다. 현재 `Debug.xcconfig`의 사용자 소유 T089 5분 설정을 그대로 사용한
 전체 실행은 월 단위 fixture와 설정이 충돌해 637개 중 47개가 실패했으며, 파일을 변경하지 않고
