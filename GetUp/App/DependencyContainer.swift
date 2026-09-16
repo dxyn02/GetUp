@@ -252,7 +252,7 @@ actor CoinAppLifecycleCoordinator {
             return nil
         case .ledgerReset where ledger.balance.syncState == .current:
             return nil
-        case .coinStore, .iCloudRecovery, .ledgerReset, .reconciliation:
+        case .releaseProcessing, .coinStore, .iCloudRecovery, .ledgerReset, .reconciliation:
             return destination
         }
     }

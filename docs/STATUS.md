@@ -4,9 +4,21 @@
 001-location-app-restriction, 002-live-activity-coins
 
 ## 현재 단계
-001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 승인 기반 후속 작업 준비 중
+001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-16 T108 완료: `PendingAppRoute.releaseProcessing`에 안정 `commandID`와
+`pending → processing → terminal`, `terminal(retryable) → processing` 상태·claim·결과·제시·확인
+필드를 구현했다. repository는 5분·활성 occurrence를 확인해 원자 claim하고 processing·terminal을
+앱 재실행 뒤에도 보존하며, terminal 기록·제시·명시적 확인 삭제·같은 command 재시도를 원자
+전이한다. 쓰기 실패 시 claim 전 파일을 복원하고, legacy `consumedAt` payload는 미소비를 pending,
+유효한 소비 중 release를 processing으로 복원하며 그 밖의 소비 route는 폐기한다. 메인 앱 handoff
+상태 모델은 실행 중 중복을 막고 completed·retryable(`retryAfter`)·recoveryRequired·insufficient,
+결과 불명 processing 유지와 foreground에서 확인된 중단만 retryable로 분류한다. iPhone 17 Pro Max
+iOS 26.5 집중 실행은 36/36, T089 설정을 명령행에서만 비운 전체 `GetUpTests`는 선언 637개·동적 실행
+757회 모두 통과했고 실패·skip은 0이다. 사용자 소유 T089 5분 설정과 지역화 변경은 수정하지 않았다.
+다음 작업은 Shield에서 CloudKit 대신 release route를 저장하고 앱을 여는 T109다.
+
 2026-09-15 T107 완료(예상 RED): `AppReleaseHandoffTests` 8개로 claim 직후 processing, 실행 중 중복
 차단, read-back·commit 확인 뒤 completed, transient `retryAfter`, 결과 불명 processing 유지,
 계정·장부 복구와 확정 잔액 부족 분기, foreground에서 확인된 중단 command만 retryable, 동일
@@ -206,12 +218,12 @@ setup/reset/recovery/reconciliation과 5초 Shield 응답 상한을 live 경로�
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T107 — release handoff 결과 상태·오류 분류·승인 하이파이 식별자 실패 테스트 작성
+T108 — release route 영속 상태·legacy migration·원자 repository 전이와 메인 앱 handoff 상태 모델 구현
 
 ## 다음 작업
-T108 — `PendingAppRoute.releaseProcessing`의 영속 상태·migration, repository 원자 전이와 메인 앱
-release handoff 상태 모델을 구현해 T106·T107 Core/Integration RED를 GREEN으로 전환한다. UI runtime
-GREEN은 T111~T112에서 완료한다. Live Activity는 T114~T116 설계·승인을 별도로 진행한다.
+T109 — Shield primary가 CloudKit을 호출하지 않고 안정 command ID의 release route를 원자 저장한 뒤
+iOS 26.5 이상에서 앱을 열고, iOS 26.0~26.4에서는 공식 fail-closed fallback을 반환하도록 변경한다.
+UI runtime GREEN은 T111~T112에서 완료한다. Live Activity는 T114~T116 설계·승인을 별도로 진행한다.
 T089 — T103~T113의 승인된 handoff 구현과 두 실기기 첫 탭 검증이 끝난 뒤 재개한다.
 T094·T095의 Shield/StoreKit 실기기 인수도 이어서 수행한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
@@ -242,6 +254,12 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-16 T108 자동 검증: iPhone 17 Pro Max iOS 26.5에서 route lifecycle·repository·app handoff
+집중 테스트 36/36이 통과했다. 현재 `Debug.xcconfig`의 사용자 소유 T089 5분 설정을 그대로 사용한
+전체 실행은 월 단위 fixture와 설정이 충돌해 637개 중 47개가 실패했으며, 파일을 변경하지 않고
+명령행에서 `GETUP_T089_*`만 비운 정상 월 정책 재실행은 선언 637개·동적 실행 757회가 실패·skip
+없이 통과했다. `git diff --check`도 통과했으며 T107 UI runtime은 계획대로 T111~T112에서 검증한다.
+
 2026-09-15 T089 최초 refresh 세분화: iPhone 15 Pro Max에서 실패 뒤 10초가 지나도
 `SHIELD DEBUG: initialRefreshStarted`, 잔액 2/0이 유지됐다. extension이 자체 timeout보다 먼저
 종료됐으므로 예약 전 CloudKit refresh 내부 병목으로 확정했다. FR-037의 최신 서버 확인 계약은

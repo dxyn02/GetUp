@@ -621,6 +621,8 @@ struct ActiveRestrictionReleaseDestinationView: View {
 
     private var title: String {
         switch destination {
+        case .releaseProcessing:
+            AppLocalizedCopy.string("coinRelease.destination.reconciliation.title")
         case .coinStore: AppLocalizedCopy.string("coinRelease.destination.coinStore.title")
         case .iCloudRecovery:
             AppLocalizedCopy.string("coinRelease.destination.iCloudRecovery.title")
@@ -633,6 +635,8 @@ struct ActiveRestrictionReleaseDestinationView: View {
 
     private var message: String {
         switch destination {
+        case .releaseProcessing:
+            AppLocalizedCopy.string("coinRelease.destination.reconciliation.message")
         case .coinStore:
             AppLocalizedCopy.string("coinRelease.destination.coinStore.message")
         case .iCloudRecovery:
@@ -646,6 +650,7 @@ struct ActiveRestrictionReleaseDestinationView: View {
 
     private var icon: String {
         switch destination {
+        case .releaseProcessing: "hourglass"
         case .coinStore: "cart"
         case .iCloudRecovery: "icloud"
         case .ledgerReset: "exclamationmark.icloud"

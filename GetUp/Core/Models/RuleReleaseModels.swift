@@ -381,17 +381,39 @@ struct ReleaseExceptionCollectionSnapshot: Codable, Equatable, Sendable {
 }
 
 enum PendingAppRouteDestination: String, Codable, Equatable, Hashable, Sendable {
+    case releaseProcessing
     case coinStore
     case iCloudRecovery
     case ledgerReset
     case reconciliation
 }
 
+enum PendingAppRouteState: String, Codable, Equatable, Hashable, Sendable {
+    case pending
+    case processing
+    case terminal
+}
+
+enum PendingAppRouteTerminalOutcome: String, Codable, Equatable, Hashable, Sendable {
+    case completed
+    case retryable
+    case insufficient
+    case recoveryRequired
+}
+
 struct PendingAppRoute: Codable, Equatable, Hashable, Sendable {
     let routeID: UUID
     let destination: PendingAppRouteDestination
+    let commandID: UUID?
     let createdAt: Date
     let occurrenceID: String?
+    let state: PendingAppRouteState
+    let claimedAt: Date?
+    let terminalOutcome: PendingAppRouteTerminalOutcome?
+    let retryAfter: Date?
+    let presentedAt: Date?
+    let acknowledgedAt: Date?
+    /// Retained only to decode and safely retire the pre-handoff route format.
     let consumedAt: Date?
 
     init(
@@ -401,31 +423,280 @@ struct PendingAppRoute: Codable, Equatable, Hashable, Sendable {
         occurrenceID: String?,
         consumedAt: Date?
     ) throws {
-        if occurrenceID?.isEmpty == true {
+        guard destination != .releaseProcessing else {
             throw LiveActivityCoinModelError.invalidPendingAppRoute
         }
-        if let consumedAt, consumedAt < createdAt {
-            throw LiveActivityCoinModelError.invalidPendingAppRoute
-        }
+        try self.init(
+            routeID: routeID,
+            destination: destination,
+            commandID: nil,
+            createdAt: createdAt,
+            occurrenceID: occurrenceID,
+            state: .pending,
+            claimedAt: nil,
+            terminalOutcome: nil,
+            retryAfter: nil,
+            presentedAt: nil,
+            acknowledgedAt: nil,
+            consumedAt: consumedAt
+        )
+    }
 
-        self.routeID = routeID
-        self.destination = destination
-        self.createdAt = createdAt
-        self.occurrenceID = occurrenceID
-        self.consumedAt = consumedAt
+    static func releaseProcessing(
+        routeID: UUID,
+        commandID: UUID,
+        createdAt: Date,
+        occurrenceID: String
+    ) throws -> PendingAppRoute {
+        try PendingAppRoute(
+            routeID: routeID,
+            destination: .releaseProcessing,
+            commandID: commandID,
+            createdAt: createdAt,
+            occurrenceID: occurrenceID,
+            state: .pending,
+            claimedAt: nil,
+            terminalOutcome: nil,
+            retryAfter: nil,
+            presentedAt: nil,
+            acknowledgedAt: nil,
+            consumedAt: nil
+        )
+    }
+
+    func claiming(at date: Date) throws -> PendingAppRoute {
+        guard destination == .releaseProcessing,
+              state == .pending,
+              consumedAt == nil,
+              date >= createdAt else {
+            throw LiveActivityCoinModelError.invalidPendingAppRoute
+        }
+        return try replacing(
+            state: .processing,
+            claimedAt: date,
+            terminalOutcome: nil,
+            retryAfter: nil,
+            presentedAt: nil,
+            acknowledgedAt: nil
+        )
+    }
+
+    func recordingTerminal(
+        outcome: PendingAppRouteTerminalOutcome,
+        retryAfter: Date?,
+        at date: Date
+    ) throws -> PendingAppRoute {
+        guard destination == .releaseProcessing,
+              state == .processing,
+              let claimedAt,
+              date >= claimedAt,
+              outcome == .retryable || retryAfter == nil,
+              retryAfter.map({ $0 >= date }) ?? true else {
+            throw LiveActivityCoinModelError.invalidPendingAppRoute
+        }
+        return try replacing(
+            state: .terminal,
+            claimedAt: claimedAt,
+            terminalOutcome: outcome,
+            retryAfter: retryAfter,
+            presentedAt: nil,
+            acknowledgedAt: nil
+        )
+    }
+
+    func markingPresented(at date: Date) throws -> PendingAppRoute {
+        guard state == .terminal,
+              let claimedAt,
+              date >= claimedAt,
+              presentedAt == nil else {
+            throw LiveActivityCoinModelError.invalidPendingAppRoute
+        }
+        return try replacing(
+            state: state,
+            claimedAt: claimedAt,
+            terminalOutcome: terminalOutcome,
+            retryAfter: retryAfter,
+            presentedAt: date,
+            acknowledgedAt: nil
+        )
+    }
+
+    func acknowledging(at date: Date) throws -> PendingAppRoute {
+        guard state == .terminal,
+              let claimedAt,
+              date >= (presentedAt ?? claimedAt),
+              acknowledgedAt == nil else {
+            throw LiveActivityCoinModelError.invalidPendingAppRoute
+        }
+        return try replacing(
+            state: state,
+            claimedAt: claimedAt,
+            terminalOutcome: terminalOutcome,
+            retryAfter: retryAfter,
+            presentedAt: presentedAt,
+            acknowledgedAt: date
+        )
+    }
+
+    func retrying(at date: Date) throws -> PendingAppRoute {
+        guard destination == .releaseProcessing,
+              state == .terminal,
+              terminalOutcome == .retryable,
+              date >= (retryAfter ?? claimedAt ?? createdAt) else {
+            throw LiveActivityCoinModelError.invalidPendingAppRoute
+        }
+        return try replacing(
+            state: .processing,
+            claimedAt: date,
+            terminalOutcome: nil,
+            retryAfter: nil,
+            presentedAt: nil,
+            acknowledgedAt: nil
+        )
     }
 
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        let destination = try container.decode(
+            PendingAppRouteDestination.self,
+            forKey: .destination
+        )
+        let commandID = try container.decodeIfPresent(UUID.self, forKey: .commandID)
+        let consumedAt = try container.decodeIfPresent(Date.self, forKey: .consumedAt)
+        let decodedState = try container.decodeIfPresent(
+            PendingAppRouteState.self,
+            forKey: .state
+        )
+        let state: PendingAppRouteState
+        let claimedAt: Date?
+        if let decodedState {
+            state = decodedState
+            claimedAt = try container.decodeIfPresent(Date.self, forKey: .claimedAt)
+        } else if consumedAt != nil,
+                  destination == .releaseProcessing,
+                  commandID != nil {
+            state = .processing
+            claimedAt = consumedAt
+        } else {
+            state = .pending
+            claimedAt = nil
+        }
+
         try self.init(
             routeID: container.decode(UUID.self, forKey: .routeID),
-            destination: container.decode(
-                PendingAppRouteDestination.self,
-                forKey: .destination
-            ),
+            destination: destination,
+            commandID: commandID,
             createdAt: container.decode(Date.self, forKey: .createdAt),
             occurrenceID: container.decodeIfPresent(String.self, forKey: .occurrenceID),
-            consumedAt: container.decodeIfPresent(Date.self, forKey: .consumedAt)
+            state: state,
+            claimedAt: claimedAt,
+            terminalOutcome: container.decodeIfPresent(
+                PendingAppRouteTerminalOutcome.self,
+                forKey: .terminalOutcome
+            ),
+            retryAfter: container.decodeIfPresent(Date.self, forKey: .retryAfter),
+            presentedAt: container.decodeIfPresent(Date.self, forKey: .presentedAt),
+            acknowledgedAt: container.decodeIfPresent(Date.self, forKey: .acknowledgedAt),
+            consumedAt: consumedAt
+        )
+    }
+
+    private init(
+        routeID: UUID,
+        destination: PendingAppRouteDestination,
+        commandID: UUID?,
+        createdAt: Date,
+        occurrenceID: String?,
+        state: PendingAppRouteState,
+        claimedAt: Date?,
+        terminalOutcome: PendingAppRouteTerminalOutcome?,
+        retryAfter: Date?,
+        presentedAt: Date?,
+        acknowledgedAt: Date?,
+        consumedAt: Date?
+    ) throws {
+        guard createdAt.timeIntervalSince1970.isFinite,
+              occurrenceID?.isEmpty != true,
+              consumedAt.map({ $0.timeIntervalSince1970.isFinite && $0 >= createdAt }) ?? true,
+              claimedAt.map({ $0.timeIntervalSince1970.isFinite && $0 >= createdAt }) ?? true,
+              retryAfter?.timeIntervalSince1970.isFinite != false,
+              presentedAt?.timeIntervalSince1970.isFinite != false,
+              acknowledgedAt?.timeIntervalSince1970.isFinite != false else {
+            throw LiveActivityCoinModelError.invalidPendingAppRoute
+        }
+        if destination == .releaseProcessing {
+            guard commandID != nil, occurrenceID != nil else {
+                throw LiveActivityCoinModelError.invalidPendingAppRoute
+            }
+        }
+
+        switch state {
+        case .pending:
+            guard claimedAt == nil,
+                  terminalOutcome == nil,
+                  retryAfter == nil,
+                  presentedAt == nil,
+                  acknowledgedAt == nil else {
+                throw LiveActivityCoinModelError.invalidPendingAppRoute
+            }
+        case .processing:
+            guard destination == .releaseProcessing,
+                  commandID != nil,
+                  claimedAt != nil,
+                  terminalOutcome == nil,
+                  retryAfter == nil,
+                  presentedAt == nil,
+                  acknowledgedAt == nil else {
+                throw LiveActivityCoinModelError.invalidPendingAppRoute
+            }
+        case .terminal:
+            guard destination == .releaseProcessing,
+                  commandID != nil,
+                  let claimedAt,
+                  terminalOutcome != nil,
+                  terminalOutcome == .retryable || retryAfter == nil,
+                  retryAfter.map({ $0 >= claimedAt }) ?? true,
+                  presentedAt.map({ $0 >= claimedAt }) ?? true,
+                  acknowledgedAt.map({ $0 >= (presentedAt ?? claimedAt) }) ?? true else {
+                throw LiveActivityCoinModelError.invalidPendingAppRoute
+            }
+        }
+
+        self.routeID = routeID
+        self.destination = destination
+        self.commandID = commandID
+        self.createdAt = createdAt
+        self.occurrenceID = occurrenceID
+        self.state = state
+        self.claimedAt = claimedAt
+        self.terminalOutcome = terminalOutcome
+        self.retryAfter = retryAfter
+        self.presentedAt = presentedAt
+        self.acknowledgedAt = acknowledgedAt
+        self.consumedAt = consumedAt
+    }
+
+    private func replacing(
+        state: PendingAppRouteState,
+        claimedAt: Date?,
+        terminalOutcome: PendingAppRouteTerminalOutcome?,
+        retryAfter: Date?,
+        presentedAt: Date?,
+        acknowledgedAt: Date?
+    ) throws -> PendingAppRoute {
+        try PendingAppRoute(
+            routeID: routeID,
+            destination: destination,
+            commandID: commandID,
+            createdAt: createdAt,
+            occurrenceID: occurrenceID,
+            state: state,
+            claimedAt: claimedAt,
+            terminalOutcome: terminalOutcome,
+            retryAfter: retryAfter,
+            presentedAt: presentedAt,
+            acknowledgedAt: acknowledgedAt,
+            consumedAt: consumedAt
         )
     }
 }

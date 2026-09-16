@@ -378,6 +378,19 @@ protocol PendingAppRoutePersisting: Sendable {
     func save(_ route: PendingAppRoute) async throws
     func load() async throws -> PendingAppRoute?
     func discard() async throws
+    func claimIfEligible(
+        now: Date,
+        activeOccurrenceIDs: Set<String>
+    ) async throws -> PendingAppRoute?
+    func recordTerminal(
+        routeID: UUID,
+        outcome: PendingAppRouteTerminalOutcome,
+        retryAfter: Date?,
+        at date: Date
+    ) async throws -> PendingAppRoute
+    func markPresented(routeID: UUID, at date: Date) async throws -> PendingAppRoute
+    func acknowledgeAndDelete(routeID: UUID, at date: Date) async throws
+    func retry(routeID: UUID, at date: Date) async throws -> PendingAppRoute?
 }
 
 enum ReleaseExceptionRepositoryError: Error, Equatable, Sendable,
