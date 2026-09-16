@@ -74,7 +74,7 @@ struct CoinStoreView: View {
             VStack(alignment: .leading, spacing: 20) {
                 if fromReleaseHandoff {
                     Label(
-                        "코인을 구매한 뒤 새 해제를 요청할 수 있어요.",
+                        AppLocalizedCopy.string("releaseHandoff.insufficient.storeNotice"),
                         systemImage: "xmark.shield"
                     )
                     .font(.subheadline.weight(.semibold))

@@ -7,6 +7,8 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-16 T112 완료: 승인된 네 handoff 상태의 한국어·영어 문자열 46개를 `Localizable.xcstrings`에 추가하고 기존 iCloud 복구 제목의 영어 연결을 확인했다. 처리 중 spinner는 VoiceOver에서 숨기고 route별 진행 안내를 한 번만 알리며, terminal 전환과 복구 진입은 제목으로 접근성 초점을 이동한다. `retryAfter` 종료도 한 번 알린다. 시스템 appearance와 관계없이 Dark surface와 읽을 수 있는 상태 막대를 유지한다. AX5 본문 스크롤·64pt 주 행동, Light/Dark, Reduce Motion, 읽기 순서와 영어 구매 이동을 UI 테스트로 검증했다. iPhone 17 Pro Max iOS 26.5에서 관련 단위·UI 테스트 664개 선언·동적 실행 784회가 실패·skip 없이 통과했다. VoiceOver가 실제 켜진 실기기에서의 음성 발표·초점 이동과 T113 두 기기 첫 탭·상태 수렴은 아직 수동 검증이 필요하다. 현재 phase는 002 Phase 9, 마지막 완료 task는 T112, 진행 중 task는 없다. 다음 task는 T113 실기기 handoff 인수다. 사용자 소유 설정·지역화 변경은 보존한다.
+
 2026-09-16 T111 완료: T105 승인 Figma 하이파이에 맞춰 어두운 배경의 handoff 처리 중·완료·재시도·잔액 부족 화면을 구현했다. 처리 중에는 제한 유지와 재실행 안내를 표시하고 행동 버튼을 숨긴다. 완료 화면은 확정된 비용 출처와 남은 규칙을 보여주며 확인 버튼으로 route를 정리한다. 재시도 화면은 미차감·제한 유지와 `retryAfter` 대기 상태를 표시하고 같은 command 재시작에 연결했다. 잔액 부족 화면은 X 아이콘과 최신 무료·구매 잔액을 표시하고 코인 구매 화면으로 이동하되 새 해제를 자동 요청하지 않는다. `recoveryRequired`는 기존 iCloud 복구 화면을 재사용한다. iPhone 17 Pro Max iOS 26.5에서 `GetUpTests` 전체 및 `UserStory2ReleaseResultUITests` 7개가 실패·skip 없이 통과했다. 현재 phase는 002 Phase 9, 마지막 완료 task는 T111, 진행 중 task는 없다. 다음 task는 T112의 한국어·영어 지역화, VoiceOver·Dynamic Type·Light/Dark·Reduce Motion 회귀다. T113 실기기 검증과 T089 월 경계 검증은 아직 미검증이며, 사용자 소유 설정·지역화 변경은 보존했다.
 
 2026-09-16 T110 완료: 메인 앱 launch·foreground가 Shield `releaseProcessing` route를 활성
@@ -244,11 +246,12 @@ setup/reset/recovery/reconciliation과 5초 Shield 응답 상한을 live 경로�
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T111 — 승인된 release handoff 네 상태 화면과 재시도·코인 구매 CTA 연결
+T112 — release handoff 한국어·영어 지역화와 접근성·appearance 회귀
 
 ## 다음 작업
-T112 — release handoff 한국어·영어 지역화, VoiceOver focus·진행 상태와 최대 Dynamic Type·
-Light/Dark·Reduce Motion 회귀를 완료한다. Live Activity는 T114~T116 설계·승인을 별도로 진행한다.
+T113 — 동일 iCloud 계정의 iPhone 15 Pro Max·iPhone 17에서 Shield 첫 탭 handoff, 네 결과·
+기존 복구 연결, 강제 종료 뒤 동일 command 복원과 다기기 수렴을 실기기 검증한다. Live Activity는
+T114~T116 설계·승인을 별도로 진행한다.
 T089 — T103~T113의 승인된 handoff 구현과 두 실기기 첫 탭 검증이 끝난 뒤 재개한다.
 T094·T095의 Shield/StoreKit 실기기 인수도 이어서 수행한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
@@ -279,6 +282,12 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-16 T112 자동 검증: iPhone 17 Pro Max iOS 26.5에서 `GetUpTests`,
+`AccessibilityUITests`, `UserStory2ReleaseResultUITests` 총 664개 선언·동적 실행 784회가
+실패·skip 없이 통과했다. 영어 구매 안내 집중 재실행도 통과했고 AX5·Light/Dark 스크린샷을 확인했다.
+XcodeBuildMCP는 현재 세션에 없어 Xcode 명령행과 결과 번들로 같은 시뮬레이터를 검증했다. 실제
+VoiceOver 음성 발표·초점 이동과 실기기 Shield handoff는 T113에서 수동 확인한다.
+
 2026-09-16 T111 자동 검증: iPhone 17 Pro Max iOS 26.5에서 전체 `GetUpTests`와 release handoff
 UI 테스트 7개가 실패·skip 없이 통과했다. 사용자 소유 `Debug.xcconfig`의 T089 5분 설정은 변경하지
 않고 테스트 명령에서 `GETUP_T089_*`만 비웠다. 실기기 Shield 첫 탭·iOS 26.0~26.4·AX5 전체

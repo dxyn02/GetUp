@@ -14,7 +14,8 @@ final class UserStory2ReleaseResultUITests: XCTestCase {
 
         XCTAssertTrue(screen.waitForExistence(timeout: 5), app.debugDescription)
         XCTAssertEqual(app.staticTexts["releaseHandoff.statusTitle"].label, "해제 상태를 확인하고 있어요")
-        XCTAssertTrue(app.activityIndicators["releaseHandoff.processing.progress"].exists)
+        XCTAssertFalse(app.activityIndicators["releaseHandoff.processing.progress"].exists)
+        XCTAssertTrue(app.staticTexts["releaseHandoff.statusMessage"].exists)
         XCTAssertTrue(app.staticTexts["releaseHandoff.restrictionMaintained"].label.contains("제한은 유지"))
         XCTAssertTrue(app.staticTexts["releaseHandoff.resumeMessage"].label.contains("다음 실행"))
         XCTAssertFalse(app.buttons["releaseHandoff.primaryAction"].exists)
@@ -101,7 +102,43 @@ final class UserStory2ReleaseResultUITests: XCTestCase {
     }
 
     @MainActor
-    private func launchApp(state: String) -> XCUIApplication {
+    func testEnglishReleaseHandoffCopyMatchesEachOutcome() {
+        let expectations: [(String, String, String)] = [
+            ("processing", "Checking release status", "The restriction stays active while we check."),
+            ("completed", "Release complete", "1 free release used"),
+            ("retryable", "Couldn't complete the release", "No coins were deducted"),
+            ("insufficient", "No releases available", "0 releases"),
+        ]
+
+        for (state, title, detail) in expectations {
+            let app = launchApp(state: state, language: "en")
+            XCTAssertTrue(app.staticTexts["releaseHandoff.statusTitle"].waitForExistence(timeout: 5))
+            XCTAssertEqual(app.staticTexts["releaseHandoff.statusTitle"].label, title)
+            XCTAssertTrue(app.staticTexts[detail].exists, "Missing English detail for \(state)")
+            if state == "insufficient" {
+                let purchase = app.buttons["releaseHandoff.primaryAction"]
+                XCTAssertEqual(purchase.label, "Buy Coins")
+                purchase.tap()
+                XCTAssertTrue(
+                    app.staticTexts["After buying coins, request a new release."]
+                        .waitForExistence(timeout: 5)
+                )
+            }
+            app.terminate()
+        }
+    }
+
+    @MainActor
+    func testEnglishRecoveryRequiredUsesExistingLocalizedRecoverySurface() {
+        let app = launchApp(state: "recovery-required", language: "en")
+
+        XCTAssertTrue(app.otherElements["coinRelease.destination.iCloudRecovery"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Recover iCloud Balance"].exists)
+        XCTAssertFalse(app.buttons["releaseHandoff.primaryAction"].exists)
+    }
+
+    @MainActor
+    private func launchApp(state: String, language: String = "ko") -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [
             "--ui-testing", "--ui-test-store-id", #function, "--ui-test-reset-store",
@@ -109,7 +146,8 @@ final class UserStory2ReleaseResultUITests: XCTestCase {
             "--ui-test-now", "2026-08-24T07:00:00Z",
             "--ui-test-location-state", "inside",
             "--ui-test-release-handoff", state,
-            "-AppleLanguages", "(ko)", "-AppleLocale", "ko_KR",
+            "-AppleLanguages", "(\(language))",
+            "-AppleLocale", language == "ko" ? "ko_KR" : "en_US",
         ]
         app.launch()
         return app

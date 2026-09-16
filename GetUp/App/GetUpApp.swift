@@ -18,9 +18,41 @@ struct GetUpApp: App {
             switch runtime {
             case .ready(let environment):
                 GetUpRootView(environment: environment)
+                    .modifier(UITestPresentationOverride())
             case .unavailable:
                 StartupUnavailableView()
             }
+        }
+    }
+}
+
+private struct UITestPresentationOverride: ViewModifier {
+    private let arguments = ProcessInfo.processInfo.arguments
+
+    private var colorScheme: ColorScheme? {
+        guard let argumentIndex = arguments.firstIndex(of: "--ui-test-appearance"),
+              arguments.indices.contains(argumentIndex + 1) else { return nil }
+        switch arguments[argumentIndex + 1] {
+        case "light": return .light
+        case "dark": return .dark
+        default: return nil
+        }
+    }
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if arguments.contains("--ui-test-dynamic-type-ax5") {
+            if let colorScheme {
+                content
+                    .dynamicTypeSize(.accessibility5)
+                    .environment(\.colorScheme, colorScheme)
+            } else {
+                content.dynamicTypeSize(.accessibility5)
+            }
+        } else if let colorScheme {
+            content.environment(\.colorScheme, colorScheme)
+        } else {
+            content
         }
     }
 }

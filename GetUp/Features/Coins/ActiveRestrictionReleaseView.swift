@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import SwiftUI
+import UIKit
 
 @MainActor
 @Observable
@@ -607,6 +608,9 @@ enum ReleaseHandoffAction: Equatable, Sendable {
 struct ActiveRestrictionReleaseHandoffView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @AccessibilityFocusState private var titleFocused: Bool
+    @State private var announcedProcessingRouteID: UUID?
+    @State private var announcedRetryReady = false
 
     let route: PendingAppRoute
     let details: ReleaseHandoffDisplayDetails?
@@ -629,39 +633,47 @@ struct ActiveRestrictionReleaseHandoffView: View {
     }
 
     var body: some View {
+        Group {
         if outcome == .recoveryRequired {
             ActiveRestrictionReleaseDestinationView(destination: .iCloudRecovery)
                 .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("coinRelease.destination.iCloudRecovery")
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button("닫기") { onAction(.close) }
+                        Button(AppLocalizedCopy.string("coinRelease.action.close")) {
+                            onAction(.close)
+                        }
                     }
                 }
         } else {
             VStack(spacing: 0) {
                 ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    statusIcon
-                    Text(eyebrow)
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(HomeColor.accent)
-                    Text(title)
-                        .font(.largeTitle.weight(.bold))
-                        .foregroundStyle(HomeColor.textPrimary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityIdentifier("releaseHandoff.statusTitle")
-                    Text(message)
-                        .font(.subheadline)
-                        .foregroundStyle(HomeColor.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    statusCard
-                    statusFootnote
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 24)
-                .padding(.top, 24)
-                .padding(.bottom, 24)
+                    VStack(alignment: .leading, spacing: 18) {
+                        statusIcon
+                        Text(eyebrow)
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(HomeColor.accent)
+                        Text(title)
+                            .font(.largeTitle.weight(.bold))
+                            .foregroundStyle(HomeColor.textPrimary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityAddTraits(.isHeader)
+                            .accessibilityFocused($titleFocused)
+                            .accessibilitySortPriority(10)
+                            .accessibilityIdentifier("releaseHandoff.statusTitle")
+                        Text(message)
+                            .font(.subheadline)
+                            .foregroundStyle(HomeColor.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilitySortPriority(9)
+                            .accessibilityIdentifier("releaseHandoff.statusMessage")
+                        statusCard
+                        statusFootnote
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 24)
+                    .padding(.bottom, 24)
                 }
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -672,7 +684,19 @@ struct ActiveRestrictionReleaseHandoffView: View {
             .toolbar(.hidden, for: .navigationBar)
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("releaseHandoff.\(stateName).screen")
+            .task(id: stateName) {
+                guard UIAccessibility.isVoiceOverRunning else { return }
+                if outcome == nil {
+                    guard announcedProcessingRouteID != route.routeID else { return }
+                    announcedProcessingRouteID = route.routeID
+                    UIAccessibility.post(notification: .announcement, argument: title)
+                } else {
+                    titleFocused = true
+                }
+            }
         }
+        }
+        .preferredColorScheme(.dark)
     }
 
     @ViewBuilder
@@ -684,9 +708,11 @@ struct ActiveRestrictionReleaseHandoffView: View {
                 if reduceMotion {
                     Image(systemName: "hourglass")
                         .foregroundStyle(HomeColor.accent)
+                        .accessibilityHidden(true)
                 } else {
                     ProgressView()
                         .tint(HomeColor.accent)
+                        .accessibilityHidden(true)
                 }
             } else {
                 Image(systemName: iconName)
@@ -704,31 +730,31 @@ struct ActiveRestrictionReleaseHandoffView: View {
 
     private var eyebrow: String {
         switch outcome {
-        case .completed: "RELEASE COMPLETE"
-        case .retryable: "ACTION NEEDED"
-        case .insufficient: "NO RELEASE AVAILABLE"
+        case .completed: AppLocalizedCopy.string("releaseHandoff.completed.eyebrow")
+        case .retryable: AppLocalizedCopy.string("releaseHandoff.retryable.eyebrow")
+        case .insufficient: AppLocalizedCopy.string("releaseHandoff.insufficient.eyebrow")
         case .recoveryRequired: ""
-        case nil: "RELEASE IN PROGRESS"
+        case nil: AppLocalizedCopy.string("releaseHandoff.processing.eyebrow")
         }
     }
 
     private var title: String {
         switch outcome {
-        case .completed: "해제가 완료됐어요"
-        case .retryable: "해제를 완료하지 못했어요"
-        case .insufficient: "사용할 수 있는 해제권이 없어요"
+        case .completed: AppLocalizedCopy.string("releaseHandoff.completed.title")
+        case .retryable: AppLocalizedCopy.string("releaseHandoff.retryable.title")
+        case .insufficient: AppLocalizedCopy.string("releaseHandoff.insufficient.title")
         case .recoveryRequired: ""
-        case nil: "해제 상태를 확인하고 있어요"
+        case nil: AppLocalizedCopy.string("releaseHandoff.processing.title")
         }
     }
 
     private var message: String {
         switch outcome {
-        case .completed: "이번 적용 구간의 제한을 안전하게 해제했어요."
-        case .retryable: "요청 결과를 확정하지 못했어요. 잠시 후 같은 요청으로 다시 시도할 수 있어요."
-        case .insufficient: "무료 해제권과 구매 코인 잔액을 최신 장부에서 확인했어요."
+        case .completed: AppLocalizedCopy.string("releaseHandoff.completed.message")
+        case .retryable: AppLocalizedCopy.string("releaseHandoff.retryable.message")
+        case .insufficient: AppLocalizedCopy.string("releaseHandoff.insufficient.message")
         case .recoveryRequired: ""
-        case nil: "잠시만 기다려 주세요. 같은 요청을 안전하게 확인하고 있어요."
+        case nil: AppLocalizedCopy.string("releaseHandoff.processing.message")
         }
     }
 
@@ -747,7 +773,8 @@ struct ActiveRestrictionReleaseHandoffView: View {
     }
 
     private var iconAccessibilityLabel: String {
-        outcome == .insufficient ? "사용할 수 없음" : title
+        outcome == .insufficient
+            ? AppLocalizedCopy.string("releaseHandoff.insufficient.icon") : title
     }
 
     private var statusCard: some View {
@@ -763,11 +790,11 @@ struct ActiveRestrictionReleaseHandoffView: View {
                     ? "releaseHandoff.fundingResult" : "releaseHandoff.cardTitle")
             if outcome == .insufficient {
                 HStack(spacing: 6) {
-                    Text("무료")
-                    Text(details?.freeAvailable.map { "\($0)회" } ?? "—")
+                    Text(AppLocalizedCopy.string("releaseHandoff.balance.freeLabel"))
+                    Text(details?.freeAvailable.map(freeBalanceText) ?? "—")
                         .accessibilityIdentifier("releaseHandoff.balance.free")
-                    Text("· 구매")
-                    Text(details?.purchasedAvailable.map { "\($0)개" } ?? "—")
+                    Text(AppLocalizedCopy.string("releaseHandoff.balance.purchasedLabel"))
+                    Text(details?.purchasedAvailable.map(purchasedBalanceText) ?? "—")
                         .accessibilityIdentifier("releaseHandoff.balance.purchased")
                 }
                 .font(.subheadline)
@@ -780,7 +807,7 @@ struct ActiveRestrictionReleaseHandoffView: View {
                 .accessibilityIdentifier(outcome == .completed
                     ? "releaseHandoff.fundingResult" : "releaseHandoff.cardDetail")
             if outcome == .completed, let remaining = details?.remainingRestrictionCount {
-                Text(remaining == 0 ? "남은 제한 없음" : "다른 규칙 \(remaining)개 유지")
+                Text(remainingRestrictionText(remaining))
                     .font(.subheadline)
                     .foregroundStyle(HomeColor.textSecondary)
                     .accessibilityIdentifier("releaseHandoff.remainingRestrictions")
@@ -799,20 +826,20 @@ struct ActiveRestrictionReleaseHandoffView: View {
 
     private var cardEyebrow: String {
         switch outcome {
-        case .completed: "CONFIRMED RESULT"
-        case .retryable: "BALANCE PROTECTED"
-        case .insufficient: "CURRENT BALANCE"
+        case .completed: AppLocalizedCopy.string("releaseHandoff.completed.cardEyebrow")
+        case .retryable: AppLocalizedCopy.string("releaseHandoff.retryable.cardEyebrow")
+        case .insufficient: AppLocalizedCopy.string("releaseHandoff.insufficient.cardEyebrow")
         case .recoveryRequired: ""
-        case nil: "CURRENT REQUEST"
+        case nil: AppLocalizedCopy.string("releaseHandoff.processing.cardEyebrow")
         }
     }
 
     private var cardTitle: String {
         switch outcome {
-        case .retryable: "코인은 차감되지 않았어요"
-        case .insufficient: "현재 잔액"
+        case .retryable: AppLocalizedCopy.string("releaseHandoff.retryable.cardTitle")
+        case .insufficient: AppLocalizedCopy.string("releaseHandoff.insufficient.cardTitle")
         case .completed, .recoveryRequired, nil:
-            details?.ruleName ?? "이번 적용 구간"
+            details?.ruleName ?? AppLocalizedCopy.string("releaseHandoff.ruleFallback")
         }
     }
 
@@ -820,41 +847,64 @@ struct ActiveRestrictionReleaseHandoffView: View {
         switch outcome {
         case .completed:
             switch details?.fundingSource {
-            case .monthlyFree: return "무료 해제권 1회 사용"
-            case .purchased: return "구매 코인 1개 사용"
-            case nil: return "해제 결과를 확인했어요"
+            case .monthlyFree: return AppLocalizedCopy.string("releaseHandoff.completed.fundingFree")
+            case .purchased: return AppLocalizedCopy.string("releaseHandoff.completed.fundingPurchased")
+            case nil: return AppLocalizedCopy.string("releaseHandoff.completed.fundingUnknown")
             }
-        case .retryable: return "제한 유지 · 잔액 보존"
-        case .insufficient: return "제한은 계속돼요"
+        case .retryable: return AppLocalizedCopy.string("releaseHandoff.retryable.cardDetail")
+        case .insufficient: return AppLocalizedCopy.string("releaseHandoff.insufficient.cardDetail")
         case .recoveryRequired: return ""
         case nil:
-            let end = details?.endsAt.map {
-                $0.formatted(date: .omitted, time: .shortened) + "까지 · "
-            } ?? ""
-            return end + "무료 해제권 우선 · 없으면 구매 코인 1개"
+            let cost = AppLocalizedCopy.string("releaseHandoff.processing.cost")
+            guard let endsAt = details?.endsAt else { return cost }
+            return AppLocalizedCopy.format(
+                "releaseHandoff.processing.endsAtCost",
+                endsAt.formatted(date: .omitted, time: .shortened), cost
+            )
         }
+    }
+
+    private func freeBalanceText(_ count: Int) -> String {
+        AppLocalizedCopy.format(
+            count == 1 ? "releaseHandoff.balance.free.one" : "releaseHandoff.balance.free.other",
+            count
+        )
+    }
+
+    private func purchasedBalanceText(_ count: Int) -> String {
+        AppLocalizedCopy.format(
+            count == 1 ? "releaseHandoff.balance.purchased.one" : "releaseHandoff.balance.purchased.other",
+            count
+        )
+    }
+
+    private func remainingRestrictionText(_ count: Int) -> String {
+        count == 0 ? AppLocalizedCopy.string("releaseHandoff.completed.remainingNone")
+            : AppLocalizedCopy.format("releaseHandoff.completed.remainingOther", count)
     }
 
     @ViewBuilder
     private var statusFootnote: some View {
         switch outcome {
         case .completed:
-            Text("다른 규칙의 제한은 계속돼요.")
-                .foregroundStyle(HomeColor.textSecondary)
+            if (details?.remainingRestrictionCount ?? 0) > 0 {
+                Text(AppLocalizedCopy.string("releaseHandoff.completed.footnote"))
+                    .foregroundStyle(HomeColor.textSecondary)
+            }
         case .retryable:
-            Text("제한은 유지되고 잔액도 그대로예요.")
+            Text(AppLocalizedCopy.string("releaseHandoff.retryable.footnote"))
                 .foregroundStyle(HomeColor.error)
                 .accessibilityIdentifier("releaseHandoff.restrictionMaintained")
         case .insufficient:
-            Text("코인을 구매한 뒤 새 해제를 요청할 수 있어요.")
+            Text(AppLocalizedCopy.string("releaseHandoff.insufficient.footnote"))
                 .foregroundStyle(HomeColor.textSecondary)
         case .recoveryRequired:
             EmptyView()
         case nil:
             VStack(alignment: .leading, spacing: 2) {
-                Text("확인되는 동안 제한은 유지돼요.")
+                Text(AppLocalizedCopy.string("releaseHandoff.processing.restrictionMaintained"))
                     .accessibilityIdentifier("releaseHandoff.restrictionMaintained")
-                Text("앱을 닫아도 다음 실행에서 이어서 확인해요.")
+                Text(AppLocalizedCopy.string("releaseHandoff.processing.resume"))
                     .accessibilityIdentifier("releaseHandoff.resumeMessage")
             }
             .foregroundStyle(HomeColor.textSecondary)
@@ -871,16 +921,31 @@ struct ActiveRestrictionReleaseHandoffView: View {
                             (route.retryAfter ?? .distantPast)
                                 .timeIntervalSince(context.date)
                         )))
-                        Button(seconds == 0 ? "다시 시도" : "\(seconds)초 뒤 다시 시도") {
+                        Button(seconds == 0
+                            ? AppLocalizedCopy.string("releaseHandoff.action.retry")
+                            : AppLocalizedCopy.format("releaseHandoff.action.retryAfter", seconds)) {
                             onAction(.retry)
                         }
                         .disabled(seconds > 0)
                         .disabled(isActionRunning)
                         .buttonStyle(ReleaseHandoffPrimaryButtonStyle())
                         .accessibilityIdentifier("releaseHandoff.primaryAction")
+                        .onChange(of: seconds) { oldValue, newValue in
+                            guard oldValue > 0, newValue == 0,
+                                  !announcedRetryReady, UIAccessibility.isVoiceOverRunning else {
+                                return
+                            }
+                            announcedRetryReady = true
+                            UIAccessibility.post(
+                                notification: .announcement,
+                                argument: AppLocalizedCopy.string("releaseHandoff.retryable.readyAnnouncement")
+                            )
+                        }
                     }
                 } else {
-                    Button(outcome == .completed ? "확인" : "코인 구매") {
+                    Button(outcome == .completed
+                        ? AppLocalizedCopy.string("releaseHandoff.action.confirm")
+                        : AppLocalizedCopy.string("releaseHandoff.action.purchase")) {
                         onAction(outcome == .completed ? .acknowledge : .openCoinStore)
                     }
                     .buttonStyle(ReleaseHandoffPrimaryButtonStyle())
@@ -888,7 +953,9 @@ struct ActiveRestrictionReleaseHandoffView: View {
                     .accessibilityIdentifier("releaseHandoff.primaryAction")
                 }
                 if outcome == .retryable || outcome == .insufficient {
-                    Button("닫기") { onAction(.close) }
+                    Button(AppLocalizedCopy.string("coinRelease.action.close")) {
+                        onAction(.close)
+                    }
                         .disabled(isActionRunning)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(HomeColor.textSecondary)
@@ -920,6 +987,7 @@ private struct ReleaseHandoffPrimaryButtonStyle: ButtonStyle {
 }
 
 struct ActiveRestrictionReleaseDestinationView: View {
+    @AccessibilityFocusState private var recoveryTitleFocused: Bool
     let destination: PendingAppRouteDestination
 
     var body: some View {
@@ -930,6 +998,9 @@ struct ActiveRestrictionReleaseDestinationView: View {
             Text(title)
                 .font(.title)
                 .fontWeight(.bold)
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityFocused($recoveryTitleFocused)
+                .accessibilityIdentifier("coinRelease.destination.title")
             Text(message)
                 .foregroundStyle(HomeColor.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -950,6 +1021,11 @@ struct ActiveRestrictionReleaseDestinationView: View {
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("coinRelease.destination.\(destination.rawValue)")
+        .task {
+            if destination == .iCloudRecovery, UIAccessibility.isVoiceOverRunning {
+                recoveryTitleFocused = true
+            }
+        }
     }
 
     private var title: String {
