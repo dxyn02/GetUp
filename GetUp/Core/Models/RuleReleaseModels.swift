@@ -388,6 +388,27 @@ enum PendingAppRouteDestination: String, Codable, Equatable, Hashable, Sendable 
     case reconciliation
 }
 
+enum ReleaseHandoffProcessingContext: Equatable, Sendable {
+    case initialClaim
+    case foregroundReconciliation
+}
+
+enum ReleaseHandoffFailure: Equatable, Sendable {
+    case outcomeUnknown
+    case transientRetryable(retryAfter: Date?)
+    case accountOrLedgerRecovery
+    case insufficientBalance
+}
+
+enum ReleaseHandoffExecutionResult: Equatable, Sendable {
+    case completed(
+        fundingSource: ReleaseFundingSource,
+        remainingRestrictionCount: Int
+    )
+    case failed(ReleaseHandoffFailure)
+    case interruptedUnresolved
+}
+
 enum PendingAppRouteState: String, Codable, Equatable, Hashable, Sendable {
     case pending
     case processing

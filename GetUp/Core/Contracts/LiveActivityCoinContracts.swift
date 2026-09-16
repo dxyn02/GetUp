@@ -162,6 +162,7 @@ enum CoinLedgerDatabaseError: Error, Equatable, Sendable,
     StableLiveActivityCoinError
 {
     case accountUnavailable
+    case accountTemporarilyUnavailable
     case serverUnavailable
     case serverRecordChanged
     case resultUnknown
@@ -171,7 +172,7 @@ enum CoinLedgerDatabaseError: Error, Equatable, Sendable,
 
     var errorCode: LiveActivityCoinErrorCode {
         switch self {
-        case .accountUnavailable: .cloudAccountUnavailable
+        case .accountUnavailable, .accountTemporarilyUnavailable: .cloudAccountUnavailable
         case .serverUnavailable: .cloudServerUnavailable
         case .serverRecordChanged: .cloudServerRecordChanged
         case .resultUnknown: .cloudResultUnknown

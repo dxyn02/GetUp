@@ -115,3 +115,92 @@ struct RuleReleaseCoordinator: Sendable {
         } catch { throw RuleReleaseCoordinationError.reconciliationRequired(commandID: id) }
     }
 }
+
+extension CoinRuleReleaseLiveExecutor {
+    /// App-only handoff path. Reconcile durable commands before deciding whether
+    /// the command has never reserved, then revalidate the occurrence from disk.
+    func executeHandoff(
+        route: PendingAppRoute,
+        context: ReleaseHandoffProcessingContext
+    ) async -> ReleaseHandoffExecutionResult {
+        guard route.destination == .releaseProcessing,
+              let commandID = route.commandID,
+              let occurrenceID = route.occurrenceID else {
+            return .failed(.accountOrLedgerRecovery)
+        }
+        do {
+            let ledger = try await runtime.refreshForApp { commandIDs in
+                try await reconcilePending(commandIDs)
+            }
+            guard ledger.balance.syncState == .current,
+                  !ledger.hasPendingReconciliation else {
+                return .failed(.accountOrLedgerRecovery)
+            }
+
+            if let command = try await runtime.repository.fetchReleaseCommand(commandID: commandID) {
+                guard command.occurrenceID == occurrenceID else {
+                    return .failed(.accountOrLedgerRecovery)
+                }
+                switch command.state {
+                case .committed, .reserved, .applied, .reconciliationRequired:
+                    try await reconcilePending([commandID])
+                    guard let verified = try await runtime.repository.fetchReleaseCommand(
+                        commandID: commandID
+                    ) else {
+                        return .interruptedUnresolved
+                    }
+                    guard verified.state == .committed,
+                          let funding = verified.fundingSource else {
+                        return verified.state == .compensated
+                            ? .failed(.accountOrLedgerRecovery)
+                            : .interruptedUnresolved
+                    }
+                    let remaining = try await activeOccurrences(at: clock.now)
+                    return .completed(
+                        fundingSource: funding,
+                        remainingRestrictionCount: remaining.count
+                    )
+                case .compensated, .compensating, .rejected, .requested:
+                    // A compensated command cannot be reserved a second time with
+                    // this ID. Never advertise a retry that would double-spend.
+                    return .failed(.accountOrLedgerRecovery)
+                }
+            }
+
+            guard context == .initialClaim else {
+                return .interruptedUnresolved
+            }
+            guard let occurrence = try await activeOccurrences(at: clock.now).first(where: {
+                $0.id == occurrenceID
+            }) else {
+                return .failed(.transientRetryable(retryAfter: nil))
+            }
+            let result = try await execute(
+                occurrence: occurrence,
+                commandID: commandID,
+                source: .shield
+            )
+            return .completed(
+                fundingSource: result.fundingSource,
+                remainingRestrictionCount: result.remainingOccurrences.count
+            )
+        } catch CoinLedgerRepositoryError.insufficientMonthlyAllowance,
+                CoinLedgerRepositoryError.insufficientPurchasedBalance {
+            return .failed(.insufficientBalance)
+        } catch CoinLedgerRepositoryError.ledgerNotCurrent,
+                CoinLedgerRepositoryError.ledgerEpochMismatch,
+                CoinLedgerRepositoryError.database(.accountUnavailable) {
+            return .failed(.accountOrLedgerRecovery)
+        } catch CoinLedgerRepositoryError.database(.serverUnavailable),
+                CoinLedgerRepositoryError.database(.accountTemporarilyUnavailable) {
+            return .failed(.transientRetryable(retryAfter: nil))
+        } catch CoinLedgerRepositoryError.reconciliationRequired,
+                RuleReleaseCoordinationError.reconciliationRequired,
+                CoinLedgerRepositoryError.database(.serverRecordChanged),
+                CoinLedgerRepositoryError.database(.resultUnknown) {
+            return .failed(.outcomeUnknown)
+        } catch {
+            return .failed(.outcomeUnknown)
+        }
+    }
+}

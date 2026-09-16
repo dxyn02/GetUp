@@ -269,3 +269,94 @@ actor AppLifecycleCoordinator {
         lhs.id.uuidString < rhs.id.uuidString
     }
 }
+
+/// Owns the durable Shield-to-app handoff. A second foreground pass may enter
+/// while CloudKit is suspended, but it must never start the same command twice.
+actor AppReleaseHandoffCoordinator {
+    typealias ActiveOccurrenceIDs = @Sendable (Date) async throws -> Set<String>
+    typealias Execute = @Sendable (
+        PendingAppRoute,
+        ReleaseHandoffProcessingContext
+    ) async -> ReleaseHandoffExecutionResult
+
+    private let routes: any PendingAppRoutePersisting
+    private let activeOccurrenceIDs: ActiveOccurrenceIDs
+    private let execute: Execute
+    private var executingRouteIDs: Set<UUID> = []
+
+    init(
+        routes: any PendingAppRoutePersisting,
+        activeOccurrenceIDs: @escaping ActiveOccurrenceIDs,
+        execute: @escaping Execute
+    ) {
+        self.routes = routes
+        self.activeOccurrenceIDs = activeOccurrenceIDs
+        self.execute = execute
+    }
+
+    func claim(at date: Date) async throws -> PendingAppRoute? {
+        if let existing = try await routes.load(),
+           existing.destination == .releaseProcessing,
+           existing.state != .pending {
+            return existing
+        }
+        let ids = try await activeOccurrenceIDs(date)
+        return try await routes.claimIfEligible(now: date, activeOccurrenceIDs: ids)
+    }
+
+    func process(
+        _ route: PendingAppRoute,
+        context: ReleaseHandoffProcessingContext,
+        at date: Date
+    ) async throws -> PendingAppRoute? {
+        guard route.destination == .releaseProcessing,
+              route.state == .processing,
+              let commandID = route.commandID,
+              !executingRouteIDs.contains(route.routeID) else { return nil }
+        executingRouteIDs.insert(route.routeID)
+        defer { executingRouteIDs.remove(route.routeID) }
+
+        // Confirm the route still owns this command after any actor suspension.
+        guard let current = try await routes.load(),
+              current.routeID == route.routeID,
+              current.commandID == commandID,
+              current.state == .processing else { return nil }
+
+        let result = await execute(current, context)
+        let terminal: (PendingAppRouteTerminalOutcome, Date?)?
+        switch result {
+        case .completed:
+            terminal = (.completed, nil)
+        case .failed(.insufficientBalance):
+            terminal = (.insufficient, nil)
+        case .failed(.accountOrLedgerRecovery):
+            terminal = (.recoveryRequired, nil)
+        case .failed(.transientRetryable(let retryAfter)):
+            terminal = (.retryable, retryAfter)
+        case .failed(.outcomeUnknown):
+            terminal = nil
+        case .interruptedUnresolved:
+            terminal = context == .foregroundReconciliation ? (.retryable, nil) : nil
+        }
+        guard let terminal else { return current }
+        return try await routes.recordTerminal(
+            routeID: route.routeID,
+            outcome: terminal.0,
+            retryAfter: terminal.1,
+            at: date
+        )
+    }
+
+    func markPresented(routeID: UUID, at date: Date) async throws -> PendingAppRoute {
+        try await routes.markPresented(routeID: routeID, at: date)
+    }
+
+    func acknowledge(routeID: UUID, at date: Date) async throws {
+        try await routes.acknowledgeAndDelete(routeID: routeID, at: date)
+    }
+
+    func retry(routeID: UUID, at date: Date) async throws -> PendingAppRoute? {
+        guard !executingRouteIDs.contains(routeID) else { return nil }
+        return try await routes.retry(routeID: routeID, at: date)
+    }
+}

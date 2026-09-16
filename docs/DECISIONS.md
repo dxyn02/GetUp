@@ -2458,6 +2458,13 @@ sign-out·notAuthenticated·권한·잘못된 container 설정·장부 삭제는
 포함한다. 코인 해제 뒤 Live Activity 갱신·종료는 메인 앱이 담당하며 Shield 직접 ActivityKit 경로는
 과거 회귀·진단 전용으로만 보존한다.
 
+**T110 구현 세부화 (2026-09-16)**: CloudKit의 `accountTemporarilyUnavailable`는 영구적인
+`notAuthenticated`·권한 오류와 분리해 `retryable`로 분류한다. 반대로 이미 `compensated`인 command는
+동일 ID로 다시 예약할 수 없으므로 완료나 동일 ID 재시도 가능으로 추정하지 않고 복구 필요 상태로
+보존한다. 새 route는 원자 claim 직후 앱에 `processing`을 먼저 제시하고 전체 장부 refresh·기존
+command 재조정·occurrence 재검증 뒤에만 새 예약을 시작한다. 결과 action의 영속 전이는 T110
+coordinator API에서 제공하며 승인된 화면의 버튼 연결은 T111에서 수행한다.
+
 **검토한 대안**: route claim과 동시에 삭제하는 방식은 CloudKit command 생성 전 앱 종료 시 요청
 식별자를 잃으므로 기각했다. 별도 새 handoff 저장소를 추가하는 방식은 동일 App Group 데이터의
 이중 소유권과 migration 복잡도를 만들므로 기존 route의 상태 머신 확장을 선택했다. 복구 화면까지

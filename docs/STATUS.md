@@ -7,6 +7,20 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-16 T110 완료: 메인 앱 launch·foreground가 Shield `releaseProcessing` route를 활성
+occurrence와 5분 조건으로 원자 claim하고 즉시 처리 중 상태를 제시한다. 이미 claim한 handoff는 앱
+종료 후에도 보존해 runtime 복구·새 해제보다 먼저 같은 command를 재조정한다. 앱 전용 executor는
+FR-037 전체 refresh와 pending command 재조정 뒤 서버 command 상태를 확인하고, 신규 요청은 최신
+occurrence를 다시 평가한 다음 기존 무료 우선 원자 예약·`ReleaseException` 적용·Managed Settings
+read-back·commit 경로로 실행한다. 확인된 결과만 terminal에 영속화하며 `retryAfter`가 지난 같은
+command 재시작, 결과 제시, 명시적 확인 삭제 API를 연결했다. 결과 불명은 processing에 보존하고
+일시적 계정 오류와 영구 인증 오류를 분리한다. T110 handoff 통합 테스트 3개를 추가했고 iPhone 17
+Pro Max iOS 26.5 전체 `GetUpTests`는 선언 646개·동적 실행 766회가 실패·skip 없이 통과했다.
+현재 phase는 002 Phase 9이며 마지막 완료 task는 T110, 진행 중 task는 없다. 다음 task T111에서
+승인 하이파이의 결과 화면과 실제 결과 action 버튼을 coordinator API에 연결한다. T110 자체 차단은
+없고 T113 실기기 handoff와 T089 월 경계 검증은 아직 미검증이다. 사용자 소유 설정·지역화 변경은
+보존했다.
+
 2026-09-16 T109 완료: Shield Action의 production 진입점에서 CloudKit runtime·전체 refresh·예약·
 제한 변경을 제거했다. 로컬 규칙·활성 occurrence와 Shield token을 확인한 뒤 안정 command ID를 담은
 `releaseProcessing` route만 App Group에 원자 저장한다. 유효한 동일 pending 및 기존 processing·

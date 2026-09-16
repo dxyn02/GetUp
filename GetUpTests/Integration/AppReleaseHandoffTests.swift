@@ -5,6 +5,104 @@ import Testing
 @Suite("App release handoff")
 @MainActor
 struct AppReleaseHandoffTests {
+    @Test("App claim persists processing, then completion until explicit acknowledgement")
+    func coordinatorPersistsCompletionUntilAcknowledged() async throws {
+        let directory = try makeHandoffDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let routes = PendingAppRouteRepository(containerURL: directory)
+        let route = try makeReleaseRoute()
+        try await routes.save(route)
+        let coordinator = AppReleaseHandoffCoordinator(
+            routes: routes,
+            activeOccurrenceIDs: { _ in ["occurrence-701"] },
+            execute: { _, _ in .completed(
+                fundingSource: .monthlyFree,
+                remainingRestrictionCount: 0
+            ) }
+        )
+
+        let claimed = try #require(await coordinator.claim(at: Self.now))
+        #expect(claimed.state == .processing)
+        #expect(try await routes.load()?.state == .processing)
+        let terminal = try #require(await coordinator.process(
+            claimed,
+            context: .initialClaim,
+            at: Self.now.addingTimeInterval(1)
+        ))
+        #expect(terminal.terminalOutcome == .completed)
+        #expect(try await routes.load()?.terminalOutcome == .completed)
+        _ = try await coordinator.markPresented(
+            routeID: route.routeID,
+            at: Self.now.addingTimeInterval(2)
+        )
+        try await coordinator.acknowledge(
+            routeID: route.routeID,
+            at: Self.now.addingTimeInterval(3)
+        )
+        #expect(try await routes.load() == nil)
+    }
+
+    @Test("A retryable handoff restarts only the same persisted command")
+    func coordinatorRetriesSameCommand() async throws {
+        let directory = try makeHandoffDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let routes = PendingAppRouteRepository(containerURL: directory)
+        let route = try makeReleaseRoute()
+        try await routes.save(route)
+        let executor = SequencedHandoffExecutor(results: [
+            .failed(.transientRetryable(retryAfter: Self.now.addingTimeInterval(30))),
+            .completed(fundingSource: .purchased, remainingRestrictionCount: 0),
+        ])
+        let coordinator = AppReleaseHandoffCoordinator(
+            routes: routes,
+            activeOccurrenceIDs: { _ in ["occurrence-701"] },
+            execute: { route, _ in await executor.execute(route.commandID!) }
+        )
+        let claimed = try #require(await coordinator.claim(at: Self.now))
+        _ = try await coordinator.process(
+            claimed, context: .initialClaim, at: Self.now.addingTimeInterval(1)
+        )
+        #expect(try await coordinator.retry(
+            routeID: route.routeID, at: Self.now.addingTimeInterval(29)
+        ) == nil)
+        let restarted = try #require(await coordinator.retry(
+            routeID: route.routeID, at: Self.now.addingTimeInterval(30)
+        ))
+        #expect(restarted.commandID == route.commandID)
+        _ = try await coordinator.process(
+            restarted, context: .initialClaim, at: Self.now.addingTimeInterval(31)
+        )
+        #expect(try await routes.load()?.terminalOutcome == .completed)
+        #expect(await executor.commandIDs == [Self.commandID, Self.commandID])
+    }
+
+    @Test("Only a resumed processing handoff may expose an interrupted retry")
+    func coordinatorClassifiesForegroundInterruption() async throws {
+        let directory = try makeHandoffDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let routes = PendingAppRouteRepository(containerURL: directory)
+        try await routes.save(makeReleaseRoute())
+        let coordinator = AppReleaseHandoffCoordinator(
+            routes: routes,
+            activeOccurrenceIDs: { _ in ["occurrence-701"] },
+            execute: { _, _ in .interruptedUnresolved }
+        )
+        let claimed = try #require(await coordinator.claim(at: Self.now))
+        _ = try await coordinator.process(
+            claimed, context: .initialClaim, at: Self.now.addingTimeInterval(1)
+        )
+        #expect(try await routes.load()?.state == .processing)
+        let resumed = try #require(await coordinator.claim(
+            at: Self.now.addingTimeInterval(2)
+        ))
+        _ = try await coordinator.process(
+            resumed,
+            context: .foregroundReconciliation,
+            at: Self.now.addingTimeInterval(3)
+        )
+        #expect(try await routes.load()?.terminalOutcome == .retryable)
+    }
+
     @Test("A claimed handoff starts processing and suppresses duplicate execution")
     func processingSuppressesDuplicateExecution() async {
         let executor = HeldHandoffExecutor()
@@ -129,6 +227,25 @@ struct AppReleaseHandoffTests {
 private extension AppReleaseHandoffTests {
     static let commandID = UUID(uuidString: "00000000-0000-4000-8000-000000000701")!
     static let now = Date(timeIntervalSince1970: 1_788_192_000)
+
+    func makeHandoffDirectory() throws -> URL {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+        return directory
+    }
+
+    func makeReleaseRoute() throws -> PendingAppRoute {
+        try PendingAppRoute.releaseProcessing(
+            routeID: UUID(uuidString: "00000000-0000-4000-8000-000000000702")!,
+            commandID: Self.commandID,
+            createdAt: Self.now,
+            occurrenceID: "occurrence-701"
+        )
+    }
 
     func makeModel(
         result: ReleaseHandoffExecutionResult

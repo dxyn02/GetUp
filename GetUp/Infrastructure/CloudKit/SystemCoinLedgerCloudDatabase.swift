@@ -347,7 +347,9 @@ private extension SystemCoinLedgerCloudDatabase {
             return map(first)
         }
         switch cloudError.code {
-        case .notAuthenticated, .accountTemporarilyUnavailable, .quotaExceeded,
+        case .accountTemporarilyUnavailable:
+            return .accountTemporarilyUnavailable
+        case .notAuthenticated, .quotaExceeded,
              .badContainer, .badDatabase, .missingEntitlement, .permissionFailure,
              .managedAccountRestricted:
             return .accountUnavailable

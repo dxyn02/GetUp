@@ -166,6 +166,7 @@ private struct GetUpRootView: View {
     @State private var permissionGuideModel: PermissionGuideModel?
     @State private var isRestoringRuntime = false
     @State private var coinRouteDestination: PendingAppRouteDestination?
+    @State private var releaseHandoffRoute: PendingAppRoute?
     private let runtimeRecovery: AppEnvironment.RuntimeRecovery?
     private let currentLocationProvider: any CurrentLocationProviding & LocationAuthorizationRequesting
     private let defaultCoordinate: ReferenceLocation
@@ -176,6 +177,7 @@ private struct GetUpRootView: View {
     private let releaseConfiguration: ActiveRestrictionReleaseConfiguration?
     private let coinStoreConfiguration: CoinStoreConfiguration?
     private let coinLifecycleCoordinator: CoinAppLifecycleCoordinator
+    private let releaseHandoffCoordinator: AppReleaseHandoffCoordinator?
     private let permissionGuideRetryResult: String?
     private let permissionGuideActionUpdate: PermissionGuideUpdate?
     private let permissionOnboardingStateStore: PermissionOnboardingStateStore
@@ -193,6 +195,7 @@ private struct GetUpRootView: View {
         releaseConfiguration = environment.releaseConfiguration
         coinStoreConfiguration = environment.coinStoreConfiguration
         coinLifecycleCoordinator = environment.coinLifecycleCoordinator
+        releaseHandoffCoordinator = environment.releaseHandoffCoordinator
         permissionGuideRetryResult = environment.permissionGuideRetryResult
         permissionGuideActionUpdate = environment.permissionGuideActionUpdate
         permissionOnboardingStateStore = environment.permissionOnboardingStateStore
@@ -220,11 +223,16 @@ private struct GetUpRootView: View {
             NavigationStack {
                 coinRouteDestinationView
             }
+            .interactiveDismissDisabled(
+                coinRouteDestination == .releaseProcessing
+                    && releaseHandoffRoute?.state == .processing
+            )
         }
         .task {
             guard model.loadingState == .idle else {
                 return
             }
+            await refreshReleaseHandoff()
             await refreshCoinLifecycle(trigger: .launch)
             guard !Task.isCancelled else {
                 return
@@ -240,6 +248,7 @@ private struct GetUpRootView: View {
                 return
             }
             Task {
+                await refreshReleaseHandoff()
                 if runtimeRecovery != nil {
                     _ = await restoreRuntimeState()
                 }
@@ -483,6 +492,24 @@ private struct GetUpRootView: View {
         }
         if let destination = result.destination {
             coinRouteDestination = destination
+        }
+    }
+
+    private func refreshReleaseHandoff() async {
+        guard let releaseHandoffCoordinator else { return }
+        let now = Date()
+        guard let route = try? await releaseHandoffCoordinator.claim(at: now) else { return }
+        releaseHandoffRoute = route
+        coinRouteDestination = .releaseProcessing
+        guard route.state == .processing else { return }
+        let context: ReleaseHandoffProcessingContext = route.claimedAt == now
+            ? .initialClaim : .foregroundReconciliation
+        if let result = try? await releaseHandoffCoordinator.process(
+            route,
+            context: context,
+            at: Date()
+        ) {
+            releaseHandoffRoute = result
         }
     }
 
@@ -1218,6 +1245,7 @@ private struct AppEnvironment {
     let releaseConfiguration: ActiveRestrictionReleaseConfiguration?
     let coinStoreConfiguration: CoinStoreConfiguration?
     let coinLifecycleCoordinator: CoinAppLifecycleCoordinator
+    let releaseHandoffCoordinator: AppReleaseHandoffCoordinator?
     let permissionGuideModel: PermissionGuideModel?
     let permissionGuideRetryResult: String?
     let permissionGuideActionUpdate: PermissionGuideUpdate?
@@ -1316,6 +1344,9 @@ private struct AppEnvironment {
             coordinationDirectory: container.coordinationDirectory,
             clock: SystemRestrictionClock()
         )
+        let releaseHandoffCoordinator = container.makeReleaseHandoffCoordinator { route, context in
+            await releaseExecutor.executeHandoff(route: route, context: context)
+        }
         let appModel = AppModel(
             ruleRepository: container.ruleRepository,
             savedPlaceRepository: container.savedPlaceRepository,
@@ -1372,9 +1403,7 @@ private struct AppEnvironment {
                 }
             }
         )
-        let pendingRouteRepository = PendingAppRouteRepository(
-            containerURL: container.coordinationDirectory
-        )
+        let pendingRouteRepository = container.pendingAppRouteRepository
         let releaseConfiguration = ActiveRestrictionReleaseConfiguration(
             model: releaseModel,
             router: ActiveRestrictionReleaseRouter { now, activeOccurrenceIDs in
@@ -1538,10 +1567,34 @@ private struct AppEnvironment {
             releaseConfiguration: releaseConfiguration,
             coinStoreConfiguration: coinStoreConfiguration,
             coinLifecycleCoordinator: coinLifecycleCoordinator,
+            releaseHandoffCoordinator: releaseHandoffCoordinator,
             permissionGuideModel: nil,
             permissionGuideRetryResult: nil,
             permissionGuideActionUpdate: nil,
             permissionOnboardingStateStore: PermissionOnboardingStateStore()
+        )
+    }
+}
+
+private extension DependencyContainer {
+    func makeReleaseHandoffCoordinator(
+        execute: @escaping AppReleaseHandoffCoordinator.Execute
+    ) -> AppReleaseHandoffCoordinator {
+        AppReleaseHandoffCoordinator(
+            routes: pendingAppRouteRepository,
+            activeOccurrenceIDs: { now in
+                let snapshot = try await sharedSnapshotRepository
+                    .loadActiveRestrictionSnapshot()
+                let rules = try await ruleRepository.loadRuleCollection()?.rules ?? []
+                return Set(RestrictionOccurrenceEvaluator.evaluate(
+                    snapshot: snapshot,
+                    currentRuleRevisions: Dictionary(
+                        uniqueKeysWithValues: rules.map { ($0.id, $0.revision) }
+                    ),
+                    now: now
+                ).orderedOccurrences.map(\.id))
+            },
+            execute: execute
         )
     }
 }
@@ -1723,6 +1776,7 @@ private enum UITestConfiguration {
             releaseConfiguration: releaseConfiguration,
             coinStoreConfiguration: coinStoreConfiguration,
             coinLifecycleCoordinator: coinLifecycleCoordinator,
+            releaseHandoffCoordinator: nil,
             permissionGuideModel: permissionGuideModel(
                 for: scenario,
                 onboardingStateStore: permissionOnboardingStateStore

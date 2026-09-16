@@ -278,6 +278,10 @@ struct DependencyContainer: Sendable {
         sharedSnapshotRepository
     }
 
+    var pendingAppRouteRepository: PendingAppRouteRepository {
+        PendingAppRouteRepository(containerURL: coordinationDirectory)
+    }
+
     var locationConditionRepository: any LocationConditionRepository {
         sharedSnapshotRepository
     }

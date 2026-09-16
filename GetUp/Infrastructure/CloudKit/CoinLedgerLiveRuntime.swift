@@ -394,7 +394,7 @@ struct CoinRuleReleaseLiveExecutor: Sendable {
         )
     }
 
-    private func activeOccurrences(at date: Date) async throws -> [RestrictionOccurrence] {
+    func activeOccurrences(at date: Date) async throws -> [RestrictionOccurrence] {
         let rules = try await sharedRepository.loadRuleCollection()?.rules ?? []
         return RestrictionOccurrenceEvaluator.evaluate(
             snapshot: try await sharedRepository.loadActiveRestrictionSnapshot(),
