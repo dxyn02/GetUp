@@ -167,6 +167,8 @@ private struct GetUpRootView: View {
     @State private var isRestoringRuntime = false
     @State private var coinRouteDestination: PendingAppRouteDestination?
     @State private var releaseHandoffRoute: PendingAppRoute?
+    @State private var releaseHandoffDetails: ReleaseHandoffDisplayDetails?
+    @State private var isHandoffActionRunning = false
     private let runtimeRecovery: AppEnvironment.RuntimeRecovery?
     private let currentLocationProvider: any CurrentLocationProviding & LocationAuthorizationRequesting
     private let defaultCoordinate: ReferenceLocation
@@ -178,6 +180,8 @@ private struct GetUpRootView: View {
     private let coinStoreConfiguration: CoinStoreConfiguration?
     private let coinLifecycleCoordinator: CoinAppLifecycleCoordinator
     private let releaseHandoffCoordinator: AppReleaseHandoffCoordinator?
+    private let loadReleaseHandoffDetails: AppEnvironment.ReleaseHandoffDetailsLoad?
+    private let retryWaitSecondsOverride: Int?
     private let permissionGuideRetryResult: String?
     private let permissionGuideActionUpdate: PermissionGuideUpdate?
     private let permissionOnboardingStateStore: PermissionOnboardingStateStore
@@ -185,6 +189,10 @@ private struct GetUpRootView: View {
     init(environment: AppEnvironment) {
         _model = State(initialValue: environment.model)
         _permissionGuideModel = State(initialValue: environment.permissionGuideModel)
+        _coinRouteDestination = State(initialValue:
+            environment.initialReleaseHandoffRoute == nil ? nil : .releaseProcessing)
+        _releaseHandoffRoute = State(initialValue: environment.initialReleaseHandoffRoute)
+        _releaseHandoffDetails = State(initialValue: environment.initialReleaseHandoffDetails)
         runtimeRecovery = environment.runtimeRecovery
         currentLocationProvider = environment.currentLocationProvider
         defaultCoordinate = environment.defaultCoordinate
@@ -196,6 +204,8 @@ private struct GetUpRootView: View {
         coinStoreConfiguration = environment.coinStoreConfiguration
         coinLifecycleCoordinator = environment.coinLifecycleCoordinator
         releaseHandoffCoordinator = environment.releaseHandoffCoordinator
+        loadReleaseHandoffDetails = environment.loadReleaseHandoffDetails
+        retryWaitSecondsOverride = environment.retryWaitSecondsOverride
         permissionGuideRetryResult = environment.permissionGuideRetryResult
         permissionGuideActionUpdate = environment.permissionGuideActionUpdate
         permissionOnboardingStateStore = environment.permissionOnboardingStateStore
@@ -225,7 +235,7 @@ private struct GetUpRootView: View {
             }
             .interactiveDismissDisabled(
                 coinRouteDestination == .releaseProcessing
-                    && releaseHandoffRoute?.state == .processing
+                    && releaseHandoffRoute != nil
             )
         }
         .task {
@@ -465,7 +475,19 @@ private struct GetUpRootView: View {
     private var coinRouteDestinationView: some View {
         if coinRouteDestination == .coinStore,
            let coinStoreConfiguration {
-            CoinStoreView(configuration: coinStoreConfiguration)
+            CoinStoreView(
+                configuration: coinStoreConfiguration,
+                fromReleaseHandoff: releaseHandoffRoute?.terminalOutcome == .insufficient
+            )
+        } else if coinRouteDestination == .releaseProcessing,
+                  let route = releaseHandoffRoute {
+            ActiveRestrictionReleaseHandoffView(
+                route: route,
+                details: releaseHandoffDetails,
+                isActionRunning: isHandoffActionRunning,
+                retryWaitSecondsOverride: retryWaitSecondsOverride,
+                onAction: handleReleaseHandoffAction
+            )
         } else if let destination = coinRouteDestination {
             ActiveRestrictionReleaseDestinationView(destination: destination)
         }
@@ -501,7 +523,13 @@ private struct GetUpRootView: View {
         guard let route = try? await releaseHandoffCoordinator.claim(at: now) else { return }
         releaseHandoffRoute = route
         coinRouteDestination = .releaseProcessing
-        guard route.state == .processing else { return }
+        if let loadReleaseHandoffDetails {
+            releaseHandoffDetails = await loadReleaseHandoffDetails(route)
+        }
+        guard route.state == .processing else {
+            await markReleaseHandoffPresented(route)
+            return
+        }
         let context: ReleaseHandoffProcessingContext = route.claimedAt == now
             ? .initialClaim : .foregroundReconciliation
         if let result = try? await releaseHandoffCoordinator.process(
@@ -510,6 +538,64 @@ private struct GetUpRootView: View {
             at: Date()
         ) {
             releaseHandoffRoute = result
+            if let loadReleaseHandoffDetails {
+                releaseHandoffDetails = await loadReleaseHandoffDetails(result)
+            }
+            await markReleaseHandoffPresented(result)
+        }
+    }
+
+    private func markReleaseHandoffPresented(_ route: PendingAppRoute) async {
+        guard route.state == .terminal,
+              let releaseHandoffCoordinator else { return }
+        if let presented = try? await releaseHandoffCoordinator.markPresented(
+            routeID: route.routeID,
+            at: Date()
+        ) {
+            releaseHandoffRoute = presented
+        }
+    }
+
+    private func handleReleaseHandoffAction(_ action: ReleaseHandoffAction) {
+        guard !isHandoffActionRunning, let route = releaseHandoffRoute else { return }
+        isHandoffActionRunning = true
+        Task {
+            defer { isHandoffActionRunning = false }
+            if action == .retry {
+                guard let releaseHandoffCoordinator,
+                      let restarted = try? await releaseHandoffCoordinator.retry(
+                        routeID: route.routeID, at: Date()
+                      ) else { return }
+                releaseHandoffRoute = restarted
+                let result = try? await releaseHandoffCoordinator.process(
+                    restarted, context: .initialClaim, at: Date()
+                )
+                if let result {
+                    releaseHandoffRoute = result
+                    if let loadReleaseHandoffDetails {
+                        releaseHandoffDetails = await loadReleaseHandoffDetails(result)
+                    }
+                    await markReleaseHandoffPresented(result)
+                }
+                return
+            }
+            if let releaseHandoffCoordinator {
+                do {
+                    try await releaseHandoffCoordinator.acknowledge(
+                        routeID: route.routeID, at: Date()
+                    )
+                } catch { return }
+            }
+            switch action {
+            case .openCoinStore:
+                coinRouteDestination = .coinStore
+            case .openRecovery:
+                coinRouteDestination = .iCloudRecovery
+            case .acknowledge, .close:
+                coinRouteDestination = nil
+            case .retry:
+                break
+            }
         }
     }
 
@@ -1233,6 +1319,9 @@ enum AppLiveActivityRecovery {
 @MainActor
 private struct AppEnvironment {
     typealias RuntimeRecovery = @Sendable () async -> AppLifecycleRecoveryResult?
+    typealias ReleaseHandoffDetailsLoad = @Sendable (
+        PendingAppRoute
+    ) async -> ReleaseHandoffDisplayDetails
 
     let model: AppModel
     let runtimeRecovery: RuntimeRecovery?
@@ -1246,6 +1335,10 @@ private struct AppEnvironment {
     let coinStoreConfiguration: CoinStoreConfiguration?
     let coinLifecycleCoordinator: CoinAppLifecycleCoordinator
     let releaseHandoffCoordinator: AppReleaseHandoffCoordinator?
+    let loadReleaseHandoffDetails: ReleaseHandoffDetailsLoad?
+    let initialReleaseHandoffRoute: PendingAppRoute?
+    let initialReleaseHandoffDetails: ReleaseHandoffDisplayDetails?
+    let retryWaitSecondsOverride: Int?
     let permissionGuideModel: PermissionGuideModel?
     let permissionGuideRetryResult: String?
     let permissionGuideActionUpdate: PermissionGuideUpdate?
@@ -1346,6 +1439,36 @@ private struct AppEnvironment {
         )
         let releaseHandoffCoordinator = container.makeReleaseHandoffCoordinator { route, context in
             await releaseExecutor.executeHandoff(route: route, context: context)
+        }
+        let loadReleaseHandoffDetails: ReleaseHandoffDetailsLoad = { route in
+            let command: ReleaseCommand? = if let commandID = route.commandID {
+                try? await ledgerRuntime.repository.fetchReleaseCommand(commandID: commandID)
+            } else {
+                nil
+            }
+            let rules = (try? await container.ruleRepository
+                .loadRuleCollection()?.rules) ?? []
+            let active = try? await container.sharedSnapshotRepository
+                .loadActiveRestrictionSnapshot()
+            let exceptions = (try? await container.sharedSnapshotRepository
+                .loadReleaseExceptions()) ?? []
+            let balance = try? await container.sharedSnapshotRepository
+                .loadCoinBalanceSnapshot()
+            let ruleName = command.flatMap { command in
+                rules.first { $0.id == command.ruleID }?.name
+            }
+            let occurrence = active?.occurrences.first { $0.id == route.occurrenceID }
+            let exception = exceptions.first { $0.commandID == route.commandID }
+            let remaining = active?.occurrences.filter { $0.id != route.occurrenceID }.count
+            return ReleaseHandoffDisplayDetails(
+                ruleName: ruleName,
+                endsAt: occurrence?.endAt ?? exception?.expiresAt,
+                fundingSource: command?.state == .committed ? command?.fundingSource : nil,
+                remainingRestrictionCount: remaining,
+                freeAvailable: balance?.syncState == .current ? balance?.freeAvailable : nil,
+                purchasedAvailable: balance?.syncState == .current
+                    ? balance?.purchasedAvailable : nil
+            )
         }
         let appModel = AppModel(
             ruleRepository: container.ruleRepository,
@@ -1568,6 +1691,10 @@ private struct AppEnvironment {
             coinStoreConfiguration: coinStoreConfiguration,
             coinLifecycleCoordinator: coinLifecycleCoordinator,
             releaseHandoffCoordinator: releaseHandoffCoordinator,
+            loadReleaseHandoffDetails: loadReleaseHandoffDetails,
+            initialReleaseHandoffRoute: nil,
+            initialReleaseHandoffDetails: nil,
+            retryWaitSecondsOverride: nil,
             permissionGuideModel: nil,
             permissionGuideRetryResult: nil,
             permissionGuideActionUpdate: nil,
@@ -1633,6 +1760,7 @@ private enum UITestConfiguration {
         )
         let coinReleaseMode = value(after: "--ui-test-coin-release")
         let coinReleaseResult = value(after: "--ui-test-coin-release-result")
+        let releaseHandoffMode = value(after: "--ui-test-release-handoff")
         let monthlyAllowanceFixture = value(after: "--ui-test-monthly-allowance")
             .flatMap(MonthlyAllowanceUITestFixtureMode.init(rawValue:))
         let freeBalanceOverride = value(after: "--ui-test-free-balance").flatMap(Int.init)
@@ -1754,6 +1882,7 @@ private enum UITestConfiguration {
         )
         let coinStoreConfiguration = try makeCoinStoreConfiguration(
             scenario: scenario,
+            allowsReleaseHandoff: releaseHandoffMode == "insufficient",
             ledgerState: value(after: "--ui-test-coin-ledger-state"),
             purchaseResult: value(after: "--ui-test-purchase-result"),
             historyFixture: value(after: "--ui-test-coin-history"),
@@ -1777,6 +1906,20 @@ private enum UITestConfiguration {
             coinStoreConfiguration: coinStoreConfiguration,
             coinLifecycleCoordinator: coinLifecycleCoordinator,
             releaseHandoffCoordinator: nil,
+            loadReleaseHandoffDetails: nil,
+            initialReleaseHandoffRoute: try makeReleaseHandoffRoute(
+                mode: releaseHandoffMode, now: fixtureNow
+            ),
+            initialReleaseHandoffDetails: releaseHandoffMode == nil ? nil
+                : ReleaseHandoffDisplayDetails(
+                    ruleName: "아침 집중",
+                    endsAt: fixtureNow.addingTimeInterval(7_200),
+                    fundingSource: releaseHandoffMode == "completed" ? .monthlyFree : nil,
+                    remainingRestrictionCount: 1,
+                    freeAvailable: releaseHandoffMode == "insufficient" ? 0 : nil,
+                    purchasedAvailable: releaseHandoffMode == "insufficient" ? 0 : nil
+                ),
+            retryWaitSecondsOverride: releaseHandoffMode == "retryable-waiting" ? 30 : nil,
             permissionGuideModel: permissionGuideModel(
                 for: scenario,
                 onboardingStateStore: permissionOnboardingStateStore
@@ -1785,6 +1928,48 @@ private enum UITestConfiguration {
             permissionGuideActionUpdate: permissionGuideActionUpdate(for: scenario),
             permissionOnboardingStateStore: permissionOnboardingStateStore
         )
+    }
+
+    private static func makeReleaseHandoffRoute(
+        mode: String?,
+        now: Date
+    ) throws -> PendingAppRoute? {
+        guard let mode else { return nil }
+        let route = try PendingAppRoute.releaseProcessing(
+            routeID: UUID(uuidString: "00000000-0000-4000-8000-000000000711")!,
+            commandID: UUID(uuidString: "00000000-0000-4000-8000-000000000712")!,
+            createdAt: now.addingTimeInterval(-10),
+            occurrenceID: "ui-test-release-handoff"
+        )
+        let processing = try route.claiming(at: now)
+        switch mode {
+        case "processing":
+            return processing
+        case "completed":
+            return try processing.recordingTerminal(
+                outcome: .completed, retryAfter: nil, at: now.addingTimeInterval(1)
+            )
+        case "retryable":
+            return try processing.recordingTerminal(
+                outcome: .retryable, retryAfter: nil, at: now.addingTimeInterval(1)
+            )
+        case "retryable-waiting":
+            return try processing.recordingTerminal(
+                outcome: .retryable,
+                retryAfter: Date().addingTimeInterval(30),
+                at: now.addingTimeInterval(1)
+            )
+        case "insufficient":
+            return try processing.recordingTerminal(
+                outcome: .insufficient, retryAfter: nil, at: now.addingTimeInterval(1)
+            )
+        case "recovery-required":
+            return try processing.recordingTerminal(
+                outcome: .recoveryRequired, retryAfter: nil, at: now.addingTimeInterval(1)
+            )
+        default:
+            return nil
+        }
     }
 
     private static func makeCoinReleaseConfiguration(
@@ -1860,6 +2045,7 @@ private enum UITestConfiguration {
 
     private static func makeCoinStoreConfiguration(
         scenario: String?,
+        allowsReleaseHandoff: Bool = false,
         ledgerState: String?,
         purchaseResult: String?,
         historyFixture: String?,
@@ -1869,7 +2055,7 @@ private enum UITestConfiguration {
         root: URL,
         now: Date
     ) throws -> CoinStoreConfiguration? {
-        guard scenario == "coin-store" else { return nil }
+        guard scenario == "coin-store" || allowsReleaseHandoff else { return nil }
 
         let driver = try CoinStoreUITestDriver(
             ledgerState: ledgerState,

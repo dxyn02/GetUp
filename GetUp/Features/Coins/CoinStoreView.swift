@@ -54,19 +54,36 @@ struct CoinStoreView: View {
     private let retryLedgerSync: CoinStoreConfiguration.LedgerAction
     private let instrumentation: CoinStoreInstrumentation?
     private let purchaseGrantStatus: String
+    private let fromReleaseHandoff: Bool
 
-    init(configuration: CoinStoreConfiguration) {
+    init(
+        configuration: CoinStoreConfiguration,
+        fromReleaseHandoff: Bool = false
+    ) {
         model = configuration.model
         activateLedger = configuration.activateLedger
         resetLedger = configuration.resetLedger
         retryLedgerSync = configuration.retryLedgerSync
         instrumentation = configuration.instrumentation
         purchaseGrantStatus = configuration.purchaseGrantStatus
+        self.fromReleaseHandoff = fromReleaseHandoff
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                if fromReleaseHandoff {
+                    Label(
+                        "코인을 구매한 뒤 새 해제를 요청할 수 있어요.",
+                        systemImage: "xmark.shield"
+                    )
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(HomeColor.textSecondary)
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(HomeColor.surfaceElevated, in: .rect(cornerRadius: 18))
+                    .accessibilityIdentifier("coinStore.releaseHandoffNotice")
+                }
                 t089TestBanner
                 balanceSection
                 availabilitySection

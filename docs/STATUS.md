@@ -7,6 +7,8 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-16 T111 완료: T105 승인 Figma 하이파이에 맞춰 어두운 배경의 handoff 처리 중·완료·재시도·잔액 부족 화면을 구현했다. 처리 중에는 제한 유지와 재실행 안내를 표시하고 행동 버튼을 숨긴다. 완료 화면은 확정된 비용 출처와 남은 규칙을 보여주며 확인 버튼으로 route를 정리한다. 재시도 화면은 미차감·제한 유지와 `retryAfter` 대기 상태를 표시하고 같은 command 재시작에 연결했다. 잔액 부족 화면은 X 아이콘과 최신 무료·구매 잔액을 표시하고 코인 구매 화면으로 이동하되 새 해제를 자동 요청하지 않는다. `recoveryRequired`는 기존 iCloud 복구 화면을 재사용한다. iPhone 17 Pro Max iOS 26.5에서 `GetUpTests` 전체 및 `UserStory2ReleaseResultUITests` 7개가 실패·skip 없이 통과했다. 현재 phase는 002 Phase 9, 마지막 완료 task는 T111, 진행 중 task는 없다. 다음 task는 T112의 한국어·영어 지역화, VoiceOver·Dynamic Type·Light/Dark·Reduce Motion 회귀다. T113 실기기 검증과 T089 월 경계 검증은 아직 미검증이며, 사용자 소유 설정·지역화 변경은 보존했다.
+
 2026-09-16 T110 완료: 메인 앱 launch·foreground가 Shield `releaseProcessing` route를 활성
 occurrence와 5분 조건으로 원자 claim하고 즉시 처리 중 상태를 제시한다. 이미 claim한 handoff는 앱
 종료 후에도 보존해 runtime 복구·새 해제보다 먼저 같은 command를 재조정한다. 앱 전용 executor는
@@ -242,12 +244,11 @@ setup/reset/recovery/reconciliation과 5초 Shield 응답 상한을 live 경로�
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T109 — Shield의 CloudKit 없는 release route 저장과 iOS 버전별 fail-closed 응답 연결
+T111 — 승인된 release handoff 네 상태 화면과 재시도·코인 구매 CTA 연결
 
 ## 다음 작업
-T110 — 메인 앱이 release route를 영속 claim하고 앱 종료 뒤 같은 command를 먼저 재조정한 다음
-권위 장부 refresh·occurrence 재검증·원자 해제·read-back·commit·terminal 저장을 연결한다.
-UI runtime GREEN은 T111~T112에서 완료한다. Live Activity는 T114~T116 설계·승인을 별도로 진행한다.
+T112 — release handoff 한국어·영어 지역화, VoiceOver focus·진행 상태와 최대 Dynamic Type·
+Light/Dark·Reduce Motion 회귀를 완료한다. Live Activity는 T114~T116 설계·승인을 별도로 진행한다.
 T089 — T103~T113의 승인된 handoff 구현과 두 실기기 첫 탭 검증이 끝난 뒤 재개한다.
 T094·T095의 Shield/StoreKit 실기기 인수도 이어서 수행한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
@@ -278,6 +279,11 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
+2026-09-16 T111 자동 검증: iPhone 17 Pro Max iOS 26.5에서 전체 `GetUpTests`와 release handoff
+UI 테스트 7개가 실패·skip 없이 통과했다. 사용자 소유 `Debug.xcconfig`의 T089 5분 설정은 변경하지
+않고 테스트 명령에서 `GETUP_T089_*`만 비웠다. 실기기 Shield 첫 탭·iOS 26.0~26.4·AX5 전체
+회귀는 각각 T113·T112에서 계속 검증한다.
+
 2026-09-16 T109 자동 검증: iPhone 17 Pro Max iOS 26.5에서 전체 `GetUpTests` 선언 643개·
 동적 실행 763회가 실패·skip 없이 통과했다. 현재 사용자 소유 `Debug.xcconfig`의 T089 5분 설정은
 수정하지 않고 테스트 명령의 `GETUP_T089_*`만 비워 월 정책 fixture 충돌을 피했다. 새 Shield

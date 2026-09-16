@@ -10,11 +10,11 @@ final class UserStory2ReleaseResultUITests: XCTestCase {
     @MainActor
     func testProcessingShowsMaintainedRestrictionAndNoActions() {
         let app = launchApp(state: "processing")
-        let screen = app.otherElements["releaseHandoff.processing.screen"]
+        let screen = app.scrollViews["releaseHandoff.processing.screen"]
 
-        XCTAssertTrue(screen.waitForExistence(timeout: 5))
+        XCTAssertTrue(screen.waitForExistence(timeout: 5), app.debugDescription)
         XCTAssertEqual(app.staticTexts["releaseHandoff.statusTitle"].label, "해제 상태를 확인하고 있어요")
-        XCTAssertTrue(app.otherElements["releaseHandoff.processing.progress"].exists)
+        XCTAssertTrue(app.activityIndicators["releaseHandoff.processing.progress"].exists)
         XCTAssertTrue(app.staticTexts["releaseHandoff.restrictionMaintained"].label.contains("제한은 유지"))
         XCTAssertTrue(app.staticTexts["releaseHandoff.resumeMessage"].label.contains("다음 실행"))
         XCTAssertFalse(app.buttons["releaseHandoff.primaryAction"].exists)
@@ -27,7 +27,7 @@ final class UserStory2ReleaseResultUITests: XCTestCase {
 
         XCTAssertTrue(app.otherElements["releaseHandoff.completed.screen"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.staticTexts["releaseHandoff.statusTitle"].label, "해제가 완료됐어요")
-        XCTAssertTrue(app.otherElements["releaseHandoff.completed.icon"].exists)
+        XCTAssertTrue(app.images["releaseHandoff.completed.icon"].exists)
         XCTAssertTrue(app.staticTexts["releaseHandoff.fundingResult"].label.contains("무료 해제권 1회"))
         XCTAssertTrue(app.staticTexts["releaseHandoff.remainingRestrictions"].label.contains("다른 규칙 1개"))
         XCTAssertEqual(app.buttons["releaseHandoff.primaryAction"].label, "확인")
@@ -72,10 +72,29 @@ final class UserStory2ReleaseResultUITests: XCTestCase {
     }
 
     @MainActor
+    func testInsufficientPurchaseActionOpensStoreWithoutStartingAnotherRelease() {
+        let app = launchApp(state: "insufficient")
+
+        let purchase = app.buttons["releaseHandoff.primaryAction"]
+        XCTAssertTrue(purchase.waitForExistence(timeout: 5))
+        purchase.tap()
+
+        XCTAssertTrue(
+            app.otherElements["coinStore.screen"].waitForExistence(timeout: 5),
+            app.debugDescription
+        )
+        XCTAssertTrue(app.staticTexts["coinStore.releaseHandoffNotice"].exists)
+        XCTAssertFalse(app.buttons["releaseHandoff.primaryAction"].exists)
+    }
+
+    @MainActor
     func testRecoveryRequiredReusesExistingRecoverySurfaceWithoutPurchase() {
         let app = launchApp(state: "recovery-required")
 
-        XCTAssertTrue(app.otherElements["coinRelease.destination.iCloudRecovery"].waitForExistence(timeout: 5))
+        XCTAssertTrue(
+            app.otherElements["coinRelease.destination.iCloudRecovery"].waitForExistence(timeout: 5),
+            app.debugDescription
+        )
         XCTAssertFalse(app.otherElements["releaseHandoff.recoveryRequired.screen"].exists)
         XCTAssertFalse(app.buttons["releaseHandoff.primaryAction"].exists)
         XCTAssertFalse(app.buttons["coinStore.product.1.purchase"].exists)
