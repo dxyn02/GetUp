@@ -2,7 +2,7 @@
 
 ## BLK-020 — T113 실기기 Shield 첫 탭에 필요한 활성 테스트 규칙
 
-**상태**: 미해결(OPEN) — 2026-09-22
+**상태**: 해결됨(RESOLVED) — 2026-09-22
 
 iPhone 17(iOS 26.7)과 iPhone 15 Pro Max(iOS 27.0 beta)는 페어링과 앱 서비스 연결이 가능하고,
 동일한 최신 서명 Debug 빌드 설치까지 완료했다. 처음에는 iPhone Mirroring이 Mac 로그인 암호를
@@ -12,6 +12,25 @@ Shield 첫 탭 인수를 시작할 수 없다. 에이전트는 사용자의 개�
 정하지 않는다. 안전한 테스트 대상 앱·시간대를 사용자와 정하거나 사용자가 활성 규칙을 준비한 뒤
 T113의 처리 중·완료·재시도·부족·복구 화면 및 다기기 수렴을 검증한다. 설치 뒤 GetUp은 아직
 foreground로 열지 않아 Shield-first 조건을 보존했다. 월 경계 검증은 별도 BLK-017/T089 범위다.
+
+2026-09-22 사용자가 현재부터 약 22:30까지 Games 카테고리를 제한하고 Candy Crush Saga를
+검증 대상으로 지정했다. iPhone 17에서 실제 Shield와 첫 탭 앱 진입을 확인했으므로 이 준비 차단은
+해결됐다. 이후 발견된 처리 중 장기 정체는 BLK-021로 추적한다.
+
+## BLK-021 — T113 실기기 해제 요청이 처리 중에서 수렴하지 않음
+
+**상태**: 미해결(OPEN) — 2026-09-22
+
+iPhone 17(iOS 26.7)의 Candy Crush Saga에 Games 제한이 적용된 상태에서 Shield의
+`Use 1 Release` 첫 탭은 메인 앱의 `Checking release status`로 정상 진입했다. 그러나
+처리 중 화면이 약 1분 이상 지속되어 완료·실패 결과를 확인하지 못했다. 처리 중 앱을 강제
+종료한 뒤에는 `Couldn't complete the release`와 `No coins were deducted`, 제한 유지,
+`Try Again`이 표시됐다. 같은 요청의 `Try Again`도 약 1분 이상 처리 중에 머물러 앱을 다시
+강제 종료했다. 화면 문구 외에 CloudKit 권위 잔액·command 상태·실제 차감은 확인하지 못했다.
+해당 시점 `devicectl`은 CoreDeviceService 연결 무효화 오류를 반환해 기기 로그와 App Group
+상태를 수집하지 못했다. 재연결 후 같은 command의 원격·로컬 상태와 `refreshForApp` 단계별
+지연을 진단하고, 성공·실패가 확정되기 전에는 새 해제 요청이나 구매를 하지 않는다. 두 기기의
+완료·잔액·내역 수렴과 다른 결과 상태는 미검증으로 유지한다.
 
 ## BLK-019 — T104 Figma 하이파이 작성의 계정 사용량 한도
 

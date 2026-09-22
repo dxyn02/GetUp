@@ -447,28 +447,35 @@ Shield Action extension에서 앱이 만든 활동을 직접 열거하는 경로
 |------|-----------|-------------------|
 | 기기·OS | `iPhone18,3`, iOS 26.7 | `iPhone16,2`, iOS 27.0 beta |
 | 동일 서명 Debug 빌드 설치 | 완료 — `com.dxyn02.GetUp` 기존 설치 업데이트 | 완료 — 같은 산출물로 기존 설치 업데이트 |
-| 일반 활성 occurrence의 Shield 첫 탭 한 번으로 앱 진입 | 미검증 | 미검증 |
-| 처리 중 → 완료, 무료 우선 1회 차감·해당 occurrence 해제 | 미검증 | 미검증 |
-| 재시도·잔액 부족·기존 iCloud 복구 연결 | 미검증 | 미검증 |
-| 처리 중 강제 종료 뒤 같은 command 복원 | 미검증 | 미검증 |
+| 일반 활성 occurrence의 Shield 첫 탭 한 번으로 앱 진입 | Candy Crush Saga에서 확인 — `Home` 대표 규칙, 22:32 종료 | 미검증 |
+| 처리 중 → 완료, 무료 우선 1회 차감·해당 occurrence 해제 | 처리 중 진입 확인, 완료·차감·해제 미검증(장기 정체) | 미검증 |
+| 재시도·잔액 부족·기존 iCloud 복구 연결 | 강제 종료 뒤 재시도 화면 확인, 부족·복구 미검증 | 미검증 |
+| 처리 중 강제 종료 뒤 같은 command 복원 | 재시도 화면·`Try Again` 확인, command ID 일치 미검증 | 미검증 |
 | 두 기기의 제한·잔액·내역 수렴 | 미검증 | 미검증 |
 | 실제 VoiceOver 발표·초점 이동 | 미검증 | 미검증 |
 
 두 기기 모두 `devicectl` 앱 서비스 연결과 설치가 성공했다. 산출물의 `GetUpT089*` 세 값은 비어
 있으므로 5분 대체 월 정책이 섞이지 않았다. 앱·Shield Action의 서명에 Family Controls, App Group,
-CloudKit entitlement가 있다. 설치는 앱 데이터 삭제나 초기화 없이 수행했다. 설치 후 아직 GetUp을
-foreground로 열지 않았으며, Shield-first 조건을 보존하기 위해 사용자 화면 조작 전에는 앱을
-실행하지 않는다. 사용자가 iPhone Mirroring을 잠금 해제해 iPhone 17 홈 화면을 확인했다. 양쪽 기기
-공통 설치 앱 `Sync`를 열었지만 Beta 만료 경고가 표시되어 검증 대상으로 사용할 수 없었다. 사용자는
-현재 시각에 활성화된 제한 규칙이 없다고 확인했다. 따라서 일반 활성 occurrence의 Shield 첫 탭과
-결과 화면은 아직 확인하지 못했다. 실제 결과 없이 위 항목을 통과로 표기하지 않는다.
+CloudKit entitlement가 있다. 설치는 앱 데이터 삭제나 초기화 없이 수행했다. 설치 직후에는
+GetUp을 열지 않아 Shield-first 조건을 보존했다. 사용자가 iPhone Mirroring을 잠금 해제해
+iPhone 17 홈 화면을 확인했다. 양쪽 기기 공통 설치 앱 `Sync`는 Beta 만료로 사용할 수 없었고,
+당시에는 활성 제한도 없었다. 이후 사용자가 Games 제한과 Candy Crush Saga 대상을 준비했다.
+실제 확인하지 못한 항목은 통과로 표기하지 않는다.
 
-재개할 때는 사용자와 함께 안전한 테스트 대상 앱·시간대를 정해 활성 규칙을 준비하고, 두 기기가
-같은 iCloud 계정인지 확인한 뒤 각 기기에서 일반 활성 제한 앱의 Shield를
-연다. 첫 탭 직전 무료·구매 잔액과 활성 규칙을 기록한 뒤 `해제권 1회 사용`을 한 번만 누른다. 앱 처리
+재개할 때는 BLK-021의 기존 command와 권위 잔액을 먼저 진단하고, 두 기기가 같은 iCloud
+계정인지 확인한다. 미검증 기기에서는 활성 제한 앱의 Shield를 연다. 탭 직전 무료·구매 잔액과
+활성 규칙을 기록한 뒤 `해제권 1회 사용`을 한 번만 누른다. 앱 처리
 중·최종 화면, 제한 앱 재진입, 코인 내역과 반대 기기의 수렴 결과를 순서대로 기록한다. 실패 주입·
 잔액 부족·복구 화면은 실계정 장부 상태를 임의로 삭제하거나 구매하지 않고 안전한 사전 상태 또는
 별도 검증 fixture가 마련된 경우에만 수행한다. 월 경계 allowance 검증은 T089로 분리한다.
+
+2026-09-22 추가 관찰: 사용자가 약 22:30까지 Games 카테고리를 제한하고 Candy Crush Saga를
+지정했다. iPhone 17에서 Shield의 `Use 1 Release`를 한 번 누르자 앱의
+`Checking release status`가 열렸다. 처리 중이 약 1분 이상 지속되어 앱을 강제 종료한 뒤
+재진입하자 `Couldn't complete the release`, `No coins were deducted`, `Restriction active`,
+`Try Again`을 확인했다. 재시도 후에도 약 1분 이상 처리 중에 머물러 다시 강제 종료했다.
+재시도 화면의 미차감은 UI 표시이며 서버 잔액·내역으로 독립 확인하지 못했다. `devicectl`은
+CoreDeviceService 연결 무효화 오류로 진단을 제공하지 못했다(BLK-021). T113은 미완료다.
 
 ## 개인정보·운영 점검
 

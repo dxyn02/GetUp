@@ -7,6 +7,18 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-22 T113 실기기 첫 실행: 사용자가 약 22:30까지 Games 제한과 Candy Crush Saga
+대상을 지정해 BLK-020을 해결했다(DEC-117). iPhone 17에서 실제 Shield가 `Home` 대표 규칙,
+22:32 종료, 무료 우선·구매 fallback, 다른 규칙 0개를 표시했다. `Use 1 Release` 첫 탭 한 번으로
+메인 앱의 처리 중 화면에 진입했다. 처리 중이 약 1분 이상 지속되어 앱을 강제 종료한 뒤
+재진입 시 재시도 화면·`No coins were deducted`·제한 유지·`Try Again`을 확인했다. 같은 요청을
+재시도해도 약 1분 이상 처리 중에서 수렴하지 않아 다시 강제 종료했다. 화면 외 권위 잔액·내역·
+command ID 일치 여부는 확인하지 못했고 iPhone 15 Pro Max 인수도 아직 미실행이다. CoreDeviceService
+연결 오류로 기기 로그를 수집하지 못해 BLK-021을 열었다. 현재 phase는 002 Phase 9, 마지막 완료
+task는 T112, 진행 중 task는 T113, 다음 task는 T113 장애 진단 뒤 나머지 실기기 인수다. T113을
+완료 처리하지 않았으며 관련 자동 테스트의 이전 T112 통과 결과 외에 이번 실기기 결과는 부분
+확인·장기 정체로 기록한다. 사용자 소유 설정·지역화 변경은 보존했다.
+
 2026-09-22 T113 진행 중: iPhone 17(iOS 26.7)과 iPhone 15 Pro Max(iOS 27.0 beta)에 같은
 서명 Debug 빌드를 기존 앱 데이터 보존 방식으로 설치했다. `GetUpT089*` 대체 월 정책이 비어 있고
 앱·Shield Action의 필수 entitlement를 확인했다. Shield-first 조건 유지를 위해 설치 뒤 GetUp은
