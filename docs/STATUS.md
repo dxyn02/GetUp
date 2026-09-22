@@ -7,6 +7,17 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-22 T113/T089 5분 경계 Shield-first 성공: 22:55에 5분 설정 빌드를 설치한 뒤 사용자가
+iPhone 17에서 새 활성 Candy Crush Saga Shield를 첫 진입점으로 사용했다. 22:57 촬영 결과 화면은
+`Release complete`, 무료 해제권 1회 사용, 남은 제한 없음으로 표시됐다. App Group 진단은
+`releaseRouteSaved` → `finalRefreshCompleted`를 기록했고 활성 규칙 revision 목록도 빈 배열이라
+해당 occurrence 해제와 일치한다. iPhone 15 Pro Max의 Coins 화면은 진입 직후 무료 2회·구매
+0코인을 표시했다가 몇 초 뒤 무료 1회·구매 0코인으로 갱신됐고, 22:59 장부 동기화 진단과 함께
+원격 차감의 다기기 잔액 수렴을 확인했다. release 내역, 기존 iCloud 복구 연결과 실제 VoiceOver가
+남아 있어 T113·T089는 완료 처리하지 않는다. 현재 phase는 002 Phase 9, 마지막 완료 task는
+T112, 진행 중 task는 T113, 다음 작업은 반대 기기 release 내역·복구·VoiceOver 확인이다. 사용자
+소유 설정·지역화 변경은 보존했다.
+
 2026-09-22 T113/T089 5분 장부 빌드 재설치: 사용자가 5분 리셋 설정의 계속 사용을 확인해
 `Debug.xcconfig`의 `t089-five-minute-final` namespace와 `GetUpT089PeriodMinutes = 5`를 명령행
 빈 값으로 덮어쓰지 않은 새 서명 Debug 빌드를 생성했다. 앱과 Shield Action 산출물의 Info.plist에서

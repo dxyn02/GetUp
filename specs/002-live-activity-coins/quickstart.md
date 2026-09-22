@@ -453,10 +453,10 @@ Shield Action extension에서 앱이 만든 활동을 직접 열거하는 경로
 | 기기·OS | `iPhone18,3`, iOS 26.7 | `iPhone16,2`, iOS 27.0 beta |
 | 동일 서명 Debug 빌드 설치 | 완료 — `com.dxyn02.GetUp` 기존 설치 업데이트 | 완료 — 같은 산출물로 기존 설치 업데이트 |
 | 일반 활성 occurrence의 Shield 첫 탭 한 번으로 앱 진입 | Candy Crush Saga에서 확인 — `Home` 대표 규칙, 22:32 종료 | Candy Crush Saga에서 확인 — 사용자 보고 `No releases available`, 진단상 route 저장·앱 진입 |
-| 처리 중 → 완료, 무료 우선 1회 차감·해당 occurrence 해제 | 처리 중 진입 확인, 완료·차감·해제 미검증(장기 정체) | 미검증 |
+| 처리 중 → 완료, 무료 우선 1회 차감·해당 occurrence 해제 | 5분 경계 Shield-first 성공 — `Release complete`, 무료 1회 사용, 남은 제한 없음, `finalRefreshCompleted` | 미검증 |
 | 재시도·잔액 부족·기존 iCloud 복구 연결 | 재시도와 확정 부족 확인 — X 아이콘, 무료 0회·구매 0코인, 제한 유지; 복구 미검증 | 확정 부족 확인 — `coinReservationPolicyError.insufficientBalance`; 상세·복구 미검증 |
 | 처리 중 강제 종료 뒤 같은 command 복원 | 기존 동일 command의 재시도 후 확정 부족으로 수렴 | 미검증 |
-| 두 기기의 제한·잔액·내역 수렴 | 미검증 | 미검증 |
+| 두 기기의 제한·잔액·내역 수렴 | 해당 기기 활성 규칙 목록 `[]`; 반대 기기 장부 sync 완료 | Coins 진입 직후 2/0 → 몇 초 뒤 1/0 수렴; release 내역 미검증 |
 | 실제 VoiceOver 발표·초점 이동 | 미검증 | 미검증 |
 
 두 기기 모두 `devicectl` 앱 서비스 연결과 설치가 성공했다. 산출물의 `GetUpT089*` 세 값은 비어
@@ -500,6 +500,16 @@ iPhone 15 Pro Max에도 데이터를 보존한 채 설치했고 앱은 실행하
 두 기기 모두 부족 분기로 수렴했지만 iPhone 15 Pro Max의 X 아이콘·상세 0/0 표시·제한 유지와
 성공 차감·기존 복구·성공 후 다기기 잔액·내역 수렴·실제 VoiceOver는 미검증이다. 따라서 T113은
 계속 미완료로 둔다.
+
+2026-09-22 5분 경계 성공 결과: 22:55에 5분 설정 빌드를 설치한 뒤 iPhone 17에서 앱을 먼저
+열지 않고 새 Candy Crush Saga Shield를 실행했다. 22:57 결과 화면은 `Release complete`,
+`1 free release used`, `No restrictions remain`을 표시했다. App Group 진단은 Shield의
+`releaseRouteSaved`와 앱 handoff의 `finalRefreshCompleted`를 기록했고 활성 규칙 revision 목록은
+빈 배열이었다. iPhone 15 Pro Max는 Coins 진입 직후 무료 2회·구매 0코인을 표시했다가 몇 초 뒤
+무료 1회·구매 0코인으로 바뀌었고, 22:59 `syncEngineCaptureCompleted` 진단과 함께 원격 차감의
+다기기 잔액 수렴을 확인했다. 따라서 Shield-first 성공·해당 occurrence 해제·정확한 다기기 잔액
+수렴은 통과로 기록하되, release 내역·복구·실제 VoiceOver가 남아 있어 T113과 T089는 계속
+미완료다.
 
 ## 개인정보·운영 점검
 

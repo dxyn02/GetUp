@@ -9,6 +9,13 @@
 
 ## 2026-09-22 T113 준비 결과
 
+5분 설정 빌드 설치 뒤 iPhone 17의 22:57 Shield-first 실행이 성공했다. 사용자가 제공한 결과 화면은
+`Release complete`, 무료 해제권 1회 사용, 남은 제한 없음이며, App Group 진단도
+`releaseRouteSaved` → `finalRefreshCompleted`와 빈 활성 규칙 목록을 기록했다. iPhone 15 Pro Max의
+Coins 화면은 처음 2/0을 표시했다가 몇 초 뒤 1/0으로 바뀌었고 22:59 장부 동기화 진단과 함께
+원격 차감의 다기기 잔액 수렴을 확인했다. 다음 확인은 반대 기기의 release 내역이며, 그 뒤 복구
+연결·실제 VoiceOver가 남는다.
+
 사용자 확인에 따라 `Debug.xcconfig`의 `t089-five-minute-final`·5분 주기를 실제 포함한 새 서명
 Debug 빌드를 만들었다. 앱과 Shield Action Info.plist에서 세 T089 값을 확인했고, 두 기기에 기존
 데이터를 보존해 동일 산출물을 설치했다. 설치 뒤 GetUp은 열지 않았다. 기존 Games 제한은 종료됐기
@@ -56,8 +63,8 @@ iPhone Mirroring은 사용자가 직접 잠금 해제했고 iPhone 17에서 Cand
 ## 차단 및 테스트 상태
 
 실기기 설치·서명, 두 기기의 Shield 첫 탭 앱 진입·확정 잔액 부족 수렴, iPhone 17의 강제 종료
-복원·재시도·제한 유지·terminal 정리는 확인했다. 완료 결과·성공 차감·복구·성공 후 다기기
-수렴·실제 VoiceOver는 미검증이다.
+복원·재시도·제한 유지·terminal 정리, 5분 경계 무료 성공 차감과 iPhone 15 Pro Max의 2/0 → 1/0
+잔액 수렴은 확인했다. 성공 내역, 복구 연결·실제 VoiceOver는 미검증이다.
 T112의 iPhone 17 Pro Max iOS 26.5 시뮬레이터 관련 자동 테스트는 664개 선언·동적 실행
 784회가 실패·skip 없이 통과했고, 이번 `AppReleaseHandoffTests` 집중 실행도 통과했다. T113
 실기기 인수는 아직 완료 처리하지 않는다.
