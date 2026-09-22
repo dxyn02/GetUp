@@ -447,9 +447,9 @@ Shield Action extension에서 앱이 만든 활동을 직접 열거하는 경로
 |------|-----------|-------------------|
 | 기기·OS | `iPhone18,3`, iOS 26.7 | `iPhone16,2`, iOS 27.0 beta |
 | 동일 서명 Debug 빌드 설치 | 완료 — `com.dxyn02.GetUp` 기존 설치 업데이트 | 완료 — 같은 산출물로 기존 설치 업데이트 |
-| 일반 활성 occurrence의 Shield 첫 탭 한 번으로 앱 진입 | Candy Crush Saga에서 확인 — `Home` 대표 규칙, 22:32 종료 | 미검증 |
+| 일반 활성 occurrence의 Shield 첫 탭 한 번으로 앱 진입 | Candy Crush Saga에서 확인 — `Home` 대표 규칙, 22:32 종료 | Candy Crush Saga에서 확인 — 사용자 보고 `No releases available`, 진단상 route 저장·앱 진입 |
 | 처리 중 → 완료, 무료 우선 1회 차감·해당 occurrence 해제 | 처리 중 진입 확인, 완료·차감·해제 미검증(장기 정체) | 미검증 |
-| 재시도·잔액 부족·기존 iCloud 복구 연결 | 재시도와 확정 부족 확인 — X 아이콘, 무료 0회·구매 0코인, 제한 유지; 복구 미검증 | 미검증 |
+| 재시도·잔액 부족·기존 iCloud 복구 연결 | 재시도와 확정 부족 확인 — X 아이콘, 무료 0회·구매 0코인, 제한 유지; 복구 미검증 | 확정 부족 확인 — `coinReservationPolicyError.insufficientBalance`; 상세·복구 미검증 |
 | 처리 중 강제 종료 뒤 같은 command 복원 | 기존 동일 command의 재시도 후 확정 부족으로 수렴 | 미검증 |
 | 두 기기의 제한·잔액·내역 수렴 | 미검증 | 미검증 |
 | 실제 VoiceOver 발표·초점 이동 | 미검증 | 미검증 |
@@ -488,6 +488,13 @@ iPhone 15 Pro Max에도 데이터를 보존한 채 설치했고 앱은 실행하
 유지했다. BLK-021은 해결됐지만 성공 차감·iPhone 15 Pro Max 실제 첫 탭·기존 복구·다기기
 수렴·실제 VoiceOver가
 남아 있어 T113은 미완료다.
+
+2026-09-22 iPhone 15 Pro Max 추가 결과: 사용자가 Candy Crush Saga Shield 첫 탭 뒤
+`No releases available` 화면을 확인했다. App Group 진단은 Shield의 `releaseRouteSaved`, 앱 장부의
+`syncEngineCaptureCompleted`, 최종 `coinReservationPolicyError.insufficientBalance`를 기록했다.
+두 기기 모두 부족 분기로 수렴했지만 iPhone 15 Pro Max의 X 아이콘·상세 0/0 표시·제한 유지와
+성공 차감·기존 복구·성공 후 다기기 잔액·내역 수렴·실제 VoiceOver는 미검증이다. 따라서 T113은
+계속 미완료로 둔다.
 
 ## 개인정보·운영 점검
 

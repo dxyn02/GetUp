@@ -9,6 +9,12 @@
 
 ## 2026-09-22 T113 준비 결과
 
+iPhone 15 Pro Max에서도 사용자가 Candy Crush Saga Shield 첫 탭 뒤 `No releases available`을
+확인했다. App Group 진단은 `releaseRouteSaved` → `syncEngineCaptureCompleted` →
+`coinReservationPolicyError.insufficientBalance` 순서를 기록했다. 두 실기기의 부족 분기 수렴은
+확인됐지만 iPhone 15 Pro Max의 상세 잔액·X 아이콘·제한 유지, 성공·복구·다기기 성공 수렴·실제
+VoiceOver는 아직 미검증이다.
+
 사용자가 현재부터 약 22:30까지 Games 카테고리를 제한하고 Candy Crush Saga를 테스트
 대상으로 지정했다. iPhone 17의 실제 Shield 첫 `Use 1 Release` 탭은 메인 앱 처리 중 화면을
 열었다. 처리 중이 약 1분 이상 지속돼 강제 종료했고, 다시 열린 앱은 재시도·화면상 미차감·
@@ -43,9 +49,9 @@ iPhone Mirroring은 사용자가 직접 잠금 해제했고 iPhone 17에서 Cand
 
 ## 차단 및 테스트 상태
 
-실기기 설치·서명, iPhone 17의 Shield 첫 탭 앱 진입·강제 종료 복원·재시도·확정 잔액 부족
-수렴은 확인했다. 완료 결과·성공 차감·iPhone 15 Pro Max 첫 탭·복구·다기기 수렴·실제
-VoiceOver는 미검증이다.
+실기기 설치·서명, 두 기기의 Shield 첫 탭 앱 진입·확정 잔액 부족 수렴, iPhone 17의 강제 종료
+복원·재시도·제한 유지·terminal 정리는 확인했다. 완료 결과·성공 차감·복구·성공 후 다기기
+수렴·실제 VoiceOver는 미검증이다.
 T112의 iPhone 17 Pro Max iOS 26.5 시뮬레이터 관련 자동 테스트는 664개 선언·동적 실행
 784회가 실패·skip 없이 통과했고, 이번 `AppReleaseHandoffTests` 집중 실행도 통과했다. T113
 실기기 인수는 아직 완료 처리하지 않는다.

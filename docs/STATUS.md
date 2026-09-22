@@ -7,6 +7,15 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-22 T113 iPhone 15 Pro Max 부족 경로 인수: 사용자가 Candy Crush Saga Shield의 첫 탭 뒤
+`No releases available` 화면을 확인했다. App Group 진단은 Shield의 `releaseRouteSaved`, 앱 장부의
+`syncEngineCaptureCompleted`, 최종 `coinReservationPolicyError.insufficientBalance`를 순서대로
+기록했다. 따라서 iPhone 17과 iPhone 15 Pro Max 모두 일반 활성 occurrence의 Shield 첫 탭으로 앱에
+진입해 동일한 확정 잔액 부족 분기로 수렴했다. iPhone 15 Pro Max의 X 아이콘·0/0 상세 표시·제한
+유지는 별도 시각 확인으로 단정하지 않는다. 성공 차감·기존 iCloud 복구·성공 후 다기기 잔액·내역
+수렴·실제 VoiceOver가 남아 있어 T113은 미완료다. 현재 phase는 002 Phase 9, 마지막 완료 task는
+T112, 진행 중 task는 T113, 다음 작업은 T113 잔여 인수다. 사용자 소유 설정·지역화 변경은 보존했다.
+
 2026-09-22 T113 잔액 부족 handoff 수정·부분 인수: iPhone 17의 App Group 진단에서 앱 장부
 동기화는 `syncEngineCaptureCompleted`까지 끝났고, 권위 잔액이 무료 0회·구매 0코인이라
 `CoinReservationPolicyError.insufficientBalance`가 발생했음을 확인했다. app handoff가 이 정책
