@@ -157,11 +157,16 @@ final class UserStory4MonthlyAllowanceUITests: XCTestCase {
         XCTAssertTrue(
             monthlyGrant.staticTexts["coinStore.history.monthEnd"].label.contains("월 종료")
         )
+        let spend = app.otherElements["coinStore.history.spend"]
         XCTAssertEqual(
-            app.otherElements["coinStore.history.spend"]
-                .staticTexts["coinStore.history.status"].label,
+            spend.staticTexts["coinStore.history.status"].label,
             "월간 무료 사용"
         )
+        XCTAssertEqual(
+            spend.staticTexts["coinStore.history.quantity"].label,
+            "-1"
+        )
+        XCTAssertFalse(app.otherElements["coinStore.history.reservation"].exists)
         XCTAssertEqual(
             app.otherElements["coinStore.history.purchaseGrant"]
                 .staticTexts["coinStore.history.status"].label,

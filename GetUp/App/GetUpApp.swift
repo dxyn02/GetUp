@@ -2932,13 +2932,15 @@ private final class CoinStoreUITestDriver {
     }
 
     private static func fullHistory(now: Date) throws -> [CoinLedgerEvent] {
-        let fixtures: [(CoinLedgerEventKind, CoinLedgerEventSource, Int)] = [
-            (.purchaseGrant, .purchased, 5),
-            (.freeGrant, .monthlyFree, 2),
-            (.spend, .monthlyFree, 1),
-            (.release, .monthlyFree, 1),
-            (.refundAdjustment, .purchased, 2),
-            (.reversal, .purchased, 2),
+        let commandID = UUID(uuidString: "00000000-0000-4000-8000-000000000903")!
+        let fixtures: [(CoinLedgerEventKind, CoinLedgerEventSource, Int, UUID?)] = [
+            (.purchaseGrant, .purchased, 5, nil),
+            (.freeGrant, .monthlyFree, 2, nil),
+            (.spend, .monthlyFree, 1, commandID),
+            (.reservation, .monthlyFree, 1, commandID),
+            (.release, .monthlyFree, 1, nil),
+            (.refundAdjustment, .purchased, 2, nil),
+            (.reversal, .purchased, 2, nil),
         ]
         return try fixtures.enumerated().map { index, fixture in
             try CoinLedgerEvent(
@@ -2947,7 +2949,7 @@ private final class CoinStoreUITestDriver {
                 source: fixture.1,
                 quantity: fixture.2,
                 relatedTransactionID: fixture.0 == .purchaseGrant ? 8_001 : nil,
-                relatedCommandID: nil,
+                relatedCommandID: fixture.3,
                 occurrenceID: nil,
                 createdAt: now.addingTimeInterval(TimeInterval(-index * 60))
             )

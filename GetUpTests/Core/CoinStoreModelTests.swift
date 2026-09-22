@@ -5,6 +5,42 @@ import Testing
 @Suite("Coin store model")
 @MainActor
 struct CoinStoreModelTests {
+    @Test("A committed release shows one final debit instead of reservation and spend debits")
+    func committedReleaseHistoryShowsOneDebit() throws {
+        let commandID = UUID(uuidString: "00000000-0000-4000-8000-000000000901")!
+        let reservation = try Self.releaseEvent(
+            kind: .reservation,
+            commandID: commandID,
+            createdAt: Self.now
+        )
+        let spend = try Self.releaseEvent(
+            kind: .spend,
+            commandID: commandID,
+            createdAt: Self.now.addingTimeInterval(1)
+        )
+
+        let events = CoinLedgerHistoryPresentation.visibleEvents(
+            from: [spend, reservation]
+        )
+
+        #expect(events.map(\.kind) == [.spend])
+        #expect(CoinLedgerHistoryPresentation.signedQuantity(for: spend) == "-1")
+    }
+
+    @Test("A pending reservation remains visible without a negative quantity")
+    func pendingReservationHistoryHasNoDebit() throws {
+        let reservation = try Self.releaseEvent(
+            kind: .reservation,
+            commandID: UUID(uuidString: "00000000-0000-4000-8000-000000000902")!,
+            createdAt: Self.now
+        )
+
+        let events = CoinLedgerHistoryPresentation.visibleEvents(from: [reservation])
+
+        #expect(events == [reservation])
+        #expect(CoinLedgerHistoryPresentation.signedQuantity(for: reservation) == nil)
+    }
+
     @Test(
         "Balance presentation distinguishes loading, empty, stale, and current states",
         arguments: [
@@ -428,6 +464,23 @@ private extension CoinStoreModelTests {
             relatedCommandID: nil,
             occurrenceID: nil,
             createdAt: Self.now
+        )
+    }
+
+    static func releaseEvent(
+        kind: CoinLedgerEventKind,
+        commandID: UUID,
+        createdAt: Date
+    ) throws -> CoinLedgerEvent {
+        try CoinLedgerEvent(
+            eventID: "\(kind.rawValue):\(commandID.uuidString.lowercased())",
+            kind: kind,
+            source: .monthlyFree,
+            quantity: 1,
+            relatedTransactionID: nil,
+            relatedCommandID: commandID,
+            occurrenceID: "occurrence-history",
+            createdAt: createdAt
         )
     }
 }

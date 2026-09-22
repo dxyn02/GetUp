@@ -9,6 +9,14 @@
 
 ## 2026-09-22 T113 준비 결과
 
+22:57 성공 해제의 Coin History에 같은 command의 예약과 확정 사용이 모두 `-1`로 보여 두 번
+차감된 것처럼 보였지만, 실제 권위 잔액은 2/0에서 1/0으로 한 번만 감소했다. 확정 `spend` 또는
+보상 `release`가 존재하는 command의 `reservation` 행을 접고, pending 예약에는 음수 수량을
+표시하지 않도록 수정했다. 확정 사용은 `-1` 한 건만 남는다. 표시 정책 단위 테스트, US4 집중 UI
+테스트, T089 설정을 명령행에서 비운 전체 `GetUpTests`가 통과했다. 수정 서명 빌드는 데이터를
+보존해 두 iPhone에 설치했다. 다음 실기기 확인에서는 기존 22:57 내역에 `Monthly free used -1`
+한 건만 보이는지 확인한다.
+
 5분 설정 빌드 설치 뒤 iPhone 17의 22:57 Shield-first 실행이 성공했다. 사용자가 제공한 결과 화면은
 `Release complete`, 무료 해제권 1회 사용, 남은 제한 없음이며, App Group 진단도
 `releaseRouteSaved` → `finalRefreshCompleted`와 빈 활성 규칙 목록을 기록했다. iPhone 15 Pro Max의
@@ -64,7 +72,9 @@ iPhone Mirroring은 사용자가 직접 잠금 해제했고 iPhone 17에서 Cand
 
 실기기 설치·서명, 두 기기의 Shield 첫 탭 앱 진입·확정 잔액 부족 수렴, iPhone 17의 강제 종료
 복원·재시도·제한 유지·terminal 정리, 5분 경계 무료 성공 차감과 iPhone 15 Pro Max의 2/0 → 1/0
-잔액 수렴은 확인했다. 성공 내역, 복구 연결·실제 VoiceOver는 미검증이다.
+잔액 수렴은 확인했다. 성공 내역의 중복 차감 표시 수정 빌드는 두 기기에 설치했지만 실기기 시각
+재확인, 복구 연결·실제 VoiceOver는 미검증이다.
 T112의 iPhone 17 Pro Max iOS 26.5 시뮬레이터 관련 자동 테스트는 664개 선언·동적 실행
-784회가 실패·skip 없이 통과했고, 이번 `AppReleaseHandoffTests` 집중 실행도 통과했다. T113
-실기기 인수는 아직 완료 처리하지 않는다.
+784회가 실패·skip 없이 통과했고, 이번 내역 표시 정책 단위 테스트·US4 집중 UI 테스트와 T089
+설정을 명령행에서 비운 전체 `GetUpTests`도 통과했다. T113 실기기 인수는 아직 완료 처리하지
+않는다.

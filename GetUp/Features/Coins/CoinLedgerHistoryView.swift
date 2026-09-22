@@ -47,7 +47,10 @@ struct CoinLedgerHistoryView: View {
                     .accessibilitySortPriority(100)
             }
 
-            ForEach(events, id: \.eventID) { event in
+            ForEach(
+                CoinLedgerHistoryPresentation.visibleEvents(from: events),
+                id: \.eventID
+            ) { event in
                 historyRow(event)
             }
         }
@@ -74,10 +77,12 @@ struct CoinLedgerHistoryView: View {
                     .accessibilitySortPriority(20)
             }
             Spacer()
-            Text(signedQuantity(for: event))
-                .font(.headline.monospacedDigit())
-                .accessibilityIdentifier("coinStore.history.quantity")
-                .accessibilitySortPriority(10)
+            if let quantity = CoinLedgerHistoryPresentation.signedQuantity(for: event) {
+                Text(quantity)
+                    .font(.headline.monospacedDigit())
+                    .accessibilityIdentifier("coinStore.history.quantity")
+                    .accessibilitySortPriority(10)
+            }
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("coinStore.history.\(event.kind.rawValue)")
@@ -92,14 +97,6 @@ struct CoinLedgerHistoryView: View {
         case .current, .setupRequired, .deletionConfirmed, .resetRequired:
             events.isEmpty ? .empty : .current
         }
-    }
-
-    private func signedQuantity(for event: CoinLedgerEvent) -> String {
-        let sign = switch event.kind {
-        case .reservation, .spend, .refundAdjustment: "-"
-        case .purchaseGrant, .freeGrant, .release, .reversal: "+"
-        }
-        return "\(sign)\(event.quantity)"
     }
 
     private func status(for event: CoinLedgerEvent) -> String {
@@ -150,6 +147,40 @@ struct CoinLedgerHistoryView: View {
         case (.none, .release):
             AppLocalizedCopy.string("coinStore.history.status.coin.release")
         }
+    }
+}
+
+enum CoinLedgerHistoryPresentation {
+    static func visibleEvents(from events: [CoinLedgerEvent]) -> [CoinLedgerEvent] {
+        let terminalCommandIDs = Set(events.compactMap { event -> UUID? in
+            switch event.kind {
+            case .spend, .release:
+                event.relatedCommandID
+            case .purchaseGrant, .freeGrant, .reservation, .refundAdjustment, .reversal:
+                nil
+            }
+        })
+
+        return events.filter { event in
+            guard event.kind == .reservation,
+                  let commandID = event.relatedCommandID else {
+                return true
+            }
+            return !terminalCommandIDs.contains(commandID)
+        }
+    }
+
+    static func signedQuantity(for event: CoinLedgerEvent) -> String? {
+        let sign: String
+        switch event.kind {
+        case .reservation:
+            return nil
+        case .spend, .refundAdjustment:
+            sign = "-"
+        case .purchaseGrant, .freeGrant, .release, .reversal:
+            sign = "+"
+        }
+        return "\(sign)\(event.quantity)"
     }
 }
 

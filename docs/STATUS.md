@@ -7,6 +7,18 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-22 T113 성공 내역 중복 차감 표시 수정: iPhone 15 Pro Max의 22:57 성공 해제 내역에서
+같은 command의 `Monthly free use reserved -1`과 `Monthly free used -1`이 함께 보여 한 번의 사용이
+두 번 차감된 것처럼 보이는 결함을 확인했다. 권위 잔액은 2/0에서 1/0으로 한 번만 감소했으므로
+원장 중복 차감이 아니라 표시 결함이었다. 확정 `spend` 또는 보상 `release`가 있는 command의
+`reservation` 행은 내역에서 접고, 아직 확정되지 않은 예약은 상태 행을 유지하되 음수 수량을
+표시하지 않도록 수정했다. 확정 사용은 `-1` 한 건으로 표시한다. 표시 정책 단위 테스트와 US4
+집중 UI 테스트가 통과했고, T089 5분 설정을 명령행에서만 비운 전체 `GetUpTests`도 실패·skip 없이
+통과했다. 동일 서명 수정 빌드를 앱 데이터 보존 방식으로 iPhone 17과 iPhone 15 Pro Max에
+설치했다. T113은 복구 연결·실제 VoiceOver 확인이 남아 있어 완료 처리하지 않는다. 현재 phase는
+002 Phase 9, 마지막 완료 task는 T112, 진행 중 task는 T113, 다음 작업은 수정 내역의 실기기
+시각 확인과 복구·VoiceOver 잔여 인수다. 사용자 소유 설정·지역화 변경은 보존했다.
+
 2026-09-22 T113/T089 5분 경계 Shield-first 성공: 22:55에 5분 설정 빌드를 설치한 뒤 사용자가
 iPhone 17에서 새 활성 Candy Crush Saga Shield를 첫 진입점으로 사용했다. 22:57 촬영 결과 화면은
 `Release complete`, 무료 해제권 1회 사용, 남은 제한 없음으로 표시됐다. App Group 진단은

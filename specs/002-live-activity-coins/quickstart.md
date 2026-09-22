@@ -511,6 +511,15 @@ iPhone 15 Pro Max에도 데이터를 보존한 채 설치했고 앱은 실행하
 수렴은 통과로 기록하되, release 내역·복구·실제 VoiceOver가 남아 있어 T113과 T089는 계속
 미완료다.
 
+2026-09-22 성공 내역 표시 수정: iPhone 15 Pro Max의 Coin History에서 동일한 22:57 command에
+`Monthly free use reserved -1`과 `Monthly free used -1`이 함께 보였다. 권위 잔액은 2/0에서 1/0으로
+한 번만 감소했으므로 원장 중복 차감은 아니다. 확정 `spend` 또는 보상 `release`와 같은 command의
+`reservation` 행을 내역에서 접고, terminal event가 없는 pending 예약은 상태만 보이되 음수 수량을
+표시하지 않도록 수정했다. 표시 정책 단위 테스트와 US4 집중 UI 테스트, T089 5분 설정을 명령행에서
+비운 전체 `GetUpTests`가 통과했다. 수정 서명 빌드는 두 iPhone에 데이터를 보존해 설치했다. 기존
+성공 내역이 `Monthly free used -1` 한 건으로 보이는 실기기 시각 재확인은 남아 있으므로 T113은
+계속 미완료다.
+
 ## 개인정보·운영 점검
 
 - CloudKit Dashboard, App Group 파일, diagnostics에서 좌표·앱 token이 장부에 포함되지 않았는지 확인한다.
