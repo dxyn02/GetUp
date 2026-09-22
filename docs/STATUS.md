@@ -7,6 +7,16 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-22 T113/T089 5분 장부 빌드 재설치: 사용자가 5분 리셋 설정의 계속 사용을 확인해
+`Debug.xcconfig`의 `t089-five-minute-final` namespace와 `GetUpT089PeriodMinutes = 5`를 명령행
+빈 값으로 덮어쓰지 않은 새 서명 Debug 빌드를 생성했다. 앱과 Shield Action 산출물의 Info.plist에서
+namespace·5분 값과 빈 월 경계일을 확인한 뒤 iPhone 17과 iPhone 15 Pro Max에 앱 데이터를 보존해
+같은 산출물을 설치했다. 설치 뒤 GetUp은 열지 않아 다음 5분 경계의 Shield-first 조건을 유지했다.
+활성 제한 시간이 끝난 상태이므로 사용자가 새 제한을 준비하고 경계 뒤 Candy Crush Saga Shield를
+한 번 눌러야 성공 차감·다기기 수렴을 계속 검증할 수 있다. T113·T089는 아직 미완료다. 현재
+phase는 002 Phase 9, 마지막 완료 task는 T112, 진행 중 task는 T113, 다음 작업은 5분 경계
+Shield-first 성공 인수다. 사용자 소유 설정·지역화 변경은 보존했다.
+
 2026-09-22 T113 iPhone 15 Pro Max 부족 경로 인수: 사용자가 Candy Crush Saga Shield의 첫 탭 뒤
 `No releases available` 화면을 확인했다. App Group 진단은 Shield의 `releaseRouteSaved`, 앱 장부의
 `syncEngineCaptureCompleted`, 최종 `coinReservationPolicyError.insufficientBalance`를 순서대로

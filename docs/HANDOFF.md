@@ -9,6 +9,12 @@
 
 ## 2026-09-22 T113 준비 결과
 
+사용자 확인에 따라 `Debug.xcconfig`의 `t089-five-minute-final`·5분 주기를 실제 포함한 새 서명
+Debug 빌드를 만들었다. 앱과 Shield Action Info.plist에서 세 T089 값을 확인했고, 두 기기에 기존
+데이터를 보존해 동일 산출물을 설치했다. 설치 뒤 GetUp은 열지 않았다. 기존 Games 제한은 종료됐기
+때문에 새 활성 제한을 준비한 뒤 다음 5분 경계 전 앱을 닫고, 경계 뒤 Candy Crush Saga Shield를
+첫 진입점으로 사용해야 한다.
+
 iPhone 15 Pro Max에서도 사용자가 Candy Crush Saga Shield 첫 탭 뒤 `No releases available`을
 확인했다. App Group 진단은 `releaseRouteSaved` → `syncEngineCaptureCompleted` →
 `coinReservationPolicyError.insufficientBalance` 순서를 기록했다. 두 실기기의 부족 분기 수렴은

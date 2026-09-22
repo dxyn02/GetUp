@@ -443,6 +443,11 @@ Shield Action extension에서 앱이 만든 활동을 직접 열거하는 경로
 
 ### T113 두 실기기 handoff 인수 기록 (2026-09-22, 진행 중)
 
+사용자 확인 후 T089 5분 설정을 비우던 T113 설치 명령을 중단하고,
+`t089-five-minute-final`·`GetUpT089PeriodMinutes = 5`가 앱과 Shield Action Info.plist에 포함된
+새 서명 Debug 산출물을 두 기기에 데이터 보존 방식으로 설치했다. 설치 뒤 GetUp은 열지 않았다.
+새 활성 제한을 준비하고 다음 5분 경계 뒤 Shield-first로 성공 차감과 양쪽 1/0 수렴을 확인한다.
+
 | 항목 | iPhone 17 | iPhone 15 Pro Max |
 |------|-----------|-------------------|
 | 기기·OS | `iPhone18,3`, iOS 26.7 | `iPhone16,2`, iOS 27.0 beta |
