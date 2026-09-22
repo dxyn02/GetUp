@@ -7,6 +7,17 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-22 T113 진행 중: iPhone 17(iOS 26.7)과 iPhone 15 Pro Max(iOS 27.0 beta)에 같은
+서명 Debug 빌드를 기존 앱 데이터 보존 방식으로 설치했다. `GetUpT089*` 대체 월 정책이 비어 있고
+앱·Shield Action의 필수 entitlement를 확인했다. Shield-first 조건 유지를 위해 설치 뒤 GetUp은
+열지 않았다. 사용자가 iPhone Mirroring을 잠금 해제해 iPhone 17 홈 화면을 확인했으나 현재 시각에
+활성 제한 규칙이 없다고 알려줬다. 공통 설치 앱 `Sync`는 Beta 만료로 테스트할 수 없다. 테스트
+대상 앱·시간대를 정해 활성 규칙을 준비하기 전까지 두 실기기의 첫 탭·결과·다기기 수렴·실제
+VoiceOver는 확인할 수 없다(BLK-020).
+현재 phase는 002 Phase 9, 마지막 완료 task는 T112, 진행 중 task는 T113, 다음 task는 T113
+인수 완료 뒤 T114다. T113은 미완료이며 실기기 결과를 통과로 기록하지 않았다. 사용자 소유
+설정·지역화 변경은 보존했다.
+
 2026-09-16 T112 완료: 승인된 네 handoff 상태의 한국어·영어 문자열 46개를 `Localizable.xcstrings`에 추가하고 기존 iCloud 복구 제목의 영어 연결을 확인했다. 처리 중 spinner는 VoiceOver에서 숨기고 route별 진행 안내를 한 번만 알리며, terminal 전환과 복구 진입은 제목으로 접근성 초점을 이동한다. `retryAfter` 종료도 한 번 알린다. 시스템 appearance와 관계없이 Dark surface와 읽을 수 있는 상태 막대를 유지한다. AX5 본문 스크롤·64pt 주 행동, Light/Dark, Reduce Motion, 읽기 순서와 영어 구매 이동을 UI 테스트로 검증했다. iPhone 17 Pro Max iOS 26.5에서 관련 단위·UI 테스트 664개 선언·동적 실행 784회가 실패·skip 없이 통과했다. VoiceOver가 실제 켜진 실기기에서의 음성 발표·초점 이동과 T113 두 기기 첫 탭·상태 수렴은 아직 수동 검증이 필요하다. 현재 phase는 002 Phase 9, 마지막 완료 task는 T112, 진행 중 task는 없다. 다음 task는 T113 실기기 handoff 인수다. 사용자 소유 설정·지역화 변경은 보존한다.
 
 2026-09-16 T111 완료: T105 승인 Figma 하이파이에 맞춰 어두운 배경의 handoff 처리 중·완료·재시도·잔액 부족 화면을 구현했다. 처리 중에는 제한 유지와 재실행 안내를 표시하고 행동 버튼을 숨긴다. 완료 화면은 확정된 비용 출처와 남은 규칙을 보여주며 확인 버튼으로 route를 정리한다. 재시도 화면은 미차감·제한 유지와 `retryAfter` 대기 상태를 표시하고 같은 command 재시작에 연결했다. 잔액 부족 화면은 X 아이콘과 최신 무료·구매 잔액을 표시하고 코인 구매 화면으로 이동하되 새 해제를 자동 요청하지 않는다. `recoveryRequired`는 기존 iCloud 복구 화면을 재사용한다. iPhone 17 Pro Max iOS 26.5에서 `GetUpTests` 전체 및 `UserStory2ReleaseResultUITests` 7개가 실패·skip 없이 통과했다. 현재 phase는 002 Phase 9, 마지막 완료 task는 T111, 진행 중 task는 없다. 다음 task는 T112의 한국어·영어 지역화, VoiceOver·Dynamic Type·Light/Dark·Reduce Motion 회귀다. T113 실기기 검증과 T089 월 경계 검증은 아직 미검증이며, 사용자 소유 설정·지역화 변경은 보존했다.
