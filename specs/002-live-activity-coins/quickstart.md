@@ -483,7 +483,10 @@ CoreDeviceService 연결 무효화 오류로 진단을 제공하지 못했다(BL
 분류한 결함을 수정하고 `AppReleaseHandoffTests` 집중 suite를 통과시켰다. 수정 서명 빌드를 데이터
 보존 방식으로 설치한 뒤 기존 동일 command의 `Try Again`은 X 아이콘의
 `No releases available`, 무료 0회·구매 0코인으로 수렴했고 Candy Crush Saga 제한은 유지됐다.
-BLK-021은 해결됐지만 성공 차감·iPhone 15 Pro Max·기존 복구·다기기 수렴·실제 VoiceOver가
+`Close` 뒤 terminal route가 정리되어 활성 `Home` 규칙 화면으로 복귀했다. 동일 수정 산출물은
+iPhone 15 Pro Max에도 데이터를 보존한 채 설치했고 앱은 실행하지 않아 첫 Shield 탭 조건을
+유지했다. BLK-021은 해결됐지만 성공 차감·iPhone 15 Pro Max 실제 첫 탭·기존 복구·다기기
+수렴·실제 VoiceOver가
 남아 있어 T113은 미완료다.
 
 ## 개인정보·운영 점검

@@ -15,7 +15,10 @@
 iPhone 17 Pro iOS 26.5 Simulator 집중 suite가 통과했다. 수정 서명 빌드를 iPhone 17에 데이터
 보존 방식으로 설치한 뒤 기존 동일 command의 `Try Again`을 실행하자 X 아이콘의
 `No releases available` 화면과 무료 0회·구매 0코인이 표시됐고 Candy Crush Saga 제한은 유지됐다.
-따라서 BLK-021은 해결했다. 완료·차감 성공, iPhone 15 Pro Max, 기존 iCloud 복구, 다기기 수렴과
+`Close` 뒤 terminal route가 정리되어 활성 `Home` 규칙 화면으로 돌아오는 것도 확인했다. 동일 수정
+산출물은 iPhone 15 Pro Max에도 데이터를 보존한 채 설치했으며 앱은 실행하지 않아 첫 Shield 탭
+조건을 유지했다. 따라서 BLK-021은 해결했다. 완료·차감 성공, iPhone 15 Pro Max의 실제 첫 탭,
+기존 iCloud 복구, 다기기 수렴과
 실제 VoiceOver는 아직 미검증이므로 T113은 완료 처리하지 않는다. 현재 phase는 002 Phase 9,
 마지막 완료 task는 T112, 진행 중 task는 T113, 다음 작업은 T113 잔여 실기기 인수다. 사용자 소유
 설정·지역화 변경은 보존했다.

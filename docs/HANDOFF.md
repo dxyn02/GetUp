@@ -21,7 +21,9 @@ CloudKit refresh 단계별 지연을 확인한다.
 `CoinReservationPolicyError.insufficientBalance`를 확인했다. 이 오류가 결과 불명으로 분류되어
 processing을 유지하던 결함을 수정하고 회귀 테스트를 통과시켰다. 수정 빌드의 기존 동일 command
 `Try Again`은 X 아이콘의 `No releases available` 화면과 0/0 잔액으로 수렴했고 제한은 유지됐다.
-BLK-021은 해결됐으며 새 해제나 구매는 실행하지 않았다.
+`Close` 뒤 terminal route가 정리되어 활성 `Home` 규칙 화면으로 돌아왔다. 동일 수정 산출물을
+iPhone 15 Pro Max에도 데이터 보존 방식으로 설치했고 앱은 실행하지 않았다. BLK-021은 해결됐으며
+새 해제나 구매는 실행하지 않았다.
 
 동일한 서명 Debug 산출물을 iPhone 17(iOS 26.7)과 iPhone 15 Pro Max(iOS 27.0 beta)의 기존
 `com.dxyn02.GetUp` 설치에 업데이트했다. 앱 데이터는 삭제하지 않았다. 산출물의 T089 대체 월 정책
