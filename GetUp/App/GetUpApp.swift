@@ -1391,11 +1391,34 @@ private struct AppEnvironment {
         let cloudContainer = CKContainer(identifier: cloudContainerIdentifier)
         let t089Configuration = SharedIdentifiers.t089LedgerTestConfiguration()
         let ledgerNamespace = t089Configuration?.ledgerNamespace
+#if DEBUG
+        let recordAppSyncStage: @Sendable (String) -> Void = { stage in
+            let defaults = UserDefaults(suiteName: identifier)
+            defaults?.set(
+                ["stage": stage, "recordedAt": Date().timeIntervalSince1970],
+                forKey: SharedIdentifiers.appLedgerSyncDiagnosticDefaultsKey
+            )
+            defaults?.synchronize()
+        }
+        let recordHandoffStage: @Sendable (String) -> Void = { stage in
+            let defaults = UserDefaults(suiteName: identifier)
+            defaults?.set(
+                ["stage": stage, "recordedAt": Date().timeIntervalSince1970],
+                forKey: SharedIdentifiers.appReleaseHandoffDiagnosticDefaultsKey
+            )
+            defaults?.synchronize()
+        }
+#else
+        let recordAppSyncStage: @Sendable (String) -> Void = { _ in }
+        let recordHandoffStage: @Sendable (String) -> Void = { _ in }
+#endif
         let ledgerRuntime = CoinLedgerLiveRuntime.live(
             containerURL: containerURL,
             process: .app,
             cloudContainer: cloudContainer,
-            ledgerNamespace: ledgerNamespace
+            ledgerNamespace: ledgerNamespace,
+            recordSyncStage: recordAppSyncStage,
+            recordReservationStage: recordHandoffStage
         )
         let storefront = StoreKitPurchaseAdapter()
         let catalog = try CoinProductCatalog()
@@ -1467,7 +1490,8 @@ private struct AppEnvironment {
                 )
             },
             coordinationDirectory: container.coordinationDirectory,
-            clock: SystemRestrictionClock()
+            clock: SystemRestrictionClock(),
+            recordHandoffStage: recordHandoffStage
         )
         let releaseHandoffCoordinator = container.makeReleaseHandoffCoordinator { route, context in
             await releaseExecutor.executeHandoff(route: route, context: context)

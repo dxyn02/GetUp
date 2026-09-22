@@ -186,6 +186,25 @@ struct AppReleaseHandoffTests {
         #expect(!model.canRetry(at: Self.now))
     }
 
+    @Test("Reservation policy zero balance is classified as insufficient")
+    func reservationPolicyZeroBalanceIsInsufficient() {
+        let result = CoinRuleReleaseLiveExecutor.classifyReservationPolicyError(
+            .insufficientBalance
+        )
+
+        #expect(result == .failed(.insufficientBalance))
+    }
+
+    @Test("Reservation policy ledger failures require recovery")
+    func reservationPolicyLedgerFailuresRequireRecovery() {
+        #expect(CoinRuleReleaseLiveExecutor.classifyReservationPolicyError(
+            .ledgerNotCurrent
+        ) == .failed(.accountOrLedgerRecovery))
+        #expect(CoinRuleReleaseLiveExecutor.classifyReservationPolicyError(
+            .ledgerEpochMismatch
+        ) == .failed(.accountOrLedgerRecovery))
+    }
+
     @Test("Only foreground reconciliation turns an interrupted command retryable")
     func interruptedCommandRequiresForegroundEvidence() async {
         let initial = makeModel(result: .interruptedUnresolved)

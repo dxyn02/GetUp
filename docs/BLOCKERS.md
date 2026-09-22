@@ -19,7 +19,7 @@ foreground로 열지 않아 Shield-first 조건을 보존했다. 월 경계 검�
 
 ## BLK-021 — T113 실기기 해제 요청이 처리 중에서 수렴하지 않음
 
-**상태**: 미해결(OPEN) — 2026-09-22
+**상태**: 해결됨(RESOLVED) — 2026-09-22
 
 iPhone 17(iOS 26.7)의 Candy Crush Saga에 Games 제한이 적용된 상태에서 Shield의
 `Use 1 Release` 첫 탭은 메인 앱의 `Checking release status`로 정상 진입했다. 그러나
@@ -31,6 +31,15 @@ iPhone 17(iOS 26.7)의 Candy Crush Saga에 Games 제한이 적용된 상태에�
 상태를 수집하지 못했다. 재연결 후 같은 command의 원격·로컬 상태와 `refreshForApp` 단계별
 지연을 진단하고, 성공·실패가 확정되기 전에는 새 해제 요청이나 구매를 하지 않는다. 두 기기의
 완료·잔액·내역 수렴과 다른 결과 상태는 미검증으로 유지한다.
+
+재연결된 `devicectl`로 App Group 진단 값을 읽은 결과, 앱 장부 동기화는
+`syncEngineCaptureCompleted`까지 완료됐고 예약 단계에서
+`CoinReservationPolicyError.insufficientBalance`가 발생했다. 무료 0회·구매 0코인의 확정 잔액
+부족을 handoff executor가 결과 불명으로 잘못 분류해 processing을 유지한 것이 원인이었다.
+정책 오류 분류를 수정하고 회귀 테스트를 추가한 뒤 수정 빌드를 iPhone 17에 덮어써 설치했다.
+기존 동일 command의 `Try Again`은 X 아이콘의 `No releases available`, 무료 0회·구매 0코인으로
+수렴했으며 Candy Crush Saga 제한은 유지됐다. 이 장기 정체 차단은 해결됐고, T113의 성공 경로·
+iPhone 15 Pro Max·기존 iCloud 복구·다기기 수렴·실제 VoiceOver는 별도 잔여 인수로 유지한다.
 
 ## BLK-019 — T104 Figma 하이파이 작성의 계정 사용량 한도
 

@@ -41,11 +41,13 @@ struct RuleReleaseService: Sendable {
     private let monthlyAllowanceService: MonthlyAllowanceService
     private let now: @Sendable () -> Date
     private let fetchCurrentContext: FetchCurrentContext
+    private let recordStage: @Sendable (String) -> Void
 
     init(
         repository: any CoinLedgerRepository,
         now: @escaping @Sendable () -> Date = { Date() },
-        fetchCurrentContext: @escaping FetchCurrentContext
+        fetchCurrentContext: @escaping FetchCurrentContext,
+        recordStage: @escaping @Sendable (String) -> Void = { _ in }
     ) {
         self.repository = repository
         self.monthlyAllowanceService = MonthlyAllowanceService(
@@ -53,6 +55,7 @@ struct RuleReleaseService: Sendable {
         )
         self.now = now
         self.fetchCurrentContext = fetchCurrentContext
+        self.recordStage = recordStage
     }
 
     func reserve(
@@ -66,11 +69,15 @@ struct RuleReleaseService: Sendable {
             // A caller operating under a strict deadline may supply the context
             // fetched immediately before this call. A definitive free-balance
             // conflict still forces the second attempt through the fresh provider.
-            let context = if attempt == 0, let initialContext {
-                initialContext
+            let context: RuleReleaseReservationContext
+            if attempt == 0, let initialContext {
+                context = initialContext
             } else {
-                try await fetchCurrentContext(request)
+                recordStage("reservationFreshContextStarted")
+                context = try await fetchCurrentContext(request)
+                recordStage("reservationFreshContextCompleted")
             }
+            recordStage("reservationValidationStarted")
             try Task.checkCancellation()
             let date = now()
             let epoch = try validate(request, context: context, at: date)
@@ -81,7 +88,9 @@ struct RuleReleaseService: Sendable {
                 ledgerState: context.ledgerState, requestedEpochID: request.ledgerEpochID,
                 allowance: allowance, account: context.account
             )
+            recordStage("reservationFundingSelected")
             if source == .purchased {
+                recordStage("reservePurchasedStarted")
                 return try await repository.reservePurchasedCoin(PurchasedCoinReservationRequest(
                     commandID: request.commandID, occurrenceID: request.occurrenceID,
                     ruleID: request.ruleID, ruleRevision: request.ruleRevision,
@@ -92,6 +101,7 @@ struct RuleReleaseService: Sendable {
             do {
                 // The same combined create+reserve boundary is used for app and Shield;
                 // never persist a provisional missing allowance as a separate grant here.
+                recordStage("reserveMonthlyFreeStarted")
                 return try await monthlyAllowanceService.reserveAllowanceForShield(
                     MonthlyFreeReservationRequest(
                         commandID: request.commandID, occurrenceID: request.occurrenceID,

@@ -7,17 +7,20 @@ struct CloudKitCoinLedgerRepository: CoinLedgerRepository, Sendable {
     // Permission to use the claim protocol for this epoch, not the ledger freshness gate.
     // Only a verified migration/new-ledger boundary may supply true; production defaults closed.
     private let verifyReservationCompatibility: @Sendable (UUID) async throws -> Bool
+    private let recordReservationStage: @Sendable (String) -> Void
 
     init(
         database: any CoinLedgerCloudDatabase,
         mapper: CoinLedgerRecordMapper = CoinLedgerRecordMapper(),
         conflictRetryLimit: Int = 2,
-        verifyReservationCompatibility: @escaping @Sendable (UUID) async throws -> Bool = { _ in false }
+        verifyReservationCompatibility: @escaping @Sendable (UUID) async throws -> Bool = { _ in false },
+        recordReservationStage: @escaping @Sendable (String) -> Void = { _ in }
     ) {
         self.database = database
         self.mapper = mapper
         self.conflictRetryLimit = max(0, conflictRetryLimit)
         self.verifyReservationCompatibility = verifyReservationCompatibility
+        self.recordReservationStage = recordReservationStage
     }
 
     func createAllowanceIfNeeded(
@@ -114,10 +117,14 @@ struct CloudKitCoinLedgerRepository: CoinLedgerRepository, Sendable {
 
         for attempt in 0...conflictRetryLimit {
             // Default deny: production must not infer migration safety from a missing claim.
+            recordReservationStage("compatibilityVerificationStarted")
             guard try await verifyReservationCompatibility(request.ledgerEpochID) else {
                 throw CoinLedgerRepositoryError.ledgerNotCurrent
             }
+            recordReservationStage("compatibilityVerificationCompleted")
+            recordReservationStage("reservationRecordFetchStarted")
             let indexed = try index(try await fetch(recordNames: names))
+            recordReservationStage("reservationRecordFetchCompleted")
             let epochRecord = try validatedEpoch(indexed, requestedEpochID: request.ledgerEpochID)
             guard case .ledgerEpoch(let epoch) = try decode(epochRecord) else {
                 throw CoinLedgerRepositoryError.database(.invalidRecord)
@@ -200,7 +207,9 @@ struct CloudKitCoinLedgerRepository: CoinLedgerRepository, Sendable {
                 }
             }
             do {
+                recordReservationStage("reservationModifyStarted")
                 _ = try await database.modify(try modifyRequest(for: entities))
+                recordReservationStage("reservationModifyCompleted")
                 return CoinReleaseReservation(command: command,
                     allowance: updatedAllowance, account: updatedAccount)
             } catch CoinLedgerDatabaseError.serverRecordChanged where attempt < conflictRetryLimit {

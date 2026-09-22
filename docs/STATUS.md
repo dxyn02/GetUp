@@ -7,6 +7,19 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-22 T113 잔액 부족 handoff 수정·부분 인수: iPhone 17의 App Group 진단에서 앱 장부
+동기화는 `syncEngineCaptureCompleted`까지 끝났고, 권위 잔액이 무료 0회·구매 0코인이라
+`CoinReservationPolicyError.insufficientBalance`가 발생했음을 확인했다. app handoff가 이 정책
+오류를 결과 불명으로 분류해 처리 중 화면을 유지하던 결함을 수정해 확정 잔액 부족으로 매핑하고,
+장부 비현재·epoch 불일치는 기존 복구 화면으로 매핑했다. `AppReleaseHandoffTests` 회귀를 추가해
+iPhone 17 Pro iOS 26.5 Simulator 집중 suite가 통과했다. 수정 서명 빌드를 iPhone 17에 데이터
+보존 방식으로 설치한 뒤 기존 동일 command의 `Try Again`을 실행하자 X 아이콘의
+`No releases available` 화면과 무료 0회·구매 0코인이 표시됐고 Candy Crush Saga 제한은 유지됐다.
+따라서 BLK-021은 해결했다. 완료·차감 성공, iPhone 15 Pro Max, 기존 iCloud 복구, 다기기 수렴과
+실제 VoiceOver는 아직 미검증이므로 T113은 완료 처리하지 않는다. 현재 phase는 002 Phase 9,
+마지막 완료 task는 T112, 진행 중 task는 T113, 다음 작업은 T113 잔여 실기기 인수다. 사용자 소유
+설정·지역화 변경은 보존했다.
+
 2026-09-22 T113 실기기 첫 실행: 사용자가 약 22:30까지 Games 제한과 Candy Crush Saga
 대상을 지정해 BLK-020을 해결했다(DEC-117). iPhone 17에서 실제 Shield가 `Home` 대표 규칙,
 22:32 종료, 무료 우선·구매 fallback, 다른 규칙 0개를 표시했다. `Use 1 Release` 첫 탭 한 번으로

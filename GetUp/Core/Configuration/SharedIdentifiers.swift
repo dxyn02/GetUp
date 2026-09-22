@@ -21,6 +21,10 @@ enum SharedIdentifiers {
     static let coinBalanceSnapshotFileName = "coin-balance.json"
     static let releaseExceptionsFileName = "release-exceptions.json"
     static let pendingAppRouteFileName = "pending-app-route.json"
+    static let appLedgerSyncDiagnosticDefaultsKey =
+        "getup.diagnostics.app-ledger-sync.latest"
+    static let appReleaseHandoffDiagnosticDefaultsKey =
+        "getup.diagnostics.app-release-handoff.latest"
 
     static let coinLedgerZoneName = "CoinLedgerZone"
 

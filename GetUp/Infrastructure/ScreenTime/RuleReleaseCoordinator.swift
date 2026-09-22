@@ -117,6 +117,17 @@ struct RuleReleaseCoordinator: Sendable {
 }
 
 extension CoinRuleReleaseLiveExecutor {
+    static func classifyReservationPolicyError(
+        _ error: CoinReservationPolicyError
+    ) -> ReleaseHandoffExecutionResult {
+        switch error {
+        case .insufficientBalance:
+            return .failed(.insufficientBalance)
+        case .ledgerNotCurrent, .ledgerEpochMismatch:
+            return .failed(.accountOrLedgerRecovery)
+        }
+    }
+
     /// App-only handoff path. Reconcile durable commands before deciding whether
     /// the command has never reserved, then revalidate the occurrence from disk.
     func executeHandoff(
@@ -129,15 +140,19 @@ extension CoinRuleReleaseLiveExecutor {
             return .failed(.accountOrLedgerRecovery)
         }
         do {
+            recordHandoffStage("refreshForAppStarted")
             let ledger = try await runtime.refreshForApp { commandIDs in
                 try await reconcilePending(commandIDs)
             }
+            recordHandoffStage("refreshForAppCompleted")
             guard ledger.balance.syncState == .current,
                   !ledger.hasPendingReconciliation else {
                 return .failed(.accountOrLedgerRecovery)
             }
 
+            recordHandoffStage("fetchCommandStarted")
             if let command = try await runtime.repository.fetchReleaseCommand(commandID: commandID) {
+                recordHandoffStage("fetchCommandCompleted")
                 guard command.occurrenceID == occurrenceID else {
                     return .failed(.accountOrLedgerRecovery)
                 }
@@ -166,15 +181,18 @@ extension CoinRuleReleaseLiveExecutor {
                     return .failed(.accountOrLedgerRecovery)
                 }
             }
+            recordHandoffStage("commandAbsent")
 
             guard context == .initialClaim else {
                 return .interruptedUnresolved
             }
+            recordHandoffStage("activeOccurrencesStarted")
             guard let occurrence = try await activeOccurrences(at: clock.now).first(where: {
                 $0.id == occurrenceID
             }) else {
                 return .failed(.transientRetryable(retryAfter: nil))
             }
+            recordHandoffStage("activeOccurrencesCompleted")
             let result = try await execute(
                 occurrence: occurrence,
                 commandID: commandID,
@@ -199,7 +217,14 @@ extension CoinRuleReleaseLiveExecutor {
                 CoinLedgerRepositoryError.database(.serverRecordChanged),
                 CoinLedgerRepositoryError.database(.resultUnknown) {
             return .failed(.outcomeUnknown)
+        } catch let error as RuleReleaseServiceError {
+            recordHandoffStage("ruleReleaseServiceError.\(String(describing: error))")
+            return .failed(.outcomeUnknown)
+        } catch let error as CoinReservationPolicyError {
+            recordHandoffStage("coinReservationPolicyError.\(String(describing: error))")
+            return Self.classifyReservationPolicyError(error)
         } catch {
+            recordHandoffStage("unexpectedError.\(String(describing: type(of: error)))")
             return .failed(.outcomeUnknown)
         }
     }

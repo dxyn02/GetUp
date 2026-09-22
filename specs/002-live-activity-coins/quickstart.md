@@ -449,8 +449,8 @@ Shield Action extension에서 앱이 만든 활동을 직접 열거하는 경로
 | 동일 서명 Debug 빌드 설치 | 완료 — `com.dxyn02.GetUp` 기존 설치 업데이트 | 완료 — 같은 산출물로 기존 설치 업데이트 |
 | 일반 활성 occurrence의 Shield 첫 탭 한 번으로 앱 진입 | Candy Crush Saga에서 확인 — `Home` 대표 규칙, 22:32 종료 | 미검증 |
 | 처리 중 → 완료, 무료 우선 1회 차감·해당 occurrence 해제 | 처리 중 진입 확인, 완료·차감·해제 미검증(장기 정체) | 미검증 |
-| 재시도·잔액 부족·기존 iCloud 복구 연결 | 강제 종료 뒤 재시도 화면 확인, 부족·복구 미검증 | 미검증 |
-| 처리 중 강제 종료 뒤 같은 command 복원 | 재시도 화면·`Try Again` 확인, command ID 일치 미검증 | 미검증 |
+| 재시도·잔액 부족·기존 iCloud 복구 연결 | 재시도와 확정 부족 확인 — X 아이콘, 무료 0회·구매 0코인, 제한 유지; 복구 미검증 | 미검증 |
+| 처리 중 강제 종료 뒤 같은 command 복원 | 기존 동일 command의 재시도 후 확정 부족으로 수렴 | 미검증 |
 | 두 기기의 제한·잔액·내역 수렴 | 미검증 | 미검증 |
 | 실제 VoiceOver 발표·초점 이동 | 미검증 | 미검증 |
 
@@ -476,6 +476,15 @@ iPhone 17 홈 화면을 확인했다. 양쪽 기기 공통 설치 앱 `Sync`는 
 `Try Again`을 확인했다. 재시도 후에도 약 1분 이상 처리 중에 머물러 다시 강제 종료했다.
 재시도 화면의 미차감은 UI 표시이며 서버 잔액·내역으로 독립 확인하지 못했다. `devicectl`은
 CoreDeviceService 연결 무효화 오류로 진단을 제공하지 못했다(BLK-021). T113은 미완료다.
+
+2026-09-22 진단·수정 결과: CoreDevice 재연결 뒤 App Group 진단에서 앱 동기화가
+`syncEngineCaptureCompleted`까지 끝났고 예약 정책이 무료 0회·구매 0코인을 근거로
+`insufficientBalance`를 반환했음을 확인했다. handoff executor가 이 정책 오류를 결과 불명으로
+분류한 결함을 수정하고 `AppReleaseHandoffTests` 집중 suite를 통과시켰다. 수정 서명 빌드를 데이터
+보존 방식으로 설치한 뒤 기존 동일 command의 `Try Again`은 X 아이콘의
+`No releases available`, 무료 0회·구매 0코인으로 수렴했고 Candy Crush Saga 제한은 유지됐다.
+BLK-021은 해결됐지만 성공 차감·iPhone 15 Pro Max·기존 복구·다기기 수렴·실제 VoiceOver가
+남아 있어 T113은 미완료다.
 
 ## 개인정보·운영 점검
 

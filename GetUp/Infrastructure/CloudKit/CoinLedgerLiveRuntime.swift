@@ -43,7 +43,8 @@ actor CoinLedgerLiveRuntime {
         process: CoinLedgerSyncProcess,
         cloudContainer: CKContainer,
         ledgerNamespace: String? = nil,
-        recordSyncStage: @escaping @Sendable (String) -> Void = { _ in }
+        recordSyncStage: @escaping @Sendable (String) -> Void = { _ in },
+        recordReservationStage: @escaping @Sendable (String) -> Void = { _ in }
     ) -> CoinLedgerLiveRuntime {
         let zoneName = SharedIdentifiers.coinLedgerZoneName(
             ledgerNamespace: ledgerNamespace
@@ -81,7 +82,8 @@ actor CoinLedgerLiveRuntime {
             database: database,
             verifyReservationCompatibility: { epochID in
                 try await migrationProvider.verifyReservationCompatibility(epochID: epochID)
-            }
+            },
+            recordReservationStage: recordReservationStage
         )
         return CoinLedgerLiveRuntime(
             repository: repository,
@@ -239,17 +241,20 @@ struct CoinRuleReleaseLiveExecutor: Sendable {
         -> LiveActivityCoordinationResult
     let coordinationDirectory: URL
     let clock: any Clock
+    let recordHandoffStage: @Sendable (String) -> Void
 
     func execute(
         occurrence: RestrictionOccurrence,
         commandID: UUID,
         source: ReleaseRequestSource
     ) async throws -> CoinRuleReleaseLiveResult {
+        recordHandoffStage("reserveStarted")
         let reservation = try await reserve(
             occurrence: occurrence,
             commandID: commandID,
             source: source
         )
+        recordHandoffStage("reserveCompleted")
         let exception = try ReleaseException(
             commandID: commandID,
             occurrenceID: occurrence.id,
@@ -266,14 +271,18 @@ struct CoinRuleReleaseLiveExecutor: Sendable {
             clock: clock,
             coordinationDirectory: coordinationDirectory
         )
+        recordHandoffStage("coordinateStarted")
         let result = try await coordinator.coordinate(
             reservation: reservation,
             exception: exception
         )
+        recordHandoffStage("coordinateCompleted")
         guard let fundingSource = result.committedCommand.fundingSource else {
             throw RuleReleaseCoordinationError.invalidReservation
         }
+        recordHandoffStage("finalRefreshStarted")
         let ledger = try await runtime.refresh()
+        recordHandoffStage("finalRefreshCompleted")
         let remaining = try await activeOccurrences(at: clock.now)
         return CoinRuleReleaseLiveResult(
             fundingSource: fundingSource,
@@ -292,7 +301,9 @@ struct CoinRuleReleaseLiveExecutor: Sendable {
         if let prefetchedLedger {
             ledger = prefetchedLedger
         } else {
+            recordHandoffStage("reserveFreshLedgerStarted")
             ledger = try await freshLedgerForRelease()
+            recordHandoffStage("reserveFreshLedgerCompleted")
         }
         guard case .current(let epoch) = ledger.ledgerState else {
             throw CoinLedgerRepositoryError.ledgerNotCurrent
@@ -308,15 +319,21 @@ struct CoinRuleReleaseLiveExecutor: Sendable {
             requestedFrom: source,
             requestedAt: clock.now
         )
+        recordHandoffStage("reservationContextStarted")
         let initialContext = try await currentContext(for: request, ledger: ledger)
+        recordHandoffStage("reservationContextCompleted")
         let service = RuleReleaseService(
             repository: runtime.repository,
             now: { clock.now },
             fetchCurrentContext: { request in
                 try await currentContext(for: request)
-            }
+            },
+            recordStage: recordHandoffStage
         )
-        return try await service.reserve(request, initialContext: initialContext)
+        recordHandoffStage("reservationCommandStarted")
+        let reservation = try await service.reserve(request, initialContext: initialContext)
+        recordHandoffStage("reservationCommandCompleted")
+        return reservation
     }
 
     func apply(
