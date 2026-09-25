@@ -1002,7 +1002,6 @@ struct ActiveRestrictionReleaseDestinationView: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(title)
                 .accessibilityValue(message)
-                .accessibilityAddTraits(.isHeader)
                 .accessibilityFocused($recoverySummaryFocused)
                 .accessibilityIdentifier("coinRelease.destination.summary")
             } else {
