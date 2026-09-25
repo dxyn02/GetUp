@@ -12,7 +12,7 @@
 성공 해제의 권위 잔액 2/0 → 1/0과 확정 사용 내역 한 건이 일치하며, 예약·확정 사용의 중복 차감
 표시 결함은 실기기에서도 해결됐다. 현재 두 테스트 iPhone은 CoreDevice에서 `unavailable`이라
 DEBUG recovery fixture와 실제 VoiceOver 음성·초점 검증은 실행하지 못했다. T113은 기존 iCloud
-복구 화면 연결과 실제 VoiceOver 확인이 남아 있어 완료 처리하지 않는다. 현재 phase는 002 Phase 9,
+복구 화면 연결과 실제 VoiceOver 확인이 남아 있어 완료 처리하지 않는다(BLK-022). 현재 phase는 002 Phase 9,
 마지막 완료 task는 T112, 진행 중 task는 T113, 다음 작업은 두 iPhone 중 하나가 연결된 뒤 복구
 연결·VoiceOver 잔여 인수다. 사용자 소유 설정·지역화 변경은 보존했다.
 

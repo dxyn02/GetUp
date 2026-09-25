@@ -1,5 +1,17 @@
 # 차단 사항
 
+## BLK-022 — T113 잔여 실기기 접근성·복구 인수 기기 연결
+
+**상태**: 미해결(OPEN) — 2026-09-25
+
+T113의 성공 차감, 처리 중·완료·재시도·잔액 부족, 앱 종료 뒤 command 복원, 두 기기 잔액·내역
+수렴은 확인했다. 남은 기존 iCloud 복구 화면 연결과 실제 VoiceOver 음성·초점 이동을 안전한 DEBUG
+fixture로 먼저 확인하려 했으나, iPhone 17과 iPhone 15 Pro Max가 모두 CoreDevice에서
+`unavailable`로 조회됐다. 실제 장부 zone을 삭제하거나 계정 상태를 임의로 변경하지 않는다. 두
+기기 중 하나가 Mac에 다시 연결되면 데이터 보존 설치 상태에서 recovery fixture와 VoiceOver를
+확인하고, production 복구 route는 안전한 계정·장부 사전 상태가 마련된 경우에만 검증한다. 이
+증적 전에는 T113을 완료 처리하지 않는다.
+
 ## BLK-020 — T113 실기기 Shield 첫 탭에 필요한 활성 테스트 규칙
 
 **상태**: 해결됨(RESOLVED) — 2026-09-22
