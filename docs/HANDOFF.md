@@ -9,6 +9,11 @@
 
 ## 2026-09-22 T113 준비 결과
 
+2026-09-25 사용자가 iPhone 15 Pro Max의 수정 Coin History에서 성공 command가
+`Monthly free used -1` 한 건으로만 보이는 것을 확인했다. 성공 차감과 반대 기기 잔액·내역 수렴은
+통과다. 현재 두 테스트 iPhone이 CoreDevice에서 `unavailable`이라 DEBUG recovery fixture와 실제
+VoiceOver 음성·초점 확인은 진행하지 못했다. 기기 연결 뒤 이 두 항목만 마치면 T113을 닫는다.
+
 22:57 성공 해제의 Coin History에 같은 command의 예약과 확정 사용이 모두 `-1`로 보여 두 번
 차감된 것처럼 보였지만, 실제 권위 잔액은 2/0에서 1/0으로 한 번만 감소했다. 확정 `spend` 또는
 보상 `release`가 존재하는 command의 `reservation` 행을 접고, pending 예약에는 음수 수량을
@@ -72,8 +77,8 @@ iPhone Mirroring은 사용자가 직접 잠금 해제했고 iPhone 17에서 Cand
 
 실기기 설치·서명, 두 기기의 Shield 첫 탭 앱 진입·확정 잔액 부족 수렴, iPhone 17의 강제 종료
 복원·재시도·제한 유지·terminal 정리, 5분 경계 무료 성공 차감과 iPhone 15 Pro Max의 2/0 → 1/0
-잔액 수렴은 확인했다. 성공 내역의 중복 차감 표시 수정 빌드는 두 기기에 설치했지만 실기기 시각
-재확인, 복구 연결·실제 VoiceOver는 미검증이다.
+잔액 수렴과 성공 내역의 확정 사용 `-1` 한 건 표시는 확인했다. 복구 연결·실제 VoiceOver는
+미검증이다.
 T112의 iPhone 17 Pro Max iOS 26.5 시뮬레이터 관련 자동 테스트는 664개 선언·동적 실행
 784회가 실패·skip 없이 통과했고, 이번 내역 표시 정책 단위 테스트·US4 집중 UI 테스트와 T089
 설정을 명령행에서 비운 전체 `GetUpTests`도 통과했다. T113 실기기 인수는 아직 완료 처리하지

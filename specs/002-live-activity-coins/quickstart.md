@@ -520,6 +520,12 @@ iPhone 15 Pro Max에도 데이터를 보존한 채 설치했고 앱은 실행하
 성공 내역이 `Monthly free used -1` 한 건으로 보이는 실기기 시각 재확인은 남아 있으므로 T113은
 계속 미완료다.
 
+2026-09-25 실기기 재확인: 사용자가 iPhone 15 Pro Max에서 기존 성공 command가
+`Monthly free used -1` 한 건으로만 표시되는 것을 확인했다. 따라서 예약 행 접기와 확정 사용 한 건,
+권위 잔액 2/0 → 1/0의 일치가 실기기에서도 통과했다. 두 테스트 iPhone은 재개 시점에 CoreDevice
+`unavailable` 상태여서 기존 iCloud 복구 화면 연결과 실제 VoiceOver 음성·초점 이동은 확인하지
+못했다. 이 두 항목이 남아 있으므로 T113은 계속 미완료다.
+
 ## 개인정보·운영 점검
 
 - CloudKit Dashboard, App Group 파일, diagnostics에서 좌표·앱 token이 장부에 포함되지 않았는지 확인한다.

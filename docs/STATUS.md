@@ -7,6 +7,15 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-25 T113 성공 내역 실기기 재확인: 사용자가 수정 빌드의 iPhone 15 Pro Max Coin History에서
+동일한 성공 command가 `Monthly free used -1` 한 건으로만 표시되는 것을 확인했다. 따라서 22:57
+성공 해제의 권위 잔액 2/0 → 1/0과 확정 사용 내역 한 건이 일치하며, 예약·확정 사용의 중복 차감
+표시 결함은 실기기에서도 해결됐다. 현재 두 테스트 iPhone은 CoreDevice에서 `unavailable`이라
+DEBUG recovery fixture와 실제 VoiceOver 음성·초점 검증은 실행하지 못했다. T113은 기존 iCloud
+복구 화면 연결과 실제 VoiceOver 확인이 남아 있어 완료 처리하지 않는다. 현재 phase는 002 Phase 9,
+마지막 완료 task는 T112, 진행 중 task는 T113, 다음 작업은 두 iPhone 중 하나가 연결된 뒤 복구
+연결·VoiceOver 잔여 인수다. 사용자 소유 설정·지역화 변경은 보존했다.
+
 2026-09-22 T113 성공 내역 중복 차감 표시 수정: iPhone 15 Pro Max의 22:57 성공 해제 내역에서
 같은 command의 `Monthly free use reserved -1`과 `Monthly free used -1`이 함께 보여 한 번의 사용이
 두 번 차감된 것처럼 보이는 결함을 확인했다. 권위 잔액은 2/0에서 1/0으로 한 번만 감소했으므로
