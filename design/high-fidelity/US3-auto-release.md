@@ -144,6 +144,22 @@ Inspector, VoiceOver, AX1–AX5와 Increase Contrast는 구현 후 물리 기기
 - 별도 image·raster asset은 필요하지 않으며 기존 `GetUp Focus` 변수·text style과 Apple iOS 26
   `Alert` component를 재사용한다.
 
+## T086 구현 대조 결과
+
+`2026-09-13`에 `RestrictionStatusView`, `RuleEditorView`, `AppModel`과
+`UserStory3AutoReleaseUITests`를 이 문서의 활성 guard·자동 해제 계약과 대조했다.
+
+- 활성 revision의 편집·끄기·삭제 시도는 같은 system Alert로 거부되고 장소·반경·종료 시각과
+  `확인` 행동을 제공한다. 비활성 규칙 삭제는 별도 destructive 확인으로 분기한다.
+- 시간 종료와 신뢰 가능한 위치 이탈은 활성 집합과 제한 대상 합집합을 다시 계산하며, 위치
+  `unavailable`만으로 기존 제한을 해제하지 않는다.
+- 조건 종료 뒤 별도 완료 화면·배너·필수 animation 없이 기존 홈으로 복귀하는 계약이 유지된다.
+  후속 `002-live-activity-coins`가 승인한 현재 occurrence 1회 해제도 별도 완료 화면을 만들지 않고
+  같은 활성 집합 재계산 경로를 사용하므로 이 문서와 충돌하지 않는다.
+
+승인되지 않은 구조·행동 편차는 발견되지 않았다. 위 계약은 기존 US3 UI 회귀와 core·integration
+회귀로 검증한다.
+
 ## 검토 체크리스트
 
 - [x] 승인된 로우파이, `spec.md`, restriction·platform event contract를 참조했다.

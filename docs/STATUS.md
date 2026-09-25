@@ -492,6 +492,15 @@ ID별 in-flight 및 성공 결과 단일 처리를 추가해 동시·지연 중�
 구매 0이 유지돼 기존 거래가 unfinished로 재전달되지 않음을 확인했다. 추가 구매 없이 day14 장부를
 종료하고 `t089-day15-final`, 15일 서울 경계를 Debug에 준비했다.
 
+2026-09-13 T086 완료: US1 규칙·장소·홈, US2 활성 상태·Shield, US3 활성 guard·자동 해제,
+US4 권한·위치 복구 구현을 승인된 네 하이파이 문서와 대조했다. Dark Focus token·navigation·CTA·
+pager, adaptive Shield와 `NaseoShieldLogo`, system Alert guard, 권한 onboarding·Settings 복구·위치
+`unavailable` 안전 계약이 구현과 일치했다. 홈 코인 진입점과 Shield의 해제권 primary·앱 닫기
+secondary는 이후 승인된 `002-live-activity-coins` 명세의 교차 기능 추가로 기록했으며 001 편차로
+되돌리지 않았다. 승인되지 않은 제품 UI 편차는 발견되지 않아 production code 변경은 없었다.
+영어로 강제 실행하던 US3 UI suite의 오래된 한국어 기대값은 실제 영어 번역과 `1km` 표시 계약에
+맞게 수정했다. 001의 T083·T085 실기기 후속 확인과 T087·T088 사용성 검증은 남아 있다.
+
 2026-09-13 T089 경계 후 관찰 및 수정: 자정 뒤 앱 미실행 상태의 첫 Shield 탭이 Coins를 열고, 두 번째
 탭이 성공해 두 기기 모두 `September 2026`, 무료 1, 구매 0으로 수렴했다. `CloudKitCoinLedgerRepository`
 는 allowance 부재 시 생성+무료 reservation을 원자 처리하지만 Shield Action이 그 전에 mirror 0/0을
@@ -751,6 +760,13 @@ Simulator Release 빌드, project plist·diff 검사도 통과했다. 기존 sig
 `StoreKitTest` header deprecation과 `LocationMonitoringAdapterTests`의 불필요한 `try` 경고가 남아
 있으며 T078 동작 실패는 아니다. 운영 CloudKit 데이터는 호출하거나 변경하지 않았고 새 제품 차단은
 없다.
+
+2026-09-13 T086 자동 검증: US1~US4 관련 UI suite 43개와 공통 접근성 suite 5개를 iPhone 17 Pro
+iOS 26.5 Simulator에서 실행했다. 첫 실행은 영어 US3 기대값 불일치로 41/43 통과, 2개 실패였고
+실제 영어 활성 상태·guard·삭제 Alert와 코드의 `1km` 표기에 맞춘 뒤 최종 48/48가 실패·skip 없이
+통과했다. Xcode의 `DebuggerVersionStore`, signed XCTest binary strip, Apple `StoreKitTest`
+deprecated API와 기존 `LocationMonitoringAdapterTests`의 불필요한 `try` 경고는 제품 동작 실패가
+아니다. production code, 실기기 설치본, CloudKit·StoreKit 데이터는 변경하지 않았다.
 
 2026-09-07 T077: 최초 장부 활성화와 1·3·5개 코인 각각의 구매 확인에서 삭제 불이익·같은
 iCloud 계정 복구·App Store 계정 불일치·새 장부 0 초기화·서울 기준 다음 달 무료 2회·서버 없는
