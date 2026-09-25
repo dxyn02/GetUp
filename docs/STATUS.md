@@ -7,6 +7,16 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-25 T113 완료: iPhone 17의 격리 recovery fixture에서 사용자가 최신 수정 빌드의 실제
+VoiceOver 발표를 재확인했다. 제목과 설명이 연속으로 읽히고 장식 아이콘·DEBUG·화면 container·
+`heading` 안내는 읽히지 않으며 다음 초점이 `닫기`로 이동했다. 앞서 확인한 두 실기기의 일반
+Shield 첫 탭 앱 진입, 처리 중·완료·재시도·확정 잔액 부족, 앱 강제 종료 뒤 동일 command 복원,
+해당 occurrence 해제, 권위 잔액 2/0 → 1/0과 `Monthly free used -1` 한 건의 다기기 수렴을 합쳐
+T113을 완료하고 BLK-022를 해결했다. 한국어·영어 복구 집중 UI 테스트 3건도 실패·skip 없이
+통과했다. 현재 phase는 002 Phase 9, 마지막 완료 task는 T113, 진행 중 task는 없으며 다음 task는
+T114 Live Activity 로우파이 설계다. T089 월 경계 allowance 지연 생성·비이월 인수는 별도로
+남아 있다. 사용자 소유 설정·지역화 변경은 보존했다.
+
 2026-09-25 T113 복구 화면 VoiceOver 교정: iPhone 17의 DEBUG recovery fixture에서 기존 iCloud
 복구 화면 연결은 확인했지만, 실제 VoiceOver가 장식 아이콘·중복 내비게이션 제목·화면 컨테이너를
 별도 요소로 읽고 제목 뒤에 설명을 바로 이어 읽지 않는 결함을 확인했다. 복구 화면의 외곽 접근성

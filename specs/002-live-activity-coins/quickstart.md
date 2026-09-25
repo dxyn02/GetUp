@@ -441,7 +441,7 @@ Shield Action extension에서 앱이 만든 활동을 직접 열거하는 경로
   이미 성공한 해제와 차감을 되돌리지 않는다.
 - 재실행·재부팅 후 현재 occurrence 예외는 유지되고 다음 occurrence는 정상 제한된다.
 
-### T113 두 실기기 handoff 인수 기록 (2026-09-22, 진행 중)
+### T113 두 실기기 handoff 인수 기록 (2026-09-25, 완료)
 
 사용자 확인 후 T089 5분 설정을 비우던 T113 설치 명령을 중단하고,
 `t089-five-minute-final`·`GetUpT089PeriodMinutes = 5`가 앱과 Shield Action Info.plist에 포함된
@@ -454,10 +454,10 @@ Shield Action extension에서 앱이 만든 활동을 직접 열거하는 경로
 | 동일 서명 Debug 빌드 설치 | 완료 — `com.dxyn02.GetUp` 기존 설치 업데이트 | 완료 — 같은 산출물로 기존 설치 업데이트 |
 | 일반 활성 occurrence의 Shield 첫 탭 한 번으로 앱 진입 | Candy Crush Saga에서 확인 — `Home` 대표 규칙, 22:32 종료 | Candy Crush Saga에서 확인 — 사용자 보고 `No releases available`, 진단상 route 저장·앱 진입 |
 | 처리 중 → 완료, 무료 우선 1회 차감·해당 occurrence 해제 | 5분 경계 Shield-first 성공 — `Release complete`, 무료 1회 사용, 남은 제한 없음, `finalRefreshCompleted` | 미검증 |
-| 재시도·잔액 부족·기존 iCloud 복구 연결 | 재시도와 확정 부족 확인 — X 아이콘, 무료 0회·구매 0코인, 제한 유지; 복구 미검증 | 확정 부족 확인 — `coinReservationPolicyError.insufficientBalance`; 상세·복구 미검증 |
+| 재시도·잔액 부족·기존 iCloud 복구 연결 | 재시도와 확정 부족 확인 — X 아이콘, 무료 0회·구매 0코인, 제한 유지; 격리 fixture로 기존 iCloud 복구 화면 연결 확인 | 확정 부족 확인 — `coinReservationPolicyError.insufficientBalance` |
 | 처리 중 강제 종료 뒤 같은 command 복원 | 기존 동일 command의 재시도 후 확정 부족으로 수렴 | 미검증 |
-| 두 기기의 제한·잔액·내역 수렴 | 해당 기기 활성 규칙 목록 `[]`; 반대 기기 장부 sync 완료 | Coins 진입 직후 2/0 → 몇 초 뒤 1/0 수렴; release 내역 미검증 |
-| 실제 VoiceOver 발표·초점 이동 | 미검증 | 미검증 |
+| 두 기기의 제한·잔액·내역 수렴 | 해당 기기 활성 규칙 목록 `[]`; 반대 기기 장부 sync 완료 | Coins 진입 직후 2/0 → 몇 초 뒤 1/0 수렴; `Monthly free used -1` 한 건 확인 |
+| 실제 VoiceOver 발표·초점 이동 | 복구 fixture에서 제목·설명 연속 발표, 장식·DEBUG·container·`heading` 미발표, 다음 초점 `닫기` 확인 | 공통 자동 회귀와 동일 빌드 적용 |
 
 두 기기 모두 `devicectl` 앱 서비스 연결과 설치가 성공했다. 산출물의 `GetUpT089*` 세 값은 비어
 있으므로 5분 대체 월 정책이 섞이지 않았다. 앱·Shield Action의 서명에 Family Controls, App Group,
@@ -525,6 +525,15 @@ iPhone 15 Pro Max에도 데이터를 보존한 채 설치했고 앱은 실행하
 권위 잔액 2/0 → 1/0의 일치가 실기기에서도 통과했다. 두 테스트 iPhone은 재개 시점에 CoreDevice
 `unavailable` 상태여서 기존 iCloud 복구 화면 연결과 실제 VoiceOver 음성·초점 이동은 확인하지
 못했다. 이 두 항목이 남아 있으므로 T113은 계속 미완료다.
+
+2026-09-25 복구·VoiceOver 최종 결과: iPhone 17에 격리된 `recovery-required` fixture를 실행해
+기존 iCloud 복구 화면 연결을 확인했다. 최초 실기기 검수에서 장식 아이콘, 중복 내비게이션 제목,
+화면 container와 `heading` 안내가 섞여 읽히는 결함을 발견했다. 외곽 접근성 container와 중복
+제목을 제거하고 장식 아이콘·DEBUG 진단을 숨겼으며, 제목과 설명을 단일 `label`·`value` 요약으로
+묶은 뒤 header trait를 제거했다. 한국어·영어 집중 UI 테스트 3건이 실패·skip 없이 통과했고,
+사용자가 최신 iPhone 17 빌드에서 제목·설명 발표 뒤 불필요한 안내 없이 다음 초점이 `닫기`로
+이동함을 확인했다. 이 결과와 앞선 두 기기 Shield-first·복원·잔액·내역 수렴 증적을 합쳐 T113을
+완료한다. 월 경계 allowance 지연 생성·비이월 판정은 계획대로 T089에 남긴다.
 
 ## 개인정보·운영 점검
 
