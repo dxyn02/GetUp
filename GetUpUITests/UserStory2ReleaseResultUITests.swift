@@ -92,9 +92,14 @@ final class UserStory2ReleaseResultUITests: XCTestCase {
     func testRecoveryRequiredReusesExistingRecoverySurfaceWithoutPurchase() {
         let app = launchApp(state: "recovery-required")
 
-        XCTAssertTrue(
-            app.otherElements["coinRelease.destination.iCloudRecovery"].waitForExistence(timeout: 5),
-            app.debugDescription
+        let recoverySummary = app.descendants(matching: .any)[
+            "coinRelease.destination.summary"
+        ]
+        XCTAssertTrue(recoverySummary.waitForExistence(timeout: 5), app.debugDescription)
+        XCTAssertEqual(recoverySummary.label, "iCloud 잔액 복구")
+        XCTAssertEqual(
+            recoverySummary.value as? String,
+            "iCloud 연결과 최신 장부 상태를 확인한 뒤 다시 시도해 주세요."
         )
         XCTAssertFalse(app.otherElements["releaseHandoff.recoveryRequired.screen"].exists)
         XCTAssertFalse(app.buttons["releaseHandoff.primaryAction"].exists)
@@ -132,8 +137,15 @@ final class UserStory2ReleaseResultUITests: XCTestCase {
     func testEnglishRecoveryRequiredUsesExistingLocalizedRecoverySurface() {
         let app = launchApp(state: "recovery-required", language: "en")
 
-        XCTAssertTrue(app.otherElements["coinRelease.destination.iCloudRecovery"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Recover iCloud Balance"].exists)
+        let recoverySummary = app.descendants(matching: .any)[
+            "coinRelease.destination.summary"
+        ]
+        XCTAssertTrue(recoverySummary.waitForExistence(timeout: 5))
+        XCTAssertEqual(recoverySummary.label, "Recover iCloud Balance")
+        XCTAssertEqual(
+            recoverySummary.value as? String,
+            "Check your iCloud connection and the latest ledger status, then try again."
+        )
         XCTAssertFalse(app.buttons["releaseHandoff.primaryAction"].exists)
     }
 

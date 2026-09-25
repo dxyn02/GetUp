@@ -191,11 +191,20 @@ final class AccessibilityUITests: XCTestCase {
         app.terminate()
 
         let recovery = launchReleaseHandoff(state: "recovery-required")
-        XCTAssertTrue(
-            recovery.otherElements["coinRelease.destination.iCloudRecovery"]
-                .waitForExistence(timeout: 5)
+        let recoverySummary = recovery.descendants(matching: .any)[
+            "coinRelease.destination.summary"
+        ]
+        XCTAssertTrue(recoverySummary.waitForExistence(timeout: 5))
+        XCTAssertEqual(recoverySummary.label, "iCloud 잔액 복구")
+        XCTAssertEqual(
+            recoverySummary.value as? String,
+            "iCloud 연결과 최신 장부 상태를 확인한 뒤 다시 시도해 주세요."
         )
-        XCTAssertTrue(recovery.staticTexts["iCloud 잔액 복구"].exists)
+        XCTAssertFalse(
+            recovery.staticTexts.matching(
+                NSPredicate(format: "label BEGINSWITH %@", "DEBUG:")
+            ).firstMatch.exists
+        )
         XCTAssertFalse(recovery.buttons["releaseHandoff.primaryAction"].exists)
     }
 

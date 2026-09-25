@@ -636,8 +636,6 @@ struct ActiveRestrictionReleaseHandoffView: View {
         Group {
         if outcome == .recoveryRequired {
             ActiveRestrictionReleaseDestinationView(destination: .iCloudRecovery)
-                .accessibilityElement(children: .contain)
-                .accessibilityIdentifier("coinRelease.destination.iCloudRecovery")
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button(AppLocalizedCopy.string("coinRelease.action.close")) {
@@ -987,7 +985,7 @@ private struct ReleaseHandoffPrimaryButtonStyle: ButtonStyle {
 }
 
 struct ActiveRestrictionReleaseDestinationView: View {
-    @AccessibilityFocusState private var recoveryTitleFocused: Bool
+    @AccessibilityFocusState private var recoverySummaryFocused: Bool
     let destination: PendingAppRouteDestination
 
     var body: some View {
@@ -995,21 +993,31 @@ struct ActiveRestrictionReleaseDestinationView: View {
             Image(systemName: icon)
                 .font(.largeTitle)
                 .foregroundStyle(HomeColor.accent)
-            Text(title)
-                .font(.title)
-                .fontWeight(.bold)
+                .accessibilityHidden(true)
+            if destination == .iCloudRecovery {
+                VStack(alignment: .leading, spacing: 16) {
+                    destinationTitle
+                    destinationMessage
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(title)
+                .accessibilityValue(message)
                 .accessibilityAddTraits(.isHeader)
-                .accessibilityFocused($recoveryTitleFocused)
-                .accessibilityIdentifier("coinRelease.destination.title")
-            Text(message)
-                .foregroundStyle(HomeColor.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityFocused($recoverySummaryFocused)
+                .accessibilityIdentifier("coinRelease.destination.summary")
+            } else {
+                destinationTitle
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier("coinRelease.destination.title")
+                destinationMessage
+            }
 #if DEBUG
             if destination == .iCloudRecovery, let diagnosticText {
                 Text("DEBUG: \(diagnosticText)")
                     .font(.caption.monospaced())
                     .foregroundStyle(HomeColor.textSecondary)
                     .textSelection(.enabled)
+                    .accessibilityHidden(true)
             }
 #endif
             Spacer()
@@ -1018,14 +1026,27 @@ struct ActiveRestrictionReleaseDestinationView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(HomeColor.background.ignoresSafeArea())
         .foregroundStyle(HomeColor.textPrimary)
-        .navigationTitle(title)
+        .navigationTitle(destination == .iCloudRecovery ? "" : title)
         .navigationBarTitleDisplayMode(.inline)
-        .accessibilityIdentifier("coinRelease.destination.\(destination.rawValue)")
-        .task {
-            if destination == .iCloudRecovery, UIAccessibility.isVoiceOverRunning {
-                recoveryTitleFocused = true
+        .task(id: destination) {
+            guard destination == .iCloudRecovery, UIAccessibility.isVoiceOverRunning else {
+                return
             }
+            await Task.yield()
+            recoverySummaryFocused = true
         }
+    }
+
+    private var destinationTitle: some View {
+        Text(title)
+            .font(.title)
+            .fontWeight(.bold)
+    }
+
+    private var destinationMessage: some View {
+        Text(message)
+            .foregroundStyle(HomeColor.textSecondary)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private var title: String {
