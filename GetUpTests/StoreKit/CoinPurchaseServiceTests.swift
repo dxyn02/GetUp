@@ -102,13 +102,13 @@ struct CoinPurchaseServiceTests {
         #expect(await storefront.finishRequests.isEmpty)
     }
 
-    @Test("The same verified transaction delivered 100 times creates one grant")
+    @Test("The same verified transaction delivered concurrently is processed once")
     func duplicateVerifiedTransactionIsIdempotent() async throws {
         let transaction = Self.transaction(id: 301, productID: Self.threeCoinProductID)
         let storefront = CoinStorefrontFake(
             finishes: Array(repeating: .success(()), count: 100)
         )
-        let ledger = IdempotentPurchaseLedgerFake()
+        let ledger = IdempotentPurchaseLedgerFake(grantDelayNanoseconds: 50_000_000)
         let service = try Self.service(storefront: storefront, ledger: ledger)
 
         let grants = try await withThrowingTaskGroup(of: PurchaseGrant.self) { group in
@@ -129,8 +129,28 @@ struct CoinPurchaseServiceTests {
         #expect(Set(grants).count == 1)
         #expect(grants.allSatisfy { $0.quantity == 3 })
         #expect(await ledger.createdGrantCount == 1)
-        #expect(await ledger.grantRequests.count == 100)
-        #expect(await storefront.finishRequests.count == 100)
+        #expect(await ledger.grantRequests.count == 1)
+        #expect(await storefront.finishRequests.count == 1)
+    }
+
+    @Test("A failed coalesced transaction remains retryable")
+    func failedCoalescedTransactionCanRetry() async throws {
+        let transaction = Self.transaction(id: 302, productID: Self.oneCoinProductID)
+        let storefront = CoinStorefrontFake(
+            finishes: [.failure(.finishFailed), .success(())]
+        )
+        let ledger = IdempotentPurchaseLedgerFake()
+        let service = try Self.service(storefront: storefront, ledger: ledger)
+
+        await #expect(throws: CoinStoreError.finishFailed) {
+            try await service.processVerifiedTransaction(transaction)
+        }
+        let grant = try await service.processVerifiedTransaction(transaction)
+
+        #expect(grant.quantity == 1)
+        #expect(await ledger.createdGrantCount == 1)
+        #expect(await ledger.grantRequests.count == 2)
+        #expect(await storefront.finishRequests == [302, 302])
     }
 }
 
@@ -205,11 +225,19 @@ private extension CoinPurchaseServiceTests {
 }
 
 private actor IdempotentPurchaseLedgerFake: CoinLedgerRepository {
+    private let grantDelayNanoseconds: UInt64
     private var grantsByKey: [String: PurchaseGrant] = [:]
     private(set) var grantRequests: [PurchaseGrantRequest] = []
     private(set) var createdGrantCount = 0
 
+    init(grantDelayNanoseconds: UInt64 = 0) {
+        self.grantDelayNanoseconds = grantDelayNanoseconds
+    }
+
     func grantPurchase(_ request: PurchaseGrantRequest) async throws -> PurchaseGrant {
+        if grantDelayNanoseconds > 0 {
+            try await Task.sleep(nanoseconds: grantDelayNanoseconds)
+        }
         grantRequests.append(request)
         let key = "\(request.transaction.environment.rawValue):\(request.transaction.id)"
         if let existing = grantsByKey[key] {

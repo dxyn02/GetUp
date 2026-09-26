@@ -1,6 +1,72 @@
 import Foundation
 import Observation
 
+enum ActiveRestrictionReleaseHandoffPhase: Equatable, Sendable {
+    case processing
+    case completed(
+        fundingSource: ReleaseFundingSource,
+        remainingRestrictionCount: Int
+    )
+    case retryable(retryAfter: Date?)
+    case recoveryRequired
+    case insufficient
+}
+
+@MainActor
+@Observable
+final class ActiveRestrictionReleaseHandoffModel {
+    typealias Execute = @Sendable (UUID) async -> ReleaseHandoffExecutionResult
+
+    let commandID: UUID
+    private(set) var phase: ActiveRestrictionReleaseHandoffPhase = .processing
+
+    @ObservationIgnored private let execute: Execute
+    @ObservationIgnored private var isExecuting = false
+
+    init(commandID: UUID, execute: @escaping Execute) {
+        self.commandID = commandID
+        self.execute = execute
+    }
+
+    func canRetry(at date: Date) -> Bool {
+        guard case .retryable(let retryAfter) = phase else { return false }
+        return retryAfter.map { date >= $0 } ?? true
+    }
+
+    func process(context: ReleaseHandoffProcessingContext) async {
+        guard !isExecuting, phase == .processing else { return }
+        isExecuting = true
+        defer { isExecuting = false }
+
+        let result = await execute(commandID)
+        switch result {
+        case .completed(let fundingSource, let remainingRestrictionCount):
+            phase = .completed(
+                fundingSource: fundingSource,
+                remainingRestrictionCount: remainingRestrictionCount
+            )
+        case .failed(.outcomeUnknown):
+            phase = .processing
+        case .failed(.transientRetryable(let retryAfter)):
+            phase = .retryable(retryAfter: retryAfter)
+        case .failed(.accountOrLedgerRecovery):
+            phase = .recoveryRequired
+        case .failed(.insufficientBalance):
+            phase = .insufficient
+        case .interruptedUnresolved:
+            phase = context == .foregroundReconciliation
+                ? .retryable(retryAfter: nil)
+                : .processing
+        }
+    }
+
+    func retry(at date: Date) async {
+        guard canRetry(at: date), !isExecuting else { return }
+        phase = .processing
+        await process(context: .initialClaim)
+    }
+}
+
 enum ActiveRestrictionReleaseAvailability: Equatable, Sendable {
     case ready
     case noActiveRestriction

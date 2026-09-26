@@ -143,6 +143,105 @@ final class AccessibilityUITests: XCTestCase {
     }
 
     @MainActor
+    func testReleaseHandoffKeepsStatusAndActionsReachableAtAX5() {
+        for state in ["processing", "completed", "retryable", "insufficient"] {
+            let app = launchReleaseHandoff(
+                state: state,
+                accessibilityArguments: Self.maximumDynamicTypeArguments
+            )
+            let title = app.staticTexts["releaseHandoff.statusTitle"]
+            XCTAssertTrue(title.waitForExistence(timeout: 5), "Missing AX5 title for \(state)")
+            XCTAssertGreaterThan(title.frame.height, 0)
+            XCTAssertLessThanOrEqual(title.frame.maxX, app.windows.firstMatch.frame.maxX)
+
+            if state == "processing" {
+                XCTAssertTrue(app.staticTexts["releaseHandoff.resumeMessage"].exists)
+                XCTAssertFalse(app.buttons["releaseHandoff.primaryAction"].exists)
+            } else {
+                let primary = app.buttons["releaseHandoff.primaryAction"]
+                XCTAssertTrue(primary.isHittable, "AX5 action is unreachable for \(state)")
+                XCTAssertGreaterThanOrEqual(primary.frame.height, 64)
+                if state != "completed" {
+                    let secondary = app.buttons["releaseHandoff.secondaryAction"]
+                    XCTAssertTrue(secondary.isHittable)
+                    assertMinimumTouchTarget(secondary)
+                }
+            }
+            let screenshot = XCTAttachment(screenshot: app.screenshot())
+            screenshot.name = "Release handoff — \(state) AX5"
+            screenshot.lifetime = .keepAlways
+            add(screenshot)
+            app.terminate()
+        }
+    }
+
+    @MainActor
+    func testReleaseHandoffVoiceOverReadingOrderAndRecoveryReuse() {
+        let app = launchReleaseHandoff(state: "completed")
+        let title = app.staticTexts["releaseHandoff.statusTitle"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+        assertVerticalReadingOrder([
+            title,
+            app.staticTexts["releaseHandoff.statusMessage"],
+            app.staticTexts["releaseHandoff.cardTitle"],
+            app.staticTexts["releaseHandoff.fundingResult"],
+            app.staticTexts["releaseHandoff.remainingRestrictions"],
+            app.buttons["releaseHandoff.primaryAction"],
+        ])
+        app.terminate()
+
+        let recovery = launchReleaseHandoff(state: "recovery-required")
+        let recoverySummary = recovery.descendants(matching: .any)[
+            "coinRelease.destination.summary"
+        ]
+        XCTAssertTrue(recoverySummary.waitForExistence(timeout: 5))
+        XCTAssertEqual(recoverySummary.label, "iCloud 잔액 복구")
+        XCTAssertEqual(
+            recoverySummary.value as? String,
+            "iCloud 연결과 최신 장부 상태를 확인한 뒤 다시 시도해 주세요."
+        )
+        XCTAssertFalse(
+            recovery.staticTexts.matching(
+                NSPredicate(format: "label BEGINSWITH %@", "DEBUG:")
+            ).firstMatch.exists
+        )
+        XCTAssertFalse(recovery.buttons["releaseHandoff.primaryAction"].exists)
+    }
+
+    @MainActor
+    func testReleaseHandoffKeepsDarkSurfaceContentInLightAndDarkAppearance() {
+        for style in ["Light", "Dark"] {
+            let app = launchReleaseHandoff(
+                state: "insufficient",
+                accessibilityArguments: ["--ui-test-appearance", style.lowercased()]
+            )
+            XCTAssertTrue(
+                app.staticTexts["releaseHandoff.statusTitle"].waitForExistence(timeout: 5)
+            )
+            XCTAssertEqual(app.images["releaseHandoff.insufficient.icon"].label, "사용할 수 없음")
+            XCTAssertTrue(app.buttons["releaseHandoff.primaryAction"].isHittable)
+            let screenshot = XCTAttachment(screenshot: app.screenshot())
+            screenshot.name = "Release handoff — \(style) appearance"
+            screenshot.lifetime = .keepAlways
+            add(screenshot)
+            app.terminate()
+        }
+    }
+
+    @MainActor
+    func testReleaseHandoffReduceMotionStillExplainsProcessing() {
+        let app = launchReleaseHandoff(
+            state: "processing",
+            accessibilityArguments: ["-UIAccessibilityReduceMotionEnabled", "YES"]
+        )
+        XCTAssertTrue(app.staticTexts["releaseHandoff.statusTitle"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["releaseHandoff.restrictionMaintained"].exists)
+        XCTAssertTrue(app.staticTexts["releaseHandoff.resumeMessage"].exists)
+        XCTAssertFalse(app.activityIndicators["releaseHandoff.processing.progress"].exists)
+        XCTAssertFalse(app.buttons["releaseHandoff.primaryAction"].exists)
+    }
+
+    @MainActor
     private func launchActiveRestriction(
         accessibilityArguments: [String] = []
     ) -> XCUIApplication {
@@ -152,6 +251,24 @@ final class AccessibilityUITests: XCTestCase {
                 "--ui-test-now", "2026-08-24T07:00:00Z",
                 "--ui-test-location-state", "inside",
             ],
+            accessibilityArguments: accessibilityArguments
+        )
+    }
+
+    @MainActor
+    private func launchReleaseHandoff(
+        state: String,
+        accessibilityArguments: [String] = []
+    ) -> XCUIApplication {
+        launchApp(
+            scenario: "restriction-activation",
+            additionalArguments: [
+                "--ui-test-now", "2026-08-24T07:00:00Z",
+                "--ui-test-location-state", "inside",
+                "--ui-test-release-handoff", state,
+                "-AppleLanguages", "(ko)", "-AppleLocale", "ko_KR",
+            ] + (accessibilityArguments == Self.maximumDynamicTypeArguments
+                ? ["--ui-test-dynamic-type-ax5"] : []),
             accessibilityArguments: accessibilityArguments
         )
     }

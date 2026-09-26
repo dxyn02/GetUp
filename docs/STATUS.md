@@ -4,32 +4,382 @@
 001-location-app-restriction, 002-live-activity-coins
 
 ## 현재 단계
-001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 별도
-`codex/us4-monthly-lifecycle-tests` 브랜치에서 T089 실기기 월 경계 검증 진행 중
+001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
-001 T086에서 US1 규칙·장소·홈, US2 활성 상태·Shield, US3 활성 guard·자동 해제, US4 권한·위치
-복구 구현을 승인된 네 하이파이 문서와 대조했다. Dark Focus token·navigation·CTA·pager, adaptive
-Shield와 `NaseoShieldLogo`, system Alert guard, 권한 onboarding·Settings 복구·위치 unavailable 안전
-계약이 구현과 일치했다. 홈 코인 진입점과 Shield의 해제권 primary·앱 닫기 secondary는 이후 승인된
-`002-live-activity-coins` 명세의 교차 기능 추가로 기록했으며 001 편차로 되돌리지 않았다.
-승인되지 않은 제품 UI 편차는 발견되지 않아 production code 변경은 없었다.
+2026-09-25 T113 완료: iPhone 17의 격리 recovery fixture에서 사용자가 최신 수정 빌드의 실제
+VoiceOver 발표를 재확인했다. 제목과 설명이 연속으로 읽히고 장식 아이콘·DEBUG·화면 container·
+`heading` 안내는 읽히지 않으며 다음 초점이 `닫기`로 이동했다. 앞서 확인한 두 실기기의 일반
+Shield 첫 탭 앱 진입, 처리 중·완료·재시도·확정 잔액 부족, 앱 강제 종료 뒤 동일 command 복원,
+해당 occurrence 해제, 권위 잔액 2/0 → 1/0과 `Monthly free used -1` 한 건의 다기기 수렴을 합쳐
+T113을 완료하고 BLK-022를 해결했다. 한국어·영어 복구 집중 UI 테스트 3건도 실패·skip 없이
+통과했다. 현재 phase는 002 Phase 9, 마지막 완료 task는 T113, 진행 중 task는 없으며 다음 task는
+T114 Live Activity 로우파이 설계다. T089 월 경계 allowance 지연 생성·비이월 인수는 별도로
+남아 있다. 사용자 소유 설정·지역화 변경은 보존했다.
 
-영어로 강제 실행하던 US3 UI suite가 한국어 label을 기대하던 오래된 테스트 계약을 실제 영어 번역과
-`1km` 표시 계약에 맞게 수정했다. US1~US4 UI 43개와 공통 접근성 5개, 총 48개가 통과했다.
-001의 T083·T085 실기기 후속 확인과 T087·T088 사용성 검증은 남아 있다. 002 T089의 두 실기기 설치본과
-CloudKit DEBUG namespace는 이 별도 작업에서 변경하지 않았다.
+2026-09-25 T113 복구 화면 VoiceOver 교정: iPhone 17의 DEBUG recovery fixture에서 기존 iCloud
+복구 화면 연결은 확인했지만, 실제 VoiceOver가 장식 아이콘·중복 내비게이션 제목·화면 컨테이너를
+별도 요소로 읽고 제목 뒤에 설명을 바로 이어 읽지 않는 결함을 확인했다. 복구 화면의 외곽 접근성
+컨테이너와 중복 제목을 제거하고, 장식 아이콘·DEBUG 진단을 숨겼으며, 제목과 설명을 단일
+`label`·`value` 요약으로 묶어 첫 초점을 이동하도록 수정했다. 한국어·영어 복구 경로 UI 테스트
+3건이 실패 0·skip 0으로 통과했다. 실기기 재확인에서 설명 뒤 `heading` 안내가 남아 있음을 확인해
+요약의 header trait도 제거하고 같은 3건을 다시 통과시켰다. 최신 수정 서명 빌드를 iPhone 17에
+설치했다. 현재 기기와 iPhone
+Mirroring이 잠겨 수정 빌드 실행만 남았으므로 실제 음성 순서 재확인 전에는 T113을 완료 처리하지
+않는다(BLK-022). 현재 phase는 002 Phase 9, 마지막 완료 task는 T112, 진행 중 task는 T113, 다음
+작업은 잠금 해제 뒤 복구 요약 → 닫기 순서 실기기 재확인이다. 사용자 소유 설정·지역화 변경은
+보존했다.
+
+2026-09-25 T113 성공 내역 실기기 재확인: 사용자가 수정 빌드의 iPhone 15 Pro Max Coin History에서
+동일한 성공 command가 `Monthly free used -1` 한 건으로만 표시되는 것을 확인했다. 따라서 22:57
+성공 해제의 권위 잔액 2/0 → 1/0과 확정 사용 내역 한 건이 일치하며, 예약·확정 사용의 중복 차감
+표시 결함은 실기기에서도 해결됐다. 현재 두 테스트 iPhone은 CoreDevice에서 `unavailable`이라
+DEBUG recovery fixture와 실제 VoiceOver 음성·초점 검증은 실행하지 못했다. T113은 기존 iCloud
+복구 화면 연결과 실제 VoiceOver 확인이 남아 있어 완료 처리하지 않는다(BLK-022). 현재 phase는 002 Phase 9,
+마지막 완료 task는 T112, 진행 중 task는 T113, 다음 작업은 두 iPhone 중 하나가 연결된 뒤 복구
+연결·VoiceOver 잔여 인수다. 사용자 소유 설정·지역화 변경은 보존했다.
+
+2026-09-22 T113 성공 내역 중복 차감 표시 수정: iPhone 15 Pro Max의 22:57 성공 해제 내역에서
+같은 command의 `Monthly free use reserved -1`과 `Monthly free used -1`이 함께 보여 한 번의 사용이
+두 번 차감된 것처럼 보이는 결함을 확인했다. 권위 잔액은 2/0에서 1/0으로 한 번만 감소했으므로
+원장 중복 차감이 아니라 표시 결함이었다. 확정 `spend` 또는 보상 `release`가 있는 command의
+`reservation` 행은 내역에서 접고, 아직 확정되지 않은 예약은 상태 행을 유지하되 음수 수량을
+표시하지 않도록 수정했다. 확정 사용은 `-1` 한 건으로 표시한다. 표시 정책 단위 테스트와 US4
+집중 UI 테스트가 통과했고, T089 5분 설정을 명령행에서만 비운 전체 `GetUpTests`도 실패·skip 없이
+통과했다. 동일 서명 수정 빌드를 앱 데이터 보존 방식으로 iPhone 17과 iPhone 15 Pro Max에
+설치했다. T113은 복구 연결·실제 VoiceOver 확인이 남아 있어 완료 처리하지 않는다. 현재 phase는
+002 Phase 9, 마지막 완료 task는 T112, 진행 중 task는 T113, 다음 작업은 수정 내역의 실기기
+시각 확인과 복구·VoiceOver 잔여 인수다. 사용자 소유 설정·지역화 변경은 보존했다.
+
+2026-09-22 T113/T089 5분 경계 Shield-first 성공: 22:55에 5분 설정 빌드를 설치한 뒤 사용자가
+iPhone 17에서 새 활성 Candy Crush Saga Shield를 첫 진입점으로 사용했다. 22:57 촬영 결과 화면은
+`Release complete`, 무료 해제권 1회 사용, 남은 제한 없음으로 표시됐다. App Group 진단은
+`releaseRouteSaved` → `finalRefreshCompleted`를 기록했고 활성 규칙 revision 목록도 빈 배열이라
+해당 occurrence 해제와 일치한다. iPhone 15 Pro Max의 Coins 화면은 진입 직후 무료 2회·구매
+0코인을 표시했다가 몇 초 뒤 무료 1회·구매 0코인으로 갱신됐고, 22:59 장부 동기화 진단과 함께
+원격 차감의 다기기 잔액 수렴을 확인했다. release 내역, 기존 iCloud 복구 연결과 실제 VoiceOver가
+남아 있어 T113·T089는 완료 처리하지 않는다. 현재 phase는 002 Phase 9, 마지막 완료 task는
+T112, 진행 중 task는 T113, 다음 작업은 반대 기기 release 내역·복구·VoiceOver 확인이다. 사용자
+소유 설정·지역화 변경은 보존했다.
+
+2026-09-22 T113/T089 5분 장부 빌드 재설치: 사용자가 5분 리셋 설정의 계속 사용을 확인해
+`Debug.xcconfig`의 `t089-five-minute-final` namespace와 `GetUpT089PeriodMinutes = 5`를 명령행
+빈 값으로 덮어쓰지 않은 새 서명 Debug 빌드를 생성했다. 앱과 Shield Action 산출물의 Info.plist에서
+namespace·5분 값과 빈 월 경계일을 확인한 뒤 iPhone 17과 iPhone 15 Pro Max에 앱 데이터를 보존해
+같은 산출물을 설치했다. 설치 뒤 GetUp은 열지 않아 다음 5분 경계의 Shield-first 조건을 유지했다.
+활성 제한 시간이 끝난 상태이므로 사용자가 새 제한을 준비하고 경계 뒤 Candy Crush Saga Shield를
+한 번 눌러야 성공 차감·다기기 수렴을 계속 검증할 수 있다. T113·T089는 아직 미완료다. 현재
+phase는 002 Phase 9, 마지막 완료 task는 T112, 진행 중 task는 T113, 다음 작업은 5분 경계
+Shield-first 성공 인수다. 사용자 소유 설정·지역화 변경은 보존했다.
+
+2026-09-22 T113 iPhone 15 Pro Max 부족 경로 인수: 사용자가 Candy Crush Saga Shield의 첫 탭 뒤
+`No releases available` 화면을 확인했다. App Group 진단은 Shield의 `releaseRouteSaved`, 앱 장부의
+`syncEngineCaptureCompleted`, 최종 `coinReservationPolicyError.insufficientBalance`를 순서대로
+기록했다. 따라서 iPhone 17과 iPhone 15 Pro Max 모두 일반 활성 occurrence의 Shield 첫 탭으로 앱에
+진입해 동일한 확정 잔액 부족 분기로 수렴했다. iPhone 15 Pro Max의 X 아이콘·0/0 상세 표시·제한
+유지는 별도 시각 확인으로 단정하지 않는다. 성공 차감·기존 iCloud 복구·성공 후 다기기 잔액·내역
+수렴·실제 VoiceOver가 남아 있어 T113은 미완료다. 현재 phase는 002 Phase 9, 마지막 완료 task는
+T112, 진행 중 task는 T113, 다음 작업은 T113 잔여 인수다. 사용자 소유 설정·지역화 변경은 보존했다.
+
+2026-09-22 T113 잔액 부족 handoff 수정·부분 인수: iPhone 17의 App Group 진단에서 앱 장부
+동기화는 `syncEngineCaptureCompleted`까지 끝났고, 권위 잔액이 무료 0회·구매 0코인이라
+`CoinReservationPolicyError.insufficientBalance`가 발생했음을 확인했다. app handoff가 이 정책
+오류를 결과 불명으로 분류해 처리 중 화면을 유지하던 결함을 수정해 확정 잔액 부족으로 매핑하고,
+장부 비현재·epoch 불일치는 기존 복구 화면으로 매핑했다. `AppReleaseHandoffTests` 회귀를 추가해
+iPhone 17 Pro iOS 26.5 Simulator 집중 suite가 통과했다. 수정 서명 빌드를 iPhone 17에 데이터
+보존 방식으로 설치한 뒤 기존 동일 command의 `Try Again`을 실행하자 X 아이콘의
+`No releases available` 화면과 무료 0회·구매 0코인이 표시됐고 Candy Crush Saga 제한은 유지됐다.
+`Close` 뒤 terminal route가 정리되어 활성 `Home` 규칙 화면으로 돌아오는 것도 확인했다. 동일 수정
+산출물은 iPhone 15 Pro Max에도 데이터를 보존한 채 설치했으며 앱은 실행하지 않아 첫 Shield 탭
+조건을 유지했다. 따라서 BLK-021은 해결했다. 완료·차감 성공, iPhone 15 Pro Max의 실제 첫 탭,
+기존 iCloud 복구, 다기기 수렴과
+실제 VoiceOver는 아직 미검증이므로 T113은 완료 처리하지 않는다. 현재 phase는 002 Phase 9,
+마지막 완료 task는 T112, 진행 중 task는 T113, 다음 작업은 T113 잔여 실기기 인수다. 사용자 소유
+설정·지역화 변경은 보존했다.
+
+2026-09-22 T113 실기기 첫 실행: 사용자가 약 22:30까지 Games 제한과 Candy Crush Saga
+대상을 지정해 BLK-020을 해결했다(DEC-117). iPhone 17에서 실제 Shield가 `Home` 대표 규칙,
+22:32 종료, 무료 우선·구매 fallback, 다른 규칙 0개를 표시했다. `Use 1 Release` 첫 탭 한 번으로
+메인 앱의 처리 중 화면에 진입했다. 처리 중이 약 1분 이상 지속되어 앱을 강제 종료한 뒤
+재진입 시 재시도 화면·`No coins were deducted`·제한 유지·`Try Again`을 확인했다. 같은 요청을
+재시도해도 약 1분 이상 처리 중에서 수렴하지 않아 다시 강제 종료했다. 화면 외 권위 잔액·내역·
+command ID 일치 여부는 확인하지 못했고 iPhone 15 Pro Max 인수도 아직 미실행이다. CoreDeviceService
+연결 오류로 기기 로그를 수집하지 못해 BLK-021을 열었다. 현재 phase는 002 Phase 9, 마지막 완료
+task는 T112, 진행 중 task는 T113, 다음 task는 T113 장애 진단 뒤 나머지 실기기 인수다. T113을
+완료 처리하지 않았으며 관련 자동 테스트의 이전 T112 통과 결과 외에 이번 실기기 결과는 부분
+확인·장기 정체로 기록한다. 사용자 소유 설정·지역화 변경은 보존했다.
+
+2026-09-22 T113 진행 중: iPhone 17(iOS 26.7)과 iPhone 15 Pro Max(iOS 27.0 beta)에 같은
+서명 Debug 빌드를 기존 앱 데이터 보존 방식으로 설치했다. `GetUpT089*` 대체 월 정책이 비어 있고
+앱·Shield Action의 필수 entitlement를 확인했다. Shield-first 조건 유지를 위해 설치 뒤 GetUp은
+열지 않았다. 사용자가 iPhone Mirroring을 잠금 해제해 iPhone 17 홈 화면을 확인했으나 현재 시각에
+활성 제한 규칙이 없다고 알려줬다. 공통 설치 앱 `Sync`는 Beta 만료로 테스트할 수 없다. 테스트
+대상 앱·시간대를 정해 활성 규칙을 준비하기 전까지 두 실기기의 첫 탭·결과·다기기 수렴·실제
+VoiceOver는 확인할 수 없다(BLK-020).
+현재 phase는 002 Phase 9, 마지막 완료 task는 T112, 진행 중 task는 T113, 다음 task는 T113
+인수 완료 뒤 T114다. T113은 미완료이며 실기기 결과를 통과로 기록하지 않았다. 사용자 소유
+설정·지역화 변경은 보존했다.
+
+2026-09-16 T112 완료: 승인된 네 handoff 상태의 한국어·영어 문자열 46개를 `Localizable.xcstrings`에 추가하고 기존 iCloud 복구 제목의 영어 연결을 확인했다. 처리 중 spinner는 VoiceOver에서 숨기고 route별 진행 안내를 한 번만 알리며, terminal 전환과 복구 진입은 제목으로 접근성 초점을 이동한다. `retryAfter` 종료도 한 번 알린다. 시스템 appearance와 관계없이 Dark surface와 읽을 수 있는 상태 막대를 유지한다. AX5 본문 스크롤·64pt 주 행동, Light/Dark, Reduce Motion, 읽기 순서와 영어 구매 이동을 UI 테스트로 검증했다. iPhone 17 Pro Max iOS 26.5에서 관련 단위·UI 테스트 664개 선언·동적 실행 784회가 실패·skip 없이 통과했다. VoiceOver가 실제 켜진 실기기에서의 음성 발표·초점 이동과 T113 두 기기 첫 탭·상태 수렴은 아직 수동 검증이 필요하다. 현재 phase는 002 Phase 9, 마지막 완료 task는 T112, 진행 중 task는 없다. 다음 task는 T113 실기기 handoff 인수다. 사용자 소유 설정·지역화 변경은 보존한다.
+
+2026-09-16 T111 완료: T105 승인 Figma 하이파이에 맞춰 어두운 배경의 handoff 처리 중·완료·재시도·잔액 부족 화면을 구현했다. 처리 중에는 제한 유지와 재실행 안내를 표시하고 행동 버튼을 숨긴다. 완료 화면은 확정된 비용 출처와 남은 규칙을 보여주며 확인 버튼으로 route를 정리한다. 재시도 화면은 미차감·제한 유지와 `retryAfter` 대기 상태를 표시하고 같은 command 재시작에 연결했다. 잔액 부족 화면은 X 아이콘과 최신 무료·구매 잔액을 표시하고 코인 구매 화면으로 이동하되 새 해제를 자동 요청하지 않는다. `recoveryRequired`는 기존 iCloud 복구 화면을 재사용한다. iPhone 17 Pro Max iOS 26.5에서 `GetUpTests` 전체 및 `UserStory2ReleaseResultUITests` 7개가 실패·skip 없이 통과했다. 현재 phase는 002 Phase 9, 마지막 완료 task는 T111, 진행 중 task는 없다. 다음 task는 T112의 한국어·영어 지역화, VoiceOver·Dynamic Type·Light/Dark·Reduce Motion 회귀다. T113 실기기 검증과 T089 월 경계 검증은 아직 미검증이며, 사용자 소유 설정·지역화 변경은 보존했다.
+
+2026-09-16 T110 완료: 메인 앱 launch·foreground가 Shield `releaseProcessing` route를 활성
+occurrence와 5분 조건으로 원자 claim하고 즉시 처리 중 상태를 제시한다. 이미 claim한 handoff는 앱
+종료 후에도 보존해 runtime 복구·새 해제보다 먼저 같은 command를 재조정한다. 앱 전용 executor는
+FR-037 전체 refresh와 pending command 재조정 뒤 서버 command 상태를 확인하고, 신규 요청은 최신
+occurrence를 다시 평가한 다음 기존 무료 우선 원자 예약·`ReleaseException` 적용·Managed Settings
+read-back·commit 경로로 실행한다. 확인된 결과만 terminal에 영속화하며 `retryAfter`가 지난 같은
+command 재시작, 결과 제시, 명시적 확인 삭제 API를 연결했다. 결과 불명은 processing에 보존하고
+일시적 계정 오류와 영구 인증 오류를 분리한다. T110 handoff 통합 테스트 3개를 추가했고 iPhone 17
+Pro Max iOS 26.5 전체 `GetUpTests`는 선언 646개·동적 실행 766회가 실패·skip 없이 통과했다.
+현재 phase는 002 Phase 9이며 마지막 완료 task는 T110, 진행 중 task는 없다. 다음 task T111에서
+승인 하이파이의 결과 화면과 실제 결과 action 버튼을 coordinator API에 연결한다. T110 자체 차단은
+없고 T113 실기기 handoff와 T089 월 경계 검증은 아직 미검증이다. 사용자 소유 설정·지역화 변경은
+보존했다.
+
+2026-09-16 T109 완료: Shield Action의 production 진입점에서 CloudKit runtime·전체 refresh·예약·
+제한 변경을 제거했다. 로컬 규칙·활성 occurrence와 Shield token을 확인한 뒤 안정 command ID를 담은
+`releaseProcessing` route만 App Group에 원자 저장한다. 유효한 동일 pending 및 기존 processing·
+terminal handoff는 중복 탭에서 재사용하고, 만료 pending은 새 command로 교체한다. 저장 성공 시 iOS
+26.5 이상은 `.openParentalControlsApp`, iOS 26.0~26.4는 route를 남긴 채 `.close`를 반환하며 저장·
+로컬 문맥 실패는 `.defer`로 제한을 유지한다. 직접 CloudKit 해제 handler는 과거 회귀 fixture로만
+남고 extension runtime에서 생성하지 않는다. T089 설정을 명령행에서만 비운 iPhone 17 Pro Max
+iOS 26.5 전체 `GetUpTests`는 선언 643개·동적 실행 763회가 실패·skip 없이 통과했다. 사용자 소유
+설정·지역화 변경은 보존했다. 다음 작업은 메인 앱 claim·재조정·원자 해제 연결인 T110이다.
+
+2026-09-16 T108 완료: `PendingAppRoute.releaseProcessing`에 안정 `commandID`와
+`pending → processing → terminal`, `terminal(retryable) → processing` 상태·claim·결과·제시·확인
+필드를 구현했다. repository는 5분·활성 occurrence를 확인해 원자 claim하고 processing·terminal을
+앱 재실행 뒤에도 보존하며, terminal 기록·제시·명시적 확인 삭제·같은 command 재시도를 원자
+전이한다. 쓰기 실패 시 claim 전 파일을 복원하고, legacy `consumedAt` payload는 미소비를 pending,
+유효한 소비 중 release를 processing으로 복원하며 그 밖의 소비 route는 폐기한다. 메인 앱 handoff
+상태 모델은 실행 중 중복을 막고 completed·retryable(`retryAfter`)·recoveryRequired·insufficient,
+결과 불명 processing 유지와 foreground에서 확인된 중단만 retryable로 분류한다. iPhone 17 Pro Max
+iOS 26.5 집중 실행은 36/36, T089 설정을 명령행에서만 비운 전체 `GetUpTests`는 선언 637개·동적 실행
+757회 모두 통과했고 실패·skip은 0이다. 사용자 소유 T089 5분 설정과 지역화 변경은 수정하지 않았다.
+다음 작업은 Shield에서 CloudKit 대신 release route를 저장하고 앱을 여는 T109다.
+
+2026-09-15 T107 완료(예상 RED): `AppReleaseHandoffTests` 8개로 claim 직후 processing, 실행 중 중복
+차단, read-back·commit 확인 뒤 completed, transient `retryAfter`, 결과 불명 processing 유지,
+계정·장부 복구와 확정 잔액 부족 분기, foreground에서 확인된 중단 command만 retryable, 동일
+`commandID` 재시도를 고정했다. `UserStory2ReleaseResultUITests` 6개는 T105 승인본의 processing,
+completed, retryable ready·waiting, `xmark` insufficient와 기존 iCloud 복구 연결의 문구·action·
+접근성 식별자를 고정했다. 두 파일의 Swift 구문, GetUpTests/GetUpUITests target membership, project
+plist와 diff 검사는 통과했다. iPhone 17 Pro iOS 26.5 집중 실행은 새 handoff model·execution result
+타입이 없어 예상한 T107 compile RED로 실패했으며 UI runtime은 그 선행 RED 때문에 실행되지 않았다.
+T108에서 T106·T107의 모델·repository RED를 함께 GREEN으로 전환한다.
+
+2026-09-15 T106 완료(예상 RED): `RuleReleaseRouteTests` 5개와
+`PendingAppRouteRepositoryTests` 신규 8개로 `releaseProcessing`의 안정 `commandID`,
+`pending → processing → terminal`, `terminal(retryable) → processing`, 5분 claim 경계,
+종료 occurrence 폐기, processing 재실행 보존·중복 claim, terminal 표시 뒤 보존, 명시적 확인 삭제와
+claim·terminal 원자 쓰기 실패 시 이전 상태 보존을 고정했다. 새 Core 테스트 파일을 `GetUpTests`
+target에 연결하고 project plist·diff 검사를 통과했다.
+iPhone 17 Pro iOS 26.5 집중 실행은 기존 모델에 `releaseProcessing`과 handoff 상태·전이 API가 없어
+예상한 compile RED로 실패했다. T108에서 모델·repository를 구현하기 전까지 이 실패를 유지한다.
+다음 작업은 결과 상태·안정 오류 분류·승인 하이파이 식별자 UI의 실패 테스트를 작성하는 T107이다.
+
+2026-09-15 T105 완료: 사용자가 T104 피드백 반영본을 별도 조건 없이 구현 기준으로 명시 승인했다.
+Light appearance에서도 GetUp Dark surface를 유지하고, `insufficient` 상태에 SF Symbol `xmark`를
+사용하는 수정 사항을 최종 승인 범위로 확정했다. Figma 최상위 node `288:2014`를 `구현 승인`으로
+갱신하고 승인일·의견을 하이파이 문서와 DEC-116에 기록했다. 문서 전용 승인 task이므로 제품 코드
+테스트는 실행하지 않았고 문서 diff 검사를 수행한다. T105 승인 게이트가 해제됐으며 다음 작업은
+테스트 우선의 T106이다.
+
+2026-09-15 T104 사용자 피드백 반영: 사용자가 다른 GetUp 화면처럼 시스템 appearance가 Light여도
+검은 배경을 유지하도록 요청해 `288:2018`의 4개 화면을 대응 Dark 화면과 동일한 semantic token·문구·
+component property로 통일했다. `Release Status Card`와 `Primary Action`의 `Theme` 축을 제거해 각각
+6개와 4개 variant로 축소했고, 해제권 부족 상태의 Dark·Light appearance·AX5 아이콘을 원형에서 SF
+Symbol `xmark`로 변경했다. 최종 감사에서 네 Light/Dark 쌍의 동등성, X 아이콘 3개, 누락 폰트 0,
+텍스트 경계 초과 0, 44pt 미만 action 0, 잔여 placeholder 0을 확인했다. T104는 완료 상태를 유지하며
+수정본은 이후 T105에서 구현 기준으로 승인됐다.
+
+2026-09-15 T104 완료: 승인된 T103 로우파이를 기준으로 기존 GetUp Figma 파일의 `288:2014`에
+`processing`, `completed`, `retryable`, `insufficient` 네 상태의 Dark·Light·Dynamic Type AX5
+하이파이 총 12개를 구성했다. 기존 `GetUp Focus` semantic color·layout variable과 SF Pro text style,
+Apple iOS progress indicator를 재사용했고, 사용자 피드백 반영 뒤 `GetUp / Release Status Card`
+6개 variant와 `GetUp / Primary Action` 4개 variant를 유지한다. retryAfter 비활성 상태, processing 중 중복 행동
+차단, 앱 재실행 복원 설명, 기존 `PendingAppRouteDestination.iCloudRecovery` 연결, VoiceOver focus와
+Reduce Motion·SwiftUI scroll 인계를 `design/high-fidelity/US2-release-handoff.md`에 기록했다. Figma
+자동 감사에서 12개 화면의 누락 폰트·텍스트 경계 초과·44pt 미만 action이 모두 0임을 확인했다.
+BLK-019는 해결됐으며 다음 작업은 사용자에게 하이파이를 제시해 명시적 구현 승인을 받는 T105다.
+
+2026-09-15 T103 완료: 사용자가 `design/low-fidelity/US2-release-handoff.md`의 네 신규 상태와 기존
+iCloud 복구 연결 방향을 승인하고 Figma 스킬을 사용한 하이파이 제작을 요청했다. 검토 기록과 승인
+상태를 갱신하고 T103을 완료 처리했다. 제품 코드는 변경하지 않았으며 다음 작업은 승인된 로우파이를
+기준으로 Figma 하이파이와 구현 인계 문서를 만드는 T104다. T105의 별도 구현 승인 전에는
+T106~T113을 시작하지 않는다.
+
+2026-09-15 T103 로우파이 초안: Shield의 `releaseProcessing` route를 메인 앱이 이어받는
+`processing`, `completed`, `retryable`, `insufficient` 네 신규 상태와 기존 `recoveryRequired`
+iCloud 복구 화면 연결을 `design/low-fidelity/US2-release-handoff.md`에 작성했다. 처리 중 중복 행동
+차단, read-back·commit 뒤에만 완료, 같은 command ID 재시도와 `retryAfter`, 앱 종료 뒤 재조정,
+명시적 terminal action 뒤 handoff 삭제를 DEC-114·DEC-115와 일치시켰다. 로우파이는 사용자 검토
+대기 상태이며 T103은 아직 완료 처리하지 않았다. 승인 전에는 T104 하이파이와 T106~T113 구현을
+시작하지 않는다. 문서 task이므로 제품 코드 테스트는 실행하지 않았으며 문서 검사를 수행한다.
+
+2026-09-15 정합성 재분석 보정: 사용자 승인에 따라 `$speckit-analyze`에서 발견한 High 2건과 Medium
+3건을 문서에 반영했다. Shield 직접 ActivityKit 경로는 회귀·진단 전용으로 통일했고,
+`PendingAppRoute.releaseProcessing`을 즉시 삭제하지 않는 `pending → processing → terminal` 영속
+handoff, `terminal(retryable) → processing`, 명시적 결과 action 뒤 삭제와 legacy `consumedAt`
+migration을 DEC-115로 확정했다. 신규 하이파이 대상은 처리 중·완료·
+재시도·잔액 부족 네 화면이며 `recoveryRequired`는 기존 iCloud 복구 화면을 재사용한다. 안정 오류
+분류와 `retryAfter`, T113→T089 의존성도 명세·계획·모델·계약·작업에 연결했다. 아직 제품 코드는
+변경하지 않았다. 보정 후 재분석은 FR 45개·SC 15개와 task 119개의 60/60(100%) 커버리지,
+헌법 위반 0건, Critical·High·Medium 정합성 문제 0건을 확인했다. `git diff --check`, task ID 중복과
+placeholder 검사도 통과했으며 다음 작업은 T103이다.
+
+2026-09-15 구현 전 정합성 검증: `$speckit-analyze` 재실행으로 `spec.md`의 FR 45개·SC 15개와
+`tasks.md`의 119개 작업을 대조했다. 요구사항 작업 커버리지는 60/60(100%)이며 헌법 위반,
+Critical·High 불일치는 0건이다. 과거 T043·T044·T055·T100의 Shield 직접 CloudKit 경로는
+DEC-114에 의해 회귀·진단 전용으로 대체됐음을 명시했고, T098 최종 gate를 T113·T119 뒤로
+고정했으며 T113 일반 occurrence와 T089 월 경계 검증을 분리했다. `processing` 중 중복 요청 차단과
+`retryable` 진입 조건도 명세·계획·데이터 모델·계약·작업에서 통일했다. 문서 전용 변경이므로 제품
+코드 테스트는 실행하지 않았고 `git diff --check`, task ID 중복·placeholder 검사를 통과했다. 다음
+작업은 T103 해제 handoff 로우파이 작성과 사용자 검토이며 T105 하이파이 승인 전 구현은 시작하지 않는다.
+
+2026-09-15 BLK-018 해결 및 후속 작업 계획: 사용자가 Shield에서 전체 CloudKit 동기화를 수행하지 않고
+`releaseProcessing` route로 메인 앱을 열어 권위 있는 해제를 완료하는 권장안을 승인했다. 메인 앱은
+처리 중·해제 완료·재시도 가능 오류·중단 command 확인 후 재시도·잔액 부족 후 코인 구매 유도 상태를
+제공한다. 또한 잠금화면과
+Dynamic Island Live Activity UI를 앱 무드에 맞게 개편한다. 두 UI 묶음은 각각 로우파이 기록,
+하이파이 제작, 사용자 명시 승인 후에만 구현하도록 T103~T119를 추가했다. 이번 세션은 명세·계획·
+계약·작업·운영 문서만 갱신했으며 제품 UI 코드는 변경하지 않았다.
+
+T089 세분화 진단에서 iPhone 15 Pro Max의 마지막 단계가
+`initialRefresh.syncEngineCaptureCompleted`, 잔액 2/0으로 확인됐다. 전체 CloudKit 변경 fetch는
+끝났지만 Shield 시스템 시간 안에 projection과 예약까지 도달하지 못했다. FR-037 최신 projection을
+유지하면서 이 실행 제한을 피할 제품 경로 선택이 필요해 BLK-018을 열었으며 사용자 결정을 기다린다.
+
+수정 빌드의 다음 5분 경계에서도 첫 탭이 `savingRecoveryRoute, outerDeadline`으로 복구 화면을 열어
+실패했다. 이는 primary action 전체가 5초 상한을 넘었다는 뜻이지만 기존 단일 진단 값이 구체 단계까지
+덮어써 initial refresh·원자 예약·로컬 적용 중 병목을 구분할 수 없다. DEBUG에 reserve/apply 시작·완료
+단계와 timeout 직전 마지막 단계를 보존하는 진단을 추가해 다음 재현에서 정확한 병목을 확정한다.
+집중 테스트와 전체 `GetUpTests` 612개 선언·동적 실행 732회, Release 빌드가 통과했으며 동일 서명
+진단 빌드를 두 iPhone에 설치했다.
+
+T089의 DEBUG 전용 서울 5분 경계에서 첫 Shield 해제를 검증했다. 새 구간의 첫 `Use 1 Release`는
+해제되지 않고 Coins로 이동했으며 잔액도 2/0을 유지했다. 두 번째 탭은 성공해 두 기기가 1/0으로
+수렴했으므로 첫 탭 원자 생성+예약 항목은 실패로 기록했다. 원인은 Shield가 이미 수행한 권위 있는
+CloudKit refresh를 해제 executor와 reservation context가 다시 수행해 최대 네 번의 동기화가 5초
+응답 상한 안에 중첩된 구조였다. DEC-113에 따라 첫 refresh 결과를 예약의 initial context로 재사용하고,
+월간 무료 예약이 확정 충돌한 경우에만 서버를 한 번 다시 조회하도록 수정했다. 관련 회귀군과 전체
+`GetUpTests` 612개 선언·동적 실행 732회는 실패·skip 없이 통과했고, Release 빌드도 통과했다. 수정된
+동일 서명 빌드의 앱·Shield Action에 namespace·5분 주기와 entitlement가 일치함을 확인하고 iPhone
+15 Pro Max와 iPhone 17에 설치했다. 다음 5분 경계에서 첫 탭만으로 즉시 해제되는지 다시 확인해야 한다.
+
+Pull Request #30으로 US3 T059~T077을 `main`에 병합하고 최신 `main`에서
+`codex/us4-monthly-lifecycle-tests`를 분기했다. T078~T080의 월간 core·CloudKit 인수와 T081의 UI
+계약과 T082~T083의 월간 잔액 표시, T084의 월간·구매 내역 분리에 이어 T085에서 월 경계 재실행,
+새달 첫 앱 foreground, 첫 Shield 요청, 최초 setup, 삭제 reset을 결정적으로 재현하는 UI test fixture를
+app과 Shield seam에 연결했다. T086에서는 코인 화면과 내역 화면이 장부의 loading·empty·stale·
+current 상태를 구분하고, 동기화 중 숫자 mirror를 확정값처럼 표시하지 않으며, VoiceOver가 상태 →
+무료 잔액 → 구매 잔액 순서와 `회`·`개` 단위를 읽도록 확장했다. T087에서는 Shield 표시 모델에
+`latestLedgerFreeFirst` 정책을 명시해 mirror의 sync state나 표시 수량과 무관하게 단일 해제 버튼과
+무료 우선·구매 코인 1개 fallback 안내를 유지하고, 실제 funding source는 탭 뒤 최신 장부 해제 결과로만
+확정되도록 회귀를 고정했다. T088에서는 월간 잔액·비이월·다음 갱신·내역과 VoiceOver 수량을 안정된
+문자열 키로 전환하고 한국어·영어 번역을 연결했다. 기존 app·Shield 무료 우선 문구의 양 언어 번역도
+함께 검증했다. T089 자동 검증 24개는 통과했지만 실제 동일 iCloud 계정의 iPhone 2대와 CloudKit
+development private database를 사용하는 다기기·서울 월 경계 수동 증적이 없어 BLK-017로 차단됐다.
+두 기기의 당월 무료 2회·구매 0 mirror는 일치했지만 iPhone 17의 Shield만 일반 fallback을 표시해,
+2026-09-12에 토큰·식별자를 남기지 않는 DEBUG Shield 진단을 추가하고 해당 기기에 설치했다. 적용
+규칙을 완전히 제거·재적용한 DEBUG 결과는 iPhone 15 Pro Max에서 `active: 1`, `matching: 0`이었다.
+iOS 26.5 이상의 `ManagedSettingsStore.refresh(_:)`로 만료 token을 갱신한 뒤 비교하도록 수정하자
+같은 기기에서 상세 Shield와 `Use 1 Release`가 복구됐다. 이후 두 Shield Action에서 공통으로 발생한
+`CKError.badContainer`를 명시 CloudKit container 주입으로 해결했다. 첫 해제는 `releaseCommitted` 뒤
+양쪽 1/0으로 수렴했고, 남은 무료 1회의 동시 요청은 한 기기만 해제·다른 기기 reconciliation 실패
+닫힘·최종 양쪽 0/0으로 수렴했다. 성공 또는 앱 시작 재조정으로 이미 해결된 pending route가 복구
+화면으로 남지 않도록 폐기 정책도 보정했다. 실제 같은 allowance 동시 생성과 서울 월 경계 증적은
+계속 남아 있다. 실제 월초까지 기다리지 않는 사용자 승인에 따라 DEC-107의 DEBUG 전용 13일 서울
+자정 대체 경계를 구현했다. 유효한 테스트 namespace와 경계일이 함께 있을 때만 별도 CloudKit zone·
+subscription·checkpoint를 사용하고, Release는 설정을 무시해 기존 매월 1일과 운영 zone을 유지한다.
+`t089-day13-app` 서명 빌드는 두 실기기에서 활성화·동기화를 완료해 모두 `August 2026`, 무료 2,
+구매 0을 확인했다. 별도
+`t089-day13-shield` 빌드도 앱과 Shield Action의 namespace·13일 설정을 검사한 뒤 두 기기에
+설치했다. 별도 장부 활성화 후 양쪽 모두 `August 2026`, 무료 2, 구매 0으로 수렴했고 iPhone 15 Pro
+Max에서 상세 Shield와 `Use 1 Release` 버튼 표시를 확인했다. 버튼은 아직 누르지 않았으며 자정 뒤
+첫 실행은 Coins 화면으로 이동해 해제되지 않았고, 두 번째 실행은 성공해 양쪽 `September 2026`,
+무료 1, 구매 0으로 수렴했다. 첫 앱 foreground가 allowance를 생성했으므로 서울 경계·비이월·앱 지연
+생성은 확인됐지만 Shield 지연 생성은 실패로 분류했다. allowance가 없는 fresh 0/0 projection을
+확정 잔액 부족으로 차단하던 Shield 선행 guard를 수정했으며 별도 격리 장부 재검증이 남았다.
+수정된 `t089-day13-app`을 두 기기에 다시 설치한 뒤 경계 후 처음 foreground로 열어 양쪽 모두
+`September 2026`, 무료 2, 구매 0으로 수렴하는 것을 확인했다. 경계 전 값은 양쪽 `August 2026`,
+무료 2, 구매 0이었으므로 첫 app 지연 생성·비이월·다기기 전파 항목은 통과했다.
+빈 `t089-day13-concurrent`의 동시 활성화는 한쪽 즉시 성공, 다른 쪽 오류 뒤 앱 재실행으로 양쪽
+`September 2026`, 무료 2, 구매 0에 수렴했다. 중복 지급은 없어 원격 동시 생성 무결성은 통과했지만
+패배한 화면의 즉시 수렴은 실패했다. fresh state가 이미 `current`이면 winner 장부를 채택하도록
+활성화 경합 복구를 보정했고 새 namespace 재검증을 준비한다.
+`t089-day13-concurrent-retry`에서 동시 활성화를 다시 실행한 결과 두 기기 모두 첫 탭 한 번으로
+성공했고, 재실행 없이 양쪽 `September 2026`, 무료 2, 구매 0으로 수렴했다. 같은 allowance 동시
+생성·중복 지급 방지·충돌 직후 UI 수렴 항목은 모두 통과했다.
+남은 Shield-first와 구매 잔액 보존은 사용자 승인에 따라 별도 `t089-day14-final`의 14일 서울 자정
+경계로 재검증한다. 앱·Shield Action의 namespace·경계일·iCloud container 값을 검사한 서명 빌드를
+두 기기에 설치했으며 경계 전 활성화와 Sandbox 코인 1개 준비를 기다리고 있다.
+14일 실기기 준비에서는 StoreKit Xcode 환경 성공 창 뒤 앱이 구매 실패를 표시하고 구매 잔액이 0에
+머물러 경계 전 구매 1 준비가 실패했다. 직접 구매 반환과 `Transaction.updates`가 같은 검증 거래를
+동시에 또는 연속 처리해 grant·finish를 반복하는 경쟁을 확인했고, transaction ID별 성공 결과를
+프로세스 단위로 단일 처리하도록 수정했다. 실패 결과는 캐시하지 않아 unfinished 재시도를 유지하며,
+T089 DEBUG 화면에는 안정 오류 코드를 표시한다. 전체 `GetUpTests` 606개 선언(동적 실행 726회)은
+실패·skip 없이 통과했다. 수정 빌드의 기존 unfinished 거래 복구와 새 격리 경계 재검증이 남아 있다.
+수정 빌드를 같은 `t089-day14-final`과 Xcode StoreKit 설정으로 다시 실행했지만 값은 계속
+`September 2026`, 무료 2, 구매 0이었고 기존 거래는 unfinished로 재전달되지 않았다. 이 장부에는
+추가 구매하지 않고 실패 증적으로 종료했다. 다음 검증을 위해 Debug 설정을 새
+`t089-day15-final`, 서울 15일 00:00으로 준비했으며, Xcode StoreKit 거래로 CloudKit 구매 잔액 지급과
+월 경계 보존을 검증한다. 실제 Sandbox 1·3·5 구매와 pending·환불·철회는 T094 범위를 유지한다.
+`t089-day15-final`에서 양쪽 경계 전 `August 2026`, 무료 2, 구매 0을 확인한 뒤 한 기기에서 Xcode
+StoreKit 코인 1개를 한 번 구매했으나 앱은 `DEBUG: unknown`을 표시했고 재실행 뒤에도 같은 값이었다.
+추가 구매는 중단했다. 일시적 CloudKit 처리 오류가 updates listener 전체를 종료하고 이후 foreground가
+unfinished를 다시 조회하지 않던 복구 단절을 수정했다. grant·finish 성공 뒤 projection refresh만
+실패한 경우에는 구매 성공을 보존하고 다음 lifecycle 동기화에 잔액 반영을 맡기며, sync provider 오류를
+안정 코드로 변환했다. 관련 집중 테스트와 T089 설정을 비운 전체 `GetUpTests` 608개 선언(동적 실행
+728회)은 실패·skip 없이 통과했다. 수정 실기기 빌드에서 기존 unfinished 거래 복구를 먼저 확인한다.
+수정 빌드에서도 양쪽 `August 2026`, 무료 2, 구매 0이 유지됐고 CloudKit Console에서 day15
+`CoinAccount.purchasedAvailable = 0`을 확인했다. 이 상태에서 승인된 코인 1개 재구매를 한 번만
+실행했으나 다시 `DEBUG: unknown`이 발생해 추가 구매를 중단했다. CloudKit atomic modify의 record별
+결과에서 종속 `batchRequestFailed`가 실제 실패를 가릴 수 있는 매핑을 수정해 구체 오류를 우선
+선택하고, unfinished 복구 오류의 안정 코드·오류 타입을 DEBUG Xcode console에 기록하도록 보강했다.
+집중 테스트와 기본 월초 정책의 전체 `GetUpTests` 실행은 종료 코드 0으로 통과했다. 수정 빌드를
+iPhone 15 Pro Max에 설치하고 Xcode StoreKit 세션으로 실행하자 기존 미완료 거래 세 건이 모두
+`LiveActivityCoinModelError`로 실패했다. 거래 관리자에서 해당 거래의 `ID = 0`, `Line Item ID = 0`,
+`State = Unfinished`를 확인해 양수 transaction ID 불변식이 CloudKit 이전에 거부한 원인을 확정했다.
+0번 ID를 합성하거나 허용하지 않으며 구매 준비는 T089에서 제외한다. T089은 명세대로 StoreKit 없이
+15일 경계 뒤 무료분 비이월과 Shield-first 결과만 확인하고 실제 Sandbox 구매는 T094에서 검증한다.
+T048은 완료 상태를 유지한다. 호환성 검증 경계는 기본 거부이며
+T099에서 실제 `CKContainer.privateCloudDatabase`·`CoinLedgerZone` adapter와 server creation date,
+change-tag CAS, atomic modify, record별 오류 변환을 구현했다. 초기 fetch가 zone을 만들지 않고 실제
+쓰기에서만 준비해 삭제 감지 근거를 보존한다. 운영 활성화·migration은 수행하지 않았다. T101에서는
+private database용 `CKSyncEngine` provider와 앱·Shield별 계정 결합 checkpoint, 프로세스별 initial
+fetch gate, pending 재시도, zone 삭제 evidence, 원격 장부 projection과 App Group mirror 저장을
+구현했다. T102에서는 command별 protocol stamp, epoch별 `preparing | ready` marker와 명시적 구버전
+writer 종료 승인을 사용하는 migration provider를 구현했다. T100에서 앱과 Shield Action에 실제
+CloudKit database·프로세스별 sync·migration 검증 runtime을 조립하고 월 지급, 구매 지급, 해제 예약,
+setup/reset/recovery/reconciliation과 5초 Shield 응답 상한을 live 경로에 연결했다. 기존 epoch는
+명시적 migration 전까지 계속 fail-closed하고 새 epoch만 atomic setup/reset에서 ready marker를 만든다.
+001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-001 T086 — 구현과 승인 하이파이 편차 대조 및 영어 US3 UI 회귀 보정
+T112 — release handoff 한국어·영어 지역화와 접근성·appearance 회귀
 
 ## 다음 작업
-001은 T083·T085 실기기 재검증 또는 T087·T088 사용성 평가 계획·결과 기록이 남아 있다.
-002는 별도 브랜치에서 T089의 `t089-day14-final` Shield-first·구매 잔액 보존 검증을 계속한다.
+T113 — 동일 iCloud 계정의 iPhone 15 Pro Max·iPhone 17에서 Shield 첫 탭 handoff, 네 결과·
+기존 복구 연결, 강제 종료 뒤 동일 command 복원과 다기기 수렴을 실기기 검증한다. Live Activity는
+T114~T116 설계·승인을 별도로 진행한다.
+T089 — T103~T113의 승인된 handoff 구현과 두 실기기 첫 탭 검증이 끝난 뒤 재개한다.
+T094·T095의 Shield/StoreKit 실기기 인수도 이어서 수행한다.
+001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
-001 T086에 새 차단 사항은 없다. Accessibility Inspector, system Shield·Settings 복귀 focus의 물리
-기기 확인은 T085 및 후속 실기기 인수 범위에 남는다.
+BLK-019 해결됨: Figma 계정 호출이 정상화된 뒤 Phase 0부터 재개해 T104 하이파이와 자동 감사를
+완료했고, 2026-09-15 사용자가 수정본을 구현 기준으로 승인해 T105도 완료했다.
+
+BLK-018 해결됨: Shield는 release route 저장과 앱 열기만 수행하고 메인 앱이 전체 동기화·원자 해제를
+완료한다. 처리 결과 UI와 Live Activity 개편은 각각 하이파이 사용자 승인 뒤 구현한다.
+
+BLK-017 미해결: 동일 iCloud 테스트 iPhone 2대의 동시 해제와 계정 전체 최대 사용은 통과했다.
+같은 allowance 동시 생성도 통과했다. 5분 대체 경계 빌드는 두 iPhone에 설치했으며, 실제
+첫 탭은 Coins로 이동하고 두 번째 탭에서만 성공했다. 중복 refresh 제거 수정 빌드의 Shield-first
+재검증과 서버 record 기록이 남았다.
 BLK-016 해결됨: 명령별 원자 추가·조건부 제거 API와 최신 상태 재평가 계약 보강을 사용자 승인받았다.
 BLK-015 해결됨: occurrence별 예약 소유권 계약·스키마 보강을 사용자 승인받았다.
 T045 보고서 접근 차단은 사용자 허용 후 같은 명령 재시도로 해결됐다.
@@ -45,13 +395,378 @@ BLK-014·BLK-013·BLK-012 해결됨. BLK-010은 `com.dxyn02.GetUp` namespace의 
 동기화했으며, 기기가 사용되지 않는 동안의 정각 callback은 제품이 보장하지 않는다.
 
 ## 테스트 상태
-2026-09-13 T086: US1~US4 하이파이와 구현을 대조하고 관련 UI suite 43개 및 공통 접근성 suite 5개를
-iPhone 17 Pro iOS 26.5 Simulator에서 실행했다. 첫 실행은 영어로 강제 실행한
-`UserStory3AutoReleaseUITests`가 과거 한국어 label을 기대해 41/43 통과, 2개 실패였다. 영어 활성
-상태·guard·삭제 Alert와 코드의 `1km` 표기에 기대값을 맞춘 뒤 단일 실패 사례와 US3 3개를 재검증하고,
-최종 48/48가 실패·skip 없이 통과했다. Xcode의 `DebuggerVersionStore`와 signed XCTest binary strip,
-Apple `StoreKitTest` deprecated API, 기존 `LocationMonitoringAdapterTests`의 불필요한 `try` 경고는
-제품 동작 실패가 아니다. production code, 실기기 설치본, CloudKit·StoreKit 데이터는 변경하지 않았다.
+2026-09-16 T112 자동 검증: iPhone 17 Pro Max iOS 26.5에서 `GetUpTests`,
+`AccessibilityUITests`, `UserStory2ReleaseResultUITests` 총 664개 선언·동적 실행 784회가
+실패·skip 없이 통과했다. 영어 구매 안내 집중 재실행도 통과했고 AX5·Light/Dark 스크린샷을 확인했다.
+XcodeBuildMCP는 현재 세션에 없어 Xcode 명령행과 결과 번들로 같은 시뮬레이터를 검증했다. 실제
+VoiceOver 음성 발표·초점 이동과 실기기 Shield handoff는 T113에서 수동 확인한다.
+
+2026-09-16 T111 자동 검증: iPhone 17 Pro Max iOS 26.5에서 전체 `GetUpTests`와 release handoff
+UI 테스트 7개가 실패·skip 없이 통과했다. 사용자 소유 `Debug.xcconfig`의 T089 5분 설정은 변경하지
+않고 테스트 명령에서 `GETUP_T089_*`만 비웠다. 실기기 Shield 첫 탭·iOS 26.0~26.4·AX5 전체
+회귀는 각각 T113·T112에서 계속 검증한다.
+
+2026-09-16 T109 자동 검증: iPhone 17 Pro Max iOS 26.5에서 전체 `GetUpTests` 선언 643개·
+동적 실행 763회가 실패·skip 없이 통과했다. 현재 사용자 소유 `Debug.xcconfig`의 T089 5분 설정은
+수정하지 않고 테스트 명령의 `GETUP_T089_*`만 비워 월 정책 fixture 충돌을 피했다. 새 Shield
+route 저장·중복 command·만료 pending·저장 실패·iOS 26.4 fallback 회귀를 포함한다. 실제 Shield
+첫 탭 앱 진입과 iOS 26.0~26.4 사용성은 T113 실기기 인수에서 확인한다.
+
+2026-09-16 T108 자동 검증: iPhone 17 Pro Max iOS 26.5에서 route lifecycle·repository·app handoff
+집중 테스트 36/36이 통과했다. 현재 `Debug.xcconfig`의 사용자 소유 T089 5분 설정을 그대로 사용한
+전체 실행은 월 단위 fixture와 설정이 충돌해 637개 중 47개가 실패했으며, 파일을 변경하지 않고
+명령행에서 `GETUP_T089_*`만 비운 정상 월 정책 재실행은 선언 637개·동적 실행 757회가 실패·skip
+없이 통과했다. `git diff --check`도 통과했으며 T107 UI runtime은 계획대로 T111~T112에서 검증한다.
+
+2026-09-15 T089 최초 refresh 세분화: iPhone 15 Pro Max에서 실패 뒤 10초가 지나도
+`SHIELD DEBUG: initialRefreshStarted`, 잔액 2/0이 유지됐다. extension이 자체 timeout보다 먼저
+종료됐으므로 예약 전 CloudKit refresh 내부 병목으로 확정했다. FR-037의 최신 서버 확인 계약은
+유지하고 계정 상태·사용자 record ID·CKSyncEngine send/fetch/capture별 진입·완료 단계를 추가했다.
+기본 월초 정책의 전체 `GetUpTests` 613개 선언·동적 실행 733회가 실패·skip 없이 통과했고 generic
+iOS Debug 서명 빌드도 통과했다. 세분화 진단 빌드를 iPhone 15 Pro Max에 설치·실행했으며 T089과
+BLK-017은 계속 미완료다.
+
+2026-09-15 T089 silent fail-closed 진단: iPhone 15 Pro Max에서 Shield만 닫히고 제한과 무료 2/0이
+그대로인 결과를 확인했다. 기존 DEBUG는 복구 route 화면에서만 노출돼 `.defer` 원인을 확인할 수
+없었다. `ShieldCoinActionDecision`에 안정 reason을 추가하고 extension의 최종 decision
+reason·response·active 수를 App Group에 기록하며, T089 Coins 화면이 마지막 Shield 진단을 항상
+표시하도록 보강했다. 제품의 차감·해제·fail-closed 동작은 변경하지 않았다. 기본 월초 정책의 전체
+`GetUpTests`는 613개 선언·동적 실행 733회가 실패·skip 없이 통과했고 generic iOS Debug 서명 빌드도
+통과했다. 멈춘 CoreDeviceService를 재시작한 뒤 동일 서명 진단 빌드를 USB로 iPhone 15 Pro Max에
+설치하고 앱 실행까지 확인했다. 다음 5분 경계의 첫 탭 실기기 재현 전까지 T089과 BLK-017은 계속
+미완료다.
+
+2026-09-15 T089 중복 refresh 수정 실기기 결과: 다음 5분 경계의 첫 탭도
+`savingRecoveryRoute, outerDeadline`으로 실패했다. 단계 식별 정보가 최종 route 기록에 덮여 정확한
+병목을 확정할 수 없어 DEBUG 단계 진단을 추가 중이다. T089과 BLK-017은 계속 미완료다.
+
+2026-09-15 T089 Shield-first 첫 탭 지연 수정: 실기기 5분 경계에서 첫 탭은 Coins 이동·2/0 유지,
+두 번째 탭은 해제·양쪽 1/0 수렴으로 관찰돼 실패로 기록했다. Shield가 최초 최신 장부 조회 결과를
+예약까지 전달하고 확정 무료분 충돌에서만 1회 재조회하도록 변경했다. 선행 실패 테스트는 새 API
+부재로 실패했고 구현 뒤 집중·관련 회귀군이 통과했다. T089 설정을 비운 전체 `GetUpTests`는 612개
+선언·동적 실행 732회, 실패 0, skip 0으로 통과했다. 스킴 전체 실행은 Xcode UI test launcher의
+`no debugger version` 반복으로 중단했으나 제품 테스트 타깃 전체는 별도 실행으로 통과했다. 첫 Release
+빌드는 sandbox의 CoreSimulatorService 접근 차단으로 실패했고 권한 확장 재실행은 통과했다. 실기기
+산출물의 앱·Shield Action은 같은 `t089-five-minute-final`, 5분 주기, iCloud container와 App Group
+entitlement를 포함하며 두 실기기에 동일 산출물을 설치했다. 재검증 전이므로 T089과 BLK-017은 완료
+처리하지 않는다.
+
+2026-09-14 T089 5분 경계 준비: 서울 5분 경계와 자정 전환 정책 테스트를 추가했다. 관련 정책·수명
+주기·CloudKit 집중 suite와 T089 설정을 비운 전체 `GetUpTests`가 통과했다. 전체 결과는 610개 선언,
+동적 실행 730회, 실패 0, skip 0이다. generic iOS Simulator Release 빌드도 통과했고 app·Shield
+Action의 Release Info.plist에서 T089 namespace·경계일·분 주기가 모두 빈 값임을 확인했다. 실기기
+Debug 빌드는 양 target에 `t089-five-minute-final`, 분 주기 5가 동일하게 포함됐다. 동일 산출물을
+iPhone 15 Pro Max와 iPhone 17에 설치했고 iPhone 17 실행까지 성공했다. 실제 5분 경계 결과는 대기
+중이다.
+
+2026-09-14 T089 day15 구매 원인 확정: 수정된 day15 서명 빌드의 app·Shield Action에
+`t089-day15-final`, 경계일 15가 포함된 것을 확인하고 iPhone 15 Pro Max에 설치했다. Xcode StoreKit
+세션에서 unfinished 복구가 `LiveActivityCoinModelError`로 반복 실패했고 거래 관리자에서 미완료
+거래의 ID와 line item ID가 모두 0임을 확인했다. CloudKit 구매 잔액은 0으로 유지됐으며 추가 구매는
+하지 않는다. 실제 거래와 같은 양수 ID·멱등 키 불변식은 유지하고 T089은 StoreKit 없는 US4 절차로
+복귀한다. 원자 CloudKit 실패 선별과 개인정보 없는 DEBUG 오류 타입 기록은 회귀 보강으로 유지한다.
+
+2026-09-14 T089 day15 두 번째 구매 진단: CloudKit의 구매 잔액 0을 확인한 뒤 허용된 1회 재구매도
+`DEBUG: unknown`으로 실패했다. atomic modify 결과 중 `batchRequestFailed`가 먼저 열거돼 실제 record
+오류를 숨기는 경우를 재현하는 테스트를 추가하고 구체 오류 우선 선택과 CKError 안정 분류를
+보강했다. `SystemCoinLedgerCloudDatabaseTests`·`StoreKitTransactionObserverTests` 집중 실행과
+T089 설정을 비운 전체 `GetUpTests` 실행은 모두 종료 코드 0이었다.
+
+2026-09-14 T089 day15 구매 복구 보강: 경계 전 양쪽 `August 2026`, 무료 2, 구매 0에서 한 기기만
+Xcode StoreKit 코인 1개를 구매했으나 `DEBUG: unknown` 뒤 재실행해도 잔액이 변하지 않았다. 추가 구매는
+하지 않았다. observer가 개별 CloudKit 실패를 unfinished로 보존하면서 다음 update를 계속 관찰하고,
+launch·foreground마다 unfinished를 재조회하도록 수정했다. grant·finish 뒤 projection refresh 실패는
+이미 확정된 구매를 실패로 바꾸지 않으며 잔액은 후속 권위 동기화로만 갱신한다. 관련 3개 suite 집중
+테스트가 통과했다. T089 경계일 15 설정을 그대로 적용한 전체 실행은 정책상 기존 월초 기대값을 바꿔
+42개 선언이 실패했고, 해당 두 build setting만 비운 정상 정책 재실행은 608개 선언·동적 실행 728회가
+모두 통과했으며 실패·skip은 없다. 이는 실기기 override 격리 확인 결과이며 제품 회귀가 아니다.
+
+2026-09-14 T089 구매 준비 실패 및 수정: `t089-day14-final`에서 StoreKit은 Xcode 환경 구매 성공을
+표시했지만 앱은 구매 실패와 무료 2·구매 0을 표시했다. 기존 자동 테스트의 unfinished+updates 중복
+전달도 실제 grant와 finish를 두 번 호출하고 있었음을 확인했다. `CoinPurchaseService`에 transaction
+ID별 in-flight 및 성공 결과 단일 처리를 추가해 동시·지연 중복 전달이 grant와 finish를 한 번만
+실행하도록 했고, finish 실패 뒤 같은 unfinished 거래 재시도는 계속 허용했다. 집중 테스트와 전체
+`GetUpTests` 606개 선언(동적 실행 726회)이 실패·skip 없이 통과했다. 실기기 수정 빌드 재검증은
+대기 중이다.
+같은 namespace의 수정 빌드를 Xcode StoreKit 설정으로 재실행해도 `September 2026`, 무료 2,
+구매 0이 유지돼 기존 거래가 unfinished로 재전달되지 않음을 확인했다. 추가 구매 없이 day14 장부를
+종료하고 `t089-day15-final`, 15일 서울 경계를 Debug에 준비했다.
+
+2026-09-13 T086 완료: US1 규칙·장소·홈, US2 활성 상태·Shield, US3 활성 guard·자동 해제,
+US4 권한·위치 복구 구현을 승인된 네 하이파이 문서와 대조했다. Dark Focus token·navigation·CTA·
+pager, adaptive Shield와 `NaseoShieldLogo`, system Alert guard, 권한 onboarding·Settings 복구·위치
+`unavailable` 안전 계약이 구현과 일치했다. 홈 코인 진입점과 Shield의 해제권 primary·앱 닫기
+secondary는 이후 승인된 `002-live-activity-coins` 명세의 교차 기능 추가로 기록했으며 001 편차로
+되돌리지 않았다. 승인되지 않은 제품 UI 편차는 발견되지 않아 production code 변경은 없었다.
+영어로 강제 실행하던 US3 UI suite의 오래된 한국어 기대값은 실제 영어 번역과 `1km` 표시 계약에
+맞게 수정했다. 001의 T083·T085 실기기 후속 확인과 T087·T088 사용성 검증은 남아 있다.
+
+2026-09-13 T089 경계 후 관찰 및 수정: 자정 뒤 앱 미실행 상태의 첫 Shield 탭이 Coins를 열고, 두 번째
+탭이 성공해 두 기기 모두 `September 2026`, 무료 1, 구매 0으로 수렴했다. `CloudKitCoinLedgerRepository`
+는 allowance 부재 시 생성+무료 reservation을 원자 처리하지만 Shield Action이 그 전에 mirror 0/0을
+잔액 부족으로 반환하는 불일치를 확인했다. current allowance가 없으면 권위 reservation을 허용하고,
+allowance가 실제 존재하는 확정 0/0만 빠르게 차단하도록 `ShieldFreshLedgerReleaseGate`를 추가했다.
+구현 전 새 회귀는 컴파일 RED였고 구현 후 `ShieldCoinActionTests`와 `CloudKitMonthlyAllowanceTests`가
+통과했다. 이어 전체 `GetUpTests` 604개 선언이 동적 실행 포함 724회 모두 통과했고 실패·skip은 없다.
+Shield-first 실기기 재검증은 아직 남아 있다.
+수정된 app namespace의 첫 foreground 결과도 양쪽 `September 2026`, 무료 2, 구매 0으로 확인됐다.
+
+2026-09-13 T089 동시 setup 후속 수정: 실제 동시 요청에서 패배한 기기는 다음 CloudKit fetch로
+winner 장부를 `current`로 읽었어도 화면의 기존 setup action을 계속 실행해 `setupNotRequired`를
+오류로 표시했다. 활성화 직전 current면 쓰기 없이 해당 snapshot을 반환하고, atomic setup 오류 뒤에도
+한 번 refresh하여 current winner가 확인되면 성공으로 채택하도록 수정했다. current만 허용하고
+setupRequired·syncing·stale·unavailable·deletionConfirmed·resetRequired는 성공으로 승격하지 않는
+회귀를 추가했다. 집중 테스트와 전체 `GetUpTests` 605개 선언(동적 실행 725회)이 실패·skip 없이
+통과했다. 새 격리 namespace 실기기 재검증은 대기 중이다.
+이어 `t089-day13-concurrent-retry` 실기기 재검증도 양쪽 첫 탭 성공과 `September 2026`, 무료 2,
+구매 0 수렴으로 통과했다.
+
+2026-09-12 T089 13일 대체 경계 준비: 9월 12일 23:59:59와 13일 00:00 서울 시각의 period가 각각
+`2026-08`, `2026-09`로 전환되고 다음 경계가 정확히 13일 00:00인지 검증하는 core 회귀와 namespace별
+sync checkpoint 격리 회귀를 추가했다. 전체 `GetUpTests` 603개 선언이 동적 실행 포함 723회 모두
+통과했고 실패·skip은 없다. generic iOS Simulator Release 빌드도 통과했다. 첫 sandbox 실행은
+DerivedData/CoreSimulator 접근 제한으로 빌드 전 실패했으며 승인된 동일 명령 재실행에서 통과했다.
+`t089-day13-app` Debug 서명 빌드의 앱·Shield Action `Info.plist`에 namespace, 13일 경계와 명시
+iCloud container가 포함됨을 확인하고 iPhone 17 iOS 26.6.2와 iPhone 15 Pro Max iOS 27에 설치했다.
+양쪽 경계 전 결과는 `August 2026`, 무료 2, 구매 0으로 일치했다. 이어 같은 설정을 사용하는 별도
+`t089-day13-shield` 빌드도 두 기기에 설치했다. Shield 장부도 양쪽 `August 2026`, 무료 2, 구매 0으로
+수렴했고 iPhone 15 Pro Max의 상세 Shield 버튼을 확인했다. 실제 경계 뒤 첫 Shield 실행은 아직 대기
+중이며 운영 CloudKit record는 변경·삭제하지 않았다.
+
+2026-09-12 T089 다기기 진행: iPhone 17 iOS 26.6.2와 iPhone 15 Pro Max iOS 27의 Shield Action이
+공통으로 반환한 `CKError` code 5를 `badContainer`로 확인했다. 앱·Shield Action의 빌드된
+`Info.plist`와 서명 entitlement에 `iCloud.com.dxyn02.GetUp`이 일치하는지 검사하고, 기본 컨테이너
+추론 대신 같은 명시 `CKContainer`를 account provider, `CKSyncEngine`, private database와 setup/reset에
+주입했다. 수정 뒤 첫 무료 해제는 `releaseCommitted`로 확정돼 두 기기 2/0이 1/0으로 동기화됐다.
+남은 무료 1회의 동시 요청은 한 기기만 해제되고 다른 기기는 추가 차감 없이 reconciliation route로
+닫혔으며 최종 두 기기 모두 0/0이었다. 성공 뒤 과거 route 원자 폐기와 재조정 완료 route 억제 회귀를
+추가했고 `CoinLedgerSyncProviderTests`, `ShieldCoinActionTests`, `ShieldActionResponsePolicyTests`,
+`PendingAppRouteRepositoryTests`, `CoinAppLifecycleCoordinatorTests` 집중 실행이 실패·skip 없이
+통과했다. 이어 전체 `GetUpTests` 601개 선언이 동적 인자 포함 721회 모두 통과했고 실패·skip은 없다.
+CloudKit schema나 원격 record를 수동 수정·삭제하지 않았다. T089은 실제 같은 allowance 동시 생성과
+서울 월 경계 증적이 남아 있어 미완료다.
+
+2026-09-12 T089 진단 진행: `ShieldContentProvider`가 App Group 식별자·파일별 missing/read/decode·
+schema 오류, collection identity, 현재 활성 occurrence 수, callback token 매칭 수와 저장 장소 부재를
+구분해 DEBUG App Group 진단으로 기록하도록 보강했다. Family Controls token, 규칙·장소 ID와 이름,
+좌표, CloudKit 상세는 기록하지 않는다. 새 진단 회귀 3개를 포함한 `ShieldContentProviderTests`가
+iPhone 17 Pro iOS 26.5 Simulator에서 통과했고, 앱과 네 확장을 포함한 iPhone 17 Debug 서명 빌드와
+기존 앱 위 설치도 통과했다. 기존 App Group과 CloudKit 데이터는 삭제·변경하지 않았다. 모든 적용
+규칙을 제거하고 한 규칙을 재적용한 뒤 iPhone 17에서도 상세 Shield와 `Use 1 Release`가 표시됐다.
+이어 iPhone 15 Pro Max에서 `active: 1`, `matching: 0`을 실기기 재현하고 만료 token refresh 회귀를
+추가했다. 구현 전 직접 비교는 fallback이었고, iOS 26.5 가용성 분기와 공식 refresh 적용 후 집중
+테스트가 통과했으며 같은 기기에서 상세 Shield 버튼 표시를 확인했다.
+실제 다기기 동시 사용·서울 월 경계 증적이 남아 있어 T089과 BLK-017은 계속 미완료다.
+
+2026-09-09 T100: `CoinLedgerLiveRuntime`으로 앱과 Shield Action의 실제 private CloudKit database,
+프로세스별 `CKSyncEngine` checkpoint, reservation compatibility verification을 조립했다. 앱 launch·
+foreground는 StoreKit listener 시작, 미종결 command 재조정, 새달 allowance 생성, 재동기화 순서로
+App Group mirror를 갱신한다. 구매 지급은 `CoinPurchaseService`, 앱·Shield 해제는 공통
+`CoinRuleReleaseLiveExecutor`, setup/reset은 새 epoch의 ready marker까지 포함한 atomic provider에
+연결했다. Shield는 탭 직전 자체 fresh fetch를 수행하고 전체 처리 응답을 5초로 제한한다. launch·
+foreground·Shield가 각각 fresh fetch를 수행하고 공유 mirror를 갱신하는 회귀, pending command를
+current 반환 전에 재조정하는 회귀, initial setup의 5개 record atomic 저장 회귀를 추가했다. iPhone 17
+Pro iOS 26.5 Simulator에서 전체 `GetUpTests` 593개 선언이 동적 실행 포함 713회 모두 통과했고 실패·
+skip은 없다. 앱과 네 확장의 generic iOS Simulator Release 빌드도 통과했다. 실제 iCloud 장부 쓰기,
+다기기 월 경계, Shield와 StoreKit 결제 실기기 증적은 T089·T094·T095에 남아 있다.
+
+2026-09-09 T102: 새 reservation에 command별 `ReservationCompatibilityStamp`를 claim·command·잔액·
+event와 같은 atomic modify로 저장하고, 기존 epoch를 데이터 삭제·reset 없이 전환하는
+`ReservationCompatibilityMigrationProvider`를 추가했다. 구버전 writer 종료 승인 없이는 쓰지 않으며,
+`preparing` marker 뒤 기존 command를 전수 검사해 committed의 누락 held claim과 command stamp만
+보강한다. claim 없는 미종결 command·소유자 충돌·중복 committed occurrence는 중단하고, 모든 검증 뒤
+`ready` marker를 기록한다. verification은 최신 whole-zone records에서 marker만이 아니라 모든 command
+stamp와 필요한 held claim을 다시 확인하므로 완료 뒤 claim 없는 writer가 쓰면 즉시 닫힌다. migration
+기본 거부·미종결 차단·중단 뒤 재시도·claim-aware 진행 command·완료 뒤 구버전 writer 탐지·새 예약의
+atomic stamp 테스트 6개와 기존 repository·allowance·sync 회귀를 합친 25개가 iPhone 17 Pro iOS 26.5
+Simulator에서 실패·skip 없이 통과했다. 전체 `GetUpTests` 590개 선언은 동적 실행 포함 710회 모두
+실패·skip 없이 통과했고 앱과 네 확장의 generic iOS Simulator Release 빌드도 통과했다. 실제 live
+조립과 CloudKit migration 실행은 T100 전까지 수행하지 않는다.
+
+2026-09-09 T101: `CoinLedgerSyncProvider`와 system `CKSyncEngine` driver를 추가했다. account status와
+사용자 record ID로 계정을 구분하고 앱·Shield Action별 checkpoint에 engine serialization, 원격 record
+cache, 원본 `CKRecord` archive, 계정 결합 mirror를 protected atomic 저장한다. 각 프로세스는 저장된
+토큰과 무관하게 fetch 성공 전 `current`가 아니며, pending send 실패는 checkpoint를 지워버리지 않고
+다음 sync에서 재시도한다. account switch·sign-out은 이전 잔액을 격리하고, 일시 account 불가는 같은
+계정의 마지막 mirror만 `unavailable`로 보존한다. zone 삭제 event·`userDeletedZone`·기존 장부 뒤
+`zoneNotFound`만 삭제로 확정하며 네트워크와 불완전 projection은 `unavailable`로 닫는다. 원격
+epoch·account·allowance·grant·event 검증 결과와 pending 상태를 `CoinLedgerSyncAdapter`에 전달한 뒤
+App Group mirror를 저장한다. 최초 fetch, 프로세스 재시작, 계정 전환, pending 재시도, 삭제, 일시 불가,
+sign-out, allowance 지연 생성, 프로세스별 파일 격리와 불완전 projection 자동 테스트 11개가 통과했고,
+기존 adapter·lifecycle·fresh-install 회귀를 합친 35개 선언(동적 실행 포함 48회)도 실패·skip 없이
+통과했다. 전체 `GetUpTests` 584개 선언은 동적 실행 포함 704회 모두 실패·skip 없이 통과했고 앱과 네
+확장의 generic iOS Simulator Release 빌드도 통과했다. 첫 Release 빌드는 sandbox의 DerivedData·
+CoreSimulatorService 접근 차단으로 실행 전 실패했으며 승인된 같은 명령 재실행에서 통과했다. 기존
+Xcode 빈 build number와 `LocationMonitoringAdapterTests`의 불필요한 `try` 경고는 남아 있다. 실제
+iCloud 호출은 T100 조립 전까지 활성화하지 않았으며 T089·T095 실기기 증적은 남아 있다.
+
+2026-09-09 T099: `SystemCoinLedgerCloudDatabase`를 구현해 private custom zone record ID, fetch 순서와
+부재 처리, 원본 `CKRecord`를 재사용한 change-tag CAS, atomic modify 옵션, CloudKit 시스템
+`creationDate`, 전체 장부 value 왕복, record별 충돌과 응답 유실 오류 변환을 검증했다. 새 adapter
+테스트 5개와 기존 mapper·repository·월 지급 회귀를 합친 21개 테스트 선언(동적 실행 포함 22회)이
+iPhone 17 Pro iOS 26.5 Simulator에서 실패·skip 없이 통과했다. 앱과 Shield Action을 포함한 generic
+iOS Simulator Release 빌드, project plist와 diff 검사도 통과했다. 첫 GREEN 재실행은 직전 crash 뒤
+Simulator가 Busy 상태여서 실행 전 실패했으며 대상 Simulator 재부팅 뒤 통과했다. Xcode의 빈 build
+number 진단은 기존 경고다. live 서비스 조립은 T100 전까지 닫혀 있어 실제 CloudKit 데이터는 읽거나
+변경하지 않았다.
+
+2026-09-08 T089 진행 중: `MonthlyAllowanceAcceptanceTests`, `MonthlyAllowanceLifecycleTests`,
+`MonthlyAllowanceUserStoryTests`, `CloudKitMonthlyAllowanceTests`, `UserStory4MonthlyAllowanceUITests`를
+iPhone 17 Pro iOS 26.5 Simulator에서 실행했다. 같은 allowance ID 100회 충돌, 무료 우선 사용,
+creation date 불일치, 서울 월 경계 지연 생성·비이월·구매 잔액 보존, 시간대 변경, reset 후 다음 달
+재개와 월간 UI를 포함한 24개가 실패·skip 없이 통과했다. Xcode 빈 build number·`no debugger
+version`과 signed binary stripping 진단은 결과에 영향을 주지 않았다. 이 실행은 in-memory CloudKit
+protocol fake와 UI fixture이므로 실제 private database 다기기·서버 시각 월 경계 증적은 아니다.
+필요한 수동 항목과 대기 상태를 `quickstart.md`에 기록하고 BLK-017을 열었다. T089은 완료 표시하지
+않았으며 운영 CloudKit 데이터는 호출하거나 변경하지 않았다.
+
+2026-09-08 T088: T082~T086에서 추가된 월간 무료분 제목, 무료·구매 잔액 label, loading·empty·stale·
+current·setup·reset 상태, 비이월, 서울 기준 다음 갱신, 내역 loading·empty·stale·current와 월 종료
+소멸·event 출처 문구를 `coinStore.*` 문자열 키로 전환하고 한국어·영어를 등록했다. VoiceOver 수량은
+한국어 `회`·`개`를 유지하며 영어는 `1 release`/`n releases`, `1 coin`/`n coins`로 단복수를 구분한다.
+app의 `coinRelease.cost.value`와 Shield Configuration의 단일 버튼·무료 우선·구매 fallback 키는 기존
+양 언어 번역을 재사용하고 카탈로그 완전성 검사로 확인했다. 새 영어 월간·내역·접근성 UI 테스트는
+구현 전 한국어 literal 노출로 예상대로 RED였고 구현 후 GREEN이 됐다. 전체 `GetUpTests` 568개 선언,
+US3 UI 11개, US4 UI 8개를 합친 587개 선언은 동적 인자 포함 707회 모두 실패·skip 없이 통과했다.
+두 String Catalog JSON과 관련 키의 한국어·영어 값, generic iOS Simulator Release 빌드, project
+plist·diff 검사도 통과했다. focused GREEN의 첫 실행은 sandbox의 CoreSimulatorService 차단으로
+기기 검색 전에 실패했고 승인된 동일 명령 재실행에서 통과했다. 기존 Xcode 빈 build number·
+`no debugger version` 진단과 `LocationMonitoringAdapterTests`의 불필요한 `try` 경고가 남아 있으며
+T088 동작 실패는 아니다. 운영 CloudKit·StoreKit 데이터는 호출하거나 변경하지 않았고 새 제품 차단은
+없다.
+
+2026-09-08 T087: `ShieldContent`에 표시용 balance mirror와 실제 소비 결정을 분리하는
+`ShieldReleaseFundingPolicy.latestLedgerFreeFirst(purchasedFallbackQuantity: 1)`를 추가했다. 읽을 수
+있는 모든 sync state와 무료만·구매만·잔액 없음·두 잔액 모두 있음 조합에서 같은 `해제권 1회 사용`
+버튼과 무료 우선·구매 코인 1개 fallback 설명을 유지한다. action 회귀는 표시 mirror가 무료를 가리켜도
+최신 장부 결과가 구매일 수 있고 그 반대도 가능함을 검증해 실제 funding source가 탭 뒤
+`releaseRepresentative` 결과로만 확정됨을 고정한다. 새 표시 정책 테스트는 구현 전 member 부재로
+예상대로 RED였고 구현 후 Shield content/action 집중 실행 22회가 통과했다. 전체 `GetUpTests` 568개
+선언과 US4 UI 7개를 합친 575개 선언에서는 동적 인자 포함 694회가 통과하고 UI 1개가 Simulator 앱
+launch timeout으로 실패했으나, 같은 테스트 독립 재실행은 통과해 최종 기능 실패·skip은 없다. generic
+iOS Simulator Release 빌드 첫 실행은 sandbox의 CoreSimulatorService 차단으로 실패했고 승인된 같은
+명령 재실행은 통과했다. 기존 Xcode 빈 build number·`no debugger version` 진단과
+`LocationMonitoringAdapterTests`의 불필요한 `try` 경고가 남아 있으며 T087 동작 실패는 아니다.
+운영 CloudKit·StoreKit 데이터는 호출하거나 변경하지 않았고 새 제품 차단은 없다.
+
+2026-09-08 T086: `CoinStoreBalanceContentState`를 추가해 `syncing`은 숫자 대신 `—`와 `확인 중`,
+`current` 0/0은 사용 가능한 해제권이 없는 empty, `stale`·`unavailable`은 마지막 확인 잔액,
+그 밖의 `current`는 최신 잔액으로 표시한다. setup과 삭제 reset은 기존 T082 정책을 유지하면서 각각
+활성화 후 받을 잔액과 새 장부 당월 0회임을 별도로 설명한다. 무료·구매 숫자 접근성 label/value에는
+각각 `회`·`개` 단위를 넣고 상태 → 무료 → 구매 순서를 명시했다. `CoinLedgerHistoryView`도 장부
+sync state를 받아 loading·empty·stale·current 화면을 분리하고, stale 경고와 최신 내역 표식을 event
+행보다 먼저 읽도록 했다. 구현 전 새 잔액 상태 UI 테스트는 상태 식별자 부재로 예상대로 RED였고,
+구현 후 잔액 상태 모델·접근성 focused 테스트와 새 UI 테스트 2개가 GREEN이 됐다. 전체
+`GetUpTests` 566개 선언과 US3 UI 11개·US4 UI 7개를 합친 584개 선언은 동적 인자 포함 701회 모두
+실패·skip 없이 통과했으며, 마지막 current 내역 표식 focused UI 테스트와 generic iOS Simulator
+Release 빌드, project plist·diff 검사도 통과했다. 기존 Xcode 빈 build number·`no debugger version`
+진단과 `LocationMonitoringAdapterTests`의 불필요한 `try` 경고가 남아 있으며 T086 동작 실패는
+아니다. 운영 CloudKit·StoreKit 데이터는 호출하거나 변경하지 않았고 새 제품 차단은 없다.
+
+2026-09-08 T085: `MonthlyAllowanceUITestFixtureStore`를 추가해 같은 UI test store ID에서 서울 기준
+월 ID, 구매 잔액, 무료 잔액을 원자 파일로 보존한다. 월 경계 뒤 첫 앱 foreground는 구매 잔액을
+유지하면서 무료분만 2회로 교체하고, 최초 setup은 구매 0·무료 2회, 삭제 reset은 당월 구매 0·무료
+0회와 다음 달 무료 2회 재개를 서로 다른 fixture로 유지한다. Shield의 첫 당월 요청은 무료 2회를
+생성하면서 한 번의 예약 결과를 무료 1·구매 3으로 제공하고, 진단 표식으로 실제 `first-shield`
+fixture 선택도 확인한다. fixture 집중 단위 테스트 3개와 기존 수명주기 4개가 통과했고, US4 UI
+테스트 5개가 모두 통과했다. 전체 `GetUpTests` 564개 선언과 기존 US3 UI 11개를 합친 실행은 동적
+인자 포함 688회 모두 실패·skip 없이 통과했다. generic iOS Simulator Release 빌드와 diff 검사도
+통과했다. 첫 단위 테스트 실행은 sandbox의 CoreSimulatorService 접근 차단으로 중단됐으나 승인된
+동일 명령 재실행에서 통과했다. 기존 Xcode 빈 build number·`no debugger version` 진단과
+`LocationMonitoringAdapterTests`의 불필요한 `try` 경고가 남아 있으며 T085 동작 실패는 아니다.
+운영 CloudKit·StoreKit 데이터는 호출하거나 변경하지 않았고 새 제품 차단은 없다.
+
+2026-09-08 T084: 코인 내역 표시가 event `kind`만 보던 방식에서 `kind`와 `source`를 함께 사용하는
+방식으로 확장됐다. 같은 예약·사용·취소도 월간 무료와 구매 코인으로 구분하고 구매 지급·환불 보정·
+환불 취소에도 구매 코인 출처를 명시한다. 장부 스키마에는 별도 `monthEnd` event가 없으므로 합성
+내역을 추가하지 않고 실제 월간 무료 지급 행에 월 종료 시 남은 무료분 소멸 안내를 연결했다. 구현 전
+새 US4 내역 UI 테스트는 기존 `무료 지급` 문구로 예상대로 RED였고 구현 후 GREEN이 됐다. 새 US4 내역
+계약과 기존 구매 지급·전체 내역 UI 계약 3개가 통과했으며, 전체 `GetUpTests` 561개 선언은 동적 인자
+포함 674회 모두 실패·skip 없이 통과했다. generic iOS Simulator Release 첫 실행은 sandbox의
+CoreSimulatorService 차단으로 실패했으나 승인된 동일 명령 재실행에서 통과했고 diff 검사도 통과했다.
+기존 Xcode 빈 build number·`no debugger version` 진단과 `LocationMonitoringAdapterTests`의 불필요한
+`try` 경고가 남아 있으며 T084 동작 실패는 아니다. 운영 CloudKit·StoreKit 데이터는 호출하거나
+변경하지 않았고 새 제품 차단은 없다.
+
+2026-09-08 T083: `CoinStoreView`의 잔액 영역을 월간 무료 해제권 안내와 구매 코인 잔액 카드로
+분리했다. T082의 표시 모델에서 월 ID와 상태별 표시 잔액을 읽고, `Asia/Seoul` Gregorian 월 시작을
+기준으로 현재 월과 다음 달 1일 00:00을 사용자 locale에 맞게 표시한다. 남은 무료분이 다음 달로
+이월되지 않는다는 안내와 T081 접근성 식별자도 연결했다. T081의 코인 화면 표시 집중 UI 테스트 1개와
+기존 `UserStory3CoinPurchaseUITests` 11개가 모두 통과했다. 월 경계 재실행 fixture 계약은 계획대로
+T085 구현 전 RED 상태를 유지한다. 전체 `GetUpTests` 561개 선언은 동적 인자 포함 674회 모두 실패·
+skip 없이 통과했고 generic iOS Simulator Release 빌드와 diff 검사도 통과했다. 기존 Xcode 빈 build
+number·`no debugger version` 진단과 `LocationMonitoringAdapterTests`의 불필요한 `try` 경고가 남아
+있으며 T083 동작 실패는 아니다. 운영 CloudKit·StoreKit 데이터는 호출하거나 변경하지 않았고 새
+제품 차단은 없다.
+
+2026-09-08 T082: `CoinStoreMonthlyAllowanceDisplay`를 추가해 `setupRequired`는 실제 장부 활성화 전
+잔액이 아니라 활성화 후 받을 당월 2회로, `current`는 CloudKit 확정 `freeAvailable`로, 삭제 확인·
+reset 대기는 local mirror 값과 무관한 당월 0회로 모델링했다. `syncing`·`stale`·`unavailable`은
+`lastKnownAvailable`로 분리해 후속 UI에서 권한 있는 현재 잔액으로 오인하지 않게 했다. 구현 전 집중
+테스트는 표시 모델 부재로 예상대로 컴파일 RED였고 구현 후 통과했다. 전체 `GetUpTests` 561개 선언은
+동적 인자 포함 674회 모두 실패·skip 없이 통과했고 generic iOS Simulator Release 빌드와 diff 검사도
+통과했다. Release 첫 실행은 sandbox의 DerivedData·CoreSimulatorService 접근 거부로 실패했으나 승인된
+동일 명령 재실행에서 통과했다. 기존 Xcode 빈 build number 진단과
+`LocationMonitoringAdapterTests`의 불필요한 `try` 경고가 남아 있으며 T082 동작 실패는 아니다.
+운영 CloudKit·StoreKit 데이터는 호출하거나 변경하지 않았고 새 제품 차단은 없다.
+
+2026-09-08 T081: `UserStory4MonthlyAllowanceUITests` 3개를 추가했다. 앱 코인 화면에서 이번 달 무료
+잔액과 구매 잔액을 별도 요소로 표시하고 비이월·서울 기준 다음 갱신 안내를 제공하는 계약, Shield의
+funding source 선택 UI 없는 단일 버튼에서 무료 우선 설명과 실행 후 무료 2→1·구매 3 유지 계약,
+서울 월 경계 직전 8월 잔여 1회에서 경계 뒤 첫 foreground에 9월 무료 2회로 갱신하면서 구매 3을
+보존하는 계약을 고정했다. 전체 테스트 타깃의 build-for-testing은 통과했다. 집중 실행은 기존
+Shield 무료 우선 흐름 1개가 GREEN이고, T083의 월간 안내 요소와 T085의 persisted month fixture가
+아직 없어 앱 표시·월 경계 2개가 계획대로 RED다. 기존 US2·US3 코인 UI 16개는 모두 통과했고 전체
+`GetUpTests` 558개 선언은 동적 인자 포함 670회 모두 실패·skip 없이 통과했다. generic iOS Simulator
+Release 빌드와 project plist·diff 검사도 통과했다. 기존 UI 회귀의 첫 실행은 Simulator runner
+`Busy` preflight 오류로 시작하지 못했으나 시뮬레이터 재부팅 뒤 같은 명령이 통과했다. Xcode의
+`no debugger version`·빈 build number 진단, signed test binary strip, `StoreKitTest` header
+deprecation과 `LocationMonitoringAdapterTests`의 불필요한 `try` 경고가 남아 있으며 T081 계약 실패는
+아니다. 운영 CloudKit·StoreKit 데이터는 호출하거나 변경하지 않았고 새 제품 차단은 없다.
+
+2026-09-07 T080: `MonthlyAllowanceAcceptanceTests` 3개를 추가했다. 같은
+`allowance:2026-09`를 사용하는 100개 기기 역할이 동시에 `createAllowanceIfNeeded`를 호출해도 모든
+응답이 quota 2로 수렴하고 서버에는 `MonthlyAllowance`·free-grant event가 각각 1개, 성공 atomic
+modify가 1회만 남는지 집계한다. 서버 allowance의 `creationDate`가 요청 `monthID`의 서울 기준 월과
+다르면 쓰기 없이 `invalidRecord`로 거부하고, iCloud account unavailable 첫 시도는 쓰지 않은 채
+실패한 뒤 account 복구 후 명시적 두 번째 호출에서만 생성되는 것도 검증한다. 최초 집중 실행은 서버
+allowance decode 경계의 생성 월 검증 누락으로 해당 테스트 1개가 예상대로 RED였고,
+`CloudKitCoinLedgerRepository.monthlyAllowance(from:)`에 명세의 월 일치 검증을 추가한 뒤 3개 모두
+GREEN이었다. 기존 CloudKit 월간·저장소 집중 회귀 11개와 전체 `GetUpTests` 558개 선언은 동적 인자
+포함 670회 모두 실패·skip 없이 통과했고 generic iOS Simulator Release 빌드, project plist·diff
+검사도 통과했다. 기존 signed test binary strip, `StoreKitTest` header deprecation과
+`LocationMonitoringAdapterTests`의 불필요한 `try` 경고가 남아 있으며 T080 동작 실패는 아니다.
+운영 CloudKit 데이터는 호출하거나 변경하지 않았고 새 제품 차단은 없다.
+
+2026-09-07 T079: `MonthlyAllowanceUserStoryTests` 2개를 추가했다. 이전 달 무료분 2회가 남아 있어도
+새달 월 중간 첫 app foreground 전에는 allowance가 없고, foreground 뒤에는 누적 4회가 아닌 새달
+quota 2만 생성되며 구매 잔액 5는 그대로 유지됨을 검증했다. 첫 Shield 요청에서는 별도 선행 생성
+호출 없이 `reserveMonthlyFree` 한 번으로 당월 quota 2를 생성하고 1회를 예약해 available 1이 되며,
+구매 코인보다 무료분을 선택하고 구매 잔액과 이전 달 allowance를 변경하지 않는지 검증했다. Phase 2
+기반 구현을 인수하는 회귀 테스트이므로 추가 즉시 2개 모두 GREEN이었다. 전체 `GetUpTests` 555개
+선언은 동적 인자 포함 667회 모두 실패·skip 없이 통과했고 generic iOS Simulator Release 빌드,
+project plist·diff 검사도 통과했다. 기존 signed test binary strip, `StoreKitTest` header deprecation과
+`LocationMonitoringAdapterTests`의 불필요한 `try` 경고가 남아 있으며 T079 동작 실패는 아니다.
+운영 CloudKit·StoreKit 데이터는 호출하거나 변경하지 않았고 새 제품 차단은 없다.
+
+2026-09-07 T078: `MonthlyAllowanceLifecycleTests` 4개를 추가해 서울 기준 2026-09 월 경계 직전
+foreground는 8월 allowance를 만들고 경계 이후 다음 foreground에서만 9월 allowance를 만드는지
+검증했다. 앱이 비활성인 채 자정을 지나면 새 allowance가 자동 생성되지 않으며, 같은 절대 시각에서
+기기 시간대를 Honolulu에서 Kiritimati로 바꿔 현지 월이 달라져도 allowance month ID는 서울 기준을
+유지한다. 삭제 확인 reset epoch는 억제 월 available 0을 유지하고 다음 서울 월 첫 foreground에서
+available 2를 재개한다. Phase 2 기반 구현을 인수하는 테스트이므로 추가 즉시 4개 모두 GREEN이었다.
+전체 `GetUpTests` 553개 선언은 동적 인자 포함 665회 모두 실패·skip 없이 통과했고 generic iOS
+Simulator Release 빌드, project plist·diff 검사도 통과했다. 기존 signed test binary strip,
+`StoreKitTest` header deprecation과 `LocationMonitoringAdapterTests`의 불필요한 `try` 경고가 남아
+있으며 T078 동작 실패는 아니다. 운영 CloudKit 데이터는 호출하거나 변경하지 않았고 새 제품 차단은
+없다.
+
+2026-09-13 T086 자동 검증: US1~US4 관련 UI suite 43개와 공통 접근성 suite 5개를 iPhone 17 Pro
+iOS 26.5 Simulator에서 실행했다. 첫 실행은 영어 US3 기대값 불일치로 41/43 통과, 2개 실패였고
+실제 영어 활성 상태·guard·삭제 Alert와 코드의 `1km` 표기에 맞춘 뒤 최종 48/48가 실패·skip 없이
+통과했다. Xcode의 `DebuggerVersionStore`, signed XCTest binary strip, Apple `StoreKitTest`
+deprecated API와 기존 `LocationMonitoringAdapterTests`의 불필요한 `try` 경고는 제품 동작 실패가
+아니다. production code, 실기기 설치본, CloudKit·StoreKit 데이터는 변경하지 않았다.
 
 2026-09-07 T077: 최초 장부 활성화와 1·3·5개 코인 각각의 구매 확인에서 삭제 불이익·같은
 iCloud 계정 복구·App Store 계정 불일치·새 장부 0 초기화·서울 기준 다음 달 무료 2회·서버 없는

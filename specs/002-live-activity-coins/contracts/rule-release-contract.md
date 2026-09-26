@@ -27,9 +27,10 @@
 `deletionConfirmed` 또는 `resetRequired`를 포함한 비가용 상태에서는 local mirror의 잔액이 양수여도
 항상 실패한다.
 
-Shield 요청은 primary action이 release service에 전달된 시점부터 주입 가능한 monotonic clock으로
-5초 deadline을 적용한다. 5초 안에 CloudKit 성공을 확인하지 못하면 이후 로컬 예외와 제한 변경을
-진행하지 않는다.
+Shield는 release service를 직접 호출하지 않고 안정적인 command ID와 occurrence를 release route로
+기록한다. 메인 앱이 route를 소비한 뒤 이 사전 조건과 전체 동기화를 검증한다. iOS 26.0~26.4에서
+사용자가 앱을 직접 여는 동안 route가 만료되거나 occurrence가 종료되면 잔액·예외·제한을 변경하지
+않는다.
 
 ## 처리 순서
 
@@ -76,8 +77,10 @@ applied·commit 결과 불명과 분류되지 않은 오류는 예외를 유지�
 | reservation 성공, 예외 저장 실패 | reservation 보상; 보상 결과 불명이면 reconciliationRequired |
 | 예외 저장 성공, Shield write 실패 | 예외를 제거하고 reservation 보상; 둘 중 결과 불명이면 reconciliationRequired |
 | Shield 성공, commit 결과 불명 | 예외를 유지하고 command를 조회해 committed 또는 보상 여부를 재조정 |
-| Shield 요청 후 5초까지 성공 미확인 | 제한과 기존 예외를 변경하지 않고 reconciliation route를 기록한다. 같은 command ID를 조회해 늦은 reservation은 보상하고 해제되지 않은 차감을 남기지 않는다. |
+| 기존 Shield 직접 해제의 5초 성공 미확인 회귀 | 제품 경로에서는 호출하지 않는다. fixture는 제한 유지·늦은 reservation 보상을 계속 검증한다. |
 | 앱/extension 종료 | 같은 command ID와 App Group 예외·CloudKit 상태를 다음 실행에서 재조정 |
+| release route 저장 실패 | Shield를 유지하고 잔액·예외·제한을 변경하지 않음 |
+| 앱 처리 중 종료 | 같은 command ID를 다음 foreground에서 재조정하고 처리 중·완료·재시도·부족 중 하나로 수렴 |
 
 `reconciliationRequired` reservation은 consumed로 표시하지 않고 `처리 확인 중`으로 표시한다. 새
 해제보다 기존 명령 재조정을 우선한다.
@@ -131,6 +134,10 @@ T051 Shield deadline 계약: primary action이 서비스에 전달된 monotonic 
 재조정하고 occurrence가 연결된 `.reconciliation` route를 저장한다. 지연 원격 작업을 취소해도
 이미 제출된 CloudKit 작업의 결과를 성공·실패로 추정하지 않으며, route를 통해 다음 앱 실행에서
 같은 command ID를 다시 확인한다. wall clock 변경은 deadline 판정에 영향을 주지 않는다.
+
+위 T051 계약은 기존 Shield 직접 해제 경로의 회귀·진단용으로 유지하며 새 제품 경로에서는 호출하지
+않는다. 새 경로의 Shield 작업은 bounded App Group route 저장과 공식 앱 열기 응답까지이며, 권위 있는
+해제 처리와 재조정은 메인 앱에서 수행한다.
 
 T052 제한 합집합 계약: `RestrictionCoordinator`는 적용 직전에 최신 release exception 목록을
 조회한다. `ruleID`, `ruleRevision`, 현재 일정에서 결정적으로 계산한 `occurrenceID`가 일치하고

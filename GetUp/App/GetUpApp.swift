@@ -1,3 +1,4 @@
+@preconcurrency import CloudKit
 @preconcurrency import CoreLocation
 @preconcurrency import FamilyControls
 import Foundation
@@ -17,9 +18,41 @@ struct GetUpApp: App {
             switch runtime {
             case .ready(let environment):
                 GetUpRootView(environment: environment)
+                    .modifier(UITestPresentationOverride())
             case .unavailable:
                 StartupUnavailableView()
             }
+        }
+    }
+}
+
+private struct UITestPresentationOverride: ViewModifier {
+    private let arguments = ProcessInfo.processInfo.arguments
+
+    private var colorScheme: ColorScheme? {
+        guard let argumentIndex = arguments.firstIndex(of: "--ui-test-appearance"),
+              arguments.indices.contains(argumentIndex + 1) else { return nil }
+        switch arguments[argumentIndex + 1] {
+        case "light": return .light
+        case "dark": return .dark
+        default: return nil
+        }
+    }
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if arguments.contains("--ui-test-dynamic-type-ax5") {
+            if let colorScheme {
+                content
+                    .dynamicTypeSize(.accessibility5)
+                    .environment(\.colorScheme, colorScheme)
+            } else {
+                content.dynamicTypeSize(.accessibility5)
+            }
+        } else if let colorScheme {
+            content.environment(\.colorScheme, colorScheme)
+        } else {
+            content
         }
     }
 }
@@ -165,6 +198,9 @@ private struct GetUpRootView: View {
     @State private var permissionGuideModel: PermissionGuideModel?
     @State private var isRestoringRuntime = false
     @State private var coinRouteDestination: PendingAppRouteDestination?
+    @State private var releaseHandoffRoute: PendingAppRoute?
+    @State private var releaseHandoffDetails: ReleaseHandoffDisplayDetails?
+    @State private var isHandoffActionRunning = false
     private let runtimeRecovery: AppEnvironment.RuntimeRecovery?
     private let currentLocationProvider: any CurrentLocationProviding & LocationAuthorizationRequesting
     private let defaultCoordinate: ReferenceLocation
@@ -175,6 +211,9 @@ private struct GetUpRootView: View {
     private let releaseConfiguration: ActiveRestrictionReleaseConfiguration?
     private let coinStoreConfiguration: CoinStoreConfiguration?
     private let coinLifecycleCoordinator: CoinAppLifecycleCoordinator
+    private let releaseHandoffCoordinator: AppReleaseHandoffCoordinator?
+    private let loadReleaseHandoffDetails: AppEnvironment.ReleaseHandoffDetailsLoad?
+    private let retryWaitSecondsOverride: Int?
     private let permissionGuideRetryResult: String?
     private let permissionGuideActionUpdate: PermissionGuideUpdate?
     private let permissionOnboardingStateStore: PermissionOnboardingStateStore
@@ -182,6 +221,10 @@ private struct GetUpRootView: View {
     init(environment: AppEnvironment) {
         _model = State(initialValue: environment.model)
         _permissionGuideModel = State(initialValue: environment.permissionGuideModel)
+        _coinRouteDestination = State(initialValue:
+            environment.initialReleaseHandoffRoute == nil ? nil : .releaseProcessing)
+        _releaseHandoffRoute = State(initialValue: environment.initialReleaseHandoffRoute)
+        _releaseHandoffDetails = State(initialValue: environment.initialReleaseHandoffDetails)
         runtimeRecovery = environment.runtimeRecovery
         currentLocationProvider = environment.currentLocationProvider
         defaultCoordinate = environment.defaultCoordinate
@@ -192,6 +235,9 @@ private struct GetUpRootView: View {
         releaseConfiguration = environment.releaseConfiguration
         coinStoreConfiguration = environment.coinStoreConfiguration
         coinLifecycleCoordinator = environment.coinLifecycleCoordinator
+        releaseHandoffCoordinator = environment.releaseHandoffCoordinator
+        loadReleaseHandoffDetails = environment.loadReleaseHandoffDetails
+        retryWaitSecondsOverride = environment.retryWaitSecondsOverride
         permissionGuideRetryResult = environment.permissionGuideRetryResult
         permissionGuideActionUpdate = environment.permissionGuideActionUpdate
         permissionOnboardingStateStore = environment.permissionOnboardingStateStore
@@ -219,11 +265,16 @@ private struct GetUpRootView: View {
             NavigationStack {
                 coinRouteDestinationView
             }
+            .interactiveDismissDisabled(
+                coinRouteDestination == .releaseProcessing
+                    && releaseHandoffRoute != nil
+            )
         }
         .task {
             guard model.loadingState == .idle else {
                 return
             }
+            await refreshReleaseHandoff()
             await refreshCoinLifecycle(trigger: .launch)
             guard !Task.isCancelled else {
                 return
@@ -239,6 +290,7 @@ private struct GetUpRootView: View {
                 return
             }
             Task {
+                await refreshReleaseHandoff()
                 if runtimeRecovery != nil {
                     _ = await restoreRuntimeState()
                 }
@@ -455,7 +507,19 @@ private struct GetUpRootView: View {
     private var coinRouteDestinationView: some View {
         if coinRouteDestination == .coinStore,
            let coinStoreConfiguration {
-            CoinStoreView(configuration: coinStoreConfiguration)
+            CoinStoreView(
+                configuration: coinStoreConfiguration,
+                fromReleaseHandoff: releaseHandoffRoute?.terminalOutcome == .insufficient
+            )
+        } else if coinRouteDestination == .releaseProcessing,
+                  let route = releaseHandoffRoute {
+            ActiveRestrictionReleaseHandoffView(
+                route: route,
+                details: releaseHandoffDetails,
+                isActionRunning: isHandoffActionRunning,
+                retryWaitSecondsOverride: retryWaitSecondsOverride,
+                onAction: handleReleaseHandoffAction
+            )
         } else if let destination = coinRouteDestination {
             ActiveRestrictionReleaseDestinationView(destination: destination)
         }
@@ -469,9 +533,101 @@ private struct GetUpRootView: View {
         guard !Task.isCancelled else { return }
         if let ledger = result.ledger {
             coinStoreConfiguration?.model.refreshLedger(ledger.coinStoreLedgerState)
+            if coinRouteDestination == .reconciliation,
+               !ledger.hasPendingReconciliation {
+                coinRouteDestination = nil
+            } else if coinRouteDestination == .iCloudRecovery,
+                      ledger.balance.syncState == .current {
+                coinRouteDestination = nil
+            } else if coinRouteDestination == .ledgerReset,
+                      ledger.balance.syncState == .current {
+                coinRouteDestination = nil
+            }
         }
         if let destination = result.destination {
             coinRouteDestination = destination
+        }
+    }
+
+    private func refreshReleaseHandoff() async {
+        guard let releaseHandoffCoordinator else { return }
+        let now = Date()
+        guard let route = try? await releaseHandoffCoordinator.claim(at: now) else { return }
+        releaseHandoffRoute = route
+        coinRouteDestination = .releaseProcessing
+        if let loadReleaseHandoffDetails {
+            releaseHandoffDetails = await loadReleaseHandoffDetails(route)
+        }
+        guard route.state == .processing else {
+            await markReleaseHandoffPresented(route)
+            return
+        }
+        let context: ReleaseHandoffProcessingContext = route.claimedAt == now
+            ? .initialClaim : .foregroundReconciliation
+        if let result = try? await releaseHandoffCoordinator.process(
+            route,
+            context: context,
+            at: Date()
+        ) {
+            releaseHandoffRoute = result
+            if let loadReleaseHandoffDetails {
+                releaseHandoffDetails = await loadReleaseHandoffDetails(result)
+            }
+            await markReleaseHandoffPresented(result)
+        }
+    }
+
+    private func markReleaseHandoffPresented(_ route: PendingAppRoute) async {
+        guard route.state == .terminal,
+              let releaseHandoffCoordinator else { return }
+        if let presented = try? await releaseHandoffCoordinator.markPresented(
+            routeID: route.routeID,
+            at: Date()
+        ) {
+            releaseHandoffRoute = presented
+        }
+    }
+
+    private func handleReleaseHandoffAction(_ action: ReleaseHandoffAction) {
+        guard !isHandoffActionRunning, let route = releaseHandoffRoute else { return }
+        isHandoffActionRunning = true
+        Task {
+            defer { isHandoffActionRunning = false }
+            if action == .retry {
+                guard let releaseHandoffCoordinator,
+                      let restarted = try? await releaseHandoffCoordinator.retry(
+                        routeID: route.routeID, at: Date()
+                      ) else { return }
+                releaseHandoffRoute = restarted
+                let result = try? await releaseHandoffCoordinator.process(
+                    restarted, context: .initialClaim, at: Date()
+                )
+                if let result {
+                    releaseHandoffRoute = result
+                    if let loadReleaseHandoffDetails {
+                        releaseHandoffDetails = await loadReleaseHandoffDetails(result)
+                    }
+                    await markReleaseHandoffPresented(result)
+                }
+                return
+            }
+            if let releaseHandoffCoordinator {
+                do {
+                    try await releaseHandoffCoordinator.acknowledge(
+                        routeID: route.routeID, at: Date()
+                    )
+                } catch { return }
+            }
+            switch action {
+            case .openCoinStore:
+                coinRouteDestination = .coinStore
+            case .openRecovery:
+                coinRouteDestination = .iCloudRecovery
+            case .acknowledge, .close:
+                coinRouteDestination = nil
+            case .retry:
+                break
+            }
         }
     }
 
@@ -1054,6 +1210,8 @@ private struct RestrictionActivationProbeView: View {
                 .accessibilityIdentifier("coinRelease.test.committedCount")
             Text(String(instrumentation.remainingOccurrenceCount))
                 .accessibilityIdentifier("coinRelease.test.remainingOccurrenceCount")
+            Text(String(instrumentation.createsMonthlyAllowanceOnRequest))
+                .accessibilityIdentifier("coinRelease.test.createsMonthlyAllowanceOnRequest")
             if instrumentation.holdsExecution,
                configuration.model.phase == .processing {
                 Button(AppLocalizedCopy.string("coinRelease.test.complete")) {
@@ -1193,6 +1351,9 @@ enum AppLiveActivityRecovery {
 @MainActor
 private struct AppEnvironment {
     typealias RuntimeRecovery = @Sendable () async -> AppLifecycleRecoveryResult?
+    typealias ReleaseHandoffDetailsLoad = @Sendable (
+        PendingAppRoute
+    ) async -> ReleaseHandoffDisplayDetails
 
     let model: AppModel
     let runtimeRecovery: RuntimeRecovery?
@@ -1205,22 +1366,87 @@ private struct AppEnvironment {
     let releaseConfiguration: ActiveRestrictionReleaseConfiguration?
     let coinStoreConfiguration: CoinStoreConfiguration?
     let coinLifecycleCoordinator: CoinAppLifecycleCoordinator
+    let releaseHandoffCoordinator: AppReleaseHandoffCoordinator?
+    let loadReleaseHandoffDetails: ReleaseHandoffDetailsLoad?
+    let initialReleaseHandoffRoute: PendingAppRoute?
+    let initialReleaseHandoffDetails: ReleaseHandoffDisplayDetails?
+    let retryWaitSecondsOverride: Int?
     let permissionGuideModel: PermissionGuideModel?
     let permissionGuideRetryResult: String?
     let permissionGuideActionUpdate: PermissionGuideUpdate?
     let permissionOnboardingStateStore: PermissionOnboardingStateStore
 
     static func live() throws -> AppEnvironment {
+        guard let identifier = SharedIdentifiers.appGroupIdentifier() else {
+            throw DependencyContainerError.missingAppGroupIdentifier
+        }
+        guard let cloudContainerIdentifier = SharedIdentifiers.iCloudContainerIdentifier() else {
+            throw DependencyContainerError.missingICloudContainerIdentifier
+        }
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: identifier
+        ) else {
+            throw DependencyContainerError.appGroupContainerUnavailable
+        }
+        let cloudContainer = CKContainer(identifier: cloudContainerIdentifier)
+        let t089Configuration = SharedIdentifiers.t089LedgerTestConfiguration()
+        let ledgerNamespace = t089Configuration?.ledgerNamespace
+#if DEBUG
+        let recordAppSyncStage: @Sendable (String) -> Void = { stage in
+            let defaults = UserDefaults(suiteName: identifier)
+            defaults?.set(
+                ["stage": stage, "recordedAt": Date().timeIntervalSince1970],
+                forKey: SharedIdentifiers.appLedgerSyncDiagnosticDefaultsKey
+            )
+            defaults?.synchronize()
+        }
+        let recordHandoffStage: @Sendable (String) -> Void = { stage in
+            let defaults = UserDefaults(suiteName: identifier)
+            defaults?.set(
+                ["stage": stage, "recordedAt": Date().timeIntervalSince1970],
+                forKey: SharedIdentifiers.appReleaseHandoffDiagnosticDefaultsKey
+            )
+            defaults?.synchronize()
+        }
+#else
+        let recordAppSyncStage: @Sendable (String) -> Void = { _ in }
+        let recordHandoffStage: @Sendable (String) -> Void = { _ in }
+#endif
+        let ledgerRuntime = CoinLedgerLiveRuntime.live(
+            containerURL: containerURL,
+            process: .app,
+            cloudContainer: cloudContainer,
+            ledgerNamespace: ledgerNamespace,
+            recordSyncStage: recordAppSyncStage,
+            recordReservationStage: recordHandoffStage
+        )
         let storefront = StoreKitPurchaseAdapter()
-        let transactionObserver = StoreKitTransactionObserver(
+        let catalog = try CoinProductCatalog()
+        let purchaseService = CoinPurchaseService(
+            catalog: catalog,
             storefront: storefront,
-            processVerifiedTransaction: { _ in
-                // The production CloudKit database provider remains closed until T097.
-                // Keep transactions unfinished so a verified provider can recover them later.
-                throw CoinPurchaseServiceError.ledgerNotCurrent
+            repository: ledgerRuntime.repository,
+            fetchLedgerState: {
+                try await ledgerRuntime.refreshBeforeShieldRequest().ledgerState
             }
         )
-        let container = try DependencyContainer.live(
+        let transactionObserver = StoreKitTransactionObserver(
+            storefront: storefront,
+            processVerifiedTransaction: { transaction in
+                try await purchaseService.processVerifiedTransaction(transaction)
+            }
+        )
+        let container = DependencyContainer(
+            containerURL: containerURL,
+            coinLedgerRepository: ledgerRuntime.repository,
+            monthlyAllowanceForegroundContextProvider: {
+                let context = try await ledgerRuntime.refreshBeforeShieldRequest()
+                return MonthlyAllowanceForegroundContext(
+                    monthID: context.snapshot.balance.currentMonthID,
+                    ledgerState: context.ledgerState,
+                    existingAllowance: context.allowance
+                )
+            },
             startCoinTransactionObservation: {
                 try await transactionObserver.start()
             }
@@ -1251,6 +1477,55 @@ private struct AppEnvironment {
             }
         )
         let restrictionAdapter = try ManagedSettingsRestrictionAdapter.live()
+        let releaseExecutor = CoinRuleReleaseLiveExecutor(
+            runtime: ledgerRuntime,
+            sharedRepository: container.sharedSnapshotRepository,
+            applyRestrictions: try container.makeRuleReleaseApplicationProvider(
+                authorizationProvider: SystemAuthorizationProvider.forApplication()
+            ),
+            reconcileLiveActivity: { snapshot in
+                await liveActivityCoordinator.reconcile(
+                    context: .foreground,
+                    desiredActivity: snapshot
+                )
+            },
+            coordinationDirectory: container.coordinationDirectory,
+            clock: SystemRestrictionClock(),
+            recordHandoffStage: recordHandoffStage
+        )
+        let releaseHandoffCoordinator = container.makeReleaseHandoffCoordinator { route, context in
+            await releaseExecutor.executeHandoff(route: route, context: context)
+        }
+        let loadReleaseHandoffDetails: ReleaseHandoffDetailsLoad = { route in
+            let command: ReleaseCommand? = if let commandID = route.commandID {
+                try? await ledgerRuntime.repository.fetchReleaseCommand(commandID: commandID)
+            } else {
+                nil
+            }
+            let rules = (try? await container.ruleRepository
+                .loadRuleCollection()?.rules) ?? []
+            let active = try? await container.sharedSnapshotRepository
+                .loadActiveRestrictionSnapshot()
+            let exceptions = (try? await container.sharedSnapshotRepository
+                .loadReleaseExceptions()) ?? []
+            let balance = try? await container.sharedSnapshotRepository
+                .loadCoinBalanceSnapshot()
+            let ruleName = command.flatMap { command in
+                rules.first { $0.id == command.ruleID }?.name
+            }
+            let occurrence = active?.occurrences.first { $0.id == route.occurrenceID }
+            let exception = exceptions.first { $0.commandID == route.commandID }
+            let remaining = active?.occurrences.filter { $0.id != route.occurrenceID }.count
+            return ReleaseHandoffDisplayDetails(
+                ruleName: ruleName,
+                endsAt: occurrence?.endAt ?? exception?.expiresAt,
+                fundingSource: command?.state == .committed ? command?.fundingSource : nil,
+                remainingRestrictionCount: remaining,
+                freeAvailable: balance?.syncState == .current ? balance?.freeAvailable : nil,
+                purchasedAvailable: balance?.syncState == .current
+                    ? balance?.purchasedAvailable : nil
+            )
+        }
         let appModel = AppModel(
             ruleRepository: container.ruleRepository,
             savedPlaceRepository: container.savedPlaceRepository,
@@ -1275,11 +1550,39 @@ private struct AppEnvironment {
             currentRuleRevisions: [:],
             balance: fallbackBalance,
             hasPendingReconciliation: false,
-            executeRelease: { _ in .iCloudRecoveryRequired }
+            executeRelease: { occurrence in
+                do {
+                    let result = try await releaseExecutor.execute(
+                        occurrence: occurrence,
+                        commandID: UUID(),
+                        source: .app
+                    )
+                    return .released(
+                        fundingSource: result.fundingSource,
+                        balance: result.ledger.balance,
+                        remainingOccurrences: result.remainingOccurrences
+                    )
+                } catch CoinLedgerRepositoryError.insufficientMonthlyAllowance {
+                    let balance = (try? await ledgerRuntime.refresh().balance) ?? fallbackBalance
+                    return .insufficientBalance(balance)
+                } catch CoinLedgerRepositoryError.insufficientPurchasedBalance {
+                    let balance = (try? await ledgerRuntime.refresh().balance) ?? fallbackBalance
+                    return .insufficientBalance(balance)
+                } catch CoinLedgerRepositoryError.reconciliationRequired {
+                    return .reconciliationRequired
+                } catch RuleReleaseCoordinationError.reconciliationRequired {
+                    return .reconciliationRequired
+                } catch {
+                    let state = try? await ledgerRuntime.refresh().balance.syncState
+                    switch state {
+                    case .deletionConfirmed, .resetRequired: return .ledgerResetRequired
+                    case .current: return .rejected
+                    default: return .iCloudRecoveryRequired
+                    }
+                }
+            }
         )
-        let pendingRouteRepository = PendingAppRouteRepository(
-            containerURL: container.coordinationDirectory
-        )
+        let pendingRouteRepository = container.pendingAppRouteRepository
         let releaseConfiguration = ActiveRestrictionReleaseConfiguration(
             model: releaseModel,
             router: ActiveRestrictionReleaseRouter { now, activeOccurrenceIDs in
@@ -1313,7 +1616,31 @@ private struct AppEnvironment {
                 await appModel.refreshRestrictionStatus()
             }
         )
-        let coinLifecycleCoordinator = container.makeCoinAppLifecycleCoordinator()
+        let coinLifecycleCoordinator = CoinAppLifecycleCoordinator(
+            startTransactionObservation: {
+                try await transactionObserver.start()
+            },
+            reconcileLedger: {
+                try await ledgerRuntime.refreshForApp { commandIDs in
+                    try await releaseExecutor.reconcilePending(commandIDs)
+                }
+            },
+            loadActiveOccurrenceIDs: { now in
+                let snapshot = try await container.sharedSnapshotRepository
+                    .loadActiveRestrictionSnapshot()
+                let rules = try await container.ruleRepository.loadRuleCollection()?.rules ?? []
+                return Set(RestrictionOccurrenceEvaluator.evaluate(
+                    snapshot: snapshot,
+                    currentRuleRevisions: Dictionary(
+                        uniqueKeysWithValues: rules.map { ($0.id, $0.revision) }
+                    ),
+                    now: now
+                ).orderedOccurrences.map(\.id))
+            },
+            consumePendingRoute: { now, activeIDs in
+                try await pendingRouteRepository.consumeIfEligible(now: now, activeOccurrenceIDs: activeIDs)?.destination
+            }
+        )
         let coinLedger = CoinStoreLedgerState(
             balance: fallbackBalance,
             purchaseGrants: [],
@@ -1321,16 +1648,83 @@ private struct AppEnvironment {
             pendingProductIdentifiers: [],
             hasPendingReconciliation: false
         )
-        let catalog = try CoinProductCatalog()
         let coinStoreModel = CoinStoreModel(
             ledger: coinLedger,
             loadProducts: { try await catalog.loadProducts(from: storefront) },
-            executePurchase: { _ in
-                throw CoinPurchaseServiceError.ledgerNotCurrent
+            executePurchase: { productID in
+                switch try await purchaseService.purchase(productID: productID) {
+                case .granted(let grant):
+                    let refreshedLedger = try? await ledgerRuntime.refresh()
+                    return .granted(
+                        grant: grant,
+                        ledger: refreshedLedger?.coinStoreLedgerState
+                    )
+                case .pending: return .pending
+                case .cancelled: return .cancelled
+                }
             }
+        )
+        let initializationProvider = CloudKitCoinLedgerInitializationProvider(
+            database: SystemCoinLedgerCloudDatabase(
+                container: cloudContainer,
+                zoneName: SharedIdentifiers.coinLedgerZoneName(
+                    ledgerNamespace: ledgerNamespace
+                )
+            )
         )
         let coinStoreConfiguration = CoinStoreConfiguration(
             model: coinStoreModel,
+            activateLedger: {
+                let before = try await ledgerRuntime.refreshBeforeShieldRequest()
+                if CoinLedgerActivationRacePolicy.shouldUseExistingLedger(
+                    before.snapshot.balance.syncState
+                ) {
+                    return before.snapshot.coinStoreLedgerState
+                }
+                let now = Date()
+                do {
+                    _ = try await CoinLedgerSetupService(
+                        performAtomicSetup: { request in
+                            try await initializationProvider.setup(request)
+                        }
+                    ).activate(
+                        CoinLedgerSetupRequest(
+                            epochID: UUID(),
+                            monthID: MonthlyAllowancePolicy.monthID(containing: now),
+                            confirmedAt: now,
+                            disclosureVersion: 1
+                        ),
+                        ledgerState: before.snapshot.balance.syncState
+                    )
+                } catch {
+                    let afterConflict = try await ledgerRuntime.refreshForApp()
+                    guard CoinLedgerActivationRacePolicy.shouldUseExistingLedger(
+                        afterConflict.balance.syncState
+                    ) else {
+                        throw error
+                    }
+                    return afterConflict.coinStoreLedgerState
+                }
+                return try await ledgerRuntime.refreshForApp().coinStoreLedgerState
+            },
+            resetLedger: {
+                let before = try await ledgerRuntime.refreshBeforeShieldRequest()
+                let now = Date()
+                _ = try await CoinLedgerResetService(
+                    performAtomicReset: { request in
+                        try await initializationProvider.reset(request)
+                    }
+                ).resetAfterConfirmedDeletion(
+                    CoinLedgerResetRequest(
+                        epochID: UUID(),
+                        monthID: MonthlyAllowancePolicy.monthID(containing: now),
+                        confirmedAt: now,
+                        disclosureVersion: 1
+                    ),
+                    ledgerState: before.snapshot.balance.syncState
+                )
+                return try await ledgerRuntime.refreshForApp().coinStoreLedgerState
+            },
             retryLedgerSync: {
                 let ledger = await coinLifecycleCoordinator.refresh(
                     trigger: .foreground,
@@ -1352,10 +1746,38 @@ private struct AppEnvironment {
             releaseConfiguration: releaseConfiguration,
             coinStoreConfiguration: coinStoreConfiguration,
             coinLifecycleCoordinator: coinLifecycleCoordinator,
+            releaseHandoffCoordinator: releaseHandoffCoordinator,
+            loadReleaseHandoffDetails: loadReleaseHandoffDetails,
+            initialReleaseHandoffRoute: nil,
+            initialReleaseHandoffDetails: nil,
+            retryWaitSecondsOverride: nil,
             permissionGuideModel: nil,
             permissionGuideRetryResult: nil,
             permissionGuideActionUpdate: nil,
             permissionOnboardingStateStore: PermissionOnboardingStateStore()
+        )
+    }
+}
+
+private extension DependencyContainer {
+    func makeReleaseHandoffCoordinator(
+        execute: @escaping AppReleaseHandoffCoordinator.Execute
+    ) -> AppReleaseHandoffCoordinator {
+        AppReleaseHandoffCoordinator(
+            routes: pendingAppRouteRepository,
+            activeOccurrenceIDs: { now in
+                let snapshot = try await sharedSnapshotRepository
+                    .loadActiveRestrictionSnapshot()
+                let rules = try await ruleRepository.loadRuleCollection()?.rules ?? []
+                return Set(RestrictionOccurrenceEvaluator.evaluate(
+                    snapshot: snapshot,
+                    currentRuleRevisions: Dictionary(
+                        uniqueKeysWithValues: rules.map { ($0.id, $0.revision) }
+                    ),
+                    now: now
+                ).orderedOccurrences.map(\.id))
+            },
+            execute: execute
         )
     }
 }
@@ -1394,6 +1816,11 @@ private enum UITestConfiguration {
         )
         let coinReleaseMode = value(after: "--ui-test-coin-release")
         let coinReleaseResult = value(after: "--ui-test-coin-release-result")
+        let releaseHandoffMode = value(after: "--ui-test-release-handoff")
+        let monthlyAllowanceFixture = value(after: "--ui-test-monthly-allowance")
+            .flatMap(MonthlyAllowanceUITestFixtureMode.init(rawValue:))
+        let freeBalanceOverride = value(after: "--ui-test-free-balance").flatMap(Int.init)
+        let purchasedBalanceOverride = value(after: "--ui-test-purchased-balance").flatMap(Int.init)
         let permissionOnboardingStateStore = PermissionOnboardingStateStore(
             key: "permissionOnboarding.hasCompleted.uiTest.\(storeID)"
         )
@@ -1505,14 +1932,19 @@ private enum UITestConfiguration {
         let releaseConfiguration = try makeCoinReleaseConfiguration(
             mode: coinReleaseMode,
             result: coinReleaseResult,
+            monthlyAllowanceFixture: monthlyAllowanceFixture,
             rule: restrictionActivationRule,
             now: fixtureNow
         )
         let coinStoreConfiguration = try makeCoinStoreConfiguration(
             scenario: scenario,
+            allowsReleaseHandoff: releaseHandoffMode == "insufficient",
             ledgerState: value(after: "--ui-test-coin-ledger-state"),
             purchaseResult: value(after: "--ui-test-purchase-result"),
             historyFixture: value(after: "--ui-test-coin-history"),
+            monthlyAllowanceFixture: monthlyAllowanceFixture,
+            freeBalanceOverride: freeBalanceOverride,
+            purchasedBalanceOverride: purchasedBalanceOverride,
             root: root,
             now: fixtureNow
         )
@@ -1529,6 +1961,21 @@ private enum UITestConfiguration {
             releaseConfiguration: releaseConfiguration,
             coinStoreConfiguration: coinStoreConfiguration,
             coinLifecycleCoordinator: coinLifecycleCoordinator,
+            releaseHandoffCoordinator: nil,
+            loadReleaseHandoffDetails: nil,
+            initialReleaseHandoffRoute: try makeReleaseHandoffRoute(
+                mode: releaseHandoffMode, now: fixtureNow
+            ),
+            initialReleaseHandoffDetails: releaseHandoffMode == nil ? nil
+                : ReleaseHandoffDisplayDetails(
+                    ruleName: "아침 집중",
+                    endsAt: fixtureNow.addingTimeInterval(7_200),
+                    fundingSource: releaseHandoffMode == "completed" ? .monthlyFree : nil,
+                    remainingRestrictionCount: 1,
+                    freeAvailable: releaseHandoffMode == "insufficient" ? 0 : nil,
+                    purchasedAvailable: releaseHandoffMode == "insufficient" ? 0 : nil
+                ),
+            retryWaitSecondsOverride: releaseHandoffMode == "retryable-waiting" ? 30 : nil,
             permissionGuideModel: permissionGuideModel(
                 for: scenario,
                 onboardingStateStore: permissionOnboardingStateStore
@@ -1539,9 +1986,52 @@ private enum UITestConfiguration {
         )
     }
 
+    private static func makeReleaseHandoffRoute(
+        mode: String?,
+        now: Date
+    ) throws -> PendingAppRoute? {
+        guard let mode else { return nil }
+        let route = try PendingAppRoute.releaseProcessing(
+            routeID: UUID(uuidString: "00000000-0000-4000-8000-000000000711")!,
+            commandID: UUID(uuidString: "00000000-0000-4000-8000-000000000712")!,
+            createdAt: now.addingTimeInterval(-10),
+            occurrenceID: "ui-test-release-handoff"
+        )
+        let processing = try route.claiming(at: now)
+        switch mode {
+        case "processing":
+            return processing
+        case "completed":
+            return try processing.recordingTerminal(
+                outcome: .completed, retryAfter: nil, at: now.addingTimeInterval(1)
+            )
+        case "retryable":
+            return try processing.recordingTerminal(
+                outcome: .retryable, retryAfter: nil, at: now.addingTimeInterval(1)
+            )
+        case "retryable-waiting":
+            return try processing.recordingTerminal(
+                outcome: .retryable,
+                retryAfter: Date().addingTimeInterval(30),
+                at: now.addingTimeInterval(1)
+            )
+        case "insufficient":
+            return try processing.recordingTerminal(
+                outcome: .insufficient, retryAfter: nil, at: now.addingTimeInterval(1)
+            )
+        case "recovery-required":
+            return try processing.recordingTerminal(
+                outcome: .recoveryRequired, retryAfter: nil, at: now.addingTimeInterval(1)
+            )
+        default:
+            return nil
+        }
+    }
+
     private static func makeCoinReleaseConfiguration(
         mode: String?,
         result: String?,
+        monthlyAllowanceFixture: MonthlyAllowanceUITestFixtureMode?,
         rule: RestrictionRuleSnapshot,
         now: Date
     ) throws -> ActiveRestrictionReleaseConfiguration? {
@@ -1568,29 +2058,17 @@ private enum UITestConfiguration {
         )
         let occurrences = mode == "overlapping" ? [primary, overlap] : [primary]
         let remainingOccurrences = mode == "overlapping" ? [overlap] : []
-        let balance = try CoinBalanceSnapshot(
-            purchasedAvailable: 3,
-            currentMonthID: MonthlyAllowancePolicy.monthID(containing: now),
-            freeAvailable: 2,
-            syncState: .current,
-            syncedAt: now,
-            ledgerEpochID: UUID(
-                uuidString: "00000000-0000-4000-8000-000000000592"
-            ),
-            hadConfirmedLedger: true
-        )
-        let updatedBalance = try CoinBalanceSnapshot(
-            purchasedAvailable: 3,
-            currentMonthID: balance.currentMonthID,
-            freeAvailable: 1,
-            syncState: .current,
-            syncedAt: now,
-            ledgerEpochID: balance.ledgerEpochID,
-            hadConfirmedLedger: true
-        )
+        let shieldAllowance = if monthlyAllowanceFixture == .firstShield {
+            try ShieldMonthlyAllowanceUITestFixture.firstRequest(now: now)
+        } else {
+            try ShieldMonthlyAllowanceUITestFixture.existingAllowance(now: now)
+        }
+        let balance = shieldAllowance.initialBalance
+        let updatedBalance = shieldAllowance.balanceAfterAtomicReservation
         let instrumentation = ActiveRestrictionReleaseInstrumentation(
             remainingOccurrenceCount: occurrences.count,
-            holdsExecution: result == "held-success"
+            holdsExecution: result == "held-success",
+            createsMonthlyAllowanceOnRequest: shieldAllowance.createsAllowanceOnRequest
         )
         let fixedNow = now
         let releaseModel = ActiveRestrictionReleaseModel(
@@ -1623,18 +2101,25 @@ private enum UITestConfiguration {
 
     private static func makeCoinStoreConfiguration(
         scenario: String?,
+        allowsReleaseHandoff: Bool = false,
         ledgerState: String?,
         purchaseResult: String?,
         historyFixture: String?,
+        monthlyAllowanceFixture: MonthlyAllowanceUITestFixtureMode?,
+        freeBalanceOverride: Int?,
+        purchasedBalanceOverride: Int?,
         root: URL,
         now: Date
     ) throws -> CoinStoreConfiguration? {
-        guard scenario == "coin-store" else { return nil }
+        guard scenario == "coin-store" || allowsReleaseHandoff else { return nil }
 
         let driver = try CoinStoreUITestDriver(
             ledgerState: ledgerState,
             purchaseResult: purchaseResult,
             historyFixture: historyFixture,
+            monthlyAllowanceFixture: monthlyAllowanceFixture,
+            freeBalanceOverride: freeBalanceOverride,
+            purchasedBalanceOverride: purchasedBalanceOverride,
             root: root,
             now: now
         )
@@ -2179,26 +2664,34 @@ private final class CoinStoreUITestDriver {
     private let purchaseResult: String?
     private let now: Date
     private let pendingMarkerURL: URL
+    private let monthlyAllowanceFixtureStore: MonthlyAllowanceUITestFixtureStore
+    private let monthlyAllowanceFixture: MonthlyAllowanceUITestFixtureMode?
     private var nextTransactionID: UInt64 = 9_001
 
     init(
         ledgerState: String?,
         purchaseResult: String?,
         historyFixture: String?,
+        monthlyAllowanceFixture: MonthlyAllowanceUITestFixtureMode?,
+        freeBalanceOverride: Int?,
+        purchasedBalanceOverride: Int?,
         root: URL,
         now: Date
     ) throws {
         self.purchaseResult = purchaseResult
         self.now = now
+        self.monthlyAllowanceFixture = monthlyAllowanceFixture
+        monthlyAllowanceFixtureStore = MonthlyAllowanceUITestFixtureStore(containerURL: root)
         pendingMarkerURL = root.appendingPathComponent("pending-coin-purchase")
 
         let syncState: CoinBalanceSyncState = switch ledgerState {
         case "setup-required": .setupRequired
+        case "syncing": .syncing
+        case "stale": .stale
         case "deletion-confirmed": .deletionConfirmed
         case "unavailable": .unavailable
         default: .current
         }
-        let isCurrent = syncState == .current
         let events = historyFixture == "full-ledger-events"
             ? try Self.fullHistory(now: now)
             : []
@@ -2206,18 +2699,24 @@ private final class CoinStoreUITestDriver {
             atPath: pendingMarkerURL.path
         ) ? ["com.dxyn02.GetUp.coin.1"] : []
 
+        let fixtureBalance = try monthlyAllowanceFixtureStore.balance(
+            mode: monthlyAllowanceFixture,
+            syncState: syncState,
+            now: now
+        )
+        let balance = try CoinBalanceSnapshot(
+            purchasedAvailable: purchasedBalanceOverride
+                ?? fixtureBalance.purchasedAvailable,
+            currentMonthID: fixtureBalance.currentMonthID,
+            freeAvailable: freeBalanceOverride ?? fixtureBalance.freeAvailable,
+            syncState: fixtureBalance.syncState,
+            syncedAt: fixtureBalance.syncedAt,
+            ledgerEpochID: fixtureBalance.ledgerEpochID,
+            hadConfirmedLedger: fixtureBalance.hadConfirmedLedger
+        )
+
         ledger = CoinStoreLedgerState(
-            balance: try CoinBalanceSnapshot(
-                purchasedAvailable: isCurrent ? 3 : 0,
-                currentMonthID: MonthlyAllowancePolicy.monthID(containing: now),
-                freeAvailable: isCurrent ? 1 : 0,
-                syncState: syncState,
-                syncedAt: now,
-                ledgerEpochID: isCurrent
-                    ? UUID(uuidString: "00000000-0000-4000-8000-000000000901")
-                    : nil,
-                hadConfirmedLedger: syncState != .setupRequired
-            ),
+            balance: balance,
             purchaseGrants: [],
             events: events,
             pendingProductIdentifiers: pendingIdentifiers,
@@ -2241,6 +2740,7 @@ private final class CoinStoreUITestDriver {
             ledgerState: ledger.balance.syncState
         )
         ledger = try Self.ledger(from: result, now: now)
+        try persistMonthlyAllowanceFixture()
         return ledger
     }
 
@@ -2260,6 +2760,7 @@ private final class CoinStoreUITestDriver {
             ledgerState: ledger.balance.syncState
         )
         ledger = try Self.ledger(from: result, now: now)
+        try persistMonthlyAllowanceFixture()
         return ledger
     }
 
@@ -2322,8 +2823,14 @@ private final class CoinStoreUITestDriver {
                 pendingProductIdentifiers: [],
                 hasPendingReconciliation: false
             )
+            try persistMonthlyAllowanceFixture()
             return .granted(grant: grant, ledger: ledger)
         }
+    }
+
+    private func persistMonthlyAllowanceFixture() throws {
+        guard monthlyAllowanceFixture != nil else { return }
+        try monthlyAllowanceFixtureStore.save(ledger.balance)
     }
 
     private static func product(quantity: Int, price: String) -> CoinCatalogProduct {
@@ -2425,13 +2932,15 @@ private final class CoinStoreUITestDriver {
     }
 
     private static func fullHistory(now: Date) throws -> [CoinLedgerEvent] {
-        let fixtures: [(CoinLedgerEventKind, CoinLedgerEventSource, Int)] = [
-            (.purchaseGrant, .purchased, 5),
-            (.freeGrant, .monthlyFree, 2),
-            (.spend, .monthlyFree, 1),
-            (.release, .monthlyFree, 1),
-            (.refundAdjustment, .purchased, 2),
-            (.reversal, .purchased, 2),
+        let commandID = UUID(uuidString: "00000000-0000-4000-8000-000000000903")!
+        let fixtures: [(CoinLedgerEventKind, CoinLedgerEventSource, Int, UUID?)] = [
+            (.purchaseGrant, .purchased, 5, nil),
+            (.freeGrant, .monthlyFree, 2, nil),
+            (.spend, .monthlyFree, 1, commandID),
+            (.reservation, .monthlyFree, 1, commandID),
+            (.release, .monthlyFree, 1, nil),
+            (.refundAdjustment, .purchased, 2, nil),
+            (.reversal, .purchased, 2, nil),
         ]
         return try fixtures.enumerated().map { index, fixture in
             try CoinLedgerEvent(
@@ -2440,7 +2949,7 @@ private final class CoinStoreUITestDriver {
                 source: fixture.1,
                 quantity: fixture.2,
                 relatedTransactionID: fixture.0 == .purchaseGrant ? 8_001 : nil,
-                relatedCommandID: nil,
+                relatedCommandID: fixture.3,
                 occurrenceID: nil,
                 createdAt: now.addingTimeInterval(TimeInterval(-index * 60))
             )

@@ -3,6 +3,11 @@ import Foundation
 
 enum SharedIdentifiers {
     static let appGroupIdentifierInfoDictionaryKey = "GetUpAppGroupIdentifier"
+    static let iCloudContainerIdentifierInfoDictionaryKey =
+        "GetUpICloudContainerIdentifier"
+    static let t089LedgerNamespaceInfoDictionaryKey = "GetUpT089LedgerNamespace"
+    static let t089MonthlyBoundaryDayInfoDictionaryKey = "GetUpT089MonthlyBoundaryDay"
+    static let t089PeriodMinutesInfoDictionaryKey = "GetUpT089PeriodMinutes"
     static let coinProductCatalogInfoDictionaryKey = "GetUpCoinProductCatalog"
     static let coinProductIdentifierCatalogKey = "ProductIdentifier"
     static let coinProductQuantityCatalogKey = "Quantity"
@@ -16,8 +21,25 @@ enum SharedIdentifiers {
     static let coinBalanceSnapshotFileName = "coin-balance.json"
     static let releaseExceptionsFileName = "release-exceptions.json"
     static let pendingAppRouteFileName = "pending-app-route.json"
+    static let appLedgerSyncDiagnosticDefaultsKey =
+        "getup.diagnostics.app-ledger-sync.latest"
+    static let appReleaseHandoffDiagnosticDefaultsKey =
+        "getup.diagnostics.app-release-handoff.latest"
 
     static let coinLedgerZoneName = "CoinLedgerZone"
+
+    static func coinLedgerSyncCheckpointFileName(
+        processIdentifier: String,
+        ledgerNamespace: String? = nil
+    ) -> String {
+        let namespaceComponent = ledgerNamespace.map { "\($0)-" } ?? ""
+        return "coin-ledger-sync-\(namespaceComponent)\(processIdentifier).json"
+    }
+
+    static func coinLedgerZoneName(ledgerNamespace: String?) -> String {
+        guard let ledgerNamespace else { return coinLedgerZoneName }
+        return "\(coinLedgerZoneName).\(ledgerNamespace)"
+    }
 
     static let managedSettingsStoreName = "getup.restriction"
     static let deviceActivityNamePrefix = "getup.schedule"
@@ -25,6 +47,8 @@ enum SharedIdentifiers {
     static let activeRuleRevisionsDefaultsKey = "getup.restriction.active-rule-revisions"
     static let authorizationSnapshotDefaultsKey = "getup.authorization.last-known-snapshot"
     static let intervalStartDiagnosticDefaultsKey = "getup.diagnostics.interval-start.latest"
+    static let shieldContentDiagnosticDefaultsKey = "getup.diagnostics.shield-content.latest"
+    static let shieldActionDiagnosticDefaultsKey = "getup.diagnostics.shield-action.latest"
     static let legacyRestrictionIsAppliedDefaultsKey = "getup.restriction.is-applied"
     static let legacyRestrictionRuleRevisionDefaultsKey = "getup.restriction.rule-revision"
 
@@ -68,9 +92,76 @@ enum SharedIdentifiers {
         return identifier
     }
 
+    static func iCloudContainerIdentifier(in bundle: Bundle = .main) -> String? {
+        guard
+            let identifier = bundle.object(
+                forInfoDictionaryKey: iCloudContainerIdentifierInfoDictionaryKey
+            ) as? String,
+            !identifier.isEmpty,
+            !identifier.contains("$(")
+        else {
+            return nil
+        }
+
+        return identifier
+    }
+
+    /// Paired DEBUG-only overrides for the T089 physical-device boundary test.
+    /// Requiring both values prevents a shifted calendar from addressing the
+    /// production ledger zone.
+    static func t089LedgerTestConfiguration(
+        in bundle: Bundle = .main
+    ) -> T089LedgerTestConfiguration? {
+#if DEBUG
+        let allowedCharacters = CharacterSet.alphanumerics.union(
+            CharacterSet(charactersIn: "-")
+        )
+        guard
+            let namespace = bundle.object(
+                forInfoDictionaryKey: t089LedgerNamespaceInfoDictionaryKey
+            ) as? String,
+            !namespace.isEmpty,
+            !namespace.contains("$("),
+            namespace.count <= 40,
+            namespace.unicodeScalars.allSatisfy({ allowedCharacters.contains($0) })
+        else {
+            return nil
+        }
+
+        let boundaryDay = bundle.object(
+            forInfoDictionaryKey: t089MonthlyBoundaryDayInfoDictionaryKey
+        ).flatMap { Int(String(describing: $0)) }
+        let periodMinutes = bundle.object(
+            forInfoDictionaryKey: t089PeriodMinutesInfoDictionaryKey
+        ).flatMap { Int(String(describing: $0)) }
+
+        let validBoundaryDay = boundaryDay.flatMap { (1...28).contains($0) ? $0 : nil }
+        let validPeriodMinutes = periodMinutes.flatMap {
+            (1...30).contains($0) && 60.isMultiple(of: $0) ? $0 : nil
+        }
+        guard (validBoundaryDay == nil) != (validPeriodMinutes == nil) else {
+            return nil
+        }
+
+        return T089LedgerTestConfiguration(
+            ledgerNamespace: namespace,
+            monthlyBoundaryDay: validBoundaryDay,
+            periodMinutes: validPeriodMinutes
+        )
+#else
+        return nil
+#endif
+    }
+
     static func deviceActivityName(forWeekdayIdentifier weekdayIdentifier: String) -> String {
         "\(deviceActivityNamePrefix).\(weekdayIdentifier)"
     }
+}
+
+struct T089LedgerTestConfiguration: Equatable, Sendable {
+    let ledgerNamespace: String
+    let monthlyBoundaryDay: Int?
+    let periodMinutes: Int?
 }
 
 enum CoinLedgerRecordType {
@@ -81,6 +172,8 @@ enum CoinLedgerRecordType {
     static let event = "CoinLedgerEvent"
     static let releaseCommand = "ReleaseCommand"
     static let releaseOccurrenceClaim = "ReleaseOccurrenceClaim"
+    static let reservationCompatibilityStamp = "ReservationCompatibilityStamp"
+    static let reservationMigrationMarker = "ReservationMigrationMarker"
 }
 
 enum CoinLedgerRecordID {
@@ -110,6 +203,14 @@ enum CoinLedgerRecordID {
         let digest = SHA256.hash(data: Data(occurrenceID.utf8))
             .map { String(format: "%02x", $0) }.joined()
         return "release-claim:\(normalized(ledgerEpochID)):\(digest)"
+    }
+
+    static func reservationCompatibilityStamp(commandID: UUID) -> String {
+        "reservation-compatibility:\(normalized(commandID))"
+    }
+
+    static func reservationMigrationMarker(epochID: UUID) -> String {
+        "reservation-migration:\(normalized(epochID))"
     }
 
     private static func normalized(_ identifier: UUID) -> String {

@@ -26,6 +26,10 @@
 
 ## 표시 데이터
 
+잠금화면과 Dynamic Island minimal·compact·expanded의 정보 계층, 나서 앱 무드의 색상·서체·간격,
+Light/Dark, Dynamic Type, VoiceOver와 Reduce Motion은 하이파이 시안으로 먼저 정의한다. 사용자 승인
+기록이 완료되기 전에는 `RestrictionLiveActivity`의 제품 UI를 수정하지 않는다.
+
 | 상태 | 필수 표시 |
 |------|-----------|
 | 거리 known | 규칙 표시명, `max(0, radius - centerDistance)`를 가장 가까운 10m로 반올림한 미터 거리, 종료까지 카운트다운 |
@@ -76,3 +80,4 @@
 - 중복 Activity 조정과 즉시 종료
 - Lock Screen 및 Dynamic Island compact/minimal/expanded의 한국어·영어 preview
 - Dynamic Type, VoiceOver, Light/Dark와 4KB payload 상한
+- 승인된 하이파이와 잠금화면·Dynamic Island 각 상태 preview의 핵심 정보·간격·대비 대조

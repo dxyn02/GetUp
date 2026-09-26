@@ -26,6 +26,20 @@ struct PendingAppRouteRepositoryTests {
         ) == nil)
     }
 
+    @Test("A newer successful action atomically discards an obsolete route")
+    func successfulActionDiscardsObsoleteRoute() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let repository = PendingAppRouteRepository(containerURL: directory)
+        try await repository.save(makeRoute(destination: .iCloudRecovery))
+
+        try await repository.discard()
+
+        #expect(try await repository.load() == nil)
+        try await repository.discard()
+        #expect(try await repository.load() == nil)
+    }
+
     @Test("A route at exactly five minutes is expired and deleted")
     func exactFiveMinuteBoundaryIsExpired() async throws {
         let directory = try makeTemporaryDirectory()
@@ -192,6 +206,259 @@ struct PendingAppRouteRepositoryTests {
 
         #expect(try await repository.load() == original)
     }
+
+    @Test("An eligible release route is atomically claimed and remains persisted")
+    func releaseRouteIsClaimedWithoutDeletion() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let repository = PendingAppRouteRepository(containerURL: directory)
+        try await repository.save(makeReleaseRoute())
+
+        let claimed = try await repository.claimIfEligible(
+            now: Self.createdAt.addingTimeInterval(299),
+            activeOccurrenceIDs: [Self.occurrenceID]
+        )
+
+        #expect(claimed?.state == .processing)
+        #expect(claimed?.commandID == Self.commandID)
+        #expect(try await repository.load() == claimed)
+        #expect(FileManager.default.fileExists(atPath: routeFileURL(in: directory).path))
+    }
+
+    @Test("A release route at exactly five minutes expires before claim")
+    func releaseRouteAtFiveMinutesExpiresBeforeClaim() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let repository = PendingAppRouteRepository(containerURL: directory)
+        try await repository.save(makeReleaseRoute())
+
+        #expect(try await repository.claimIfEligible(
+            now: Self.createdAt.addingTimeInterval(300),
+            activeOccurrenceIDs: [Self.occurrenceID]
+        ) == nil)
+        #expect(try await repository.load() == nil)
+    }
+
+    @Test("A release route for an ended occurrence is deleted before claim")
+    func endedReleaseOccurrenceIsDeletedBeforeClaim() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let repository = PendingAppRouteRepository(containerURL: directory)
+        try await repository.save(makeReleaseRoute())
+
+        #expect(try await repository.claimIfEligible(
+            now: Self.createdAt.addingTimeInterval(1),
+            activeOccurrenceIDs: []
+        ) == nil)
+        #expect(try await repository.load() == nil)
+    }
+
+    @Test("A duplicate claim returns the same processing handoff")
+    func duplicateClaimReturnsExistingHandoff() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let firstRepository = PendingAppRouteRepository(containerURL: directory)
+        try await firstRepository.save(makeReleaseRoute())
+
+        let first = try await firstRepository.claimIfEligible(
+            now: Self.createdAt.addingTimeInterval(1),
+            activeOccurrenceIDs: [Self.occurrenceID]
+        )
+        let relaunchedRepository = PendingAppRouteRepository(containerURL: directory)
+        let relaunched = try await relaunchedRepository.claimIfEligible(
+            now: Self.createdAt.addingTimeInterval(901),
+            activeOccurrenceIDs: [Self.occurrenceID]
+        )
+
+        #expect(first?.state == .processing)
+        #expect(relaunched == first)
+        #expect(relaunched?.commandID == Self.commandID)
+        #expect(try await relaunchedRepository.load() == first)
+    }
+
+    @Test("Terminal presentation persists until an explicit acknowledgement")
+    func terminalPresentationPersistsUntilAcknowledgement() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let repository = PendingAppRouteRepository(containerURL: directory)
+        try await repository.save(makeReleaseRoute())
+        _ = try await repository.claimIfEligible(
+            now: Self.createdAt.addingTimeInterval(1),
+            activeOccurrenceIDs: [Self.occurrenceID]
+        )
+        let terminal = try await repository.recordTerminal(
+            routeID: Self.routeID,
+            outcome: .completed,
+            retryAfter: nil,
+            at: Self.createdAt.addingTimeInterval(2)
+        )
+        let presented = try await repository.markPresented(
+            routeID: Self.routeID,
+            at: Self.createdAt.addingTimeInterval(3)
+        )
+
+        #expect(terminal.state == .terminal)
+        #expect(presented.presentedAt == Self.createdAt.addingTimeInterval(3))
+        #expect(presented.acknowledgedAt == nil)
+        #expect(try await PendingAppRouteRepository(containerURL: directory).load() == presented)
+
+        try await repository.acknowledgeAndDelete(
+            routeID: Self.routeID,
+            at: Self.createdAt.addingTimeInterval(4)
+        )
+        #expect(try await repository.load() == nil)
+    }
+
+    @Test("Retry atomically restarts only a retryable terminal handoff")
+    func retryRestartsSameCommand() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let repository = PendingAppRouteRepository(containerURL: directory)
+        try await repository.save(makeReleaseRoute())
+        _ = try await repository.claimIfEligible(
+            now: Self.createdAt.addingTimeInterval(1),
+            activeOccurrenceIDs: [Self.occurrenceID]
+        )
+        let retryAfter = Self.createdAt.addingTimeInterval(20)
+        _ = try await repository.recordTerminal(
+            routeID: Self.routeID,
+            outcome: .retryable,
+            retryAfter: retryAfter,
+            at: Self.createdAt.addingTimeInterval(2)
+        )
+        _ = try await repository.markPresented(
+            routeID: Self.routeID,
+            at: Self.createdAt.addingTimeInterval(3)
+        )
+
+        #expect(try await repository.retry(routeID: Self.routeID, at: retryAfter.addingTimeInterval(-1)) == nil)
+        let retried = try await repository.retry(routeID: Self.routeID, at: retryAfter)
+
+        #expect(retried?.state == .processing)
+        #expect(retried?.commandID == Self.commandID)
+        #expect(retried?.terminalOutcome == nil)
+        #expect(retried?.presentedAt == nil)
+        #expect(try await repository.load() == retried)
+    }
+
+    @Test("A failed claim write preserves the pending release route")
+    func failedClaimPreservesPendingRoute() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let repository = PendingAppRouteRepository(containerURL: directory)
+        let pending = try makeReleaseRoute()
+        try await repository.save(pending)
+        let failingRepository = PendingAppRouteRepository(
+            containerURL: directory,
+            fileWriter: PendingRouteFailingFileWriter()
+        )
+
+        await #expect(throws: SharedSnapshotRepositoryError.atomicWriteFailed(
+            fileName: SharedIdentifiers.pendingAppRouteFileName
+        )) {
+            _ = try await failingRepository.claimIfEligible(
+                now: Self.createdAt.addingTimeInterval(1),
+                activeOccurrenceIDs: [Self.occurrenceID]
+            )
+        }
+
+        #expect(try await repository.load() == pending)
+    }
+
+    @Test("A failed terminal write preserves the processing release route")
+    func failedTerminalWritePreservesProcessingRoute() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let repository = PendingAppRouteRepository(containerURL: directory)
+        try await repository.save(makeReleaseRoute())
+        let processing = try await repository.claimIfEligible(
+            now: Self.createdAt.addingTimeInterval(1),
+            activeOccurrenceIDs: [Self.occurrenceID]
+        )
+        let failingRepository = PendingAppRouteRepository(
+            containerURL: directory,
+            fileWriter: PendingRouteFailingFileWriter()
+        )
+
+        await #expect(throws: SharedSnapshotRepositoryError.atomicWriteFailed(
+            fileName: SharedIdentifiers.pendingAppRouteFileName
+        )) {
+            _ = try await failingRepository.recordTerminal(
+                routeID: Self.routeID,
+                outcome: .completed,
+                retryAfter: nil,
+                at: Self.createdAt.addingTimeInterval(2)
+            )
+        }
+
+        #expect(try await repository.load() == processing)
+    }
+
+    @Test("An unconsumed legacy release route migrates to pending")
+    func unconsumedLegacyReleaseMigratesToPending() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        try writeLegacyRoute(
+            destination: .releaseProcessing,
+            commandID: Self.commandID,
+            consumedAt: nil,
+            to: directory
+        )
+        let repository = PendingAppRouteRepository(containerURL: directory)
+
+        let migrated = try #require(try await repository.load())
+        #expect(migrated.state == .pending)
+        #expect(migrated.commandID == Self.commandID)
+
+        let claimed = try await repository.claimIfEligible(
+            now: Self.createdAt.addingTimeInterval(1),
+            activeOccurrenceIDs: [Self.occurrenceID]
+        )
+        #expect(claimed?.state == .processing)
+        #expect(claimed?.commandID == Self.commandID)
+    }
+
+    @Test("A consumed legacy release route migrates to processing")
+    func consumedLegacyReleaseMigratesToProcessing() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        let consumedAt = Self.createdAt.addingTimeInterval(2)
+        try writeLegacyRoute(
+            destination: .releaseProcessing,
+            commandID: Self.commandID,
+            consumedAt: consumedAt,
+            to: directory
+        )
+        let repository = PendingAppRouteRepository(containerURL: directory)
+
+        let migrated = try #require(try await repository.claimIfEligible(
+            now: Self.createdAt.addingTimeInterval(901),
+            activeOccurrenceIDs: [Self.occurrenceID]
+        ))
+        #expect(migrated.state == .processing)
+        #expect(migrated.claimedAt == consumedAt)
+        #expect(migrated.commandID == Self.commandID)
+        #expect(try await repository.load() == migrated)
+    }
+
+    @Test("Other consumed legacy routes are discarded without synthesizing a release")
+    func otherConsumedLegacyRouteIsDiscarded() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { removeTemporaryDirectory(directory) }
+        try writeLegacyRoute(
+            destination: .coinStore,
+            commandID: nil,
+            consumedAt: Self.createdAt,
+            to: directory
+        )
+        let repository = PendingAppRouteRepository(containerURL: directory)
+
+        #expect(try await repository.claimIfEligible(
+            now: Self.createdAt.addingTimeInterval(1),
+            activeOccurrenceIDs: [Self.occurrenceID]
+        ) == nil)
+        #expect(try await repository.load() == nil)
+    }
 }
 
 private struct PendingRouteFailingFileWriter: SnapshotFileWriting {
@@ -202,6 +469,7 @@ private struct PendingRouteFailingFileWriter: SnapshotFileWriting {
 
 private extension PendingAppRouteRepositoryTests {
     static let routeID = UUID(uuidString: "00000000-0000-4000-8000-000000000401")!
+    static let commandID = UUID(uuidString: "00000000-0000-4000-8000-000000000402")!
     static let occurrenceID = "occurrence-1"
     static let createdAt = Date(timeIntervalSince1970: 1_788_192_000)
 
@@ -216,6 +484,15 @@ private extension PendingAppRouteRepositoryTests {
             createdAt: Self.createdAt,
             occurrenceID: occurrenceID,
             consumedAt: consumedAt
+        )
+    }
+
+    func makeReleaseRoute() throws -> PendingAppRoute {
+        try PendingAppRoute.releaseProcessing(
+            routeID: Self.routeID,
+            commandID: Self.commandID,
+            createdAt: Self.createdAt,
+            occurrenceID: Self.occurrenceID
         )
     }
 
@@ -236,4 +513,32 @@ private extension PendingAppRouteRepositoryTests {
     func routeFileURL(in directory: URL) -> URL {
         directory.appendingPathComponent(SharedIdentifiers.pendingAppRouteFileName)
     }
+
+    func writeLegacyRoute(
+        destination: PendingAppRouteDestination,
+        commandID: UUID?,
+        consumedAt: Date?,
+        to directory: URL
+    ) throws {
+        let payload = LegacyPendingAppRoutePayload(
+            routeID: Self.routeID,
+            destination: destination,
+            commandID: commandID,
+            createdAt: Self.createdAt,
+            occurrenceID: Self.occurrenceID,
+            consumedAt: consumedAt
+        )
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        try encoder.encode(payload).write(to: routeFileURL(in: directory))
+    }
+}
+
+private struct LegacyPendingAppRoutePayload: Encodable {
+    let routeID: UUID
+    let destination: PendingAppRouteDestination
+    let commandID: UUID?
+    let createdAt: Date
+    let occurrenceID: String?
+    let consumedAt: Date?
 }

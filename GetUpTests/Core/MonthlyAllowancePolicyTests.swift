@@ -13,6 +13,87 @@ struct MonthlyAllowancePolicyTests {
         #expect(MonthlyAllowancePolicy.monthID(containing: boundary) == "2026-09")
     }
 
+    @Test("The isolated T089 cycle changes at Seoul midnight on day thirteen")
+    func t089DayThirteenBoundary() throws {
+        let beforeBoundary = try #require(Self.date("2026-09-12T14:59:59Z"))
+        let boundary = try #require(Self.date("2026-09-12T15:00:00Z"))
+
+        #expect(
+            MonthlyAllowancePolicy.monthID(
+                containing: beforeBoundary,
+                boundaryDay: 13
+            ) == "2026-08"
+        )
+        #expect(
+            MonthlyAllowancePolicy.monthID(
+                containing: boundary,
+                boundaryDay: 13
+            ) == "2026-09"
+        )
+        #expect(
+            MonthlyAllowancePolicy.nextPeriodStart(
+                after: beforeBoundary,
+                boundaryDay: 13
+            ) == boundary
+        )
+    }
+
+    @Test("The isolated T089 five-minute cycle changes on Seoul clock boundaries")
+    func t089FiveMinuteBoundary() throws {
+        let beforeBoundary = try #require(Self.date("2026-09-14T07:44:59Z"))
+        let boundary = try #require(Self.date("2026-09-14T07:45:00Z"))
+
+        #expect(
+            MonthlyAllowancePolicy.periodID(
+                containing: beforeBoundary,
+                intervalMinutes: 5
+            ) == "2026-09-14T16-40"
+        )
+        #expect(
+            MonthlyAllowancePolicy.periodID(
+                containing: boundary,
+                intervalMinutes: 5
+            ) == "2026-09-14T16-45"
+        )
+        #expect(
+            MonthlyAllowancePolicy.nextPeriodStart(
+                afterPeriodID: "2026-09-14T16-40",
+                intervalMinutes: 5
+            ) == boundary
+        )
+    }
+
+    @Test("The isolated T089 five-minute cycle rolls over at Seoul midnight")
+    func t089FiveMinuteMidnightRollover() throws {
+        let beforeMidnight = try #require(Self.date("2026-09-14T14:59:59Z"))
+        let midnight = try #require(Self.date("2026-09-14T15:00:00Z"))
+
+        #expect(
+            MonthlyAllowancePolicy.periodID(
+                containing: beforeMidnight,
+                intervalMinutes: 5
+            ) == "2026-09-14T23-55"
+        )
+        #expect(
+            MonthlyAllowancePolicy.periodID(
+                containing: midnight,
+                intervalMinutes: 5
+            ) == "2026-09-15T00-00"
+        )
+        #expect(
+            MonthlyAllowancePolicy.nextPeriodStart(
+                afterPeriodID: "2026-09-14T23-55",
+                intervalMinutes: 5
+            ) == midnight
+        )
+        #expect(
+            MonthlyAllowancePolicy.periodStart(
+                forPeriodID: "2026-09-14T23-57",
+                intervalMinutes: 5
+            ) == nil
+        )
+    }
+
     @Test("A normal month has quota two and valid count bounds")
     func quotaAndBalanceInvariant() throws {
         let allowance = try MonthlyAllowancePolicy.makeAllowance(

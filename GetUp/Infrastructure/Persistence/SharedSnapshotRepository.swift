@@ -423,6 +423,17 @@ actor PendingAppRouteRepository: PendingAppRoutePersisting {
         }
     }
 
+    func discard() async throws {
+        guard let claimedFileURL = try claimRouteFileIfPresent() else {
+            return
+        }
+        do {
+            try FileManager.default.removeItem(at: claimedFileURL)
+        } catch {
+            throw SharedSnapshotRepositoryError.deletionFailed(fileName: fileName)
+        }
+    }
+
     func consumeIfEligible(
         now: Date,
         activeOccurrenceIDs: Set<String>
@@ -430,16 +441,29 @@ actor PendingAppRouteRepository: PendingAppRoutePersisting {
         guard let claimedFileURL = try claimRouteFileIfPresent() else {
             return nil
         }
-        let route: PendingAppRoute
-        do {
-            let data = try Data(contentsOf: claimedFileURL)
-            route = try makeDecoder().decode(PendingAppRoute.self, from: data)
-        } catch is DecodingError {
-            try? FileManager.default.removeItem(at: claimedFileURL)
-            throw SharedSnapshotRepositoryError.decodingFailed(fileName: fileName)
-        } catch {
-            try? FileManager.default.removeItem(at: claimedFileURL)
-            throw SharedSnapshotRepositoryError.readFailed(fileName: fileName)
+        let route = try readClaimedRoute(at: claimedFileURL)
+
+        if route.destination == .releaseProcessing {
+            switch route.state {
+            case .processing, .terminal:
+                try restoreClaimedFile(at: claimedFileURL)
+                return route
+            case .pending:
+                let age = now.timeIntervalSince(route.createdAt)
+                let hasActiveOccurrence = route.occurrenceID.map {
+                    activeOccurrenceIDs.contains($0)
+                } ?? false
+                guard route.consumedAt == nil,
+                      age >= 0,
+                      age < Self.validityDuration,
+                      hasActiveOccurrence else {
+                    try deleteClaimedFile(at: claimedFileURL)
+                    return nil
+                }
+                let processing = try route.claiming(at: now)
+                try persist(processing, replacingClaimedFileAt: claimedFileURL)
+                return processing
+            }
         }
 
         let age = now.timeIntervalSince(route.createdAt)
@@ -451,12 +475,131 @@ actor PendingAppRouteRepository: PendingAppRoutePersisting {
             && isWithinValidityWindow
             && hasActiveOccurrence
 
-        do {
-            try FileManager.default.removeItem(at: claimedFileURL)
-        } catch {
-            throw SharedSnapshotRepositoryError.deletionFailed(fileName: fileName)
-        }
+        try deleteClaimedFile(at: claimedFileURL)
         return isEligible ? route : nil
+    }
+
+    func claimIfEligible(
+        now: Date,
+        activeOccurrenceIDs: Set<String>
+    ) async throws -> PendingAppRoute? {
+        guard let claimedFileURL = try claimRouteFileIfPresent() else {
+            return nil
+        }
+        let route = try readClaimedRoute(at: claimedFileURL)
+        guard route.destination == .releaseProcessing else {
+            if route.consumedAt == nil {
+                try restoreClaimedFile(at: claimedFileURL)
+            } else {
+                try deleteClaimedFile(at: claimedFileURL)
+            }
+            return nil
+        }
+
+        switch route.state {
+        case .processing, .terminal:
+            try restoreClaimedFile(at: claimedFileURL)
+            return route
+        case .pending:
+            let age = now.timeIntervalSince(route.createdAt)
+            let hasActiveOccurrence = route.occurrenceID.map {
+                activeOccurrenceIDs.contains($0)
+            } ?? false
+            guard route.consumedAt == nil,
+                  age >= 0,
+                  age < Self.validityDuration,
+                  hasActiveOccurrence else {
+                try deleteClaimedFile(at: claimedFileURL)
+                return nil
+            }
+
+            let processing = try route.claiming(at: now)
+            try persist(processing, replacingClaimedFileAt: claimedFileURL)
+            return processing
+        }
+    }
+
+    func recordTerminal(
+        routeID: UUID,
+        outcome: PendingAppRouteTerminalOutcome,
+        retryAfter: Date?,
+        at date: Date
+    ) async throws -> PendingAppRoute {
+        let (route, claimedFileURL) = try claimRequiredRoute(routeID: routeID)
+        if route.state == .terminal,
+           route.terminalOutcome == outcome,
+           route.retryAfter == retryAfter {
+            try restoreClaimedFile(at: claimedFileURL)
+            return route
+        }
+        do {
+            let terminal = try route.recordingTerminal(
+                outcome: outcome,
+                retryAfter: retryAfter,
+                at: date
+            )
+            try persist(terminal, replacingClaimedFileAt: claimedFileURL)
+            return terminal
+        } catch {
+            if FileManager.default.fileExists(atPath: claimedFileURL.path) {
+                try? restoreClaimedFile(at: claimedFileURL)
+            }
+            throw error
+        }
+    }
+
+    func markPresented(routeID: UUID, at date: Date) async throws -> PendingAppRoute {
+        let (route, claimedFileURL) = try claimRequiredRoute(routeID: routeID)
+        if route.presentedAt != nil {
+            try restoreClaimedFile(at: claimedFileURL)
+            return route
+        }
+        do {
+            let presented = try route.markingPresented(at: date)
+            try persist(presented, replacingClaimedFileAt: claimedFileURL)
+            return presented
+        } catch {
+            if FileManager.default.fileExists(atPath: claimedFileURL.path) {
+                try? restoreClaimedFile(at: claimedFileURL)
+            }
+            throw error
+        }
+    }
+
+    func acknowledgeAndDelete(routeID: UUID, at date: Date) async throws {
+        let (route, claimedFileURL) = try claimRequiredRoute(routeID: routeID)
+        do {
+            _ = try route.acknowledging(at: date)
+            try deleteClaimedFile(at: claimedFileURL)
+        } catch {
+            if FileManager.default.fileExists(atPath: claimedFileURL.path) {
+                try? restoreClaimedFile(at: claimedFileURL)
+            }
+            throw error
+        }
+    }
+
+    func retry(routeID: UUID, at date: Date) async throws -> PendingAppRoute? {
+        let (route, claimedFileURL) = try claimRequiredRoute(routeID: routeID)
+        guard route.state == .terminal,
+              route.terminalOutcome == .retryable else {
+            try restoreClaimedFile(at: claimedFileURL)
+            return nil
+        }
+        if let retryAfter = route.retryAfter, date < retryAfter {
+            try restoreClaimedFile(at: claimedFileURL)
+            return nil
+        }
+        do {
+            let processing = try route.retrying(at: date)
+            try persist(processing, replacingClaimedFileAt: claimedFileURL)
+            return processing
+        } catch {
+            if FileManager.default.fileExists(atPath: claimedFileURL.path) {
+                try? restoreClaimedFile(at: claimedFileURL)
+            }
+            throw error
+        }
     }
 
     private var fileName: String {
@@ -478,6 +621,78 @@ actor PendingAppRouteRepository: PendingAppRoutePersisting {
             where error.code == .fileNoSuchFile
                 || error.code == .fileReadNoSuchFile {
             return nil
+        } catch {
+            throw SharedSnapshotRepositoryError.deletionFailed(fileName: fileName)
+        }
+    }
+
+    private func claimRequiredRoute(
+        routeID: UUID
+    ) throws -> (PendingAppRoute, URL) {
+        guard let claimedFileURL = try claimRouteFileIfPresent() else {
+            throw LiveActivityCoinModelError.invalidPendingAppRoute
+        }
+        let route = try readClaimedRoute(at: claimedFileURL)
+        guard route.routeID == routeID,
+              route.destination == .releaseProcessing else {
+            try restoreClaimedFile(at: claimedFileURL)
+            throw LiveActivityCoinModelError.invalidPendingAppRoute
+        }
+        return (route, claimedFileURL)
+    }
+
+    private func readClaimedRoute(at claimedFileURL: URL) throws -> PendingAppRoute {
+        let data: Data
+        do {
+            data = try Data(contentsOf: claimedFileURL)
+        } catch {
+            try? FileManager.default.removeItem(at: claimedFileURL)
+            throw SharedSnapshotRepositoryError.readFailed(fileName: fileName)
+        }
+        do {
+            return try makeDecoder().decode(PendingAppRoute.self, from: data)
+        } catch {
+            try? FileManager.default.removeItem(at: claimedFileURL)
+            throw SharedSnapshotRepositoryError.decodingFailed(fileName: fileName)
+        }
+    }
+
+    private func persist(
+        _ route: PendingAppRoute,
+        replacingClaimedFileAt claimedFileURL: URL
+    ) throws {
+        let data: Data
+        do {
+            data = try makeEncoder().encode(route)
+        } catch {
+            try? restoreClaimedFile(at: claimedFileURL)
+            throw SharedSnapshotRepositoryError.encodingFailed(fileName: fileName)
+        }
+
+        do {
+            try fileWriter.write(data, to: fileURL)
+        } catch {
+            try? restoreClaimedFile(at: claimedFileURL)
+            throw SharedSnapshotRepositoryError.atomicWriteFailed(fileName: fileName)
+        }
+        try deleteClaimedFile(at: claimedFileURL)
+    }
+
+    private func restoreClaimedFile(at claimedFileURL: URL) throws {
+        do {
+            if FileManager.default.fileExists(atPath: fileURL.path) {
+                try FileManager.default.removeItem(at: claimedFileURL)
+            } else {
+                try FileManager.default.moveItem(at: claimedFileURL, to: fileURL)
+            }
+        } catch {
+            throw SharedSnapshotRepositoryError.deletionFailed(fileName: fileName)
+        }
+    }
+
+    private func deleteClaimedFile(at claimedFileURL: URL) throws {
+        do {
+            try FileManager.default.removeItem(at: claimedFileURL)
         } catch {
             throw SharedSnapshotRepositoryError.deletionFailed(fileName: fileName)
         }

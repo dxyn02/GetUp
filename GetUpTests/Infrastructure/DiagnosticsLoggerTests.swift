@@ -23,6 +23,11 @@ struct DiagnosticsLoggerTests {
                 DependencyContainerError.appGroupContainerUnavailable
             ) == .appGroupContainerUnavailable
         )
+        #expect(
+            DiagnosticErrorClassifier.classify(
+                DependencyContainerError.missingICloudContainerIdentifier
+            ) == .missingICloudContainerIdentifier
+        )
     }
 
     @Test("Unknown error text cannot enter a diagnostic event")

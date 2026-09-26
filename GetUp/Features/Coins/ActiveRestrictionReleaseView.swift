@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import SwiftUI
+import UIKit
 
 @MainActor
 @Observable
@@ -91,13 +92,19 @@ final class ActiveRestrictionReleaseInstrumentation {
     private(set) var committedCount = 0
     private(set) var remainingOccurrenceCount: Int
     let holdsExecution: Bool
+    let createsMonthlyAllowanceOnRequest: Bool
 
     private var continuation:
         CheckedContinuation<ActiveRestrictionReleaseExecutionResult, Never>?
 
-    init(remainingOccurrenceCount: Int, holdsExecution: Bool) {
+    init(
+        remainingOccurrenceCount: Int,
+        holdsExecution: Bool,
+        createsMonthlyAllowanceOnRequest: Bool = false
+    ) {
         self.remainingOccurrenceCount = remainingOccurrenceCount
         self.holdsExecution = holdsExecution
+        self.createsMonthlyAllowanceOnRequest = createsMonthlyAllowanceOnRequest
     }
 
     func execute(
@@ -419,6 +426,8 @@ struct ActiveRestrictionReleaseView: View {
                     .accessibilityIdentifier("coinRelease.test.committedCount")
                 Text(String(instrumentation.remainingOccurrenceCount))
                     .accessibilityIdentifier("coinRelease.test.remainingOccurrenceCount")
+                Text(String(instrumentation.createsMonthlyAllowanceOnRequest))
+                    .accessibilityIdentifier("coinRelease.test.createsMonthlyAllowanceOnRequest")
                 if instrumentation.holdsExecution, model.phase == .processing {
                     Button(AppLocalizedCopy.string("coinRelease.test.complete")) {
                         guard let balance = decrementedFixtureBalance else { return }
@@ -578,7 +587,405 @@ private struct ReleasePrimaryButtonStyle: ButtonStyle {
     }
 }
 
+struct ReleaseHandoffDisplayDetails: Equatable, Sendable {
+    let ruleName: String?
+    let endsAt: Date?
+    let fundingSource: ReleaseFundingSource?
+    let remainingRestrictionCount: Int?
+    let freeAvailable: Int?
+    let purchasedAvailable: Int?
+}
+
+enum ReleaseHandoffAction: Equatable, Sendable {
+    case acknowledge
+    case retry
+    case close
+    case openCoinStore
+    case openRecovery
+}
+
+@MainActor
+struct ActiveRestrictionReleaseHandoffView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @AccessibilityFocusState private var titleFocused: Bool
+    @State private var announcedProcessingRouteID: UUID?
+    @State private var announcedRetryReady = false
+
+    let route: PendingAppRoute
+    let details: ReleaseHandoffDisplayDetails?
+    let isActionRunning: Bool
+    let retryWaitSecondsOverride: Int?
+    let onAction: (ReleaseHandoffAction) -> Void
+
+    private var outcome: PendingAppRouteTerminalOutcome? {
+        route.state == .terminal ? route.terminalOutcome : nil
+    }
+
+    private var stateName: String {
+        switch outcome {
+        case .completed: "completed"
+        case .retryable: "retryable"
+        case .insufficient: "insufficient"
+        case .recoveryRequired: "recoveryRequired"
+        case nil: "processing"
+        }
+    }
+
+    var body: some View {
+        Group {
+        if outcome == .recoveryRequired {
+            ActiveRestrictionReleaseDestinationView(destination: .iCloudRecovery)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button(AppLocalizedCopy.string("coinRelease.action.close")) {
+                            onAction(.close)
+                        }
+                    }
+                }
+        } else {
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        statusIcon
+                        Text(eyebrow)
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(HomeColor.accent)
+                        Text(title)
+                            .font(.largeTitle.weight(.bold))
+                            .foregroundStyle(HomeColor.textPrimary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityAddTraits(.isHeader)
+                            .accessibilityFocused($titleFocused)
+                            .accessibilitySortPriority(10)
+                            .accessibilityIdentifier("releaseHandoff.statusTitle")
+                        Text(message)
+                            .font(.subheadline)
+                            .foregroundStyle(HomeColor.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilitySortPriority(9)
+                            .accessibilityIdentifier("releaseHandoff.statusMessage")
+                        statusCard
+                        statusFootnote
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 24)
+                    .padding(.bottom, 24)
+                }
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                actionBar
+            }
+            .background(HomeColor.background.ignoresSafeArea())
+            .navigationBarBackButtonHidden(true)
+            .toolbar(.hidden, for: .navigationBar)
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("releaseHandoff.\(stateName).screen")
+            .task(id: stateName) {
+                guard UIAccessibility.isVoiceOverRunning else { return }
+                if outcome == nil {
+                    guard announcedProcessingRouteID != route.routeID else { return }
+                    announcedProcessingRouteID = route.routeID
+                    UIAccessibility.post(notification: .announcement, argument: title)
+                } else {
+                    titleFocused = true
+                }
+            }
+        }
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    @ViewBuilder
+    private var statusIcon: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 32)
+                .fill(HomeColor.surface)
+            if outcome == nil {
+                if reduceMotion {
+                    Image(systemName: "hourglass")
+                        .foregroundStyle(HomeColor.accent)
+                        .accessibilityHidden(true)
+                } else {
+                    ProgressView()
+                        .tint(HomeColor.accent)
+                        .accessibilityHidden(true)
+                }
+            } else {
+                Image(systemName: iconName)
+                    .font(.system(size: 31, weight: .bold))
+                    .foregroundStyle(iconColor)
+                    .accessibilityLabel(iconAccessibilityLabel)
+                    .accessibilityIdentifier("releaseHandoff.\(stateName).icon")
+            }
+        }
+        .frame(width: 64, height: 64)
+        .accessibilityIdentifier(outcome == nil
+            ? "releaseHandoff.processing.progress"
+            : "releaseHandoff.\(stateName).icon")
+    }
+
+    private var eyebrow: String {
+        switch outcome {
+        case .completed: AppLocalizedCopy.string("releaseHandoff.completed.eyebrow")
+        case .retryable: AppLocalizedCopy.string("releaseHandoff.retryable.eyebrow")
+        case .insufficient: AppLocalizedCopy.string("releaseHandoff.insufficient.eyebrow")
+        case .recoveryRequired: ""
+        case nil: AppLocalizedCopy.string("releaseHandoff.processing.eyebrow")
+        }
+    }
+
+    private var title: String {
+        switch outcome {
+        case .completed: AppLocalizedCopy.string("releaseHandoff.completed.title")
+        case .retryable: AppLocalizedCopy.string("releaseHandoff.retryable.title")
+        case .insufficient: AppLocalizedCopy.string("releaseHandoff.insufficient.title")
+        case .recoveryRequired: ""
+        case nil: AppLocalizedCopy.string("releaseHandoff.processing.title")
+        }
+    }
+
+    private var message: String {
+        switch outcome {
+        case .completed: AppLocalizedCopy.string("releaseHandoff.completed.message")
+        case .retryable: AppLocalizedCopy.string("releaseHandoff.retryable.message")
+        case .insufficient: AppLocalizedCopy.string("releaseHandoff.insufficient.message")
+        case .recoveryRequired: ""
+        case nil: AppLocalizedCopy.string("releaseHandoff.processing.message")
+        }
+    }
+
+    private var iconName: String {
+        switch outcome {
+        case .completed: "checkmark"
+        case .retryable: "exclamationmark"
+        case .insufficient: "xmark"
+        case .recoveryRequired, nil: "hourglass"
+        }
+    }
+
+    private var iconColor: Color {
+        outcome == .retryable || outcome == .insufficient
+            ? HomeColor.error : HomeColor.accent
+    }
+
+    private var iconAccessibilityLabel: String {
+        outcome == .insufficient
+            ? AppLocalizedCopy.string("releaseHandoff.insufficient.icon") : title
+    }
+
+    private var statusCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(cardEyebrow)
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(HomeColor.accent)
+            Text(cardTitle)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(HomeColor.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier(outcome == .retryable
+                    ? "releaseHandoff.fundingResult" : "releaseHandoff.cardTitle")
+            if outcome == .insufficient {
+                HStack(spacing: 6) {
+                    Text(AppLocalizedCopy.string("releaseHandoff.balance.freeLabel"))
+                    Text(details?.freeAvailable.map(freeBalanceText) ?? "—")
+                        .accessibilityIdentifier("releaseHandoff.balance.free")
+                    Text(AppLocalizedCopy.string("releaseHandoff.balance.purchasedLabel"))
+                    Text(details?.purchasedAvailable.map(purchasedBalanceText) ?? "—")
+                        .accessibilityIdentifier("releaseHandoff.balance.purchased")
+                }
+                .font(.subheadline)
+                .foregroundStyle(HomeColor.textSecondary)
+            }
+            Text(cardDetail)
+                .font(.subheadline)
+                .foregroundStyle(HomeColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier(outcome == .completed
+                    ? "releaseHandoff.fundingResult" : "releaseHandoff.cardDetail")
+            if outcome == .completed, let remaining = details?.remainingRestrictionCount {
+                Text(remainingRestrictionText(remaining))
+                    .font(.subheadline)
+                    .foregroundStyle(HomeColor.textSecondary)
+                    .accessibilityIdentifier("releaseHandoff.remainingRestrictions")
+            }
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(HomeColor.surfaceElevated, in: .rect(cornerRadius: 22))
+        .overlay {
+            if outcome == .completed || outcome == .retryable {
+                RoundedRectangle(cornerRadius: 22)
+                    .strokeBorder(outcome == .completed ? HomeColor.accent : HomeColor.error)
+            }
+        }
+    }
+
+    private var cardEyebrow: String {
+        switch outcome {
+        case .completed: AppLocalizedCopy.string("releaseHandoff.completed.cardEyebrow")
+        case .retryable: AppLocalizedCopy.string("releaseHandoff.retryable.cardEyebrow")
+        case .insufficient: AppLocalizedCopy.string("releaseHandoff.insufficient.cardEyebrow")
+        case .recoveryRequired: ""
+        case nil: AppLocalizedCopy.string("releaseHandoff.processing.cardEyebrow")
+        }
+    }
+
+    private var cardTitle: String {
+        switch outcome {
+        case .retryable: AppLocalizedCopy.string("releaseHandoff.retryable.cardTitle")
+        case .insufficient: AppLocalizedCopy.string("releaseHandoff.insufficient.cardTitle")
+        case .completed, .recoveryRequired, nil:
+            details?.ruleName ?? AppLocalizedCopy.string("releaseHandoff.ruleFallback")
+        }
+    }
+
+    private var cardDetail: String {
+        switch outcome {
+        case .completed:
+            switch details?.fundingSource {
+            case .monthlyFree: return AppLocalizedCopy.string("releaseHandoff.completed.fundingFree")
+            case .purchased: return AppLocalizedCopy.string("releaseHandoff.completed.fundingPurchased")
+            case nil: return AppLocalizedCopy.string("releaseHandoff.completed.fundingUnknown")
+            }
+        case .retryable: return AppLocalizedCopy.string("releaseHandoff.retryable.cardDetail")
+        case .insufficient: return AppLocalizedCopy.string("releaseHandoff.insufficient.cardDetail")
+        case .recoveryRequired: return ""
+        case nil:
+            let cost = AppLocalizedCopy.string("releaseHandoff.processing.cost")
+            guard let endsAt = details?.endsAt else { return cost }
+            return AppLocalizedCopy.format(
+                "releaseHandoff.processing.endsAtCost",
+                endsAt.formatted(date: .omitted, time: .shortened), cost
+            )
+        }
+    }
+
+    private func freeBalanceText(_ count: Int) -> String {
+        AppLocalizedCopy.format(
+            count == 1 ? "releaseHandoff.balance.free.one" : "releaseHandoff.balance.free.other",
+            count
+        )
+    }
+
+    private func purchasedBalanceText(_ count: Int) -> String {
+        AppLocalizedCopy.format(
+            count == 1 ? "releaseHandoff.balance.purchased.one" : "releaseHandoff.balance.purchased.other",
+            count
+        )
+    }
+
+    private func remainingRestrictionText(_ count: Int) -> String {
+        count == 0 ? AppLocalizedCopy.string("releaseHandoff.completed.remainingNone")
+            : AppLocalizedCopy.format("releaseHandoff.completed.remainingOther", count)
+    }
+
+    @ViewBuilder
+    private var statusFootnote: some View {
+        switch outcome {
+        case .completed:
+            if (details?.remainingRestrictionCount ?? 0) > 0 {
+                Text(AppLocalizedCopy.string("releaseHandoff.completed.footnote"))
+                    .foregroundStyle(HomeColor.textSecondary)
+            }
+        case .retryable:
+            Text(AppLocalizedCopy.string("releaseHandoff.retryable.footnote"))
+                .foregroundStyle(HomeColor.error)
+                .accessibilityIdentifier("releaseHandoff.restrictionMaintained")
+        case .insufficient:
+            Text(AppLocalizedCopy.string("releaseHandoff.insufficient.footnote"))
+                .foregroundStyle(HomeColor.textSecondary)
+        case .recoveryRequired:
+            EmptyView()
+        case nil:
+            VStack(alignment: .leading, spacing: 2) {
+                Text(AppLocalizedCopy.string("releaseHandoff.processing.restrictionMaintained"))
+                    .accessibilityIdentifier("releaseHandoff.restrictionMaintained")
+                Text(AppLocalizedCopy.string("releaseHandoff.processing.resume"))
+                    .accessibilityIdentifier("releaseHandoff.resumeMessage")
+            }
+            .foregroundStyle(HomeColor.textSecondary)
+        }
+    }
+
+    @ViewBuilder
+    private var actionBar: some View {
+        if outcome == .completed || outcome == .retryable || outcome == .insufficient {
+            VStack(spacing: 8) {
+                if outcome == .retryable {
+                    TimelineView(.periodic(from: .now, by: 1)) { context in
+                        let seconds = retryWaitSecondsOverride ?? max(0, Int(ceil(
+                            (route.retryAfter ?? .distantPast)
+                                .timeIntervalSince(context.date)
+                        )))
+                        Button(seconds == 0
+                            ? AppLocalizedCopy.string("releaseHandoff.action.retry")
+                            : AppLocalizedCopy.format("releaseHandoff.action.retryAfter", seconds)) {
+                            onAction(.retry)
+                        }
+                        .disabled(seconds > 0)
+                        .disabled(isActionRunning)
+                        .buttonStyle(ReleaseHandoffPrimaryButtonStyle())
+                        .accessibilityIdentifier("releaseHandoff.primaryAction")
+                        .onChange(of: seconds) { oldValue, newValue in
+                            guard oldValue > 0, newValue == 0,
+                                  !announcedRetryReady, UIAccessibility.isVoiceOverRunning else {
+                                return
+                            }
+                            announcedRetryReady = true
+                            UIAccessibility.post(
+                                notification: .announcement,
+                                argument: AppLocalizedCopy.string("releaseHandoff.retryable.readyAnnouncement")
+                            )
+                        }
+                    }
+                } else {
+                    Button(outcome == .completed
+                        ? AppLocalizedCopy.string("releaseHandoff.action.confirm")
+                        : AppLocalizedCopy.string("releaseHandoff.action.purchase")) {
+                        onAction(outcome == .completed ? .acknowledge : .openCoinStore)
+                    }
+                    .buttonStyle(ReleaseHandoffPrimaryButtonStyle())
+                    .disabled(isActionRunning)
+                    .accessibilityIdentifier("releaseHandoff.primaryAction")
+                }
+                if outcome == .retryable || outcome == .insufficient {
+                    Button(AppLocalizedCopy.string("coinRelease.action.close")) {
+                        onAction(.close)
+                    }
+                        .disabled(isActionRunning)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(HomeColor.textSecondary)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .accessibilityIdentifier("releaseHandoff.secondaryAction")
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 12)
+            .padding(.bottom, 16)
+            .background(HomeColor.background)
+        }
+    }
+}
+
+private struct ReleaseHandoffPrimaryButtonStyle: ButtonStyle {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.body.weight(.bold))
+            .foregroundStyle(configuration.isPressed ? HomeColor.background.opacity(0.8) : HomeColor.background)
+            .frame(maxWidth: .infinity, minHeight: dynamicTypeSize.isAccessibilitySize ? 64 : 52)
+            .background(
+                HomeColor.accent.opacity(configuration.isPressed ? 0.75 : 1),
+                in: .capsule
+            )
+    }
+}
+
 struct ActiveRestrictionReleaseDestinationView: View {
+    @AccessibilityFocusState private var recoverySummaryFocused: Bool
     let destination: PendingAppRouteDestination
 
     var body: some View {
@@ -586,25 +993,65 @@ struct ActiveRestrictionReleaseDestinationView: View {
             Image(systemName: icon)
                 .font(.largeTitle)
                 .foregroundStyle(HomeColor.accent)
-            Text(title)
-                .font(.title)
-                .fontWeight(.bold)
-            Text(message)
-                .foregroundStyle(HomeColor.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityHidden(true)
+            if destination == .iCloudRecovery {
+                VStack(alignment: .leading, spacing: 16) {
+                    destinationTitle
+                    destinationMessage
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(title)
+                .accessibilityValue(message)
+                .accessibilityFocused($recoverySummaryFocused)
+                .accessibilityIdentifier("coinRelease.destination.summary")
+            } else {
+                destinationTitle
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier("coinRelease.destination.title")
+                destinationMessage
+            }
+#if DEBUG
+            if destination == .iCloudRecovery, let diagnosticText {
+                Text("DEBUG: \(diagnosticText)")
+                    .font(.caption.monospaced())
+                    .foregroundStyle(HomeColor.textSecondary)
+                    .textSelection(.enabled)
+                    .accessibilityHidden(true)
+            }
+#endif
             Spacer()
         }
         .padding(20)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(HomeColor.background.ignoresSafeArea())
         .foregroundStyle(HomeColor.textPrimary)
-        .navigationTitle(title)
+        .navigationTitle(destination == .iCloudRecovery ? "" : title)
         .navigationBarTitleDisplayMode(.inline)
-        .accessibilityIdentifier("coinRelease.destination.\(destination.rawValue)")
+        .task(id: destination) {
+            guard destination == .iCloudRecovery, UIAccessibility.isVoiceOverRunning else {
+                return
+            }
+            await Task.yield()
+            recoverySummaryFocused = true
+        }
+    }
+
+    private var destinationTitle: some View {
+        Text(title)
+            .font(.title)
+            .fontWeight(.bold)
+    }
+
+    private var destinationMessage: some View {
+        Text(message)
+            .foregroundStyle(HomeColor.textSecondary)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private var title: String {
         switch destination {
+        case .releaseProcessing:
+            AppLocalizedCopy.string("coinRelease.destination.reconciliation.title")
         case .coinStore: AppLocalizedCopy.string("coinRelease.destination.coinStore.title")
         case .iCloudRecovery:
             AppLocalizedCopy.string("coinRelease.destination.iCloudRecovery.title")
@@ -617,6 +1064,8 @@ struct ActiveRestrictionReleaseDestinationView: View {
 
     private var message: String {
         switch destination {
+        case .releaseProcessing:
+            AppLocalizedCopy.string("coinRelease.destination.reconciliation.message")
         case .coinStore:
             AppLocalizedCopy.string("coinRelease.destination.coinStore.message")
         case .iCloudRecovery:
@@ -630,10 +1079,29 @@ struct ActiveRestrictionReleaseDestinationView: View {
 
     private var icon: String {
         switch destination {
+        case .releaseProcessing: "hourglass"
         case .coinStore: "cart"
         case .iCloudRecovery: "icloud"
         case .ledgerReset: "exclamationmark.icloud"
         case .reconciliation: "arrow.triangle.2.circlepath"
         }
     }
+
+#if DEBUG
+    private var diagnosticText: String? {
+        guard
+            let identifier = SharedIdentifiers.appGroupIdentifier(),
+            let value = UserDefaults(suiteName: identifier)?.dictionary(
+                forKey: SharedIdentifiers.shieldActionDiagnosticDefaultsKey
+            ),
+            let stage = value["stage"] as? String
+        else {
+            return nil
+        }
+        if let detail = value["detail"] as? String {
+            return "\(stage), \(detail)"
+        }
+        return stage
+    }
+#endif
 }

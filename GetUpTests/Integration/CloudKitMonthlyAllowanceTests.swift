@@ -31,6 +31,7 @@ struct CloudKitMonthlyAllowanceTests {
             CoinLedgerDeterministicID.freeGrant(monthID: request.monthID),
             CoinLedgerDeterministicID.reservation(commandID: request.commandID),
             CoinLedgerRecordID.releaseCommand(commandID: request.commandID),
+            CoinLedgerRecordID.reservationCompatibilityStamp(commandID: request.commandID),
         ])
 
         let allowanceRecord = try #require(modify.recordsToSave.first {

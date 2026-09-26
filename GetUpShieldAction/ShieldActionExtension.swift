@@ -9,87 +9,110 @@ private final class ShieldActionCompletion: @unchecked Sendable {
     }
 }
 
-private final class ShieldCoinActionRuntime: @unchecked Sendable {
+private final class ShieldActionDiagnosticRecorder: @unchecked Sendable {
+    private let defaults: UserDefaults?
+
+    init(appGroupIdentifier: String) {
+        defaults = UserDefaults(suiteName: appGroupIdentifier)
+    }
+
+    func record(_ stage: String, detail: String? = nil) {
+        var value: [String: Any] = [
+            "stage": stage,
+            "recordedAt": Date().timeIntervalSince1970
+        ]
+        if let detail {
+            value["detail"] = detail
+        }
+        defaults?.set(value, forKey: SharedIdentifiers.shieldActionDiagnosticDefaultsKey)
+        defaults?.synchronize()
+    }
+
+    func errorDetail(_ error: any Error) -> String {
+        if let error = error as? ShieldCoinActionContextReaderError {
+            switch error {
+            case .snapshotUnavailable: return "snapshotUnavailable"
+            case .noMatchingOccurrence: return "noMatchingOccurrence"
+            }
+        }
+        return String(describing: type(of: error))
+    }
+}
+
+/// Production entry point: local occurrence lookup and an App Group route write only.
+private final class ShieldReleaseRouteRuntime: @unchecked Sendable {
     private let contextReader: ShieldCoinActionContextReader
-    private let handler: ShieldCoinActionHandler
-    private let routeRepository: PendingAppRouteRepository
-    private let responsePolicy = ShieldActionResponsePolicy()
+    private let handler: ShieldReleaseRouteHandler
+    private let diagnosticRecorder: ShieldActionDiagnosticRecorder
 
     private init(
         contextReader: ShieldCoinActionContextReader,
-        handler: ShieldCoinActionHandler,
-        routeRepository: PendingAppRouteRepository
+        handler: ShieldReleaseRouteHandler,
+        diagnosticRecorder: ShieldActionDiagnosticRecorder
     ) {
         self.contextReader = contextReader
         self.handler = handler
-        self.routeRepository = routeRepository
+        self.diagnosticRecorder = diagnosticRecorder
     }
 
-    static func live() -> ShieldCoinActionRuntime? {
-        guard
-            let identifier = SharedIdentifiers.appGroupIdentifier(),
-            let containerURL = FileManager.default.containerURL(
+    static func live() -> ShieldReleaseRouteRuntime? {
+        guard let identifier = SharedIdentifiers.appGroupIdentifier(),
+              let containerURL = FileManager.default.containerURL(
                 forSecurityApplicationGroupIdentifier: identifier
-            )
-        else {
+              ) else {
             return nil
         }
-
-        let routeRepository = PendingAppRouteRepository(containerURL: containerURL)
-        let handler = ShieldCoinActionHandler(
-            // The operational CloudKit compatibility gate remains default-deny.
-            // A verified adapter replaces this closure after that gate succeeds.
-            releaseRepresentative: { _ in .iCloudRecoveryRequired },
-            savePendingRoute: { route in
-                try await routeRepository.save(route)
-            }
-        )
-        return ShieldCoinActionRuntime(
+        let repository = PendingAppRouteRepository(containerURL: containerURL)
+        return ShieldReleaseRouteRuntime(
             contextReader: ShieldCoinActionContextReader(containerURL: containerURL),
-            handler: handler,
-            routeRepository: routeRepository
+            handler: ShieldReleaseRouteHandler(
+                loadRoute: { try await repository.load() },
+                saveRoute: { try await repository.save($0) }
+            ),
+            diagnosticRecorder: ShieldActionDiagnosticRecorder(appGroupIdentifier: identifier)
         )
     }
 
     func handle(applicationToken: ApplicationToken) async -> ShieldActionResponse {
-        await handle { try await contextReader.context(for: applicationToken) }
-    }
-
-    func handle(categoryToken: ActivityCategoryToken) async -> ShieldActionResponse {
-        await handle { try await contextReader.context(for: categoryToken) }
-    }
-
-    func handle(webDomainToken: WebDomainToken) async -> ShieldActionResponse {
-        await handle { try await contextReader.context(for: webDomainToken) }
-    }
-
-    private func handle(
-        loadContext: () async throws -> ShieldCoinActionContext
-    ) async -> ShieldActionResponse {
-        do {
-            let context = try await loadContext()
-            return await handler.handlePrimaryAction(
-                context: context,
-                operatingSystemVersion: ProcessInfo.processInfo.operatingSystemVersion
-            ).response
-        } catch {
-            return await saveRecoveryRoute()
+        await handle { [contextReader] in
+            try contextReader.releaseOccurrence(for: applicationToken)
         }
     }
 
-    private func saveRecoveryRoute() async -> ShieldActionResponse {
+    func handle(categoryToken: ActivityCategoryToken) async -> ShieldActionResponse {
+        await handle { [contextReader] in
+            try contextReader.releaseOccurrence(for: categoryToken)
+        }
+    }
+
+    func handle(webDomainToken: WebDomainToken) async -> ShieldActionResponse {
+        await handle { [contextReader] in
+            try contextReader.releaseOccurrence(for: webDomainToken)
+        }
+    }
+
+    private func handle(
+        loadOccurrence: @Sendable () throws -> RestrictionOccurrence
+    ) async -> ShieldActionResponse {
         do {
-            try await routeRepository.save(PendingAppRoute(
-                routeID: UUID(),
-                destination: .iCloudRecovery,
-                createdAt: Date(),
-                occurrenceID: nil,
-                consumedAt: nil
-            ))
-            return responsePolicy.responseAfterSavingRoute(
+            let occurrence = try loadOccurrence()
+            let response = await handler.handlePrimaryAction(
+                occurrenceID: occurrence.id,
                 operatingSystemVersion: ProcessInfo.processInfo.operatingSystemVersion
             )
+#if DEBUG
+            diagnosticRecorder.record(
+                response == .defer ? "releaseRouteFailed" : "releaseRouteSaved"
+            )
+#endif
+            return response
         } catch {
+#if DEBUG
+            diagnosticRecorder.record(
+                "releaseContextUnavailable",
+                detail: diagnosticRecorder.errorDetail(error)
+            )
+#endif
             return .defer
         }
     }
@@ -97,7 +120,7 @@ private final class ShieldCoinActionRuntime: @unchecked Sendable {
 
 final class ShieldActionExtension: ShieldActionDelegate {
     private let responsePolicy = ShieldActionResponsePolicy()
-    private let runtime = ShieldCoinActionRuntime.live()
+    private let runtime = ShieldReleaseRouteRuntime.live()
 
     private func complete(
         action: ShieldAction,

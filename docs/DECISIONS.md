@@ -1,5 +1,330 @@
 # 결정 사항
 
+## DEC-117 — T113 실기기 제한 대상과 시간대
+
+**날짜**: 2026-09-22
+
+**상태**: 사용자 지정
+
+**결정**: 사용자가 현재부터 약 22:30까지 Games 카테고리 앱에 활성 제한을 적용하고,
+T113의 첫 Shield 탭 대상 앱으로 Candy Crush Saga를 지정했다. 에이전트는 이 범위의 기존
+제한만 사용하며 다른 개인 앱이나 시간대를 임의로 추가하지 않는다.
+
+**근거**: T113 실기기 인수에는 일반 활성 occurrence의 실제 Shield가 필요하다. BLK-020의
+대상·시간대 선택이 사용자 입력으로 해결됐다.
+
+## DEC-113 — Shield 첫 해제는 최초 권위 장부 문맥을 예약까지 재사용
+
+**날짜**: 2026-09-15
+
+**상태**: 승인됨 — T089 5분 경계 첫 탭 실패의 명백한 지연 원인 수정
+
+**결정**: Shield Action은 primary action 시작 시 한 번 수행한 `refreshBeforeShieldRequest()`의 epoch,
+account, current-period allowance를 `CoinRuleReleasePrefetchedLedger`로 예약 executor에 전달한다.
+`RuleReleaseService.reserve`는 이 문맥을 첫 시도의 `initialContext`로 사용하므로 정상 경로에서는 예약
+전에 CloudKit을 다시 조회하지 않는다. 월간 무료 예약이 서버에서 확정
+`insufficientMonthlyAllowance` 충돌을 반환한 경우에만 기존 command ID를 유지한 채 fresh context를
+한 번 다시 읽고 구매분 fallback 여부를 판단한다. 결과 불명은 재조회나 구매 fallback으로 바꾸지 않고
+기존 reconciliation 계약을 유지한다.
+
+**근거**: `t089-five-minute-final`의 새 구간에서 첫 Shield 탭은 Coins로 이동하고 2/0을 유지했지만,
+앱 foreground가 장부를 준비한 뒤 두 번째 탭은 즉시 성공해 양쪽 1/0으로 수렴했다. 기존 정상 경로는
+Shield 초기 refresh, release closure refresh, epoch refresh, reservation context refresh가 중첩될 수
+있어 전체 5초 응답 상한을 소모했다. 최초 refresh는 primary action 직전에 완료된 권위 문맥이므로 같은
+요청의 첫 예약에 재사용할 수 있다.
+
+**영향 범위**: CloudKit schema, 원자 modify, 무료 우선·구매 fallback, command 멱등성 및 Shield의
+전체 5초 fail-closed 상한은 변경하지 않는다. 정상 첫 탭의 중복 네트워크 왕복만 제거하며 서버 충돌은
+반드시 fresh refetch로 재평가한다.
+
+## DEC-112 — T089 잔여 경계 검증의 DEBUG 전용 5분 주기
+
+**날짜**: 2026-09-14
+
+**상태**: 승인됨 — 월초·다음 일자 경계 대기 대신 사용자 승인
+
+**결정**: 남은 T089 Shield-first 경계 검증은 `t089-five-minute-final` 격리 namespace와 서울 시각
+5분 경계를 사용한다. DEBUG 빌드에서 유효한 `GetUpT089LedgerNamespace`와
+`GetUpT089PeriodMinutes = 5`가 함께 있고 월 경계일 설정은 없을 때만 활성화한다. allowance 식별자는
+`yyyy-MM-dd'T'HH-mm` 형식의 현재 5분 구간 시작 시각이며, 각 구간의 무료 quota는 2다. 이전 구간의
+무료분은 다음 구간에 합산하지 않고 구매 잔액은 변경하지 않는다. 앱과 Shield Action은 같은 설정과
+CloudKit zone을 사용한다.
+
+**안전 경계**: 월 경계일과 분 주기가 동시에 설정되거나 둘 다 유효하지 않으면 T089 override 전체를
+거부한다. Release 컴파일은 Info.plist 값과 무관하게 override를 무시하고 운영 `CoinLedgerZone`,
+서울 매월 1일 `yyyy-MM` 계약을 유지한다. 코인 화면에는 namespace, `서울 매 5분 경계`, 현재 구간과
+다음 갱신 시각을 표시한다.
+
+**검증 범위**: 자동 테스트는 5분 내림, 경계 전환, 서울 자정 날짜 전환과 잘못 정렬된 period ID
+거부를 확인한다. 실기기에서는 두 기기를 같은 구간의 무료 2·구매 0으로 준비하고 앱을 닫은 뒤 다음
+5분 경계 후 앱을 먼저 열지 않은 상태에서 Shield 해제를 한 번 실행한다. 양쪽이 새 구간 무료 1·구매
+0으로 수렴하고 이전 구간 무료분이 더해지지 않으면 Shield의 allowance 생성+예약, 비이월과 다기기
+전파를 통과로 기록한다. StoreKit 구매는 DEC-111에 따라 T089에서 수행하지 않는다.
+
+## DEC-111 — Xcode StoreKit의 0번 거래는 장부 지급에서 제외
+
+**날짜**: 2026-09-14
+
+**상태**: 승인됨 — T089 day15 구매 실패 원인 확정
+
+**결정**: `Transaction.id == 0`인 Xcode 로컬 StoreKit 거래를 합성 ID로 바꾸거나 장부에 지급하지
+않는다. `PurchaseGrant`의 양수 transaction ID 불변식과 transaction ID 기반 원격 멱등 키를 유지한다.
+T089은 명세대로 StoreKit 구매 없이 월간 무료분의 다기기 생성·사용·서울 경계·비이월을 검증하고,
+실제 Sandbox 거래 ID를 사용하는 구매 수명주기는 T094에서 검증한다.
+
+**근거**: Xcode의 `Manage StoreKit Transactions`에서 day15 미완료 거래가 `ID = 0`,
+`Line Item ID = 0`, `State = Unfinished`임을 직접 확인했다. Xcode 실행 console에서 같은 거래의 복구가
+세 번 모두 `LiveActivityCoinModelError`로 실패했고 CloudKit `CoinAccount.purchasedAvailable`은 0을
+유지했다. 0을 허용하면 여러 테스트 구매가 같은 지급 키로 충돌하고 실제 결제 안전 경계를 약화한다.
+
+**영향 범위**: 운영·Sandbox StoreKit 거래 처리와 CloudKit schema는 변경하지 않는다. day15의
+구매 1 준비 및 구매 잔액 보존 결과는 T089 증적으로 사용하지 않으며, 남은 T089은 15일 경계 뒤
+무료 잔액과 Shield-first 결과만 확인한다.
+
+## DEC-110 — CloudKit 원자 저장 실패의 실제 record 오류 우선 선택
+
+**날짜**: 2026-09-14
+
+**상태**: 승인됨 — 원자 저장 오류 진단 보강(실제 day15 원인은 DEC-111로 확정)
+
+**결정**: CloudKit atomic modify의 record별 결과에 `batchRequestFailed`와 다른 구체적인 오류가 함께
+있으면 구체적인 오류를 우선 변환한다. `batchRequestFailed`만 존재할 때만 결과 불명으로 처리한다.
+컨테이너·권한 오류는 `cloud_account_unavailable`, 서버·네트워크 오류는
+`cloud_server_unavailable`, 요청·record 제약 오류는 `cloud_record_invalid`로 분류한다. DEBUG
+unfinished 복구 실패는 transaction ID나 시스템 오류 문자열 없이 안정 오류 코드와 Swift 오류 타입만
+Xcode console에 기록한다.
+
+**근거**: 원자 저장에서 실제 실패 record 외의 종속 record가 반환하는 `CKError.batchRequestFailed`를
+배열 순서상 먼저 읽으면 실제 원인이 가려지고 `unexpectedRequest`로 축약될 수 있다. 회귀 테스트로
+이 경계를 보강했다. 다만 day15 재구매는 CloudKit modify 전에 Xcode 거래 ID 0을 모델이 거부한 것이
+원인으로 확인됐으므로 이 변경을 해당 실패의 직접 수정으로 간주하지 않는다.
+
+**영향 범위**: CloudKit 쓰기 내용·원자성·멱등 키는 변경하지 않는다. 기존 unfinished 거래는
+finish하지 않은 채 다음 launch·foreground에서 재시도하며, 안정 코드가 확인되기 전에는 추가 구매하지
+않는다.
+
+## DEC-109 — StoreKit 미완료 거래의 foreground 복구와 커밋 후 새로고침 분리
+
+**날짜**: 2026-09-14
+
+**상태**: 승인됨 — T089 day15 구매의 `unknown` 실패 후 자동 복구 보강
+
+**결정**: StoreKit 거래 observer는 `Transaction.updates` listener를 프로세스당 하나만 유지하되 앱
+launch·foreground마다 unfinished 거래를 다시 조회한다. 개별 거래의 CloudKit 처리 실패는 해당 거래를
+unfinished로 남기고 이후 update 관찰을 종료하지 않는다. CloudKit grant와 StoreKit `finish()`가 모두
+성공한 뒤 장부 projection 새로고침만 실패하면 구매를 실패로 되돌리지 않고 grant 성공을 표시하며,
+권위 잔액은 다음 lifecycle 동기화에서 갱신한다. `CoinLedgerSyncProviderError`는 각각
+`cloud_server_unavailable`, `cloud_account_unavailable`, `cloud_record_invalid`로 안정 변환한다.
+
+**근거**: `t089-day15-final`의 Xcode StoreKit 거래는 성공 창 뒤 앱에서 `DEBUG: unknown`을 표시하고,
+재실행 뒤에도 경계 전 `August 2026`, 무료 2, 구매 0을 유지했다. 기존 구조는 일시적 CloudKit 실패가
+updates task 전체를 끝냈고 lifecycle coordinator는 observer 시작을 다시 요청하지 않았다. 또한 grant가
+이미 커밋된 경우에도 직후 projection refresh 실패를 전체 구매 실패로 표시할 수 있었다.
+
+**영향 범위**: 원격 schema, transaction ID 멱등 키, 무료 우선 정책은 변경하지 않는다. 화면은 신뢰할
+수 없는 잔액을 낙관적으로 증가시키지 않으며, 최신 projection을 받을 때까지 직전 권위 잔액을 유지한다.
+unfinished 재처리는 기존 transaction ID 단일 처리와 CloudKit grant 멱등성 경계를 그대로 사용한다.
+
+## DEC-108 — 검증된 StoreKit 거래의 프로세스 단위 단일 처리
+
+**날짜**: 2026-09-14
+
+**상태**: 승인됨 — T089 실기기 결제 실패의 명백한 동시 처리 결함 수정
+
+**결정**: 하나의 `CoinPurchaseService`가 같은 StoreKit transaction ID를 직접 구매 결과와
+`Transaction.updates` 또는 unfinished 전달로 동시에 받으면 CloudKit grant와 StoreKit `finish()`를
+한 작업으로 합친다. 성공한 transaction ID와 `PurchaseGrant`는 해당 프로세스 수명 동안 기억해 뒤늦은
+중복 전달도 다시 grant·finish하지 않는다. grant 또는 finish가 실패한 작업은 성공 캐시에 넣지 않아
+동일 unfinished 거래가 다음 전달에서 재시도될 수 있게 한다.
+
+**근거**: `t089-day14-final`에서 StoreKit Xcode 환경은 구매 성공을 표시했지만 앱은 구매 실패와
+구매 잔액 0을 표시했다. 기존 구조는 `purchase()` 반환 경로와 시작 시 연 `Transaction.updates`가 같은
+검증 거래를 각각 CloudKit에 지급하고 `finish()`할 수 있었다. 자동 회귀에서도 unfinished와 updates가
+같은 거래를 두 번 처리하는 것이 확인됐으며, 한 경로가 먼저 finish하면 다른 경로가
+`store_finish_failed`를 사용자 실패로 표시할 수 있다.
+
+**진단 범위**: T089 DEBUG namespace 빌드의 구매 실패 문구 아래에 개인정보 없는 안정 오류 코드만
+표시한다. Release UI와 StoreKit·CloudKit schema, transaction ID 기반 원격 멱등 키는 변경하지 않는다.
+
+## DEC-107 — T089 월 경계의 DEBUG 전용 13일 대체 검증
+
+**날짜**: 2026-09-12
+
+**상태**: 승인됨 — 실제 월초 대기 대신 사용자 승인
+
+**결정**: T089 실기기 월 경계는 2026-09-13 00:00 `Asia/Seoul`을 대체 경계로 사용한다. 이 동작은
+DEBUG 빌드에서 유효한 `GetUpT089LedgerNamespace`와 1...28 범위의
+`GetUpT089MonthlyBoundaryDay`가 함께 제공될 때만 활성화한다. 테스트 빌드는 namespace별 별도
+CloudKit custom zone, `CKSyncEngine` subscription과 App Group checkpoint를 사용한다. 둘 중 하나라도
+없거나 유효하지 않으면 일반 `CoinLedgerZone`과 매월 1일 경계를 사용한다. Release 컴파일에서는 해당
+Info.plist 값이 존재해도 override를 무조건 무시한다.
+
+13일 경계에서는 날짜에서 12일을 이동한 달을 allowance `monthID`로 사용한다. 따라서 서울 시각
+9월 12일 23:59:59까지는 `2026-08`, 9월 13일 00:00부터는 `2026-09`가 되며, CloudKit 서버
+`creationDate` 검증도 같은 정책을 사용한다. 운영 장부의 실제 9월 allowance와 record를 수정·삭제하지
+않는다. 코인 화면에는 DEBUG 테스트 namespace와 경계일을 노란 배너로 표시해 운영 빌드 오인을 막는다.
+
+**검증 범위**: 이 대체 경계에서 이전 기간 무료분 비이월, 경계 중 무실행, 첫 app foreground 생성,
+별도 첫 Shield 요청의 생성+1회 사용, 두 기기의 같은 allowance 동시 생성을 실제 development private
+database와 서버 시각으로 확인한다. 이는 월 길이와 월초라는 달력 날짜 자체를 검증하는 것이 아니라
+서울 자정 경계 전환 및 서버 권위 생성 계약의 실기기 증적으로 채택한다. 자동 테스트의 실제 월초·
+시간대 변경 회귀는 계속 유지한다.
+
+**2026-09-13 추가 승인**: 첫 13일 Shield 실행에서 발견한 allowance 부재 선행 차단을 수정한 뒤
+Shield-first와 구매 잔액 보존을 다시 검증하기 위해 `t089-day14-final` 격리 namespace에 한해 경계를
+14일 00:00으로 이동한다. 테스트 장부에서 Sandbox 코인 1개를 사용자가 직접 구매해 경계 뒤 무료가
+먼저 사용되고 구매 1개가 보존되는지 확인한다. DEBUG·격리·Release 무시 조건은 동일하다.
+
+**2026-09-14 후속 적용**: `t089-day14-final`의 경계 전 구매 준비가 실패했고 수정 빌드에서도 해당
+Xcode StoreKit 거래가 unfinished로 재전달되지 않아 14일 증적을 폐기한다. 동일한 DEBUG·격리·Release
+무시 조건으로 새 `t089-day15-final` namespace와 15일 00:00 경계를 사용한다. T089에서는 Xcode
+StoreKit 검증 거래로 구매 잔액의 CloudKit 지급·월 경계 보존만 확인하고, 실제 Sandbox 구매 수명주기는
+T094에서 별도로 검증한다.
+
+## DEC-106 — CloudKit 컨테이너 명시 주입과 해결된 Shield route 폐기
+
+**날짜**: 2026-09-12
+
+**결정**: 앱과 Shield Action은 `CKContainer.default()`의 bundle 기반 추론에 의존하지 않는다.
+`GETUP_ICLOUD_CONTAINER_IDENTIFIER`를 각 target의 `Info.plist`에
+`GetUpICloudContainerIdentifier`로 주입하고, 검증된 식별자로 생성한 동일 `CKContainer`를 계정 확인,
+`CKSyncEngine`, private database와 setup/reset provider에 전달한다. 값이 비어 있거나 build setting이
+치환되지 않았으면 기본 컨테이너로 fallback하지 않고 시작 또는 Shield action을 실패 닫힘 처리한다.
+
+Shield 해제가 확정되면 그보다 앞선 실패가 남긴 단일 `PendingAppRoute`를 원자 폐기한다. 앱 시작
+재조정 뒤 최신 장부가 `current`이거나 미결 command가 사라졌다면 각각 과거 iCloud 복구·reconciliation
+route는 파일에서 소비하되 화면을 열지 않는다. 재조정이 실패했거나 미결 command가 남으면 기존
+복구 화면을 보존한다.
+
+**근거**: 두 실기기의 Shield Action에서 `CKError.badContainer`가 동일하게 발생했지만 서명
+entitlement와 provisioning profile에는 올바른 컨테이너가 포함돼 있었다. 명시 컨테이너 주입 뒤 실제
+해제가 확정되고 두 기기 잔액이 동기화됐다. 또한 이전 실패 route와 동시 요청 패자의 reconciliation
+route가 이미 해결된 뒤에도 정적 안내를 표시했으므로, route의 생성 당시 원인보다 앱 시작 후 최신
+재조정 결과를 우선해야 한다.
+
+**영향 범위**: CloudKit schema·record 값·보안 권한은 변경하지 않는다. DEBUG 진단은 token, 좌표,
+계정 record ID를 기록하지 않고 안정된 단계·상태·오류 코드만 App Group에 보존한다.
+
+## DEC-105 — 앱·Shield의 프로세스별 live 장부 조립과 새 epoch 활성화
+
+**날짜**: 2026-09-09
+
+**결정**: 앱과 Shield Action은 각각 `CoinLedgerLiveRuntime`을 생성하고 T099의 실제 private CloudKit
+database, T101의 프로세스별 `CKSyncEngine` provider, T102의 reservation compatibility 검증을 같은
+repository 경계에 조립한다. 앱 launch·foreground는 StoreKit listener를 시작한 뒤 원격 command를
+먼저 재조정하고 현재 월 allowance가 없을 때 생성한 다음 다시 동기화한다. Shield는 표시용 App Group
+mirror를 권위 값으로 쓰지 않고 탭 처리 직전 Shield 프로세스의 initial/fresh fetch를 수행한다. 전체
+Shield 처리에는 5초 응답 상한을 두며, 확인되지 않은 결과는 제한을 유지하고 앱 복구 경로로 보낸다.
+
+앱 구매는 `CoinPurchaseService`, 규칙 해제는 `RuleReleaseService`와 `RuleReleaseCoordinator`, launch·
+foreground 복구는 `RuleReleaseReconciler`, 원격 projection 검증은 `CoinLedgerRecoveryService`를 실제
+repository에 연결한다. setup/reset은 `CloudKitCoinLedgerInitializationProvider`가 epoch, 0 구매 잔액,
+현재 월 allowance와 새 epoch의 `ready` compatibility marker를 한 atomic modify로 만든다. initial setup은
+무료 2회와 grant event를 만들고, 삭제 확인 reset은 현재 월 무료분을 0으로 억제한다.
+
+**호환성 경계**: `ready` marker 자동 생성은 기존 writer가 존재할 수 없는 새 UUID epoch에만 허용한다.
+기존 epoch는 앱이 marker를 추측하거나 자동 생성하지 않으며 DEC-104의 명시적 migration과 구버전 writer
+종료 증거가 없으면 앱·Shield 모두 예약을 거부한다. App Group snapshot은 동기화 결과 표시와 프로세스
+간 전달용 mirror일 뿐 CloudKit current 판정을 대신하지 않는다.
+
+**근거**: 각 화면에서 database·sync·migration을 따로 조립하면 앱과 Shield의 current 판정과 command
+복구 순서가 달라질 수 있다. 프로세스별 runtime과 공통 해제 executor는 최신 fetch, 무료 우선 예약,
+로컬 제한 예외 적용, 원격 commit, 재조정 순서를 하나로 유지하면서도 T101의 checkpoint 격리를 보존한다.
+
+## DEC-104 — reservation 호환성의 command stamp와 명시적 epoch migration
+
+**날짜**: 2026-09-09
+
+**결정**: claim protocol writer는 모든 새 예약에서 `ReservationCompatibilityStamp`를 claim·command·
+잔액·event와 같은 CloudKit atomic modify에 기록한다. 기존 epoch는 구버전 writer가 더 이상 접근하지
+않는다는 운영 승인이 epoch ID·승인 시각·evidence version과 함께 주어진 경우에만 명시적 migration을
+시작한다. provider는 `ReservationMigrationMarker`를 먼저 `preparing`으로 기록하고 기존 command를
+전수 검사한다. committed command의 claim이 없으면 동일 command의 held claim을 보강하고, rejected·
+compensated 또는 올바른 held claim이 있는 command에는 stamp를 추가한다. requested나 claim 없는
+미종결 command, 소유자가 다른 claim, 중복 committed occurrence는 자동 판단하지 않고 중단한다.
+모든 command가 stamp와 필요한 claim으로 덮인 후에만 marker를 `ready`로 전환한다.
+
+`verifyReservationCompatibility`는 저장된 ready 값만 신뢰하지 않는다. 앱과 Shield Action 각각의
+현재 프로세스가 T101 whole-zone sync로 받은 최신 레코드에서 epoch 일치, ready marker, 모든 command
+stamp와 활성·committed command의 held claim을 매번 함께 검사한다. migration 완료 뒤 claim 없는
+구버전 writer command가 추가되면 즉시 false로 닫힌다. 중단·CloudKit 실패·`preparing`은 멱등 재시도
+대상이며 예약 권한이 아니다.
+
+**근거**: epoch 또는 marker 존재만으로 허용하면 migration 완료 뒤에도 구버전 writer가 claim 없이
+중복 예약할 수 있다. command별 stamp는 과거 compensated command의 claim이 다음 소유자로 바뀐 뒤에도
+해당 command가 호환 writer 또는 검증된 migration을 거쳤음을 남긴다. committed claim 보강은 이미
+소모된 occurrence의 재사용을 막지만, 미종결 command의 결과를 추측해 보상하는 것은 FR-015를 위반할
+수 있어 재조정으로 남긴다.
+
+**운영 경계**: `legacyWritersRetiredAt` 승인은 앱 내부 자동 추론 값이 아니며 배포 시 기존 writer가
+CloudKit에 더 이상 쓰지 않는다는 운영 증거가 있어야 한다. migration은 epoch·command·잔액을 삭제하거나
+reset하지 않는다. T102는 provider와 앱·Shield 공용 target 경계를 제공하지만 실제 live 생성·호출은
+T100에서 T099 database와 T101 sync provider에 조립한다. 그 전에는 기본 false가 유지된다.
+
+## DEC-103 — CKSyncEngine의 프로세스별 checkpoint와 계정 격리
+
+**날짜**: 2026-09-09
+
+**결정**: `CoinLedgerSyncProvider`는 `CKContainer.accountStatus`와 private database 사용자 record ID로
+현재 iCloud account session을 확인한 뒤에만 `CKSyncEngine`을 실행한다. 앱과 Shield Action은 각각
+별도의 protected atomic checkpoint에 `CKSyncEngine.State.Serialization`, projection용 record snapshot,
+pending save 재시도용 원본 `CKRecord` archive와 같은 계정에서 마지막으로 확인한 mirror를 보관한다.
+저장된 checkpoint는 증분 fetch를 재개하는 cache일 뿐이며, 프로세스가 시작될 때마다 비영속
+`CoinLedgerSyncSession`을 새로 만들고 `fetchChanges` 성공 전에는 `current`를 허용하지 않는다.
+
+계정이 바뀌면 이전 checkpoint와 App Group 잔액을 새 계정의 입력으로 사용하지 않는다. sign-out은
+checkpoint를 폐기하고 0 잔액의 `unavailable` mirror로 격리한다. account status가 일시적으로
+확인되지 않을 때만 같은 checkpoint에 결합된 마지막 mirror를 참고용 `unavailable`로 보존한다.
+checkpoint가 손상되면 권위 데이터로 복구하지 않고 폐기한 뒤 전체 fetch를 다시 수행한다.
+
+`CKSyncEngine`은 남은 database·record change를 먼저 `sendChanges`로 재시도한 뒤 remote change를
+fetch한다. pending이 남거나 release command가 종결되지 않았으면 projection을 `stale`로 저장한다.
+완전한 epoch·account·월 allowance·PurchaseGrant·event projection만 `CoinLedgerSyncAdapter`를 통해
+App Group `CoinBalanceSnapshot.current`로 기록한다. 현재 월 allowance가 아직 없는 정상 장부는
+확정 무료 잔액 0으로 projection해 후속 foreground의 지연 생성을 허용한다.
+
+zone 삭제 event와 `userDeletedZone`, 이전 장부가 확인된 checkpoint에서의 `zoneNotFound`만 삭제
+증거로 인정한다. 네트워크·계정 조회 실패와 불완전 record projection은 삭제로 추측하지 않고
+`unavailable`로 닫는다.
+
+**대안과 근거**: 앱과 Shield가 하나의 engine token을 공유하면 한 프로세스의 증분 진행 상태가 다른
+프로세스의 최초 fetch를 대신하고 동시 저장이 서로를 덮을 수 있어 제외했다. 공유 balance 파일만
+일시 장애 복구에 사용하면 계정 전환 직후 다른 계정 잔액을 표시할 수 있어 checkpoint의 계정 결합
+mirror만 사용한다. local record를 zone에 자동 재업로드하는 방식은 삭제 장부를 되살릴 수 있어
+채택하지 않았다.
+
+**영향 범위**: T101은 provider·checkpoint·projection 경계와 앱·Shield Action target membership만
+완성한다. T102의 reservation migration 허용과 T100의 live 수명주기 조립 전까지 실제 운영
+CloudKit fetch·구매·해제는 활성화하지 않는다.
+
+## DEC-102 — 실제 CloudKit database adapter의 zone·CAS·서버 시각 경계
+
+**날짜**: 2026-09-09
+
+**결정**: `SystemCoinLedgerCloudDatabase`는 `CKContainer.privateCloudDatabase`의 custom
+`CoinLedgerZone` 안에서만 장부 record를 조회·수정한다. 초기 조회는 zone을 자동 생성하지 않는다.
+원격 장부 부재와 사용자 삭제를 T101에서 구분할 수 있도록 조회는 기존 zone 상태를 보존하고, setup·
+reset 등 검증된 쓰기가 실제로 시작될 때만 zone을 한 번 준비한다.
+
+변경 record는 직전 fetch에서 받은 원본 `CKRecord`와 `recordChangeTag`를 actor 안에 보관했다가
+`.ifServerRecordUnchanged` 저장에 재사용한다. snapshot의 change tag와 캐시가 다르거나 원본을 찾을 수
+없으면 원격 상태를 추측해 덮어쓰지 않고 `serverRecordChanged`로 실패한다. 여러 잔액·event·command
+변경은 호출 계약의 atomic 옵션을 그대로 CloudKit operation에 전달한다.
+
+`creationDate`는 CloudKit 예약 시스템 필드이므로 앱이 사용자 필드로 쓰지 않는다. 월 allowance를
+읽거나 저장 결과로 받을 때 CloudKit이 반환한 시스템 `CKRecord.creationDate`만 snapshot의
+`creationDate`로 사용하며 값이 확인되지 않으면 `resultUnknown`으로 닫는다. record별 `unknownItem`은
+조회 부재로 처리하고, 충돌·계정·네트워크·응답 유실·schema 오류는 안정된 장부 오류로 변환한다.
+
+**대안과 근거**: 모든 fetch 전에 zone을 생성하는 방식은 삭제된 장부와 최초 사용자를 구분할 근거를
+없애므로 제외했다. change tag 문자열만 새 `CKRecord`에 복제하는 방식은 CloudKit 시스템 필드를
+복원할 수 없으므로 제외했다. 앱이 제안한 월 생성 시각을 그대로 저장하는 방식은 기기 시각 변경으로
+월 지급을 조작할 수 있어 제외했다.
+
+**영향 범위**: T099는 시스템 database 경계와 앱·Shield Action target membership만 추가한다. 실제
+계정·sync provider는 T101, reservation migration 허용은 T102, 앱·Shield live 서비스 조립은 T100에서
+검증한 뒤 활성화하므로 이번 변경만으로 원격 장부를 읽거나 변경하지 않는다.
+
 ## DEC-101 — 코인 앱 수명주기 재조정과 Shield route 소비 순서
 
 **날짜**: 2026-09-07
@@ -2045,6 +2370,25 @@ coordinator와 보상을 연결한다. 수정 결과 snapshot만으로 제한 �
 실제 앱/extension 중단·재부팅·잠금 인수는 별도 검증한다. T048은 같은 프로세스의 독립 instance
 50회 경합을 확인했으며 실기기 교차 프로세스 검증 완료를 주장하지 않는다.
 
+## DEC-092 — Shield callback 비교 전 만료된 Family Controls token 갱신
+
+**날짜**: 2026-09-12
+
+**결정**: Shield Configuration은 저장된 application·category·web domain token과 callback token을
+먼저 직접 비교하고, 일치하지 않으면 iOS 26.5 이상의 공식 `ManagedSettingsStore.refresh(_:)`로 저장
+token을 메모리에서 갱신한 뒤 한 번 더 비교한다. refresh 실패와 iOS 26.0~26.4에서는 기존 직접 비교
+결과를 유지하고 상세 내용을 추측하지 않는 일반 fallback으로 닫는다. token 원문·규칙 ID·장소·좌표는
+진단이나 CloudKit에 기록하지 않는다.
+
+**근거**: iPhone 15 Pro Max 실기기에서 유효한 활성 occurrence 1개가 있음에도 Shield 진단이
+`active: 1`, `matching: 0`을 기록했다. 같은 snapshot에 공식 token refresh를 적용한 빌드에서는
+규칙을 다시 선택하지 않고 상세 Shield와 `Use 1 Release`가 표시됐다. Apple은
+`ManagedSettingsStore.TokenExpiryMessage`와 `refresh(_:)`를 만료 token의 저장소 갱신 경계로 제공한다.
+
+**영향 범위**: `ShieldContentProvider`, Shield Configuration 실기기 진단, application token refresh
+회귀에 적용한다. 장기적으로 token expiry message를 받아 영속 규칙 snapshot까지 교체하는 작업은
+별도 수렴 대상으로 남기며, 현재 수정은 Shield 표시 시점의 개인정보 안전한 비교를 복구한다.
+
 ## DEC-086 — Shield Action의 Live Activity 조정은 foreground fallback 사용
 
 **날짜**: 2026-09-04
@@ -2065,3 +2409,102 @@ primary action을 실행했지만 `Activity<RestrictionLiveActivityAttributes>.a
 
 **영향 범위**: `ActivityKitFeasibilityProbe`, `ShieldActionExtension`, T055의 Live Activity 조정 분기,
 T096 실기기 회귀와 `quickstart.md`의 Shield 선행 게이트에 적용한다.
+
+## DEC-114 — Shield release를 메인 앱에서 완료하고 UI는 하이파이 승인 뒤 구현
+
+**날짜**: 2026-09-15
+
+**상태**: 승인됨 — BLK-018 사용자 승인
+
+**결정**: Shield Action은 FR-037 전체 CloudKit 동기화나 코인 예약·제한 해제를 실행하지 않는다.
+안정적인 command ID와 occurrence를 포함한 `PendingAppRoute.releaseProcessing`을 App Group에
+원자적으로 저장하고, iOS 26.5 이상에서는 `openParentalControlsApp`으로 메인 앱을 즉시 연다.
+iOS 26.0~26.4에서는 같은 route를 남기되 공식 직접 열기 API가 없으므로 기존 fail-closed 안내를
+유지한다. 메인 앱은 route를 한 번 소비해 전체 동기화, occurrence 재검증, 무료 우선 원자 예약,
+ReleaseException 적용, Managed Settings read-back, 장부 commit과 결과 불명 재조정을 수행한다.
+
+메인 앱은 처리 중, 해제 완료, 재시도 가능 오류·중단 command 확인 후 같은 command 재시도,
+무료 해제권·구매 코인 부족 후 코인 구매 유도의 네 결과 상태를 제공한다. read-back과 commit 전에는
+완료를 표시하지 않는다.
+하나의 command 처리 중에는 중복 요청을 막고, 서비스의 재시도 가능 오류 또는 다음 foreground에서
+완료를 확인할 수 없는 중단 command에만 같은 command ID의 재시도를 노출한다. 확정 성공·잔액 부족·
+복구 필요는 재시도 화면을 거치지 않는다.
+이 화면 묶음과 잠금화면·Dynamic Island minimal·compact·expanded Live Activity 개편은 각각
+로우파이 흐름 기록, 하이파이 제작, 사용자 명시 승인 순서를 거친 뒤에만 구현한다.
+
+**근거**: T089의 iPhone 15 Pro Max에서 `initialRefresh.syncEngineCaptureCompleted` 뒤 extension이
+projection·예약 전에 종료됐다. iPhone 17의 성공 여부와 무관하게 extension 실행 시간은 전체 동기화를
+안정적으로 보장하지 않는다. 부분 record fetch는 서버 권위와 pending reconciliation 계약을 약화하고,
+첫 탭 실패 뒤 재시도는 T089와 사용자 피드백 요구를 충족하지 못한다.
+
+**영향 범위**: BLK-018을 해결하며 `spec.md` FR-012·FR-013·FR-041~FR-045와 SC-013~SC-015,
+`plan.md`, `data-model.md`, Shield·rule release·Live Activity contract, T089와 T103~T119에 적용한다.
+T105 전에는 release 결과 UI와 handoff 구현을, T116 전에는 Live Activity UI 개편을 시작하지 않는다.
+
+## DEC-115 — Release handoff 영속 수명주기와 안정 오류 분류
+
+**날짜**: 2026-09-15
+
+**상태**: 승인됨 — `$speckit-analyze` 보정 승인
+
+**결정**: `PendingAppRoute.releaseProcessing`은 앱이 읽는 즉시 삭제하지 않는다. 적격 `pending` route를
+`processing`으로 원자 claim하고, 같은 command ID의 장부·제한 결과를 terminal 상태로 영속화한다.
+앱이 어느 처리 단계에서 종료돼도 다음 foreground에서 `processing` handoff를 새 요청보다 먼저
+재조정한다. terminal 결과는 단순 화면 제시만으로 삭제하지 않고 사용자가 결과 CTA 또는 닫기를
+명시적으로 선택할 때 확인 처리와 삭제를 원자적으로 수행한다. 재시도는 `retryAfter`가 지난
+`terminal(retryable)`만 같은 command ID의 `processing`으로 원자 전이한다. `pending`의 5분 유효
+기간은 유지하지만 이미 claim한 `processing`에는 적용하지 않는다.
+
+기존 `consumedAt == nil` payload는 `pending`으로, 소비 시각과 유효한 release command ID가 있는
+payload는 `processing`으로 migration한다. 그 밖의 이미 소비된 legacy route와 불완전한 release
+route는 새 차감이나 앱 이동을 합성하지 않고 fail-closed로 폐기한다.
+
+UI는 원본 `CKError`를 직접 분기하지 않고 서비스의 안정 분류를 사용한다. 일시적인 transport·service·
+rate limit·account 또는 identity availability는 `retryable`이며 `retryAfter`를 지킨다. 결과 불명·충돌·
+부분 실패는 재조정 중
+`processing`을 유지하고 완료되지 않은 중단 command로 확인된 뒤에만 `retryable`로 전환한다.
+sign-out·notAuthenticated·권한·잘못된 container 설정·장부 삭제는 `recoveryRequired`, 확정 잔액 부족은
+`insufficient`, read-back과 commit 확인은 `completed`다.
+
+하이파이 승인 대상은 신규 `processing`, `completed`, `retryable`, `insufficient` 네 화면이다.
+`recoveryRequired`는 기존 iCloud 장부 복구 화면을 재사용하되 상태 전이·지역화·접근성 회귀에는
+포함한다. 코인 해제 뒤 Live Activity 갱신·종료는 메인 앱이 담당하며 Shield 직접 ActivityKit 경로는
+과거 회귀·진단 전용으로만 보존한다.
+
+**T110 구현 세부화 (2026-09-16)**: CloudKit의 `accountTemporarilyUnavailable`는 영구적인
+`notAuthenticated`·권한 오류와 분리해 `retryable`로 분류한다. 반대로 이미 `compensated`인 command는
+동일 ID로 다시 예약할 수 없으므로 완료나 동일 ID 재시도 가능으로 추정하지 않고 복구 필요 상태로
+보존한다. 새 route는 원자 claim 직후 앱에 `processing`을 먼저 제시하고 전체 장부 refresh·기존
+command 재조정·occurrence 재검증 뒤에만 새 예약을 시작한다. 결과 action의 영속 전이는 T110
+coordinator API에서 제공하며 승인된 화면의 버튼 연결은 T111에서 수행한다.
+
+**검토한 대안**: route claim과 동시에 삭제하는 방식은 CloudKit command 생성 전 앱 종료 시 요청
+식별자를 잃으므로 기각했다. 별도 새 handoff 저장소를 추가하는 방식은 동일 App Group 데이터의
+이중 소유권과 migration 복잡도를 만들므로 기존 route의 상태 머신 확장을 선택했다. 복구 화면까지
+다섯 번째 신규 하이파이로 다시 만드는 방식은 이미 구현된 복구 계약을 중복하므로 기각했다.
+
+**영향 범위**: `spec.md` FR-007·FR-041~FR-045와 SC-013·SC-015, `plan.md`, `data-model.md`,
+`shield-coin-ui-contract.md`, T057의 대체 표시와 T103~T113에 적용한다. 실제 모델·repository migration은
+T106·T108, 앱 claim·재조정은 T110, UI·오류 분류 검증은 T107·T111~T113에서 수행한다.
+
+## DEC-116 — Release handoff 하이파이 구현 승인
+
+**날짜**: 2026-09-15
+
+**상태**: 승인됨 — T105 사용자 명시 승인
+
+**결정**: Figma 최상위 node `288:2014`와 `design/high-fidelity/US2-release-handoff.md`에 정의한
+`processing`, `completed`, `retryable`, `insufficient` 네 신규 상태를 T106~T113의 구현 기준으로
+사용한다. 시스템 appearance가 Light여도 GetUp의 검은 Dark surface를 유지하며 별도 Light component
+variant를 만들지 않는다. `insufficient` 상태 아이콘은 원형이 아니라 SF Symbol `xmark`를 사용한다.
+`recoveryRequired`는 새 화면을 만들지 않고 기존 iCloud 장부 복구 화면으로 연결한다.
+
+**승인 결과와 의견**: 사용자는 2026-09-15 Light appearance의 검은 배경 유지와 `xmark` 반영본을
+확인한 뒤 별도 조건 없이 구현을 승인했다. 완료 확인, 재시도 닫기, 코인 구매 뒤 새 해제 요청,
+처리 중 앱 종료 복원 설명을 포함한 T105 검토 항목도 현재 하이파이 흐름 그대로 승인 범위에 둔다.
+
+**근거**: 승인 전 UI 구현을 금지한 DEC-114와 T105 게이트를 충족하면서, 직전 사용자 피드백이
+최종 시각 규칙과 구현 인계에 반영됐음을 추적 가능하게 남겨야 한다.
+
+**영향 범위**: T105를 완료하고 T106~T113의 승인 게이트를 해제한다. T106·T107의 실패 테스트부터
+순서대로 진행하며, 구현 중 화면 구조나 제품 동작을 바꿔야 하면 T104·T105 검토로 돌아간다.

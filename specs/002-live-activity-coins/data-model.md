@@ -193,10 +193,9 @@ reconciliationRequired
 ```
 
 동일 occurrence에 이미 `reserved | applied | committed` 명령이 있으면 새 예약을 만들지 않는다.
-Shield 실행의 5초 deadline은 서버 시각 필드가 아니라 primary action이 service에 전달된 순간부터
-주입 가능한 monotonic clock으로 측정한다. 5초 안에 성공을 확인하지 못한 명령은 로컬 예외를 새로
-적용하지 않고 `reconciliationRequired`로 조회하며, 늦은 reservation이 확인되면 제한 미적용 상태에서
-`compensated`로 수렴한다.
+기존 Shield 직접 해제 경로의 5초 deadline 모델은 회귀·진단 fixture로만 유지한다. 새 제품 경로에서
+Shield는 CloudKit 명령을 시작하지 않고 release route를 기록하며, 메인 앱이 같은 command ID로
+전체 동기화와 상태 전이를 수행한다.
 
 ### ReleaseOccurrenceClaim
 
@@ -217,6 +216,21 @@ command·funding source·진입 표면이 달라도 같은 구간은 같은 clai
 decode 시 명시적 필드 whitelist, 필수 값·상태·version·record name 일치를 검증한다.
 held 획득은 잔액 reservation과, released 전환은 잔액 보상·compensated와 같은 atomic modify다.
 released 레코드는 삭제하지 않고 change tag를 유지해 새 command의 재획득 CAS에 사용한다.
+
+### ReservationCompatibilityStamp
+
+claim protocol을 사용한 writer가 예약과 같은 atomic modify에 남기는 command별 schema 1 증거다.
+`ledgerEpochID`, `commandID`, `occurrenceID`, `protocolVersion`, `createdAt`을 가지며 record name은
+`reservation-compatibility:{소문자 command UUID}`다. marker만 존재하고 stamp가 없는 command는
+구버전 writer 쓰기로 취급해 epoch의 예약 호환성을 닫는다.
+
+### ReservationMigrationMarker
+
+기존 epoch의 명시적 migration 진행 상태다. `ledgerEpochID`, `protocolVersion`,
+`preparing | ready`, `legacyWritersRetiredAt`, `evidenceVersion`, `updatedAt`을 보존하며 record name은
+`reservation-migration:{소문자 epoch UUID}`다. `preparing`은 중단·재시도 checkpoint일 뿐 예약
+권한이 아니며, `ready`도 최신 whole-zone 검사에서 모든 command stamp와 필요한 claim이 확인될 때만
+유효하다.
 
 ### ReleaseException
 
@@ -278,6 +292,25 @@ reconciliation이 없을 때만 성립한다. `lastSuccessfulFetchInstant`는 �
 iCloud account session 변경 시 빈 상태로 만들고 새 서버 fetch가 완료되기 전에는 `current`를
 허용하지 않는다.
 
+### CoinLedgerSyncCheckpoint
+
+`CKSyncEngine`의 증분 동기화를 재개하기 위한 로컬 cache다. 권한 freshness를 나타내는
+`CoinLedgerSyncSession`과 분리하며 앱과 Shield Action은 서로 다른 checkpoint 파일을 사용한다.
+
+| 필드 | 형식 | 규칙 |
+|------|------|------|
+| `accountSessionID` | 불투명 문자열 | 현재 iCloud 계정과 일치하는 checkpoint만 읽는다. |
+| `stateSerialization` | Data? | `CKSyncEngine.State.Serialization`의 Codable 표현이다. |
+| `records`, `recordArchives` | snapshot·archive | projection용 값과 pending save 재시도용 원본 `CKRecord`를 함께 보관한다. |
+| `lastMirror` | CoinBalanceSnapshot? | 같은 checkpoint 계정에서 마지막으로 확인한 표시 mirror다. |
+| `hadObservedZone` | Bool | 이전 zone 관측 뒤 서버가 zone 부재를 반환할 때 삭제 증거를 보강한다. |
+| `hasPendingChanges` | Bool | 남은 engine change가 있으면 App Group mirror를 `current`로 쓰지 않는다. |
+
+checkpoint는 증분 fetch·재시도 성능을 위한 cache이며 새 프로세스의 `initialFetchCompleted`를
+복원하지 않는다. 각 프로세스는 저장된 serialization을 사용하더라도 `fetchChanges`가 성공한 뒤에만
+새 `CoinLedgerSyncSession`을 current 후보로 만든다. 계정 전환·sign-out에서는 이전 checkpoint와
+mirror를 사용하지 않고, 손상된 checkpoint는 폐기한 뒤 전체 fetch를 다시 시도한다.
+
 ### PendingAppRoute
 
 Shield Action이 메인 앱을 열기 전에 App Group에 기록하는 일회성 진입 목적이다.
@@ -285,18 +318,53 @@ Shield Action이 메인 앱을 열기 전에 App Group에 기록하는 일회성
 | 필드 | 형식 | 규칙 |
 |------|------|------|
 | `routeID` | UUID | 같은 Shield action의 중복 처리를 막는다. |
-| `destination` | `coinStore` / `iCloudRecovery` / `ledgerReset` / `reconciliation` | 최신 실패 원인으로 결정한다. |
-| `createdAt` | Date | `createdAt <= now < createdAt + 5분`일 때만 유효하다. |
+| `destination` | `releaseProcessing` / `coinStore` / `iCloudRecovery` / `ledgerReset` / `reconciliation` | Shield 확정 요청 또는 최신 실패 원인으로 결정한다. |
+| `commandID` | UUID? | `releaseProcessing`과 `reconciliation`에서 동일 해제 시도를 재사용하는 안정 식별자다. |
+| `createdAt` | Date | `pending` claim 자격에서만 `createdAt <= now < createdAt + 5분`을 요구한다. |
 | `occurrenceID` | 문자열? | 사용자에게 돌아갈 활성 제한 맥락이 있을 때만 기록한다. |
-| `consumedAt` | Date? | `nil`인 route만 소비할 수 있고 성공한 소비와 삭제를 하나의 atomic repository 연산으로 처리한다. |
+| `state` | `pending` / `processing` / `terminal` | `pending → processing`, `processing → terminal`, 사용자 재시도에 의한 `terminal(retryable) → processing`만 허용한다. |
+| `claimedAt` | Date? | `processing` 전이 시 기록하며 앱 종료 뒤 재조정 기준이 된다. |
+| `terminalOutcome` | `completed` / `retryable` / `insufficient` / `recoveryRequired`? | terminal 결과 화면을 재실행 뒤에도 복원한다. |
+| `presentedAt` | Date? | terminal 화면을 처음 제시한 시각이며 사용자 확인을 뜻하지 않는다. |
+| `acknowledgedAt` | Date? | 사용자가 terminal CTA 또는 닫기를 명시적으로 선택한 시각이다. 단순 표시로 설정하지 않는다. |
 
-잔액 부족이면서 장부가 `current`일 때만 `coinStore`를 사용한다. iCloud·장부 불가, 삭제 확정,
-재조정 상태를 구매 화면으로 보내지 않는다. iOS 26.0~26.4 fallback에서도 route를 남겨 사용자가 앱을
-직접 열면 같은 목적지로 이동하게 한다.
+Shield에서 해제를 확정하면 잔액 mirror와 무관하게 `releaseProcessing`을 사용한다. 메인 앱이
+FR-037 전체 동기화를 완료한 뒤 잔액 부족이 확정된 경우에만 `coinStore`로 전환한다. iCloud·장부
+불가, 삭제 확정, 재조정 상태를 구매 화면으로 보내지 않는다. iOS 26.0~26.4 fallback에서도 route를
+남겨 사용자가 앱을 직접 열면 같은 command와 목적지를 처리하게 한다.
 
-repository의 `consumeIfEligible(now:activeOccurrenceIDs:)`는 유효 기간, 미소비, occurrence 활성 조건을
-모두 만족한 route 하나만 반환하고 즉시 삭제한다. 만료·이미 소비·종료 occurrence route는 반환하지
-않고 삭제하며, 같은 `routeID`의 중복 소비는 항상 실패한다.
+repository의 `claimIfEligible(now:activeOccurrenceIDs:)`는 유효 기간, `pending`, occurrence 활성 조건을
+모두 만족한 route 하나를 `processing`으로 원자 전이해 반환하고 삭제하지 않는다. claim 전 만료·종료
+route는 삭제하고 같은 `routeID`·`commandID`의 중복 claim은 기존 `processing | terminal` handoff를
+반환한다. `processing`은 생성 후 5분이 지나도 폐기하지 않고 다음 foreground에서 먼저 재조정한다.
+terminal 결과와 화면 제시 여부를 저장하되 단순 표시만으로 삭제하지 않는다. 완료 확인, 재시도 취소,
+구매 이동 또는 닫기, 복구 이동 또는 닫기의 명시적 action은 `acknowledgeAndDelete(routeID:)`로 확인
+처리와 삭제를 원자적으로 수행한다. 재시도 CTA는 outcome이 `retryable`이고 `retryAfter`가 지났을 때만
+`retry(routeID:)`로 같은 command ID를 유지한 채 `terminal → processing` 전이와 terminal 표시 필드
+초기화를 원자적으로 수행한다.
+
+기존 `consumedAt` payload migration은 `consumedAt == nil`을 `pending`으로 옮긴다. `consumedAt`이 있고
+`destination == releaseProcessing`이며 유효한 `commandID`가 있으면 `processing`으로 옮겨 다음
+foreground에서 재조정한다. 그 밖의 이미 소비된 legacy route와 식별자가 불완전한 release route는
+새 해제나 이동을 합성하지 않고 fail-closed로 폐기한다.
+
+`releaseProcessing` route를 claim한 앱은 별도의 UI 상태 머신을 `processing → completed | retryable |
+insufficient | recoveryRequired`로 전이한다. `completed`는 Managed Settings read-back과 장부 commit이
+모두 확인된 뒤에만 허용한다. 하나의 command가 실행 중일 때는 `processing`을 유지하고 중복 요청을
+허용하지 않는다. 서비스가 재시도 가능한 오류를 반환하거나 다음 foreground 재조정에서 완료가
+확인되지 않은 중단 command로 판정한 경우에만 `retryable`로 전이하며 같은 `commandID`를 유지한다.
+확정 성공·잔액 부족·복구 필요는 재시도 화면을 거치지 않고 해당 상태로 전이한다. UI 상태는 서버
+권위 장부를 대체하지 않고 재실행 때 command 재조정 결과로 다시 파생한다.
+
+UI에 노출할 release 오류 분류는 다음과 같다.
+
+| 안정 분류 | 대표 원인 | UI 상태·행동 |
+|-----------|-----------|--------------|
+| `transientRetryable` | 일시적인 network·service unavailable·rate limit·account/identity availability | `retryable`; `retryAfter`가 있으면 해당 시각까지 CTA 비활성화 |
+| `outcomeUnknown` | CloudKit 결과 불명·server conflict·부분 실패 | 재조정 중 `processing`; 확인되지 않은 중단 command로 확정된 뒤에만 `retryable` |
+| `accountOrLedgerRecovery` | sign-out·notAuthenticated·권한·잘못된 container 설정·장부 삭제 | `recoveryRequired`; 기존 iCloud 장부 복구 화면 사용 |
+| `insufficientBalance` | 현재 월 무료분과 구매 코인 모두 0으로 확정 | `insufficient`; 코인 구매 CTA 제공 |
+| `committed` | 제한 read-back과 장부 commit 확인 | `completed` |
 
 ## 관계
 
@@ -336,8 +404,7 @@ ActiveRestrictionSnapshot 1 ── 0..1 RestrictionLiveActivityAttributes.Conten
 - 로컬 mirror 부재만으로 initial epoch 또는 구매 지급 event를 생성하지 않는다.
 - 복구된 모든 PurchaseGrant는 기존의 검증된 StoreKit transaction ID와 연결되며, 잔액 복구 자체는
   새 grant·event를 만들지 않는다.
-- Shield에서 5초 안에 성공이 확인되지 않아 제한을 유지한 command는 사용 불가능한 확정 차감으로
-  남지 않는다.
+- Shield route 저장 실패 또는 메인 앱 처리 실패·중단은 사용 불가능한 확정 차감으로 남지 않는다.
 
 ## 영속성 경계
 
@@ -348,15 +415,17 @@ ActiveRestrictionSnapshot 1 ── 0..1 RestrictionLiveActivityAttributes.Conten
 | LedgerEpoch·CoinAccount·MonthlyAllowance·이벤트·명령 | 앱 또는 Shield Action의 coin service | 같은 iCloud 계정의 앱·Shield Action | CloudKit private custom zone |
 | ReleaseException | 성공한 release coordinator | 앱·Device Activity·Shield 확장 | App Group atomic JSON |
 | CoinBalanceSnapshot | CKSyncEngine mirror writer | 앱·Shield 확장 | App Group atomic JSON |
+| CoinLedgerSyncCheckpoint | 앱·Shield Action의 CKSyncEngine provider | 해당 프로세스의 다음 실행 | App Group의 프로세스별 protected atomic JSON |
 | PendingAppRoute | Shield Action | 메인 앱 | App Group atomic JSON |
 | StoreKit 거래 | App Store | 앱 StoreKit adapter | StoreKit |
 
 ## 마이그레이션
 
 - BLK-015의 `ReleaseOccurrenceClaim`은 schema 1 새 record type이며 기존 여섯 record type은 그대로
-  읽는다. T047a는 codec만 추가하고 원격 migration은 수행하지 않는다. 기존 진행·완료 command에
-  claim이 없으면 신규 예약 가능으로 해석하지 않는다. 구버전 writer가 claim을 무시할 수 있으므로
-  혼합 버전·기존 장부 전환 안전성 검증 전 새 예약을 허용하지 않는 gate가 T047b에 필요하다.
+  읽는다. 기존 진행·완료 command에 claim이 없으면 신규 예약 가능으로 해석하지 않는다. T102는
+  구버전 writer 종료를 명시적으로 승인한 epoch만 `preparing`으로 만들고 command별 compatibility
+  stamp를 보강한다. committed의 누락 claim은 held로 보존하고 claim 없는 미종결 command는 중단한다.
+  모든 command가 검증된 뒤 marker를 `ready`로 전환하며 중간 실패는 같은 epoch에서 재시도한다.
   데이터 삭제·자동 reset 없이 전환하며 실제 운영 schema 배포는 별도 검증·승인 대상으로 남긴다.
 
 - 기존 규칙·장소·위치 snapshot schema와 파일은 유지한다.
