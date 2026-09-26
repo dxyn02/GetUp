@@ -9,6 +9,10 @@
 
 ## 2026-09-26 T115 하이파이
 
+사용자 피드백에 따라 AX5 잠금화면의 초기 27/32/23pt 크기가 최대 Dynamic Type을 충분히 나타내지
+못한다고 판단했다. 규칙명 61pt, 카운트다운 75pt, 거리·추가 제한 53pt로 확대하고 카드 높이를
+371pt로 자동 확장했다. 최종 2080×2001 전체 렌더에서 잘림·겹침 없음을 확인했다.
+
 Figma node `395:2090`에 T114 승인 구조를 유지한 Live Activity 하이파이를 작성했다. 앱의 실제
 색상 token·SF Pro·16/12/8pt 간격·`location.fill`, Light appearance에서도 동일한 dark surface,
 AX5 잠금화면, VoiceOver 읽기 순서, system-driven motion·Reduce Motion, ActivityKit 영역별 정보

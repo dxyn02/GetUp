@@ -80,8 +80,9 @@ Live Activity 내부에는 반올림·stale 원인·좌표/주소 미표시 같�
 
 - Light·Dark appearance 모두 GetUp dark surface를 사용하며 정보·간격·아이콘·대비가 동일하다.
 - 최대 Dynamic Type에서는 잠금화면의 대표 규칙 → 카운트다운 → 거리 → 다른 제한 순서를 세로로
-  유지한다. Figma `AX5 Lock Screen Sample`은 27pt 규칙명, 32pt 카운트다운, 23pt 거리 상태로
-  확대했으며 서로 겹치거나 다음 영역에 잘리지 않는다.
+  유지한다. Figma `AX5 Lock Screen Sample`은 초기 27/32/23pt가 최대 접근성 크기를 충분히 전달하지
+  못한다는 사용자 피드백에 따라 규칙명 61pt, 카운트다운 75pt, 거리·추가 제한 53pt로 확대했다.
+  카드 높이는 콘텐츠에 맞춰 371pt로 늘어나며 서로 겹치거나 다음 영역에 잘리지 않는다.
 - compact·minimal은 시스템 영역이 좁으므로 임의로 모든 정보를 넣지 않는다. compact는 거리 상태와
   시간을, minimal은 시간 하나를 우선한다. 확대 환경에서도 동일한 정보 예산을 유지한다.
 
@@ -132,7 +133,7 @@ Live Activity 내부에는 반올림·stale 원인·좌표/주소 미표시 같�
 
 ## 검증 결과
 
-- 최상위 Figma node `395:2090`의 2080×1851 전체 렌더를 확인했다.
+- 최상위 Figma node `395:2090`의 2080×2001 전체 렌더를 확인했다.
 - 잠금화면 4상태와 Dynamic Island expanded·compact·minimal 4상태를 확인했다.
 - 앱의 local semantic variable과 SF Pro local text style 연결을 확인했다.
 - SF Pro Regular·Semibold·Bold 누락 0개
@@ -140,6 +141,13 @@ Live Activity 내부에는 반올림·stale 원인·좌표/주소 미표시 같�
 - 최종 전체 보드의 잘림·겹침 0개
 - 규칙명 임시 아이콘과 사용자 영역의 구현 주석 0개
 - Light appearance는 별도 흰 화면을 만들지 않고 승인된 GetUp dark surface 계약으로 명시했다.
+
+## 사용자 피드백 반영
+
+2026-09-26 사용자는 AX5 샘플의 세로 배치는 적절하지만 글자 크기가 최대 Dynamic Type을 나타내기에는
+작다고 지적했다. 규칙명·카운트다운·거리·추가 제한을 각각 61/75/53/53pt로 확대하고 auto layout의
+세로 hug sizing으로 카드와 전체 보드가 함께 늘어나도록 수정했다. 최종 렌더에서 네 정보가 모두
+표시되고 다음 승인 게이트와 겹치지 않음을 확인했다.
 
 ## T116 구현 승인
 

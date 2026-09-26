@@ -7,6 +7,12 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-26 T115 AX5 크기 피드백 반영: 사용자가 최대 Dynamic Type 샘플의 세로 배치는 적절하지만
+27/32/23pt 글자는 작다고 지적했다. Figma node `395:2090`의 규칙명을 61pt, 카운트다운을 75pt,
+거리·추가 제한을 53pt로 확대하고 카드 높이가 콘텐츠에 맞춰 371pt로 늘어나게 했다. 최종
+2080×2001 렌더에서 AX5 정보 네 항목과 다음 승인 게이트의 잘림·겹침이 없음을 확인했다. T115는
+완료 상태를 유지하고 T116 사용자 구현 승인을 기다린다.
+
 2026-09-26 T115 완료: T114 승인 정보 구조를 Figma node `395:2090`으로 복제하고, 앱의 실제
 `#08090B` background·`#15171B` surface·`#F4D600` accent, SF Pro, 16/12/8pt 간격, 단순한
 `location.fill`, system-driven motion을 하이파이 기준으로 확정했다. Light appearance에서도 GetUp의
