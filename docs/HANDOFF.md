@@ -3,9 +3,19 @@
 ## 현재 작업
 
 - 기능: `002-live-activity-coins` Phase 9
-- 마지막 완료 작업: T114
+- 마지막 완료 작업: T115
 - 진행 중 작업: 없음
-- 다음 작업: T115 Live Activity 하이파이 제작
+- 다음 작업: T116 Live Activity 하이파이 사용자 구현 승인
+
+## 2026-09-26 T115 하이파이
+
+Figma node `395:2090`에 T114 승인 구조를 유지한 Live Activity 하이파이를 작성했다. 앱의 실제
+색상 token·SF Pro·16/12/8pt 간격·`location.fill`, Light appearance에서도 동일한 dark surface,
+AX5 잠금화면, VoiceOver 읽기 순서, system-driven motion·Reduce Motion, ActivityKit 영역별 정보
+예산과 4KB 제약을 보강했다. 첫 렌더의 AX5 세로 clipping은 부모 행을 hug sizing으로 바꿔 해결했고
+최종 전체 렌더에서 잘림·겹침과 font 누락이 없음을 확인했다. 구현 인계는
+`design/high-fidelity/US1-live-activity-refresh.md`에 기록했다. 다음 작업은 T116 명시적 구현 승인이고,
+승인 전에는 T117~T119나 제품 Live Activity UI를 변경하지 않는다.
 
 ## 2026-09-26 T114 로우파이 초안
 

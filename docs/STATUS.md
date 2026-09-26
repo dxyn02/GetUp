@@ -7,6 +7,17 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-26 T115 완료: T114 승인 정보 구조를 Figma node `395:2090`으로 복제하고, 앱의 실제
+`#08090B` background·`#15171B` surface·`#F4D600` accent, SF Pro, 16/12/8pt 간격, 단순한
+`location.fill`, system-driven motion을 하이파이 기준으로 확정했다. Light appearance에서도 GetUp의
+검은 surface를 유지하고, AX5 잠금화면 샘플과 VoiceOver 읽기 순서·Reduce Motion·ActivityKit 영역별
+정보 예산·4KB 제약을 보강했다. 첫 렌더에서 AX5 부모 행의 100pt 고정 높이로 발생한 잘림을 감지해
+세로 hug sizing으로 교정했으며, 최종 2080×1851 렌더에서 잘림·겹침 없음과 SF Pro 세 weight·semantic
+variable 연결을 확인했다. `design/high-fidelity/US1-live-activity-refresh.md`에 node·시각 규칙·구현
+인계를 기록하고 T115를 완료 처리했다. 디자인·문서 작업이므로 코드 테스트는 실행하지 않았다.
+현재 phase는 002 Phase 9, 마지막 완료 task는 T115, 진행 중 task는 없으며 다음 task는 T116 사용자
+구현 승인이다. 승인 전에는 T117~T119 및 제품 UI 변경을 시작하지 않는다.
+
 2026-09-26 T114 완료: 사용자가 시간·거리 단위 분리, 잠금화면 오른쪽 여백 교정, 단순한 거리 아이콘,
 사용자 영역의 구현 주석 제거, 규칙명 앞 임시 아이콘 제거가 반영된 Figma node `384:2090`과 네
 상태·영역별 정보 구조를 명시적으로 승인했다. `design/low-fidelity/US1-live-activity-refresh.md`의
@@ -405,13 +416,13 @@ setup/reset/recovery/reconciliation과 5초 Shield 응답 상한을 live 경로�
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T112 — release handoff 한국어·영어 지역화와 접근성·appearance 회귀
+T115 — Live Activity 잠금화면·Dynamic Island 하이파이와 구현 인계
 
 ## 다음 작업
-T113 — 동일 iCloud 계정의 iPhone 15 Pro Max·iPhone 17에서 Shield 첫 탭 handoff, 네 결과·
-기존 복구 연결, 강제 종료 뒤 동일 command 복원과 다기기 수렴을 실기기 검증한다. Live Activity는
-T114~T116 설계·승인을 별도로 진행한다.
-T089 — T103~T113의 승인된 handoff 구현과 두 실기기 첫 탭 검증이 끝난 뒤 재개한다.
+T116 — Figma node `395:2090`의 잠금화면·Dynamic Island 전체 하이파이를 사용자에게 제시하고
+명시적 구현 승인을 기록한다. 승인 전에는 T117~T119를 시작하지 않는다.
+T089 — T103~T113의 승인된 handoff 구현과 두 실기기 첫 탭 검증 결과를 기준으로 월 경계 allowance
+지연 생성·비이월 인수를 별도로 재개한다.
 T094·T095의 Shield/StoreKit 실기기 인수도 이어서 수행한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
