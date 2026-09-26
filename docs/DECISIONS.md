@@ -2508,3 +2508,29 @@ variant를 만들지 않는다. `insufficient` 상태 아이콘은 원형이 아
 
 **영향 범위**: T105를 완료하고 T106~T113의 승인 게이트를 해제한다. T106·T107의 실패 테스트부터
 순서대로 진행하며, 구현 중 화면 구조나 제품 동작을 바꿔야 하면 T104·T105 검토로 돌아간다.
+
+## DEC-118 — Live Activity 시각 개편 하이파이 구현 승인
+
+**날짜**: 2026-09-26
+
+**상태**: 승인됨 — T116 사용자 명시 승인
+
+**결정**: Figma 최상위 node `395:2090`과
+`design/high-fidelity/US1-live-activity-refresh.md`를 잠금화면·Dynamic Island
+minimal·compact·expanded 시각 개편의 구현 기준으로 사용한다. 앱의 실제 `#08090B` background,
+`#15171B` surface, `#F4D600` accent와 SF Pro를 사용하고 Light appearance에서도 GetUp의 검은
+surface를 유지한다. 규칙명 앞에는 별도 아이콘을 두지 않고 거리에는 SF Symbol `location.fill`을
+사용한다. compact·minimal 카운트다운은 한국어 `분`, 영어 `min`으로 거리 단위 `m`와 구분한다.
+
+최대 Dynamic Type 잠금화면은 대표 규칙 → 남은 시간 → 거리 상태 → 다른 제한의 세로 순서를
+유지한다. Figma AX5 기준은 사용자 피드백을 반영한 규칙명 61pt, 카운트다운 75pt, 거리·추가 제한
+53pt이며 고정 높이 대신 콘텐츠에 맞춰 확장한다. VoiceOver는 같은 의미 순서로 읽고 아이콘·padding·
+container를 별도 요소로 노출하지 않는다. 장식 animation은 추가하지 않고 ActivityKit 시스템 전환과
+`endsAt` 기반 timer만 사용하며 Reduce Motion에서도 정보·순서를 유지한다.
+
+**승인 결과와 의견**: 사용자는 초기 AX5의 27/32/23pt 크기가 작다고 지적했고, 61/75/53pt로 확대한
+최종 2080×2001 렌더를 확인한 뒤 2026-09-26 별도 조건 없이 “이대로 확정”했다.
+
+**영향 범위**: T116을 완료하고 T117~T119의 구현·검증 게이트를 해제한다. T117에서 승인 상태를
+고정하는 preview·snapshot fixture를 먼저 작성하고, T118은 이 승인본만 기준으로 제품 UI를 변경한다.
+정보 구조나 제품 동작을 바꿔야 하면 T114·T116 검토로 돌아간다.

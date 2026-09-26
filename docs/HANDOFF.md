@@ -3,9 +3,65 @@
 ## 현재 작업
 
 - 기능: `002-live-activity-coins` Phase 9
-- 마지막 완료 작업: T113
+- 마지막 완료 작업: T116
 - 진행 중 작업: 없음
-- 다음 작업: T114 Live Activity 로우파이 설계
+- 다음 작업: T117 Live Activity preview·snapshot fixture 선행 작성
+
+## 2026-09-26 T116 구현 승인
+
+사용자가 AX5 확대 수정본을 포함한 Figma node `395:2090`의 전체 하이파이를 “이대로 확정”하며
+명시적으로 구현 승인했다. 승인 결과를 하이파이 문서와 DEC-118에 기록하고 T116을 완료 처리했다.
+T117~T119 게이트가 해제됐으며, 다음 작업은 승인 상태를 고정하는 preview·snapshot fixture를 먼저
+작성하는 T117이다.
+
+## 2026-09-26 T115 하이파이
+
+사용자 피드백에 따라 AX5 잠금화면의 초기 27/32/23pt 크기가 최대 Dynamic Type을 충분히 나타내지
+못한다고 판단했다. 규칙명 61pt, 카운트다운 75pt, 거리·추가 제한 53pt로 확대하고 카드 높이를
+371pt로 자동 확장했다. 최종 2080×2001 전체 렌더에서 잘림·겹침 없음을 확인했다.
+
+Figma node `395:2090`에 T114 승인 구조를 유지한 Live Activity 하이파이를 작성했다. 앱의 실제
+색상 token·SF Pro·16/12/8pt 간격·`location.fill`, Light appearance에서도 동일한 dark surface,
+AX5 잠금화면, VoiceOver 읽기 순서, system-driven motion·Reduce Motion, ActivityKit 영역별 정보
+예산과 4KB 제약을 보강했다. 첫 렌더의 AX5 세로 clipping은 부모 행을 hug sizing으로 바꿔 해결했고
+최종 전체 렌더에서 잘림·겹침과 font 누락이 없음을 확인했다. 구현 인계는
+`design/high-fidelity/US1-live-activity-refresh.md`에 기록했다. 다음 작업은 T116 명시적 구현 승인이고,
+승인 전에는 T117~T119나 제품 Live Activity UI를 변경하지 않는다.
+
+## 2026-09-26 T114 로우파이 초안
+
+사용자가 피드백 반영본과 네 선택점을 포함한 전체 정보 구조를 명시적으로 승인했다. T114의 문서
+상태와 체크리스트를 승인 완료로 바꾸고 task를 완료 처리했다. 다음 작업은 T115 하이파이 제작이며,
+T116의 별도 구현 승인 전에는 제품 Live Activity UI를 변경하지 않는다. 사용자는 하이파이가
+로우파이와 차이가 없다면 생략하도록 요청했지만, 로우파이 제외 범위에 최종 색상·서체·간격·motion,
+Light/Dark, 최대 Dynamic Type, VoiceOver 및 ActivityKit 영역 제약이 남아 있다. 따라서 T115는
+승인된 구조를 다시 만드는 대신 이 차이만 확정하는 보강 작업으로 진행한다.
+
+사용자가 규칙 이름 앞 임시 사각형 아이콘의 의미가 불명확하다고 지적했다. 명확한 의미를 갖는
+대체 아이콘이 아니므로 잠금화면 4곳과 Dynamic Island expanded 4곳에서 모두 제거하고 규칙 이름을
+텍스트만으로 표시했다. 최종 screenshot에서 정렬과 잘림·겹침 없음을 확인했다.
+
+사용자가 거리 아이콘의 가는 선과 복잡한 형태, 카드 안의 구현 주석 노출을 지적했다. Figma의
+잠금화면·Dynamic Island 거리 표시 12곳을 채움형 `location.fill`로 교체하고, 네 잠금화면 카드에서
+구현 계약용 주석을 제거했다. 반올림·stale·개인정보 계약은 실제 사용자 UI가 아니라 Figma 보드의
+외부 상태 설명과 로우파이 문서에만 유지한다.
+
+잠금화면 시간 표시의 오른쪽 여백이 크다는 사용자 피드백을 반영했다. 카드 내부 행이 406pt로
+고정돼 좌측 16pt와 달리 우측에 약 48pt가 남던 원인이었으며, 네 상태의 primary·distance 행을
+438pt로 맞춰 시간과 다중 규칙 badge의 trailing 여백을 16pt로 정렬했다. 최종 screenshot에서
+좌우 균형과 잘림·겹침 없음을 확인했다.
+
+사용자 피드백에 따라 거리와 시간에 같은 `m`을 쓰던 축약을 수정했다. Figma의 compact·minimal
+카운트다운은 한국어 `42분`으로 바꾸고, 하이파이 및 지역화 인계에서는 영어 `42 min`, 거리 `m`를
+서로 구분하도록 기록했다. 수정 screenshot에서 잘림과 겹침이 없음을 확인했다.
+
+Figma node `384:2090`에 잠금화면 known·unavailable·stale·다중 규칙 4상태와 Dynamic Island
+minimal·compact·expanded의 상태 행렬을 작성했다. stale은 이전 거리 숫자를 제거하고
+`거리 확인 불가`로 수렴하며, minimal은 시간, compact는 거리 상태와 시간, expanded는 규칙·시간·
+거리·추가 제한을 표시한다. VoiceOver는 대표 규칙→남은 시간→거리 상태→다른 제한 순서를 기본으로
+하고 시각적 `?`·`+`는 전체 의미로 읽는다. 상세 계약과 네 검토 선택점은
+`design/low-fidelity/US1-live-activity-refresh.md`에 기록했다. 사용자 승인 전에는 T114를 완료
+처리하거나 T115 하이파이를 시작하지 않는다.
 
 ## 2026-09-22 T113 준비 결과
 
