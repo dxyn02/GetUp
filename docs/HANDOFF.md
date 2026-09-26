@@ -4,8 +4,18 @@
 
 - 기능: `002-live-activity-coins` Phase 9
 - 마지막 완료 작업: T113
-- 진행 중 작업: 없음
-- 다음 작업: T114 Live Activity 로우파이 설계
+- 진행 중 작업: T114 Live Activity 로우파이 사용자 검토
+- 다음 작업: T114 승인 기록 후 T115 Live Activity 하이파이 제작
+
+## 2026-09-26 T114 로우파이 초안
+
+Figma node `384:2090`에 잠금화면 known·unavailable·stale·다중 규칙 4상태와 Dynamic Island
+minimal·compact·expanded의 상태 행렬을 작성했다. stale은 이전 거리 숫자를 제거하고
+`거리 확인 불가`로 수렴하며, minimal은 시간, compact는 거리 상태와 시간, expanded는 규칙·시간·
+거리·추가 제한을 표시한다. VoiceOver는 대표 규칙→남은 시간→거리 상태→다른 제한 순서를 기본으로
+하고 시각적 `?`·`+`는 전체 의미로 읽는다. 상세 계약과 네 검토 선택점은
+`design/low-fidelity/US1-live-activity-refresh.md`에 기록했다. 사용자 승인 전에는 T114를 완료
+처리하거나 T115 하이파이를 시작하지 않는다.
 
 ## 2026-09-22 T113 준비 결과
 

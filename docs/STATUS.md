@@ -7,6 +7,16 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-26 T114 로우파이 검토 대기: 기존 `RestrictionLiveActivity`와 Live Activity contract를
+기준으로 잠금화면의 known·unavailable·stale·다중 규칙 상태와 Dynamic Island
+minimal·compact·expanded 정보 구조를 Figma node `384:2090` 및
+`design/low-fidelity/US1-live-activity-refresh.md`에 작성했다. stale은 5분을 넘긴 기존 숫자를
+제거하고 사용자 UI에서 unavailable과 같은 `거리 확인 불가`로 수렴하며, minimal은 남은 시간,
+compact는 거리 상태와 시간, expanded는 규칙·시간·거리·추가 제한을 표시하는 초안이다. Figma
+구조·최종 screenshot을 확인했고 제품 코드와 사용자 소유 설정·지역화 변경은 건드리지 않았다.
+현재 phase는 002 Phase 9, 마지막 완료 task는 T113, 진행 중 task는 T114이며 사용자 로우파이
+승인을 기다린다. 승인 전에는 T115 하이파이를 시작하지 않는다.
+
 2026-09-25 T113 완료: iPhone 17의 격리 recovery fixture에서 사용자가 최신 수정 빌드의 실제
 VoiceOver 발표를 재확인했다. 제목과 설명이 연속으로 읽히고 장식 아이콘·DEBUG·화면 container·
 `heading` 안내는 읽히지 않으며 다음 초점이 `닫기`로 이동했다. 앞서 확인한 두 실기기의 일반
