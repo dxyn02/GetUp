@@ -9,6 +9,10 @@
 
 ## 2026-09-26 T114 로우파이 초안
 
+사용자 피드백에 따라 거리와 시간에 같은 `m`을 쓰던 축약을 수정했다. Figma의 compact·minimal
+카운트다운은 한국어 `42분`으로 바꾸고, 하이파이 및 지역화 인계에서는 영어 `42 min`, 거리 `m`를
+서로 구분하도록 기록했다. 수정 screenshot에서 잘림과 겹침이 없음을 확인했다.
+
 Figma node `384:2090`에 잠금화면 known·unavailable·stale·다중 규칙 4상태와 Dynamic Island
 minimal·compact·expanded의 상태 행렬을 작성했다. stale은 이전 거리 숫자를 제거하고
 `거리 확인 불가`로 수렴하며, minimal은 시간, compact는 거리 상태와 시간, expanded는 규칙·시간·

@@ -7,6 +7,12 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-26 T114 로우파이 피드백 반영: 사용자가 Dynamic Island의 거리 `m`와 시간 `m` 표기가
+혼동된다고 지적했다. Figma node `384:2090`의 compact·minimal 시간 8곳을 `42m`에서 `42분`으로
+변경하고, 한국어는 `분`, 영어는 `min`, 거리는 `m`를 사용하도록 로우파이 계약과 검토 기록을
+갱신했다. 최종 screenshot에서 `320 m`와 `42분`이 구분되고 잘림·겹침이 없음을 확인했다. T114는
+전체 정보 구조에 대한 사용자 승인 전이므로 계속 진행 중이며 T115는 시작하지 않는다.
+
 2026-09-26 T114 로우파이 검토 대기: 기존 `RestrictionLiveActivity`와 Live Activity contract를
 기준으로 잠금화면의 known·unavailable·stale·다중 규칙 상태와 Dynamic Island
 minimal·compact·expanded 정보 구조를 Figma node `384:2090` 및
