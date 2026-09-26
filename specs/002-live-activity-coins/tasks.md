@@ -387,7 +387,7 @@ foreground에서 확인된 중단 command는 차감 없이 동일 command 재시
 표시했을 때 승인된 하이파이의 정보 우선순위와 앱 무드를 유지하고 핵심 시간·거리·다중 규칙 정보가
 잘리거나 누락되지 않는다.
 
-- [ ] T114 [P] [US1] 기존 Live Activity의 known·unavailable·stale·다중 규칙 상태와 잠금화면·Dynamic Island minimal·compact·expanded 정보 구조를 `design/low-fidelity/US1-live-activity-refresh.md`에 작성하고 사용자 검토 결과를 승인 상태로 기록한다.
+- [X] T114 [P] [US1] 기존 Live Activity의 known·unavailable·stale·다중 규칙 상태와 잠금화면·Dynamic Island minimal·compact·expanded 정보 구조를 `design/low-fidelity/US1-live-activity-refresh.md`에 작성하고 사용자 검토 결과를 승인 상태로 기록한다.
 - [ ] T115 [US1] T114 승인 뒤 나서 앱 무드의 색상·서체·간격·아이콘·motion, Light/Dark, 최대 Dynamic Type, VoiceOver와 각 ActivityKit 영역 제약을 포함한 하이파이를 제작하고 Figma node·구현 인계를 `design/high-fidelity/US1-live-activity-refresh.md`에 기록한다.
 - [ ] T116 [US1] T115의 잠금화면·Dynamic Island 전체 하이파이를 사용자에게 제시해 명시적 구현 승인을 받고 결과·의견·승인일을 `design/high-fidelity/US1-live-activity-refresh.md`, `docs/DECISIONS.md`, `docs/STATUS.md`에 기록한다. 승인 전에는 T117~T119를 시작하지 않는다.
 - [ ] T117 [P] [US1] 승인된 하이파이의 known·unavailable·stale·다중 규칙, 한국어·영어, Light/Dark, 최대 Dynamic Type 상태를 고정하는 preview·snapshot fixture를 `GetUpLiveActivity/RestrictionLiveActivityPreviews.swift`, `GetUpTests/Integration/LiveActivityPresentationTests.swift`에 먼저 작성한다.
