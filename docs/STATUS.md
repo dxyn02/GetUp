@@ -7,6 +7,14 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-26 T116 완료: 사용자가 AX5 규칙명 61pt·카운트다운 75pt·거리와 추가 제한 53pt 수정본을
+포함한 Figma node `395:2090`의 잠금화면·Dynamic Island 전체 하이파이를 “이대로 확정”하며 명시적으로
+구현 승인했다. `design/high-fidelity/US1-live-activity-refresh.md`의 승인자·승인일·미해결 항목을
+갱신하고 DEC-118에 최종 색상·서체·아이콘·단위·appearance·Dynamic Type·VoiceOver·motion 기준을
+기록해 T116을 완료 처리했다. 문서 승인 작업이므로 코드 테스트는 실행하지 않았고 문서 정합성과
+diff 검사를 통과했다. 현재 phase는 002 Phase 9, 마지막 완료 task는 T116, 진행 중 task는 없으며
+다음 task는 T117 preview·snapshot fixture 선행 작성이다.
+
 2026-09-26 T115 AX5 크기 피드백 반영: 사용자가 최대 Dynamic Type 샘플의 세로 배치는 적절하지만
 27/32/23pt 글자는 작다고 지적했다. Figma node `395:2090`의 규칙명을 61pt, 카운트다운을 75pt,
 거리·추가 제한을 53pt로 확대하고 카드 높이가 콘텐츠에 맞춰 371pt로 늘어나게 했다. 최종
@@ -422,11 +430,11 @@ setup/reset/recovery/reconciliation과 5초 Shield 응답 상한을 live 경로�
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T115 — Live Activity 잠금화면·Dynamic Island 하이파이와 구현 인계
+T116 — Live Activity 잠금화면·Dynamic Island 하이파이 구현 승인
 
 ## 다음 작업
-T116 — Figma node `395:2090`의 잠금화면·Dynamic Island 전체 하이파이를 사용자에게 제시하고
-명시적 구현 승인을 기록한다. 승인 전에는 T117~T119를 시작하지 않는다.
+T117 — 승인된 하이파이의 known·unavailable·stale·다중 규칙, 한국어·영어, Light/Dark, 최대
+Dynamic Type 상태를 고정하는 preview·snapshot fixture와 presentation test를 먼저 작성한다.
 T089 — T103~T113의 승인된 handoff 구현과 두 실기기 첫 탭 검증 결과를 기준으로 월 경계 allowance
 지연 생성·비이월 인수를 별도로 재개한다.
 T094·T095의 Shield/StoreKit 실기기 인수도 이어서 수행한다.

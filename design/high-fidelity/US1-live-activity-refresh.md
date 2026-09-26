@@ -7,7 +7,7 @@
 | 사용자 스토리 | `002 / US1` |
 | 관련 task | `T115`, `T116` |
 | 작성일 | `2026-09-26` |
-| 문서 상태 | `사용자 구현 검토 대기` |
+| 문서 상태 | `구현 승인 완료 — T116` |
 | 기반 로우파이 | [US1-live-activity-refresh.md](../low-fidelity/US1-live-activity-refresh.md) |
 | Figma 파일 | [T115 Live Activity 하이파이](https://www.figma.com/design/cgw5wRUZRhUMWqEwrl0U04/GetUp-%E2%80%94-US1-%EB%A1%9C%EC%9A%B0%ED%8C%8C%EC%9D%B4?node-id=395-2090) |
 | 최상위 node | `395:2090` — `US1 / Live Activity Refresh · T115 하이파이 · 검토 대기` |
@@ -153,11 +153,12 @@ Live Activity 내부에는 반올림·stale 원인·좌표/주소 미표시 같�
 
 | 항목 | 내용 |
 |---|---|
-| 승인 상태 | `검토 대기` |
-| 승인자 | 미승인 |
-| 승인일 | 미승인 |
+| 승인 상태 | `승인됨` |
+| 승인자 | 사용자 |
+| 승인일 | `2026-09-26` |
 | 검토 대상 | Figma node `395:2090`의 전체 잠금화면·Dynamic Island 하이파이와 본 구현 인계 |
-| 미해결 항목 | 사용자의 명시적 구현 승인 |
+| 미해결 항목 | 없음 |
 
-사용자가 T116에서 명시적으로 승인하기 전에는 `T117~T119` 또는 제품 Live Activity UI 변경을
-시작하지 않는다. 승인 과정에서 정보 구조나 제품 동작이 바뀌면 T114 계약도 함께 갱신한다.
+사용자는 2026-09-26 AX5 확대 수정본을 포함한 전체 하이파이를 별도 조건 없이 구현 기준으로
+확정했다. 따라서 `T117`의 preview·snapshot fixture부터 시작할 수 있다. 구현 중 정보 구조나 제품
+동작을 바꿔야 하면 T114·T116 검토로 돌아간다.
