@@ -391,7 +391,7 @@ foreground에서 확인된 중단 command는 차감 없이 동일 command 재시
 - [X] T115 [US1] T114 승인 뒤 나서 앱 무드의 색상·서체·간격·아이콘·motion, Light/Dark, 최대 Dynamic Type, VoiceOver와 각 ActivityKit 영역 제약을 포함한 하이파이를 제작하고 Figma node·구현 인계를 `design/high-fidelity/US1-live-activity-refresh.md`에 기록한다.
 - [X] T116 [US1] T115의 잠금화면·Dynamic Island 전체 하이파이를 사용자에게 제시해 명시적 구현 승인을 받고 결과·의견·승인일을 `design/high-fidelity/US1-live-activity-refresh.md`, `docs/DECISIONS.md`, `docs/STATUS.md`에 기록한다. 승인 전에는 T117~T119를 시작하지 않는다.
 - [X] T117 [P] [US1] 승인된 하이파이의 known·unavailable·stale·다중 규칙, 한국어·영어, Light/Dark, 최대 Dynamic Type 상태를 고정하는 preview·snapshot fixture를 `GetUpLiveActivity/RestrictionLiveActivityPreviews.swift`, `GetUpTests/Integration/LiveActivityPresentationTests.swift`에 먼저 작성한다.
-- [ ] T118 [US1] T116에서 승인된 하이파이만 기준으로 잠금화면과 Dynamic Island minimal·compact·expanded UI를 `GetUpLiveActivity/RestrictionLiveActivity.swift`, `GetUpLiveActivity/GetUpLiveActivityBundle.swift`, `GetUpLiveActivity/Resources/Localizable.xcstrings`에 구현하고 4KB payload·60초 시간 정확도 계약을 보존한다.
+- [X] T118 [US1] T116에서 승인된 하이파이만 기준으로 잠금화면과 Dynamic Island minimal·compact·expanded UI를 `GetUpLiveActivity/RestrictionLiveActivity.swift`, `GetUpLiveActivity/GetUpLiveActivityBundle.swift`, `GetUpLiveActivity/Resources/Localizable.xcstrings`에 구현하고 4KB payload·60초 시간 정확도 계약을 보존한다.
 - [ ] T119 [US1] 잠금화면·Dynamic Island 각 영역의 승인 하이파이 대조, VoiceOver·최대 Dynamic Type·Light/Dark·Reduce Motion·대표 교체·종료를 preview와 지원 실기기에서 검증하고 결과를 `specs/002-live-activity-coins/quickstart.md`, `docs/STATUS.md`, `docs/HANDOFF.md`에 기록한다.
 
 **체크포인트**: Live Activity 하이파이 승인과 preview·실기기 대조가 끝나기 전에는 시각 개편을

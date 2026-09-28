@@ -7,6 +7,19 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-28 T118 완료: 병합된 PR #34의 최신 `main`에서 `codex/live-activity-t118` 브랜치를
+만들고 승인된 Live Activity 잠금화면·Dynamic Island minimal·compact·expanded UI를 구현했다.
+앱의 dark surface·accent 색상, 아이콘 없는 규칙명, `location.fill`, 접근성 읽기 순서와 AX5 세로
+배치·28pt 모서리를 적용했다. compact는 거리와 분 단위 시간을 구분하고 공간이 부족하면 추가 제한
+`+`를 생략하며 minimal은 시간만 표시한다. 시스템 minute 갱신 시점을 사용하는 축약 formatter는
+한국어 `분`, 영어 `min`을 표시하고 종료 후 0으로 고정한다. 4KB payload와 60초 남은 시간 계약을
+기존 모델·시간 정책 테스트로 검증했다. iPhone 17 Pro iOS 26.5 Simulator의 `GetUpTests` 652개
+선언·동적 실행 772회가 실패·skip 없이 통과했고 Live Activity extension의 Debug·Release
+Simulator 빌드도 통과했다. 실제 잠금화면·Dynamic Island 시각, VoiceOver와 두 appearance,
+Reduce Motion 및 실기기 갱신은 T119에서 검증해야 한다. 현재 phase는 002 Phase 9,
+마지막 완료 task는 T118, 진행 중 task는 없으며 다음 task는 T119이다. 기존 BLK-017은 별도로
+미해결 상태다. 원래 작업 디렉터리의 미커밋 설정·지역화 파일 3개는 보존했다.
+
 2026-09-28 T117 완료: PR #33을 충돌 없이 `main`에 병합한 뒤 최신 `main`의
 `codex/live-activity-t117` 브랜치에서 승인된 Live Activity의 known·unavailable·stale·다중 규칙
 fixture를 보강했다. 잠금화면·Dynamic Island 세 영역, 한국어·영어, Light/Dark, 기본·AX5 크기의
