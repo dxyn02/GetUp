@@ -7,6 +7,15 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-28 T117 완료: PR #33을 충돌 없이 `main`에 병합한 뒤 최신 `main`의
+`codex/live-activity-t117` 브랜치에서 승인된 Live Activity의 known·unavailable·stale·다중 규칙
+fixture를 보강했다. 잠금화면·Dynamic Island 세 영역, 한국어·영어, Light/Dark, 기본·AX5 크기의
+128개 scenario와 stale 잠금화면 preview를 추가했다. `LiveActivityPresentationTests`가 상태별
+표시 데이터와 4KB payload 상한 및 128개 조합을 확인하며 iPhone 17 Pro iOS 26.5 Simulator에서
+새 테스트 2건이 실패·skip 없이 통과했다. 기존 SDK warning은 남아 있다.
+현재 phase는 002 Phase 9, 마지막 완료 task는 T117, 진행 중 task는 없으며 다음 task는 T118
+승인 UI 구현이다. 원래 작업 디렉터리의 미커밋 설정·지역화 파일 3개는 보존했다.
+
 2026-09-26 T116 완료: 사용자가 AX5 규칙명 61pt·카운트다운 75pt·거리와 추가 제한 53pt 수정본을
 포함한 Figma node `395:2090`의 잠금화면·Dynamic Island 전체 하이파이를 “이대로 확정”하며 명시적으로
 구현 승인했다. `design/high-fidelity/US1-live-activity-refresh.md`의 승인자·승인일·미해결 항목을
