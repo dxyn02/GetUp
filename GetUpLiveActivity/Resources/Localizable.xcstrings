@@ -80,6 +80,26 @@
           }
         }
       }
+    },
+    "남은 거리 %lld m" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld m remaining"
+          }
+        }
+      }
+    },
+    "다른 제한 있음" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other restrictions active"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"
