@@ -7,6 +7,77 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-26 T116 완료: 사용자가 AX5 규칙명 61pt·카운트다운 75pt·거리와 추가 제한 53pt 수정본을
+포함한 Figma node `395:2090`의 잠금화면·Dynamic Island 전체 하이파이를 “이대로 확정”하며 명시적으로
+구현 승인했다. `design/high-fidelity/US1-live-activity-refresh.md`의 승인자·승인일·미해결 항목을
+갱신하고 DEC-118에 최종 색상·서체·아이콘·단위·appearance·Dynamic Type·VoiceOver·motion 기준을
+기록해 T116을 완료 처리했다. 문서 승인 작업이므로 코드 테스트는 실행하지 않았고 문서 정합성과
+diff 검사를 통과했다. 현재 phase는 002 Phase 9, 마지막 완료 task는 T116, 진행 중 task는 없으며
+다음 task는 T117 preview·snapshot fixture 선행 작성이다.
+
+2026-09-26 T115 AX5 크기 피드백 반영: 사용자가 최대 Dynamic Type 샘플의 세로 배치는 적절하지만
+27/32/23pt 글자는 작다고 지적했다. Figma node `395:2090`의 규칙명을 61pt, 카운트다운을 75pt,
+거리·추가 제한을 53pt로 확대하고 카드 높이가 콘텐츠에 맞춰 371pt로 늘어나게 했다. 최종
+2080×2001 렌더에서 AX5 정보 네 항목과 다음 승인 게이트의 잘림·겹침이 없음을 확인했다. T115는
+완료 상태를 유지하고 T116 사용자 구현 승인을 기다린다.
+
+2026-09-26 T115 완료: T114 승인 정보 구조를 Figma node `395:2090`으로 복제하고, 앱의 실제
+`#08090B` background·`#15171B` surface·`#F4D600` accent, SF Pro, 16/12/8pt 간격, 단순한
+`location.fill`, system-driven motion을 하이파이 기준으로 확정했다. Light appearance에서도 GetUp의
+검은 surface를 유지하고, AX5 잠금화면 샘플과 VoiceOver 읽기 순서·Reduce Motion·ActivityKit 영역별
+정보 예산·4KB 제약을 보강했다. 첫 렌더에서 AX5 부모 행의 100pt 고정 높이로 발생한 잘림을 감지해
+세로 hug sizing으로 교정했으며, 최종 2080×1851 렌더에서 잘림·겹침 없음과 SF Pro 세 weight·semantic
+variable 연결을 확인했다. `design/high-fidelity/US1-live-activity-refresh.md`에 node·시각 규칙·구현
+인계를 기록하고 T115를 완료 처리했다. 디자인·문서 작업이므로 코드 테스트는 실행하지 않았다.
+현재 phase는 002 Phase 9, 마지막 완료 task는 T115, 진행 중 task는 없으며 다음 task는 T116 사용자
+구현 승인이다. 승인 전에는 T117~T119 및 제품 UI 변경을 시작하지 않는다.
+
+2026-09-26 T114 완료: 사용자가 시간·거리 단위 분리, 잠금화면 오른쪽 여백 교정, 단순한 거리 아이콘,
+사용자 영역의 구현 주석 제거, 규칙명 앞 임시 아이콘 제거가 반영된 Figma node `384:2090`과 네
+상태·영역별 정보 구조를 명시적으로 승인했다. `design/low-fidelity/US1-live-activity-refresh.md`의
+검토 기록·체크리스트·승인 상태를 갱신하고 T114를 완료 처리했다. 문서·Figma 변경이므로 코드 테스트는
+실행하지 않았고 최종 screenshot과 문서 정합성·diff 검사를 통과했다. 현재 phase는 002 Phase 9,
+마지막 완료 task는 T114, 진행 중 task는 없으며 다음 task는 T115 하이파이 제작이다. T116의 별도
+구현 승인 전에는 T117~T119 및 제품 UI 변경을 시작하지 않는다. 사용자는 하이파이가 로우파이와
+차이가 없다면 생략하도록 요청했으나, 현재 로우파이는 최종 색상·서체·간격·motion, Light/Dark,
+최대 Dynamic Type, VoiceOver 및 ActivityKit 영역별 제약을 제외하고 있어 T115는 중복이 아닌 해당
+항목의 확정·인계 범위로 유지한다.
+
+2026-09-26 T114 규칙 아이콘 피드백 반영: 사용자가 규칙 이름 앞의 임시 사각형 아이콘은 의미를
+알기 어렵고 불필요하다고 확인했다. 적합성이 불명확한 대체 아이콘을 새로 넣지 않고 Figma node
+`384:2090`의 잠금화면 4곳과 Dynamic Island expanded 4곳에서 해당 아이콘을 제거해 규칙 이름을
+텍스트만으로 표시했다. 최종 screenshot에서 8곳의 시작선, 시간·거리와의 정보 계층, 잘림·겹침
+없음을 확인했다. T114는 전체 정보 구조 승인 전이므로 진행 중이다.
+
+2026-09-26 T114 아이콘·문구 피드백 반영: 사용자가 기존 거리 조준선 아이콘의 가는 선과 복잡도를
+지적하고, 잠금화면 카드 하단의 `10m 단위 반올림`, `시간은 계속 표시`, `이전 숫자 제거` 문구가
+사용자에게 불필요하다고 확인했다. Figma node `384:2090`의 잠금화면·Dynamic Island 거리 표시
+12곳을 단순한 채움형 SF Symbol `location.fill`로 교체하고, 네 잠금화면 카드의 구현 주석을 모두
+제거했다. 해당 계약은 UI 밖의 보드 설명과 로우파이 문서에만 남겼다. 최종 screenshot에서 아이콘
+가독성, 카드 높이 수렴, 잘림·겹침 없음을 확인했다. T114는 전체 정보 구조 승인 전이므로 진행 중이다.
+
+2026-09-26 T114 잠금화면 여백 피드백 반영: 로우파이 카드가 좌우 16pt padding을 선언했지만 내부
+primary·distance 행이 406pt로 고정돼 시간 오른쪽에는 약 48pt가 남아 있었다. Figma node
+`384:2090`의 네 잠금화면 상태에서 두 행과 주석 폭을 실제 가용 너비 438pt로 맞춰 시간 trailing
+여백을 16pt로 교정했다. 구조 증적과 최종 screenshot에서 네 카드의 좌우 균형, 잘림·겹침 없음,
+다중 규칙 badge 정렬을 확인했다. T114는 전체 정보 구조 승인 전이므로 계속 진행 중이다.
+
+2026-09-26 T114 로우파이 피드백 반영: 사용자가 Dynamic Island의 거리 `m`와 시간 `m` 표기가
+혼동된다고 지적했다. Figma node `384:2090`의 compact·minimal 시간 8곳을 `42m`에서 `42분`으로
+변경하고, 한국어는 `분`, 영어는 `min`, 거리는 `m`를 사용하도록 로우파이 계약과 검토 기록을
+갱신했다. 최종 screenshot에서 `320 m`와 `42분`이 구분되고 잘림·겹침이 없음을 확인했다. T114는
+전체 정보 구조에 대한 사용자 승인 전이므로 계속 진행 중이며 T115는 시작하지 않는다.
+
+2026-09-26 T114 로우파이 검토 대기: 기존 `RestrictionLiveActivity`와 Live Activity contract를
+기준으로 잠금화면의 known·unavailable·stale·다중 규칙 상태와 Dynamic Island
+minimal·compact·expanded 정보 구조를 Figma node `384:2090` 및
+`design/low-fidelity/US1-live-activity-refresh.md`에 작성했다. stale은 5분을 넘긴 기존 숫자를
+제거하고 사용자 UI에서 unavailable과 같은 `거리 확인 불가`로 수렴하며, minimal은 남은 시간,
+compact는 거리 상태와 시간, expanded는 규칙·시간·거리·추가 제한을 표시하는 초안이다. Figma
+구조·최종 screenshot을 확인했고 제품 코드와 사용자 소유 설정·지역화 변경은 건드리지 않았다.
+현재 phase는 002 Phase 9, 마지막 완료 task는 T113, 진행 중 task는 T114이며 사용자 로우파이
+승인을 기다린다. 승인 전에는 T115 하이파이를 시작하지 않는다.
+
 2026-09-25 T113 완료: iPhone 17의 격리 recovery fixture에서 사용자가 최신 수정 빌드의 실제
 VoiceOver 발표를 재확인했다. 제목과 설명이 연속으로 읽히고 장식 아이콘·DEBUG·화면 container·
 `heading` 안내는 읽히지 않으며 다음 초점이 `닫기`로 이동했다. 앞서 확인한 두 실기기의 일반
@@ -359,13 +430,13 @@ setup/reset/recovery/reconciliation과 5초 Shield 응답 상한을 live 경로�
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T112 — release handoff 한국어·영어 지역화와 접근성·appearance 회귀
+T116 — Live Activity 잠금화면·Dynamic Island 하이파이 구현 승인
 
 ## 다음 작업
-T113 — 동일 iCloud 계정의 iPhone 15 Pro Max·iPhone 17에서 Shield 첫 탭 handoff, 네 결과·
-기존 복구 연결, 강제 종료 뒤 동일 command 복원과 다기기 수렴을 실기기 검증한다. Live Activity는
-T114~T116 설계·승인을 별도로 진행한다.
-T089 — T103~T113의 승인된 handoff 구현과 두 실기기 첫 탭 검증이 끝난 뒤 재개한다.
+T117 — 승인된 하이파이의 known·unavailable·stale·다중 규칙, 한국어·영어, Light/Dark, 최대
+Dynamic Type 상태를 고정하는 preview·snapshot fixture와 presentation test를 먼저 작성한다.
+T089 — T103~T113의 승인된 handoff 구현과 두 실기기 첫 탭 검증 결과를 기준으로 월 경계 allowance
+지연 생성·비이월 인수를 별도로 재개한다.
 T094·T095의 Shield/StoreKit 실기기 인수도 이어서 수행한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
