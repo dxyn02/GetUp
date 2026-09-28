@@ -209,6 +209,8 @@
 		AA0000000000000000000266 /* LiveActivityDistancePolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000042 /* LiveActivityDistancePolicyTests.swift */; };
 		AA0000000000000000000267 /* LiveActivityContentPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000063 /* LiveActivityContentPolicy.swift */; };
 		AA0000000000000000000268 /* LiveActivityTimePolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000043 /* LiveActivityTimePolicyTests.swift */; };
+		AA0000000000000000000341 /* RestrictionLiveActivityPreviews.swift in Sources */ = {isa = PBXBuildFile; fileRef = DL0000000000000000000002 /* RestrictionLiveActivityPreviews.swift */; };
+		AA0000000000000000000342 /* LiveActivityPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000090 /* LiveActivityPresentationTests.swift */; };
 		AA0000000000000000000269 /* LiveActivityCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000044 /* LiveActivityCoordinatorTests.swift */; };
 		AA0000000000000000000270 /* LiveActivityTimePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000064 /* LiveActivityTimePolicy.swift */; };
 		AA0000000000000000000271 /* LiveActivityCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000065 /* LiveActivityCoordinator.swift */; };
@@ -450,6 +452,7 @@
 		B50000000000000000000041 /* RestrictionOccurrenceEvaluatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionOccurrenceEvaluatorTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000042 /* LiveActivityDistancePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityDistancePolicyTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000043 /* LiveActivityTimePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityTimePolicyTests.swift; sourceTree = "<group>"; };
+		B50000000000000000000090 /* LiveActivityPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityPresentationTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000044 /* LiveActivityCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityCoordinatorTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000045 /* LiveActivityStartMeasurementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityStartMeasurementTests.swift; sourceTree = "<group>"; };
 		B50000000000000000000046 /* LiveActivityLocationBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityLocationBridgeTests.swift; sourceTree = "<group>"; };
@@ -936,6 +939,7 @@
 				B5000000000000000000004B /* RuleReleaseCoordinatorTests.swift */,
 				B50000000000000000000047 /* SystemLiveActivityAdapterTests.swift */,
 				B50000000000000000000046 /* LiveActivityLocationBridgeTests.swift */,
+				B50000000000000000000090 /* LiveActivityPresentationTests.swift */,
 				B50000000000000000000044 /* LiveActivityCoordinatorTests.swift */,
 				B50000000000000000000038 /* CloudKitCoinLedgerRepositoryTests.swift */,
 				B50000000000000000000039 /* CloudKitMonthlyAllowanceTests.swift */,
@@ -1579,6 +1583,8 @@
 				AA0000000000000000000275 /* SystemLiveActivityAdapterTests.swift in Sources */,
 				AA0000000000000000000273 /* LiveActivityLocationBridgeTests.swift in Sources */,
 				AA0000000000000000000272 /* LiveActivityStartMeasurementTests.swift in Sources */,
+				AA0000000000000000000341 /* RestrictionLiveActivityPreviews.swift in Sources */,
+				AA0000000000000000000342 /* LiveActivityPresentationTests.swift in Sources */,
 				AA0000000000000000000269 /* LiveActivityCoordinatorTests.swift in Sources */,
 				AA0000000000000000000268 /* LiveActivityTimePolicyTests.swift in Sources */,
 				AA0000000000000000000266 /* LiveActivityDistancePolicyTests.swift in Sources */,
@@ -1862,6 +1868,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = Tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) GETUP_PRESENTATION_TESTS";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				TARGETED_DEVICE_FAMILY = 1;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GetUp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GetUp";
@@ -1877,6 +1884,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				GETUP_BUNDLE_IDENTIFIER_SUFFIX = Tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) GETUP_PRESENTATION_TESTS";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				TARGETED_DEVICE_FAMILY = 1;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GetUp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GetUp";
