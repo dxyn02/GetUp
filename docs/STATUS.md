@@ -7,6 +7,14 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-29 T119 expanded 배지 재보정: 사용자의 새 iPhone 17 사진에서 기존
+bottom 영역 trailing 24pt만으로는 `다른 제한 있음` 캡슐 오른쪽 끝이 여전히
+잘리는 것을 확인했다. DEC-125 후속 보정으로 배지 뷰에 오른쪽 12pt를 직접 더해
+마스크 안쪽으로 옮겼다. 대상 Simulator 테스트 2건, 서명 실기기 빌드, 데이터 보존
+설치·실행은 성공했다. 현재 iPhone Mirroring은 iPhone 사용 중 연결이 끊긴 상태여서
+수정본 확대 화면의 최종 실기기 표시는 확인 중이다. 현재 phase는 002 Phase 9,
+마지막 완료 task는 T118, 진행 중·다음 task는 T119다.
+
 2026-09-29 T119 expanded 배지 끝 잘림 수정: 사용자가 iPhone 17 확대 화면의
 오른쪽 아래 `More rules` 잘림만 남았다고 확인했다. DEC-125에 따라 bottom 영역
 trailing 여백을 14pt에서 24pt로 늘리고 leading은 14pt로 유지했다. Xcode Canvas

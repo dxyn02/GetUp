@@ -40,6 +40,7 @@ struct RestrictionLiveActivity: Widget {
                         Spacer(minLength: 0)
                         if context.state.hasAdditionalRestrictions {
                             AdditionalRestrictionsLabel(asChip: true)
+                                .padding(.trailing, 12)
                         }
                     }
                     .font(.system(size: 15, weight: .regular))

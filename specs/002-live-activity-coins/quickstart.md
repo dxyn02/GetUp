@@ -83,7 +83,9 @@ xcodebuild test \
 - iPhone 17 확대 화면에서 오른쪽 아래 `More rules` 배지 끝 잘림이 남아 bottom
   trailing 여백만 14pt→24pt로 늘렸다. Xcode Canvas iPhone 17 Pro 확대 화면에서
   전체 배지 표시를 확인했고 대상 Simulator 테스트 2건이 통과했다. 서명 빌드를 iPhone 17에
-  데이터 보존 설치·실행했으며 확대 배지의 실기기 결과는 사용자 확인을 기다린다.
+  데이터 보존 설치·실행했으나 사용자 후속 사진에서 캡슐 오른쪽 끝 잘림이 재현됐다.
+  배지 뷰에 오른쪽 12pt 여백을 직접 더한 새 빌드는 대상 테스트 2건 통과 후 iPhone 17에
+  데이터 보존 설치·실행했다. 새 빌드의 확대 배지 실기기 결과는 확인 중이다.
 - AX5 Figma node `395:2277`은 968×371pt 샘플과 61/75/53/53pt 글자를 사용한다.
   Apple HIG의 iPhone 17 Live Activity 잠금화면·expanded는 너비 371pt, 높이 최대
   160pt라 시안 네 줄의 동일 크기 구현은 불가능하다. 24/22/18pt 상한은 DEC-120의 앱
