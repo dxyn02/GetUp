@@ -3,9 +3,38 @@
 ## 현재 작업
 
 - 기능: `002-live-activity-coins` Phase 9
-- 마지막 완료 작업: T116
-- 진행 중 작업: 없음
-- 다음 작업: T117 Live Activity preview·snapshot fixture 선행 작성
+- 마지막 완료 작업: T118
+- 진행 중 작업: T119 Live Activity 시각·접근성 실기기 검증
+- 다음 작업: T119 최종 iPhone 17 화면·대표 교체·전체 종료 검증
+
+## 2026-09-29 T119 실기기 피드백 수정
+
+사용자가 전달한 Dynamic Island 스크린샷의 여백·잘림과 잠금화면 타이머 위치를 수정하고
+compact 거리 오른쪽 `+`를 제거했다. 다중 규칙 정보는 VoiceOver에서 유지한다. Xcode Canvas
+iPhone 17 Pro AX5의 잠금화면 known·다중 규칙, 2시간 compact 다중 규칙에서 정보가 모두
+보이고 시간이 오른쪽 위에 있으며 `+`가 없음을 확인했다. 타이머 텍스트를 오른쪽 정렬해
+잠금화면과 expanded의 오른쪽 여백도 맞췄다. 실기기 compact의 긴 영어
+`minutes`는 사용자 승인으로 숫자 타이머로 교체하고 trailing 최대 너비를 66pt로 제한했다.
+영어 다중 규칙 VoiceOver 문구도 Canvas에서 확인했다. iPhone 17에 서명 Debug 빌드를 데이터
+보존 설치해 compact `500 m`·`59:39`의 잘림 없는 표시와 폭 축소를 확인했다. Simulator
+presentation 테스트 2건은 최종 수정 뒤 통과했다. 최종 빌드의 실기기 잠금화면·VoiceOver와
+대표 교체·전체 종료는 확인해야 한다. 변경 기준은 DEC-120과 Live Activity 하이파이 문서의
+T119 추가 기록에 있다.
+
+## 2026-09-28 BLK-023 결정 반영
+
+사용자가 compact 영어 `minutes`, minimal 숫자 타이머를 승인했다. DEC-119에 근거를 기록했고
+BLK-023을 해결했다. Xcode Canvas에서 minimal `44:47`이 잘림 없이 표시된다. T119의 실제
+잠금화면·VoiceOver·Reduce Motion·대표 교체·종료 검증은 계속 필요하다.
+
+## 2026-09-28 T119 진행 및 차단
+
+PR #35를 병합한 `codex/live-activity-t119`에서 Xcode Canvas Debug `-Onone`, 만료된 preview
+fixture를 고쳤다. iPhone 17에 데이터 보존 설치 후 expanded의 대표 규칙·시간·거리와 compact
+거리 표시를 확인했다. 기존 사용자 정의 분 포맷은 시간이 빈칸이었고 시스템 분 포맷은
+`144 minutes`를 정상 표시했다. 영어 `min` 승인 시안과의 차이 및 minimal의 `44...` 잘림을
+BLK-023에 기록하고 사용자 결정을 요청했다. `LiveActivityPresentationTests` 2건은 통과했다.
+실기기 잠금화면, VoiceOver, Reduce Motion, 대표 교체·종료는 미검증이다. BLK-017은 별도다.
 
 ## 2026-09-26 T116 구현 승인
 

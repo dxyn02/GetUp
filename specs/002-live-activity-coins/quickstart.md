@@ -78,6 +78,53 @@ xcodebuild test \
 - 가격·무료분·구매 코인·대상 규칙·남을 제한의 의미가 두 언어에서 같다.
 - 위치 좌표나 Family Controls token이 preview·접근성 label·로그에 나타나지 않는다.
 
+## T119 Live Activity 시각·접근성 인수 기록 (진행 중, 2026-09-29)
+
+- 2026-09-29 사용자가 iPhone 17 스크린샷에서 좌우 여백·글자 잘림, 잠금화면 타이머 위치와
+  compact 거리 오른쪽 `+`를 지적했다. DEC-120에 따라 expanded 14pt/compact 10pt 영역
+  여백을 적용하고 compact 거리의 `+`를 제거했다. 다중 규칙 정보는 compact
+  거리의 VoiceOver label에 남겼다.
+- 잠금화면은 일반·AX5에서 규칙명 왼쪽, 카운트다운 오른쪽 위, 거리·추가 제한 아래로 배치했다.
+  시스템 타이머의 내부 빈 공간은 텍스트를 오른쪽 정렬해 오른쪽 여백을 맞췄다.
+  Xcode Canvas iPhone 17 Pro의 AX5 known·2시간 다중 규칙 잠금화면에서 시간과 거리 등 모든
+  문구가 카드 안에 보이고 잘리지 않는 것을 확인했다. 다중 규칙 compact에서는 `80 m`와
+  `119:54` 숫자 타이머가 함께 보이며 `+`는 없다. 영어 VoiceOver label은 `80 meters remaining,
+  Other restrictions are also active`로 확인했다.
+- iPhone 17에서 `500 m`와 `72 minutes`가 차지하는 compact 폭을 확인한 뒤, 사용자가
+  compact에도 초가 갱신되는 `72:00` 형태 숫자 타이머를 승인했다. 시스템 타이머의
+  예약 폭을 compact trailing 최대 66pt로 제한한 빌드를 설치해 `500 m`와 `59:39`가
+  잘림 없이 보이고 섬 폭이 이전보다 줄어든 것을 확인했다.
+- iPhone 17 서명 Debug 빌드를 데이터 보존 설치했다. 수정된 fixture의
+  `LiveActivityPresentationTests` 2건은 iPhone 17 Pro iOS 26.5 Simulator에서 실패·skip 없이
+  통과했다. 새 빌드의 compact 실기기 화면은 확인했고, 잠금화면·VoiceOver 최종 재확인과
+  대표 교체·종료는 아직 미검증이다.
+
+- 대상: iPhone 17(iOS 26.7, `앤디의 iPhone`) 및 iPhone 17 Pro iOS 26.5 Simulator Xcode Canvas.
+- Xcode Debug에서 Widget Extension preview가 `-O` 때문에 열리지 않아 Debug에 `-Onone`을
+  명시했다. 고정 fixture의 종료 시각이 지나 `0:00`을 보였으므로 현재 시각 기준 45분으로 수정했다.
+- Canvas의 known 잠금화면은 규칙→시간→거리 순서의 접근성 요소를 노출했고 Light appearance·AX5에서
+  dark surface와 세로 배치, 잘림 없는 카드 표시를 확인했다. expanded 다중 규칙은 네 접근성 요소를
+  순서대로 노출했다. compact·minimal 프리뷰에서는 시스템 분 타이머의 자동 표시를 확인했다.
+- 활성 제한을 사용자가 준비한 iPhone 17에 서명 Debug 빌드를 데이터 보존 방식으로 덮어써 설치했다.
+  expanded에서 대표 규칙 `Library`, 남은 시간, `500 m`를 보았고 compact에서 `500 m`와
+  `144 minutes`가 함께 표시되는 것을 확인했다. 사용자 정의 `min` 포맷은 기기와 Canvas에서
+  시간 영역이 빈칸이었다.
+- 사용자가 BLK-023에서 영어 compact의 시스템 `minutes`와 minimal 숫자 타이머를 승인했다.
+  Canvas에서 45분 `44:47`과 2시간 `119:53` 숫자 타이머를 확인했다. 후자는 12pt에서
+  잘려 9pt로 조정했고 AX5 Dark appearance에서도 전체 숫자가 표시됐다. 규칙의 최대 구간은
+  12시간이므로 세 자리 분까지 검증할 수 있다.
+- 사용자가 iPhone 17 잠금화면 카드의 규칙명·시간·거리 시각과 실제 VoiceOver의 읽기 순서 및
+  장식 아이콘 제외를 확인해 모두 통과했다고 보고했다. iPhone Mirroring은 잠금화면과 음성을
+  전달하지 않으므로 이 결과는 사용자 확인을 근거로 한다.
+- 최종 minimal 글자 크기 수정 전 서명 빌드에서 compact `500 m +`와 `116 minutes`가
+  iPhone 17에 함께 보였고 시간이 분 단위로 줄어드는 것을 확인했다. 기기의 Reduce Motion을
+  켜도 compact 표시가 유지됐으며, 확인 후 원래 꺼진 상태로 복원했다. minimal 수정 빌드는
+  데이터 보존 설치했다.
+- iPhone 17 Pro iOS 26.5 Simulator에서 전체 Swift Testing 652건과 UI 테스트 85건이
+  실패·skip 없이 통과했다. 뒤이은 긴 minimal preview fixture 변경은
+  `LiveActivityPresentationTests` 2건을 다시 실행해 통과했다.
+- 대표 규칙 교체·전체 종료의 실기기 관찰과 최종 수정 빌드의 화면 재확인은 진행 중이다.
+
 ## StoreKit 검증
 
 ### 로컬 Configuration

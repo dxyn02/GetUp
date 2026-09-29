@@ -22,11 +22,14 @@ struct RestrictionLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.leading) {
                     RestrictionRuleLabel(name: context.state.ruleDisplayName)
                 }
+                .contentMargins(.leading, 14)
 
                 DynamicIslandExpandedRegion(.trailing) {
                     RestrictionCountdown(endsAt: context.state.endsAt)
                         .font(.system(size: 17, weight: .bold).monospacedDigit())
+                        .frame(maxWidth: .infinity, alignment: .trailing)
                 }
+                .contentMargins(.trailing, 14)
 
                 DynamicIslandExpandedRegion(.bottom) {
                     HStack(spacing: 12) {
@@ -37,37 +40,25 @@ struct RestrictionLiveActivity: Widget {
                         }
                     }
                     .font(.system(size: 15, weight: .regular))
-                    .padding(.top, 12)
+                    .padding(.top, 8)
                 }
+                .contentMargins(.horizontal, 14)
             } compactLeading: {
-                if context.state.hasAdditionalRestrictions {
-                    ViewThatFits(in: .horizontal) {
-                        HStack(spacing: 4) {
-                            RestrictionDistanceLabel(
-                                distance: context.state.remainingDistance,
-                                compact: true
-                            )
-                            AdditionalRestrictionsLabel(compact: true)
-                        }
-                        RestrictionDistanceLabel(
-                            distance: context.state.remainingDistance,
-                            compact: true
-                        )
-                    }
-                } else {
-                    RestrictionDistanceLabel(
-                        distance: context.state.remainingDistance,
-                        compact: true
-                    )
-                }
+                RestrictionDistanceLabel(
+                    distance: context.state.remainingDistance,
+                    compact: true,
+                    hasAdditionalRestrictions: context.state.hasAdditionalRestrictions
+                )
             } compactTrailing: {
                 RestrictionCountdown(endsAt: context.state.endsAt, compact: true)
                     .font(.system(size: 12, weight: .bold).monospacedDigit())
-                    .frame(maxWidth: 65)
+                    .frame(maxWidth: 66, alignment: .trailing)
             } minimal: {
-                RestrictionCountdown(endsAt: context.state.endsAt, compact: true)
-                    .font(.system(size: 12, weight: .bold).monospacedDigit())
+                RestrictionCountdown(endsAt: context.state.endsAt, minimal: true)
+                    .font(.system(size: 9, weight: .bold).monospacedDigit())
             }
+            .contentMargins(.horizontal, 10, for: .compactLeading)
+            .contentMargins(.horizontal, 10, for: .compactTrailing)
             .keylineTint(LiveActivityColor.accent)
         }
     }
@@ -83,38 +74,37 @@ private struct RestrictionLockScreenView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            if dynamicTypeSize.isAccessibilitySize {
-                RestrictionRuleLabel(name: contentState.ruleDisplayName)
-                    .font(.system(size: ruleSize, weight: .semibold))
+            HStack(alignment: .top, spacing: 12) {
+                RestrictionRuleLabel(name: contentState.ruleDisplayName, allowsWrapping: true)
+                    .font(.system(size: min(ruleSize, 24), weight: .semibold))
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 RestrictionCountdown(endsAt: contentState.endsAt)
-                    .font(.system(size: timeSize, weight: .bold).monospacedDigit())
+                    .font(.system(
+                        size: dynamicTypeSize.isAccessibilitySize ? 22 : timeSize,
+                        weight: .bold
+                    ).monospacedDigit())
+                    .frame(width: dynamicTypeSize.isAccessibilitySize ? 120 : 105, alignment: .trailing)
+            }
+            .frame(maxWidth: .infinity)
+            if dynamicTypeSize.isAccessibilitySize {
                 RestrictionDistanceLabel(distance: contentState.remainingDistance)
-                    .font(.system(size: detailSize, weight: .semibold))
+                    .font(.system(size: min(detailSize, 18), weight: .semibold))
                 if contentState.hasAdditionalRestrictions {
                     AdditionalRestrictionsLabel()
-                        .font(.system(size: detailSize, weight: .semibold))
+                        .font(.system(size: min(detailSize, 18), weight: .semibold))
                 }
             } else {
-                HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    RestrictionRuleLabel(name: contentState.ruleDisplayName)
-                        .font(.system(size: ruleSize, weight: .semibold))
-                    Spacer(minLength: 0)
-                    RestrictionCountdown(endsAt: contentState.endsAt)
-                        .font(.system(size: timeSize, weight: .bold).monospacedDigit())
+                RestrictionDistanceLabel(distance: contentState.remainingDistance)
+                    .font(.system(size: detailSize))
+                if contentState.hasAdditionalRestrictions {
+                    AdditionalRestrictionsLabel()
+                        .font(.system(size: detailSize))
                 }
-                HStack(spacing: 12) {
-                    RestrictionDistanceLabel(distance: contentState.remainingDistance)
-                    Spacer(minLength: 0)
-                    if contentState.hasAdditionalRestrictions {
-                        AdditionalRestrictionsLabel()
-                    }
-                }
-                .font(.system(size: detailSize))
             }
         }
         .foregroundStyle(LiveActivityColor.primary)
-        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
         .background(
             LiveActivityColor.surface,
             in: RoundedRectangle(cornerRadius: dynamicTypeSize.isAccessibilitySize ? 28 : 18)
@@ -124,10 +114,11 @@ private struct RestrictionLockScreenView: View {
 
 private struct RestrictionRuleLabel: View {
     let name: String
+    var allowsWrapping = false
 
     var body: some View {
         Text(name)
-            .lineLimit(1)
+            .lineLimit(allowsWrapping ? 2 : 1)
             .minimumScaleFactor(0.75)
             .foregroundStyle(LiveActivityColor.primary)
             .accessibilityLabel(Text("제한 규칙: \(name)"))
@@ -137,29 +128,22 @@ private struct RestrictionRuleLabel: View {
 private struct RestrictionCountdown: View {
     let endsAt: Date
     var compact = false
-
-    @Environment(\.locale) private var locale
+    var minimal = false
 
     var body: some View {
         let now = Date.now
         let interval = now...max(now, endsAt)
         Group {
-            if compact {
-                Text(
-                    .currentDate,
-                    format: CompactMinuteTimerStyle(
-                        startedAt: now,
-                        endsAt: endsAt,
-                        languageCode: locale.language.languageCode?.identifier ?? "ko"
-                    )
-                )
+            if minimal || compact {
+                Text(timerInterval: interval, countsDown: true, showsHours: false)
             } else {
                 Text(timerInterval: interval, countsDown: true, showsHours: true)
             }
         }
+        .multilineTextAlignment(.trailing)
         .lineLimit(1)
         .minimumScaleFactor(0.72)
-        .foregroundStyle(LiveActivityColor.primary)
+        .foregroundStyle(LiveActivityColor.accent)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("남은 시간")
         .accessibilityValue(
@@ -168,38 +152,10 @@ private struct RestrictionCountdown: View {
     }
 }
 
-/// Keeps the system timer's minute update schedule while using the approved short units.
-private struct CompactMinuteTimerStyle: DiscreteFormatStyle {
-    let startedAt: Date
-    let endsAt: Date
-    let languageCode: String
-
-    private var systemStyle: SystemFormatStyle.Timer {
-        SystemFormatStyle.Timer(
-            countingDownIn: startedAt..<max(startedAt.addingTimeInterval(1), endsAt),
-            showsHours: false,
-            maxFieldCount: 1,
-            maxPrecision: .seconds(60)
-        )
-    }
-
-    func format(_ value: Date) -> String {
-        let minutes = max(0, Int(ceil(endsAt.timeIntervalSince(value) / 60)))
-        return languageCode == "ko" ? "\(minutes)분" : "\(minutes) min"
-    }
-
-    func discreteInput(before input: Date) -> Date? {
-        systemStyle.discreteInput(before: input)
-    }
-
-    func discreteInput(after input: Date) -> Date? {
-        systemStyle.discreteInput(after: input)
-    }
-}
-
 private struct RestrictionDistanceLabel: View {
     let distance: RestrictionLiveActivityDistance
     var compact = false
+    var hasAdditionalRestrictions = false
 
     var body: some View {
         HStack(spacing: compact ? 3 : 6) {
@@ -227,7 +183,7 @@ private struct RestrictionDistanceLabel: View {
             }
         }
         .foregroundStyle(LiveActivityColor.primary)
-        .lineLimit(1)
+        .lineLimit(compact ? 1 : 2)
         .minimumScaleFactor(0.75)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
@@ -236,28 +192,28 @@ private struct RestrictionDistanceLabel: View {
     private var accessibilityLabel: Text {
         switch distance {
         case .known(let meters):
-            Text("남은 거리 \(meters)미터")
+            if compact && hasAdditionalRestrictions {
+                Text("\(Text("남은 거리 \(meters)미터")), \(Text("다른 제한도 활성화되어 있어요"))")
+            } else {
+                Text("남은 거리 \(meters)미터")
+            }
         case .unavailable:
-            Text(compact ? "거리 확인 불가" : "남은 거리 확인 불가")
+            if compact && hasAdditionalRestrictions {
+                Text("\(Text("거리 확인 불가")), \(Text("다른 제한도 활성화되어 있어요"))")
+            } else {
+                Text(compact ? "거리 확인 불가" : "남은 거리 확인 불가")
+            }
         }
     }
 }
 
 private struct AdditionalRestrictionsLabel: View {
-    var compact = false
-
     var body: some View {
-        Group {
-            if compact {
-                Text("+")
-            } else {
-                Text("다른 제한 있음")
-            }
-        }
-        .foregroundStyle(LiveActivityColor.secondary)
-        .lineLimit(1)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("다른 제한 있음")
+        Text("다른 제한 있음")
+            .foregroundStyle(LiveActivityColor.secondary)
+            .lineLimit(1)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("다른 제한도 활성화되어 있어요")
     }
 }
 
@@ -270,6 +226,16 @@ private struct AdditionalRestrictionsLabel: View {
     RestrictionLiveActivity()
 } contentStates: {
     RestrictionLiveActivityPreviewFixtures.known
+}
+
+#Preview(
+    "Lock Screen · Multiple",
+    as: .content,
+    using: RestrictionLiveActivityPreviewFixtures.attributes
+) {
+    RestrictionLiveActivity()
+} contentStates: {
+    RestrictionLiveActivityPreviewFixtures.multipleRestrictions
 }
 
 #Preview(
@@ -290,6 +256,16 @@ private struct AdditionalRestrictionsLabel: View {
     RestrictionLiveActivity()
 } contentStates: {
     RestrictionLiveActivityPreviewFixtures.known
+}
+
+#Preview(
+    "Dynamic Island · Compact Multiple",
+    as: .dynamicIsland(.compact),
+    using: RestrictionLiveActivityPreviewFixtures.attributes
+) {
+    RestrictionLiveActivity()
+} contentStates: {
+    RestrictionLiveActivityPreviewFixtures.multipleRestrictions
 }
 
 #Preview(

@@ -1,5 +1,34 @@
 # 결정 사항
 
+## DEC-120 — T119 Live Activity 실기기 여백·배치 보정 (2026-09-29)
+
+사용자가 iPhone 17 화면에서 Dynamic Island의 좌우 여백과 글자 잘림을 지적하고,
+잠금화면 카운트다운의 오른쪽 위 배치 및 거리 오른쪽 `+` 제거를 요청했다. compact는 거리와
+시스템 숫자 타이머만 표시하며 다중 규칙 사실은 거리의 VoiceOver label에 포함한다. 잠금화면은
+일반·최대 Dynamic Type 모두 규칙명 왼쪽, 카운트다운 오른쪽 위를 유지하고 거리와 추가 제한을
+아래에 표시한다. 시스템 타이머의 내부 예약 폭 때문에 숫자 뒤에 남던 공간은 텍스트를 오른쪽
+정렬해 잠금화면과 expanded 영역의 오른쪽 여백을 맞춘다. 실제 ActivityKit 카드의 가용 높이에서 잘림을 막기 위해 AX5 서체를 규칙명
+최대 24pt, 타이머 22pt, 상세 18pt로 제한한다. 이는 DEC-118의 AX5 세로 배치·61/75/53pt
+Figma 샘플 및 compact `+` 표시보다 우선하는 사용자 실기기 피드백이다.
+
+Dynamic Island expanded의 영역 여백은 14pt, compact의 leading·trailing은 각각 10pt로
+맞춘다. 사용자 추가 피드백에서 영어
+`72 minutes`가 compact 섬을 지나치게 넓힌다고 확인해 `72:00` 형태 숫자 타이머를 명시적으로
+승인했다. 시스템 타이머가 확보하는 폭을 줄이기 위해 compact trailing에 최대 66pt를
+적용한다. iPhone 17에서 숫자와 거리의 잘림 없이 섬 너비가 줄어든 것을 확인했다.
+시스템 타이머가 직접 갱신되는 계약과 minimal 숫자 타이머는 유지하며,
+DEC-119의 compact 영어 `minutes` 승인은 이 후속 결정으로 대체한다.
+
+## DEC-119 — Live Activity 축약 시간의 시스템 포맷 (2026-09-28)
+
+T119의 iPhone 17·Xcode Canvas 검증에서 사용자 정의 `DiscreteFormatStyle` 기반 `min`은
+Dynamic Island compact 시간을 빈칸으로 렌더했다. 시스템 `SystemFormatStyle.Timer`는 분 단위
+갱신과 종료 시 0 고정을 제공하지만 영어를 `minutes`로 표시한다. 해당 전체 단위는 minimal
+영역에서 잘리므로, minimal에는 시스템 `Text(timerInterval:countsDown:showsHours:)`의
+`44:30` 형태 숫자 타이머를 사용한다. 사용자가 두 표현을 명시적으로 승인했다. 한국어 compact의
+`분`, 거리의 `m`, 각 영역의 정보 우선순위와 VoiceOver의 전체 시간값은 유지한다. 이 결정은
+DEC-118의 영어 `min` 및 minimal 분 단위 표기를 해당 두 영역에 한해 갱신한다.
+
 ## DEC-117 — T113 실기기 제한 대상과 시간대
 
 **날짜**: 2026-09-22

@@ -7,6 +7,40 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-29 T119 실기기 피드백 반영 중: 사용자가 전달한 스크린샷의 Dynamic Island
+여백·글자 잘림, 잠금화면 카운트다운 위치, compact 거리 오른쪽 `+`를 수정했다. compact의
+기존 compact `+`를 제거하고 expanded/compact 영역 여백을 조정했다. 잠금화면은
+AX5에서도 규칙명 왼쪽·시간 오른쪽 위, 거리·다른 제한 아래 배치하며 타이머 텍스트를
+오른쪽 정렬해 숫자 뒤 빈 여백을 줄였다. 실제 카드 높이에 맞춰
+글자 크기를 제한했다. Xcode Canvas iPhone 17 Pro에서 AX5 다중 규칙 잠금화면의 네 정보와
+2시간 compact 숫자 `119:54`의 잘림 없는 표시·`+` 부재를 확인했다. iPhone 17의
+`72 minutes`가 섬을 넓힌다는 추가 피드백에 사용자가 숫자 타이머를 승인했다. compact
+trailing 최대 66pt를 적용해 iPhone 17에서 `500 m`·`59:39`가 잘림 없이 보이고 이전보다
+섬 너비가 줄어든 것을 확인했다. 영어 다중 규칙 VoiceOver 문구도 Canvas에서 지역화해
+확인했다. iPhone 17 서명 빌드와 설치가 성공했고 최종 수정 뒤
+`LiveActivityPresentationTests` 2건은 실패·skip 없이 통과했다. 최종 빌드의 실기기
+잠금화면·VoiceOver 및 대표 교체·전체 종료 관찰은 아직 남아 있어 T119는 미완료다. 현재 phase는 002
+Phase 9, 마지막 완료 task는 T118, 진행 중 task와 다음 task는 T119, 별도 BLK-017은
+미해결이다.
+
+2026-09-28 BLK-023 해결: 사용자가 영어 compact의 시스템 `minutes`와 minimal의
+초 포함 숫자 타이머를 승인했다. `RestrictionCountdown`의 minimal 분기를 바꾸고 Canvas에서
+`44:47`이 잘림 없이 표시되는 것을 확인했다. expanded 다중 규칙의 영어 보조 문구도 시각적으로
+짧게 표시하고 VoiceOver에는 전체 의미를 남겼다. 현재 T119 진행 중이며 최종 실기기·접근성
+검증과 전체 테스트가 남아 있다.
+
+2026-09-28 T119 진행·BLK-023 발생: PR #35를 병합한 최신 `main`에서
+`codex/live-activity-t119`를 분기했다. Xcode Canvas가 확장 타깃 Debug의 `-O`를 거부해
+`-Onone`을 지정했고, 고정 preview 시각이 만료되어 `Date.now`로 바꿨다. iPhone 17에 서명
+Debug 빌드를 데이터 보존 설치한 뒤 활성 제한의 expanded·compact를 확인했다. 사용자 정의
+축약 카운트다운은 compact에서 빈칸으로 렌더되어 시스템 타이머로 교체하자 `144 minutes`가
+정상 표시됐다. 다만 T116 승인 영어 `min`과 다르고 minimal은 `44...`로 잘린다.
+`LiveActivityPresentationTests` 2건은 iPhone 17 Pro Simulator에서 통과했다. Light/Dark 중
+Light 및 AX5 잠금화면 preview를 확인했으며 실제 VoiceOver·Reduce Motion·대표 교체·종료와
+잠금화면 실기기 시각은 미검증이다. 현재 phase는 002 Phase 9, 마지막 완료 task는 T118,
+진행 중 task는 T119, 다음 task는 T119 남은 검증이다. BLK-023 사용자 결정을 기다리며
+BLK-017은 별도 미해결 상태다.
+
 2026-09-28 T118 완료: 병합된 PR #34의 최신 `main`에서 `codex/live-activity-t118` 브랜치를
 만들고 승인된 Live Activity 잠금화면·Dynamic Island minimal·compact·expanded UI를 구현했다.
 앱의 dark surface·accent 색상, 아이콘 없는 규칙명, `location.fill`, 접근성 읽기 순서와 AX5 세로

@@ -46,7 +46,8 @@ enum RestrictionLiveActivityPreviewFixtures {
         let contentState: RestrictionLiveActivityAttributes.ContentState
     }
 
-    static let now = Date(timeIntervalSince1970: 1_788_192_000)
+    // Keep the live countdown meaningful whenever the canvas is opened.
+    static let now = Date.now
 
     static let attributes = RestrictionLiveActivityAttributes(
         activityID: UUID(uuidString: "00000000-0000-4000-8000-000000000701")!,
@@ -66,7 +67,8 @@ enum RestrictionLiveActivityPreviewFixtures {
         ruleDisplayName: "아침 루틴",
         remainingDistance: .unavailable,
         distanceObservedAt: nil,
-        hasAdditionalRestrictions: false
+        hasAdditionalRestrictions: false,
+        duration: 2 * 60 * 60
     )
 
     // A previously known distance has crossed the five-minute freshness boundary.
@@ -84,7 +86,8 @@ enum RestrictionLiveActivityPreviewFixtures {
         ruleDisplayName: "업무 집중",
         remainingDistance: .known(meters: 80),
         distanceObservedAt: now,
-        hasAdditionalRestrictions: true
+        hasAdditionalRestrictions: true,
+        duration: 2 * 60 * 60
     )
 
     static let scenarios: [Scenario] = Surface.allCases.flatMap { surface in
@@ -127,13 +130,14 @@ enum RestrictionLiveActivityPreviewFixtures {
         ruleDisplayName: String,
         remainingDistance: RestrictionLiveActivityDistance,
         distanceObservedAt: Date?,
-        hasAdditionalRestrictions: Bool
+        hasAdditionalRestrictions: Bool,
+        duration: TimeInterval = 45 * 60
     ) -> RestrictionLiveActivityAttributes.ContentState {
         do {
             return try RestrictionLiveActivityAttributes.ContentState(
                 occurrenceID: occurrenceID,
                 ruleDisplayName: ruleDisplayName,
-                endsAt: now.addingTimeInterval(45 * 60),
+                endsAt: now.addingTimeInterval(duration),
                 remainingDistance: remainingDistance,
                 distanceObservedAt: distanceObservedAt,
                 hasAdditionalRestrictions: hasAdditionalRestrictions

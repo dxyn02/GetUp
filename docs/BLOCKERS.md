@@ -1,5 +1,19 @@
 # 차단 사항
 
+## BLK-023 — T119 Dynamic Island 축약 시간 단위 결정
+
+**상태**: 해결됨(RESOLVED) — 2026-09-28
+
+T116 승인 시안은 한국어 `분`, 영어 `min`을 compact·minimal에 지정했다. T118의 사용자 정의
+`DiscreteFormatStyle`는 Xcode Canvas와 iPhone 17(iOS 26.7)의 compact 시간 영역에서 숫자를
+표시하지 않았다. 시스템 `SystemFormatStyle.Timer`로 교체하자 실기기에서 `144 minutes`가 표시되고
+자동 갱신되지만, 영어 `min`과 달라진다. minimal에서는 전체 `minutes`가 `44...`로 잘린다.
+Apple의 시스템 포맷은 영어 전체 단위를 사용하며 Live Activity의 사용자 정의 포맷은 실기기에서
+렌더되지 않았다. 사용자에게 compact의 `minutes` 허용 여부와 minimal의 숫자 타이머 대안을
+각각 요청했다. 사용자는 compact 영어 `minutes`와 minimal 숫자 타이머(`44:30` 형태)를 승인했다.
+`SystemFormatStyle.Timer`와 `Text(timerInterval:)`로 각각 표시하고 Canvas에서 minimal 잘림이
+사라진 것을 확인했다. BLK-023을 해결했으며 T119의 남은 실기기·접근성 검증은 계속한다.
+
 ## BLK-022 — T113 복구 화면 VoiceOver 수정 빌드 재확인
 
 **상태**: 해결됨(RESOLVED) — 2026-09-25
