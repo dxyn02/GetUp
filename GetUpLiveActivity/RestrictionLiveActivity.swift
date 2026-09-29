@@ -9,6 +9,7 @@ private enum LiveActivityColor {
     static let accent = Color(red: 244 / 255, green: 214 / 255, blue: 0)
     static let primary = Color.white
     static let secondary = Color(red: 166 / 255, green: 168 / 255, blue: 173 / 255)
+    static let tertiary = Color(red: 126 / 255, green: 130 / 255, blue: 139 / 255)
 }
 
 struct RestrictionLiveActivity: Widget {
@@ -27,6 +28,7 @@ struct RestrictionLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.trailing) {
                     RestrictionCountdown(endsAt: context.state.endsAt)
                         .font(.system(size: 17, weight: .bold).monospacedDigit())
+                        .fixedSize(horizontal: true, vertical: false)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
                 .contentMargins(.trailing, 24)
@@ -36,7 +38,7 @@ struct RestrictionLiveActivity: Widget {
                         RestrictionDistanceLabel(distance: context.state.remainingDistance)
                         Spacer(minLength: 0)
                         if context.state.hasAdditionalRestrictions {
-                            AdditionalRestrictionsLabel()
+                            AdditionalRestrictionsLabel(asChip: true)
                         }
                     }
                     .font(.system(size: 15, weight: .regular))
@@ -52,7 +54,7 @@ struct RestrictionLiveActivity: Widget {
             } compactTrailing: {
                 RestrictionCountdown(endsAt: context.state.endsAt, compact: true)
                     .font(.system(size: 12, weight: .bold).monospacedDigit())
-                    .frame(maxWidth: 66, alignment: .leading)
+                    .frame(maxWidth: 66, alignment: .trailing)
             } minimal: {
                 RestrictionCountdown(endsAt: context.state.endsAt, minimal: true)
                     .font(.system(size: 9, weight: .bold).monospacedDigit())
@@ -60,7 +62,7 @@ struct RestrictionLiveActivity: Widget {
             .contentMargins(.leading, 10, for: .compactLeading)
             .contentMargins(.trailing, 0, for: .compactLeading)
             .contentMargins(.leading, 0, for: .compactTrailing)
-            .contentMargins(.trailing, 10, for: .compactTrailing)
+            .contentMargins(.trailing, 0, for: .compactTrailing)
             .keylineTint(LiveActivityColor.accent)
         }
     }
@@ -72,10 +74,10 @@ private struct RestrictionLockScreenView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .headline) private var ruleSize: CGFloat = 17
     @ScaledMetric(relativeTo: .headline) private var timeSize: CGFloat = 17
-    @ScaledMetric(relativeTo: .body) private var detailSize: CGFloat = 15
+    @ScaledMetric(relativeTo: .body) private var detailSize: CGFloat = 17
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top, spacing: 12) {
                 RestrictionRuleLabel(name: contentState.ruleDisplayName, allowsWrapping: true)
                     .font(.system(size: min(ruleSize, 24), weight: .semibold))
@@ -96,11 +98,13 @@ private struct RestrictionLockScreenView: View {
                         .font(.system(size: min(detailSize, 18), weight: .semibold))
                 }
             } else {
-                RestrictionDistanceLabel(distance: contentState.remainingDistance)
-                    .font(.system(size: detailSize))
-                if contentState.hasAdditionalRestrictions {
-                    AdditionalRestrictionsLabel()
-                        .font(.system(size: detailSize))
+                HStack(spacing: 12) {
+                    RestrictionDistanceLabel(distance: contentState.remainingDistance)
+                        .font(.system(size: detailSize, weight: contentState.hasAdditionalRestrictions ? .semibold : .regular))
+                    Spacer(minLength: 0)
+                    if contentState.hasAdditionalRestrictions {
+                        AdditionalRestrictionsLabel(asChip: true)
+                    }
                 }
             }
         }
@@ -109,8 +113,12 @@ private struct RestrictionLockScreenView: View {
         .padding(16)
         .background(
             LiveActivityColor.surface,
-            in: RoundedRectangle(cornerRadius: dynamicTypeSize.isAccessibilitySize ? 28 : 18)
+            in: RoundedRectangle(cornerRadius: dynamicTypeSize.isAccessibilitySize ? 28 : 20)
         )
+        .overlay {
+            RoundedRectangle(cornerRadius: dynamicTypeSize.isAccessibilitySize ? 28 : 20)
+                .stroke(LiveActivityColor.tertiary, lineWidth: 1)
+        }
     }
 }
 
@@ -210,12 +218,35 @@ private struct RestrictionDistanceLabel: View {
 }
 
 private struct AdditionalRestrictionsLabel: View {
+    var asChip = false
+
     var body: some View {
+        label
+            .modifier(AdditionalRestrictionsChipStyle(enabled: asChip))
+    }
+
+    private var label: some View {
         Text("다른 제한 있음")
             .foregroundStyle(LiveActivityColor.secondary)
             .lineLimit(1)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("다른 제한도 활성화되어 있어요")
+    }
+}
+
+private struct AdditionalRestrictionsChipStyle: ViewModifier {
+    let enabled: Bool
+
+    func body(content: Content) -> some View {
+        if enabled {
+            content
+                .font(.system(size: 11, weight: .bold))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .background(LiveActivityColor.surfaceElevated, in: Capsule())
+        } else {
+            content
+        }
     }
 }
 

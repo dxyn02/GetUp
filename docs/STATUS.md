@@ -7,6 +7,25 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-29 T119 iPhone 17 추가 피드백: 사용자가 `More rules` 배지는 정상이라고 확인했지만
+compact 타이머 오른쪽 공백과 expanded 상단 시간 끝 글자 잘림을 사진으로 재현했다.
+DEC-123에 따라 compactTrailing의 텍스트를 오른쪽 정렬하고 추가 오른쪽 여백을 0으로
+줄였으며, expanded 타이머의 가로 크기를 고정해 압축을 막았다. iPhone 17 Pro Simulator
+`LiveActivityPresentationTests` 2건이 통과했고 새 서명 빌드를 iPhone 17에 데이터 보존
+설치·실행했다. 수정된 두 영역의 실기기 표시와 T119 나머지 인수는 확인 중이다. 현재
+phase는 002 Phase 9, 마지막 완료 task는 T118, 진행 중·다음 task는 T119다.
+
+2026-09-29 T119 Figma 다중 제한 정합화: 사용자가 특히 다른 활성 제한이 존재할 때
+구현이 Figma와 다르다고 지적했다. node `395:2142`·`395:2214`를 다시 확인해 일반
+잠금화면·expanded의 거리 오른쪽 `다른 제한 있음` 배지를 같은 행의 캡슐로 구현했다.
+잠금화면의 테두리·모서리·간격·일반 거리 글자 크기도 시안에 맞췄다. AX5 잠금화면의
+별도 줄과 compact `+` 제거는 후속 사용자 피드백을 따른다. Xcode Canvas 기본 크기의
+잠금화면·expanded에서 배지가 잘리지 않고 보이며 iPhone 17 Pro Simulator
+`LiveActivityPresentationTests` 2건이 실패·skip 없이 통과했다. 최종 서명 빌드를 iPhone 17에
+데이터 보존 설치하고 앱을 실행했다. 두 활성 규칙이 겹친 실기기의 잠금화면·expanded 배지
+표시는 사용자 확인을 기다린다. 현재 phase는 002 Phase 9, 마지막 완료 task는 T118,
+진행 중·다음 task는 T119다.
+
 2026-09-29 T119 추가 실기기 피드백: 사용자가 compact 시간과 카메라 사이의 큰 공백 및
 expanded 상단 양쪽 글자 잘림 사진을 제공했다. DEC-121에 따라 compact 카메라 쪽 여백을
 0으로, 타이머 텍스트를 왼쪽 정렬하고 expanded 상단 양쪽 바깥 여백을 24pt로 늘렸다.
