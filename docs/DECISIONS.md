@@ -1,5 +1,98 @@
 # 결정 사항
 
+## DEC-125 — T119 expanded 다중 제한 배지 오른쪽 안전 여백 (2026-09-29)
+
+사용자의 후속 iPhone 17 사진에서 24pt 영역 여백을 적용한 뒤에도 캡슐 오른쪽 끝이
+마스크에 걸려 뾰족하게 잘리는 것이 확인됐다. 영역 여백에 더해 배지 뷰 자체에
+오른쪽 12pt 여백을 적용해 실제 캡슐을 안쪽으로 옮긴다. 수정 빌드를 설치한
+iPhone 17에서 사용자가 배지의 잘림이 없다고 확인했다.
+
+사용자가 iPhone 17 expanded 사진에서 오른쪽 아래 `More rules` 캡슐의 끝 잘림만
+지적했다. 배지·거리 행의 내용과 위쪽 규칙명·타이머 배치는 유지하고, expanded bottom
+영역의 leading 여백은 14pt, trailing 여백은 24pt로 둔다. 이는 DEC-121의 bottom
+좌우 14pt보다 뒤의 실기기 보정이며 둥근 마스크 안쪽으로 배지만 10pt 옮긴다.
+Xcode Canvas에서 배지 끝이 보이고 대상 Simulator 테스트 2건이 통과했다. 실기기
+재확인 전까지 T119는 진행 중이다.
+
+## DEC-124 — T119 AX5 Figma 샘플과 Live Activity 크기 제한 확인 (2026-09-29)
+
+사용자가 최대 Dynamic Type 구현과 Figma AX5 디자인이 다른 이유를 확인해 달라고 요청했다.
+Figma node `395:2277`의 `AX5 Lock Screen Sample`은 968×371pt 설명용 카드이며
+규칙명·시간·거리·다른 제한에 각각 61/75/53/53pt 글자를 사용한다. Apple Live Activities
+HIG의 iPhone 17 잠금화면·expanded 가용 크기는 371pt 너비, 84~160pt 높이이고,
+ActivityKit 문서는 160pt를 넘는 Live Activity를 시스템이 자를 수 있다고 명시한다.
+근거: [Apple Live Activities HIG](https://developer.apple.com/design/human-interface-guidelines/live-activities),
+[Displaying live data with Live Activities](https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities).
+시안의 371pt 높이뿐 아니라 네 텍스트의 줄 높이 합 269pt도 상한을 넘으므로 네 정보를
+시안 크기 그대로 동시에 표시할 수 없다. 현재 AX5의 24/22/18pt 상한은 시스템의 자동
+글자 제한이 아니라 DEC-120에서 정한 앱의 축소 전략이다. 타이머 오른쪽 위 배치도
+플랫폼 강제가 아닌 같은 사용자 실기기 피드백에 따른 결정이다. Xcode Canvas의 AX5
+다중 규칙 잠금화면에서 네 정보가 표시되고 잘림은 보이지 않았다. T119는 실기기 최종
+확인 전까지 진행 중이다.
+
+## DEC-123 — T119 compact 오른쪽 여백과 expanded 시간 잘림 재보정 (2026-09-29)
+
+사용자가 iPhone 17 사진에서 다중 제한 `More rules` 배지는 정상이라고 확인했으나,
+compact 타이머의 오른쪽 공백과 expanded 상단 시간의 끝 글자 잘림이 남았다고 지적했다.
+compactTrailing의 최대 66pt 영역은 유지하면서 텍스트를 trailing으로 정렬하고 바깥
+추가 `contentMargins` 10pt를 없앤다. expanded 시간은 가로 고정 크기로 압축을 막고
+기존 둥근 마스크 안전 여백 24pt는 유지한다. 이 첫 적용 후 실기기에서 expanded의
+규칙명만 보이고 시간·거리 행이 사라지는 회귀가 발생했다. 시간 텍스트의 `fixedSize`를
+제거하고 trailing 영역에 90pt 폭을 제안해 세 영역이 다시 보이도록 했다. compact
+타이머는 사용자의 추가 요청에 따라 시각적으로 오른쪽 12pt 이동한다. 최종 실기기
+재확인 전까지 T119는 미완료다. 이후 사용자가 기기 크기별 고정 폭의 위험을 지적해
+90pt 고정 폭도 제거했다. expanded 시간은 가변 폭으로 두고 `layoutPriority(1)`과
+오른쪽 4pt 내부 여유를 적용한다. iPhone 17 Pro Canvas에서 규칙명·시간·거리·배지가
+모두 보인다.
+
+## DEC-122 — T119 다중 제한 상태의 Figma 배지 정합화 (2026-09-29)
+
+사용자가 구현과 Figma 하이파이가 다르며 특히 다른 제한이 더 있을 때의 표시를 지적했다.
+Figma node `395:2142`와 `395:2214`에서 다른 제한은 잠금화면·expanded의 거리 행
+오른쪽에 11pt 굵은 글씨, 좌우 8pt·상하 5pt 여백, elevated surface의 캡슐 배지로
+표시된다. 일반 글꼴 크기에서는 이 배치를 사용하고, AX5 잠금화면은 앞선 실기기 잘림
+방지 결정대로 거리·추가 제한을 별도 줄에 표시한다. 잠금화면 카드의 1pt 테두리·20pt
+모서리·14pt 행 간격과 일반 거리 17pt도 시안에 맞춘다. compact의 `+`는 사용자의
+후속 제거 요청인 DEC-120을 유지한다.
+
+## DEC-121 — T119 Dynamic Island 카메라 주변 및 확대 상단 안전 여백 (2026-09-29)
+
+사용자가 iPhone 17 실기기 사진에서 compact 카운트다운과 카메라 사이의 큰 공백, expanded
+상단 규칙명·카운트다운의 양쪽 잘림을 확인했다. Apple Live Activities HIG의 compact 지침에
+맞춰 카메라 쪽 `contentMargins`를 0으로 하고, compact 타이머 텍스트를 leading 정렬한다.
+상태 막대 쪽 바깥 여백은 10pt를 유지한다. expanded 상단의 실제 둥근 마스크가 14pt
+여백의 첫·끝 글자를 가리므로 leading·trailing 바깥 여백을 24pt로 늘린다. expanded 아래
+거리 행의 14pt 여백은 유지한다. 최종 실기기 빌드 대조 전까지 T119는 미완료로 둔다.
+
+## DEC-120 — T119 Live Activity 실기기 여백·배치 보정 (2026-09-29)
+
+사용자가 iPhone 17 화면에서 Dynamic Island의 좌우 여백과 글자 잘림을 지적하고,
+잠금화면 카운트다운의 오른쪽 위 배치 및 거리 오른쪽 `+` 제거를 요청했다. compact는 거리와
+시스템 숫자 타이머만 표시하며 다중 규칙 사실은 거리의 VoiceOver label에 포함한다. 잠금화면은
+일반·최대 Dynamic Type 모두 규칙명 왼쪽, 카운트다운 오른쪽 위를 유지하고 거리와 추가 제한을
+아래에 표시한다. 시스템 타이머의 내부 예약 폭 때문에 숫자 뒤에 남던 공간은 텍스트를 오른쪽
+정렬해 잠금화면과 expanded 영역의 오른쪽 여백을 맞춘다. 실제 ActivityKit 카드의 가용 높이에서 잘림을 막기 위해 AX5 서체를 규칙명
+최대 24pt, 타이머 22pt, 상세 18pt로 제한한다. 이는 DEC-118의 AX5 세로 배치·61/75/53pt
+Figma 샘플 및 compact `+` 표시보다 우선하는 사용자 실기기 피드백이다.
+
+Dynamic Island expanded의 영역 여백은 14pt, compact의 leading·trailing은 각각 10pt로
+맞춘다. 사용자 추가 피드백에서 영어
+`72 minutes`가 compact 섬을 지나치게 넓힌다고 확인해 `72:00` 형태 숫자 타이머를 명시적으로
+승인했다. 시스템 타이머가 확보하는 폭을 줄이기 위해 compact trailing에 최대 66pt를
+적용한다. iPhone 17에서 숫자와 거리의 잘림 없이 섬 너비가 줄어든 것을 확인했다.
+시스템 타이머가 직접 갱신되는 계약과 minimal 숫자 타이머는 유지하며,
+DEC-119의 compact 영어 `minutes` 승인은 이 후속 결정으로 대체한다.
+
+## DEC-119 — Live Activity 축약 시간의 시스템 포맷 (2026-09-28)
+
+T119의 iPhone 17·Xcode Canvas 검증에서 사용자 정의 `DiscreteFormatStyle` 기반 `min`은
+Dynamic Island compact 시간을 빈칸으로 렌더했다. 시스템 `SystemFormatStyle.Timer`는 분 단위
+갱신과 종료 시 0 고정을 제공하지만 영어를 `minutes`로 표시한다. 해당 전체 단위는 minimal
+영역에서 잘리므로, minimal에는 시스템 `Text(timerInterval:countsDown:showsHours:)`의
+`44:30` 형태 숫자 타이머를 사용한다. 사용자가 두 표현을 명시적으로 승인했다. 한국어 compact의
+`분`, 거리의 `m`, 각 영역의 정보 우선순위와 VoiceOver의 전체 시간값은 유지한다. 이 결정은
+DEC-118의 영어 `min` 및 minimal 분 단위 표기를 해당 두 영역에 한해 갱신한다.
+
 ## DEC-117 — T113 실기기 제한 대상과 시간대
 
 **날짜**: 2026-09-22

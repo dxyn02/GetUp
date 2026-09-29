@@ -7,6 +7,111 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-29 T119 expanded 배지 재보정: 사용자의 새 iPhone 17 사진에서 기존
+bottom 영역 trailing 24pt만으로는 `다른 제한 있음` 캡슐 오른쪽 끝이 여전히
+잘리는 것을 확인했다. DEC-125 후속 보정으로 배지 뷰에 오른쪽 12pt를 직접 더해
+마스크 안쪽으로 옮겼다. 대상 Simulator 테스트 2건, 서명 실기기 빌드, 데이터 보존
+설치·실행은 성공했다. 사용자가 수정본의 iPhone 17 expanded 화면에서 배지
+잘림이 없다고 확인했다. 현재 phase는 002 Phase 9,
+마지막 완료 task는 T118, 진행 중·다음 task는 T119다.
+
+2026-09-29 T119 expanded 배지 끝 잘림 수정: 사용자가 iPhone 17 확대 화면의
+오른쪽 아래 `More rules` 잘림만 남았다고 확인했다. DEC-125에 따라 bottom 영역
+trailing 여백을 14pt에서 24pt로 늘리고 leading은 14pt로 유지했다. Xcode Canvas
+iPhone 17 Pro expanded에서 배지 글자와 캡슐 끝을 확인했고 대상 Simulator
+`LiveActivityPresentationTests` 2건이 통과했다. 서명 Debug 빌드를 iPhone 17에
+데이터 보존 설치하고 앱을 실행했다. 확대 배지의 최종
+실기기 표시 결과는 사용자 확인을 기다린다.
+현재 phase는 002 Phase 9, 마지막 완료 task는 T118, 진행 중·다음 task는 T119다.
+
+2026-09-29 T119 AX5 시안 차이 원인 확인: Figma `395:2277`의 AX5 카드는
+968×371pt, 텍스트 61/75/53/53pt로 그려졌다. Apple HIG의 iPhone 17 Live Activity
+잠금화면·expanded는 너비 371pt, 높이 최대 160pt이고 ActivityKit은 초과 높이의
+잘림을 명시한다. 따라서 시안의 네 정보를 그 크기로 동시에 표시할 수 없다. 현 구현의
+24/22/18pt 상한과 오른쪽 위 시간 배치는 시스템 자동 동작이 아니라 DEC-120 사용자
+피드백을 반영한 앱 결정이다. Xcode Canvas iPhone 17 Pro AX5 다중 규칙 잠금화면에서
+규칙명·시간·거리·다른 제한이 모두 표시되고 잘림은 보이지 않았다. 현재 phase는 002
+Phase 9, 마지막 완료 task는 T118, 진행 중·다음 task는 T119다.
+
+2026-09-29 T119 크기별 적응형 보정: 사용자가 expanded 타이머 90pt 고정 폭의 기기별
+표시 위험을 지적해 고정 폭을 제거했다. 가변 폭·시간 `layoutPriority(1)`·오른쪽 4pt
+내부 여유로 바꾸고 iPhone 17 Pro Canvas에서 규칙명·시간·거리·배지 모두 표시되는 것을
+확인했다. 대상 Simulator 테스트 2건 통과. 이 최종 보정본의 iPhone 17 서명 빌드와
+데이터 보존 설치가 성공했다. 기기가 잠겨 자동 실행은 거부됐고 실제 화면 확인은 진행
+중이다. 현재 phase는 002 Phase 9, 마지막 완료 task는 T118,
+진행 중·다음 task는 T119다.
+
+2026-09-29 T119 최신 iPhone 17 재검증: 오른쪽 공백을 더 줄여 달라는 요청과 함께
+expanded에서 규칙명만 보이는 회귀 사진을 받았다. 시간 텍스트 `fixedSize`를 제거하고
+trailing 영역을 90pt로 지정했으며, compact 타이머를 오른쪽 12pt 이동했다. Xcode Canvas
+expanded에서 규칙명·시간·거리·`More rules` 배지가 모두 다시 보이고 iPhone 17 Pro
+Simulator 대상 테스트 2건이 통과했다. 새 실기기 빌드 설치와 최종 화면 확인을 진행 중이다.
+현재 phase는 002 Phase 9, 마지막 완료 task는 T118, 진행 중·다음 task는 T119다.
+
+2026-09-29 T119 iPhone 17 추가 피드백: 사용자가 `More rules` 배지는 정상이라고 확인했지만
+compact 타이머 오른쪽 공백과 expanded 상단 시간 끝 글자 잘림을 사진으로 재현했다.
+DEC-123에 따라 compactTrailing의 텍스트를 오른쪽 정렬하고 추가 오른쪽 여백을 0으로
+줄였으며, expanded 타이머의 가로 크기를 고정해 압축을 막았다. iPhone 17 Pro Simulator
+`LiveActivityPresentationTests` 2건이 통과했고 새 서명 빌드를 iPhone 17에 데이터 보존
+설치·실행했다. 수정된 두 영역의 실기기 표시와 T119 나머지 인수는 확인 중이다. 현재
+phase는 002 Phase 9, 마지막 완료 task는 T118, 진행 중·다음 task는 T119다.
+
+2026-09-29 T119 Figma 다중 제한 정합화: 사용자가 특히 다른 활성 제한이 존재할 때
+구현이 Figma와 다르다고 지적했다. node `395:2142`·`395:2214`를 다시 확인해 일반
+잠금화면·expanded의 거리 오른쪽 `다른 제한 있음` 배지를 같은 행의 캡슐로 구현했다.
+잠금화면의 테두리·모서리·간격·일반 거리 글자 크기도 시안에 맞췄다. AX5 잠금화면의
+별도 줄과 compact `+` 제거는 후속 사용자 피드백을 따른다. Xcode Canvas 기본 크기의
+잠금화면·expanded에서 배지가 잘리지 않고 보이며 iPhone 17 Pro Simulator
+`LiveActivityPresentationTests` 2건이 실패·skip 없이 통과했다. 최종 서명 빌드를 iPhone 17에
+데이터 보존 설치하고 앱을 실행했다. 두 활성 규칙이 겹친 실기기의 잠금화면·expanded 배지
+표시는 사용자 확인을 기다린다. 현재 phase는 002 Phase 9, 마지막 완료 task는 T118,
+진행 중·다음 task는 T119다.
+
+2026-09-29 T119 추가 실기기 피드백: 사용자가 compact 시간과 카메라 사이의 큰 공백 및
+expanded 상단 양쪽 글자 잘림 사진을 제공했다. DEC-121에 따라 compact 카메라 쪽 여백을
+0으로, 타이머 텍스트를 왼쪽 정렬하고 expanded 상단 양쪽 바깥 여백을 24pt로 늘렸다.
+Xcode Canvas의 compact 다중 규칙·expanded 표시와 iPhone 17 Pro Simulator
+`LiveActivityPresentationTests` 2건은 통과했다. 처음에는 iPhone 17 연결 시간 초과와
+iPhone Mirroring Mac 로그인 잠금이 발생했으나 사용자가 해결했다. 서명 빌드를 데이터 보존
+설치하고 앱을 실행한 뒤 compact `250 m`·숫자 타이머가 카메라 양옆에 가까워진 것을
+미러링에서 확인했다. expanded 실기기 길게 누르기·글자 잘림은 사용자 확인을 기다린다.
+현재 phase는 002 Phase 9, 마지막 완료 task는 T118,
+진행 중·다음 task는 T119이며 BLK-017은 별도 미해결이다.
+
+2026-09-29 T119 실기기 피드백 반영 중: 사용자가 전달한 스크린샷의 Dynamic Island
+여백·글자 잘림, 잠금화면 카운트다운 위치, compact 거리 오른쪽 `+`를 수정했다. compact의
+기존 compact `+`를 제거하고 expanded/compact 영역 여백을 조정했다. 잠금화면은
+AX5에서도 규칙명 왼쪽·시간 오른쪽 위, 거리·다른 제한 아래 배치하며 타이머 텍스트를
+오른쪽 정렬해 숫자 뒤 빈 여백을 줄였다. 실제 카드 높이에 맞춰
+글자 크기를 제한했다. Xcode Canvas iPhone 17 Pro에서 AX5 다중 규칙 잠금화면의 네 정보와
+2시간 compact 숫자 `119:54`의 잘림 없는 표시·`+` 부재를 확인했다. iPhone 17의
+`72 minutes`가 섬을 넓힌다는 추가 피드백에 사용자가 숫자 타이머를 승인했다. compact
+trailing 최대 66pt를 적용해 iPhone 17에서 `500 m`·`59:39`가 잘림 없이 보이고 이전보다
+섬 너비가 줄어든 것을 확인했다. 영어 다중 규칙 VoiceOver 문구도 Canvas에서 지역화해
+확인했다. iPhone 17 서명 빌드와 설치가 성공했고 최종 수정 뒤
+`LiveActivityPresentationTests` 2건은 실패·skip 없이 통과했다. 최종 빌드의 실기기
+잠금화면·VoiceOver 및 대표 교체·전체 종료 관찰은 아직 남아 있어 T119는 미완료다. 현재 phase는 002
+Phase 9, 마지막 완료 task는 T118, 진행 중 task와 다음 task는 T119, 별도 BLK-017은
+미해결이다.
+
+2026-09-28 BLK-023 해결: 사용자가 영어 compact의 시스템 `minutes`와 minimal의
+초 포함 숫자 타이머를 승인했다. `RestrictionCountdown`의 minimal 분기를 바꾸고 Canvas에서
+`44:47`이 잘림 없이 표시되는 것을 확인했다. expanded 다중 규칙의 영어 보조 문구도 시각적으로
+짧게 표시하고 VoiceOver에는 전체 의미를 남겼다. 현재 T119 진행 중이며 최종 실기기·접근성
+검증과 전체 테스트가 남아 있다.
+
+2026-09-28 T119 진행·BLK-023 발생: PR #35를 병합한 최신 `main`에서
+`codex/live-activity-t119`를 분기했다. Xcode Canvas가 확장 타깃 Debug의 `-O`를 거부해
+`-Onone`을 지정했고, 고정 preview 시각이 만료되어 `Date.now`로 바꿨다. iPhone 17에 서명
+Debug 빌드를 데이터 보존 설치한 뒤 활성 제한의 expanded·compact를 확인했다. 사용자 정의
+축약 카운트다운은 compact에서 빈칸으로 렌더되어 시스템 타이머로 교체하자 `144 minutes`가
+정상 표시됐다. 다만 T116 승인 영어 `min`과 다르고 minimal은 `44...`로 잘린다.
+`LiveActivityPresentationTests` 2건은 iPhone 17 Pro Simulator에서 통과했다. Light/Dark 중
+Light 및 AX5 잠금화면 preview를 확인했으며 실제 VoiceOver·Reduce Motion·대표 교체·종료와
+잠금화면 실기기 시각은 미검증이다. 현재 phase는 002 Phase 9, 마지막 완료 task는 T118,
+진행 중 task는 T119, 다음 task는 T119 남은 검증이다. BLK-023 사용자 결정을 기다리며
+BLK-017은 별도 미해결 상태다.
+
 2026-09-28 T118 완료: 병합된 PR #34의 최신 `main`에서 `codex/live-activity-t118` 브랜치를
 만들고 승인된 Live Activity 잠금화면·Dynamic Island minimal·compact·expanded UI를 구현했다.
 앱의 dark surface·accent 색상, 아이콘 없는 규칙명, `location.fill`, 접근성 읽기 순서와 AX5 세로

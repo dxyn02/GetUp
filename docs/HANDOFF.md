@@ -3,9 +3,103 @@
 ## 현재 작업
 
 - 기능: `002-live-activity-coins` Phase 9
-- 마지막 완료 작업: T116
-- 진행 중 작업: 없음
-- 다음 작업: T117 Live Activity preview·snapshot fixture 선행 작성
+- 마지막 완료 작업: T118
+- 진행 중 작업: T119 Live Activity 시각·접근성 실기기 검증
+- 다음 작업: T119 최종 iPhone 17 화면·대표 교체·전체 종료 검증
+
+## 2026-09-29 T119 expanded 배지 재보정
+
+사용자 사진에서 영역 trailing 24pt 적용 후에도 배지 캡슐 오른쪽 끝이 잘렸다.
+배지 뷰에 trailing 12pt를 직접 추가한 뒤 대상 Simulator 테스트 2건과 실기기
+서명 빌드·데이터 보존 설치·실행이 성공했다. 사용자가 iPhone 17 expanded
+화면에서 배지 잘림이 없다고 확인했다.
+
+## 2026-09-29 T119 expanded 배지 안전 여백
+
+사용자가 확대 화면의 오른쪽 아래 `More rules` 끝 잘림만 지적했다. bottom 영역의
+leading 14pt는 유지하고 trailing만 24pt로 늘렸다. Xcode Canvas에서 배지 글자·캡슐
+끝 표시와 대상 Simulator 테스트 2건 통과를 확인했다. 최신 수정본의 iPhone 17 확대
+화면을 다시 확인해야 한다. 서명 빌드는 데이터 보존 설치·앱 실행까지 성공했다.
+
+## 2026-09-29 T119 AX5 시안·플랫폼 한계 확인
+
+Figma AX5 샘플 `395:2277`은 968×371pt이고 61/75/53/53pt 서체를 사용한다. Apple의
+iPhone 17 Live Activity 잠금화면·expanded 높이는 최대 160pt라 네 줄을 시안 크기로
+동시에 표시할 수 없다. 현재 24/22/18pt 상한과 시간 오른쪽 위 배치는 DEC-120의 앱
+선택이며 시스템이 글자 크기를 자동 제한한 결과는 아니다. Xcode Canvas iPhone 17 Pro
+AX5 다중 규칙 잠금화면에서 네 정보의 표시·잘림 없음 확인. 실기기 최종 인수는 남았다.
+
+## 2026-09-29 T119 기기별 적응형 보정
+
+사용자 지적에 따라 expanded 시간의 90pt 고정 폭을 제거하고 가변 폭·우선순위·오른쪽
+4pt 내부 여유로 수정했다. iPhone 17 Pro Canvas에서 네 요소가 표시되고 대상 Simulator
+테스트 2건이 통과했다. 서명 빌드의 iPhone 17 데이터 보존 설치는 성공했으나 기기 잠금으로
+자동 실행은 거부됐다. 최종 빌드의 실기기 화면 확인이 남았다.
+
+## 2026-09-29 T119 expanded 표시 회귀 수정
+
+최신 iPhone 17 사진에서 `fixedSize` 적용 뒤 expanded의 시간·거리 행이 사라진 회귀가
+확인됐다. 해당 설정을 제거하고 90pt trailing 영역으로 변경했으며, compact 타이머는
+추가로 오른쪽 12pt 이동했다. Xcode Canvas에서 expanded 네 요소가 다시 보이고 대상
+Simulator 테스트 2건이 통과했다. 새 빌드의 실기기 화면 확인이 남았다.
+
+## 2026-09-29 T119 compact·expanded 시간 재보정
+
+사용자는 iPhone 17에서 다중 제한 `More rules` 배지는 통과했다고 확인했다. 같은 사진에서
+compact 타이머 오른쪽 공백과 expanded 상단 시간 끝 글자 잘림이 남아 DEC-123을 적용했다.
+compactTrailing 텍스트를 오른쪽 정렬하고 추가 오른쪽 여백을 제거했으며, expanded 시간은
+가로 고정 크기로 압축을 막았다. 대상 Simulator 테스트 2건 통과 후 서명 빌드를 iPhone 17에
+데이터 보존 설치·실행했다. 두 영역 실기기 재확인과 T119 나머지 인수가 필요하다.
+
+## 2026-09-29 T119 Figma 다중 제한 정합화
+
+사용자의 추가 피드백으로 Figma node `395:2142`·`395:2214`의 다중 제한 상태를
+재확인했다. 일반 잠금화면과 expanded에서는 거리 오른쪽에 elevated surface 캡슐 배지를
+같은 행에 표시하고, 잠금화면 테두리·모서리·간격·거리 글자 크기도 맞췄다. AX5 잠금화면
+별도 줄과 compact `+` 제거는 이전 실기기 피드백에 따른다. Xcode Canvas 기본 크기 두
+표면에서 배지가 보이고 Simulator 대상 테스트 2건이 통과했다. 최종 서명 빌드를 iPhone 17에
+데이터 보존 설치하고 앱을 실행했다. 겹친 활성 규칙의 잠금화면·expanded 배지는 사용자
+실기기 확인을 기다린다. T119 나머지 인수도 이어서 확인한다.
+
+## 2026-09-29 T119 추가 사진 피드백
+
+compact의 카메라와 시간 사이가 멀고 expanded 상단 양쪽 글자가 잘린다는 실기기 사진에
+따라 DEC-121을 기록했다. compact의 카메라 쪽 여백을 0으로, 시간 텍스트를 왼쪽 정렬하고
+expanded 상단의 바깥 여백을 24pt로 늘렸다. Xcode Canvas와 Simulator 대상 테스트 2건은
+통과했다. 처음에는 iPhone 17 연결 시간 초과와 iPhone Mirroring의 Mac 로그인 잠금이
+발생했으나 사용자가 잠금 해제·연결했다. 최종 빌드를 데이터 보존 설치하고 앱을 실행한 뒤
+compact `250 m`와 숫자 타이머가 카메라 양옆에 가까워진 것을 미러링에서 확인했다.
+expanded의 길게 누르기와 양쪽 글자 잘림은 사용자 실기기 확인을 기다린다.
+잠금화면·VoiceOver·대표 교체·전체 종료 인수도 계속 필요하다.
+
+## 2026-09-29 T119 실기기 피드백 수정
+
+사용자가 전달한 Dynamic Island 스크린샷의 여백·잘림과 잠금화면 타이머 위치를 수정하고
+compact 거리 오른쪽 `+`를 제거했다. 다중 규칙 정보는 VoiceOver에서 유지한다. Xcode Canvas
+iPhone 17 Pro AX5의 잠금화면 known·다중 규칙, 2시간 compact 다중 규칙에서 정보가 모두
+보이고 시간이 오른쪽 위에 있으며 `+`가 없음을 확인했다. 타이머 텍스트를 오른쪽 정렬해
+잠금화면과 expanded의 오른쪽 여백도 맞췄다. 실기기 compact의 긴 영어
+`minutes`는 사용자 승인으로 숫자 타이머로 교체하고 trailing 최대 너비를 66pt로 제한했다.
+영어 다중 규칙 VoiceOver 문구도 Canvas에서 확인했다. iPhone 17에 서명 Debug 빌드를 데이터
+보존 설치해 compact `500 m`·`59:39`의 잘림 없는 표시와 폭 축소를 확인했다. Simulator
+presentation 테스트 2건은 최종 수정 뒤 통과했다. 최종 빌드의 실기기 잠금화면·VoiceOver와
+대표 교체·전체 종료는 확인해야 한다. 변경 기준은 DEC-120과 Live Activity 하이파이 문서의
+T119 추가 기록에 있다.
+
+## 2026-09-28 BLK-023 결정 반영
+
+사용자가 compact 영어 `minutes`, minimal 숫자 타이머를 승인했다. DEC-119에 근거를 기록했고
+BLK-023을 해결했다. Xcode Canvas에서 minimal `44:47`이 잘림 없이 표시된다. T119의 실제
+잠금화면·VoiceOver·Reduce Motion·대표 교체·종료 검증은 계속 필요하다.
+
+## 2026-09-28 T119 진행 및 차단
+
+PR #35를 병합한 `codex/live-activity-t119`에서 Xcode Canvas Debug `-Onone`, 만료된 preview
+fixture를 고쳤다. iPhone 17에 데이터 보존 설치 후 expanded의 대표 규칙·시간·거리와 compact
+거리 표시를 확인했다. 기존 사용자 정의 분 포맷은 시간이 빈칸이었고 시스템 분 포맷은
+`144 minutes`를 정상 표시했다. 영어 `min` 승인 시안과의 차이 및 minimal의 `44...` 잘림을
+BLK-023에 기록하고 사용자 결정을 요청했다. `LiveActivityPresentationTests` 2건은 통과했다.
+실기기 잠금화면, VoiceOver, Reduce Motion, 대표 교체·종료는 미검증이다. BLK-017은 별도다.
 
 ## 2026-09-26 T116 구현 승인
 

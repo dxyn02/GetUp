@@ -22,6 +22,7 @@ struct LiveActivityPresentationTests {
         #expect(fixtures.known.hasAdditionalRestrictions == false)
         #expect(fixtures.unavailable.remainingDistance == .unavailable)
         #expect(fixtures.unavailable.distanceObservedAt == nil)
+        #expect(fixtures.unavailable.endsAt == fixtures.now.addingTimeInterval(2 * 60 * 60))
         #expect(fixtures.stale.remainingDistance == .unavailable)
         #expect(fixtures.stale.distanceObservedAt == nil)
         #expect(fixtures.multipleRestrictions.remainingDistance == .known(meters: 80))
