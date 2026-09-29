@@ -28,7 +28,8 @@ struct RestrictionLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.trailing) {
                     RestrictionCountdown(endsAt: context.state.endsAt)
                         .font(.system(size: 17, weight: .bold).monospacedDigit())
-                        .fixedSize(horizontal: true, vertical: false)
+                        .layoutPriority(1)
+                        .padding(.trailing, 4)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
                 .contentMargins(.trailing, 24)
@@ -55,6 +56,7 @@ struct RestrictionLiveActivity: Widget {
                 RestrictionCountdown(endsAt: context.state.endsAt, compact: true)
                     .font(.system(size: 12, weight: .bold).monospacedDigit())
                     .frame(maxWidth: 66, alignment: .trailing)
+                    .offset(x: 12)
             } minimal: {
                 RestrictionCountdown(endsAt: context.state.endsAt, minimal: true)
                     .font(.system(size: 9, weight: .bold).monospacedDigit())

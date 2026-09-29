@@ -7,6 +7,21 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-29 T119 크기별 적응형 보정: 사용자가 expanded 타이머 90pt 고정 폭의 기기별
+표시 위험을 지적해 고정 폭을 제거했다. 가변 폭·시간 `layoutPriority(1)`·오른쪽 4pt
+내부 여유로 바꾸고 iPhone 17 Pro Canvas에서 규칙명·시간·거리·배지 모두 표시되는 것을
+확인했다. 대상 Simulator 테스트 2건 통과. 이 최종 보정본의 iPhone 17 서명 빌드와
+데이터 보존 설치가 성공했다. 기기가 잠겨 자동 실행은 거부됐고 실제 화면 확인은 진행
+중이다. 현재 phase는 002 Phase 9, 마지막 완료 task는 T118,
+진행 중·다음 task는 T119다.
+
+2026-09-29 T119 최신 iPhone 17 재검증: 오른쪽 공백을 더 줄여 달라는 요청과 함께
+expanded에서 규칙명만 보이는 회귀 사진을 받았다. 시간 텍스트 `fixedSize`를 제거하고
+trailing 영역을 90pt로 지정했으며, compact 타이머를 오른쪽 12pt 이동했다. Xcode Canvas
+expanded에서 규칙명·시간·거리·`More rules` 배지가 모두 다시 보이고 iPhone 17 Pro
+Simulator 대상 테스트 2건이 통과했다. 새 실기기 빌드 설치와 최종 화면 확인을 진행 중이다.
+현재 phase는 002 Phase 9, 마지막 완료 task는 T118, 진행 중·다음 task는 T119다.
+
 2026-09-29 T119 iPhone 17 추가 피드백: 사용자가 `More rules` 배지는 정상이라고 확인했지만
 compact 타이머 오른쪽 공백과 expanded 상단 시간 끝 글자 잘림을 사진으로 재현했다.
 DEC-123에 따라 compactTrailing의 텍스트를 오른쪽 정렬하고 추가 오른쪽 여백을 0으로

@@ -80,6 +80,14 @@ xcodebuild test \
 
 ## T119 Live Activity 시각·접근성 인수 기록 (진행 중, 2026-09-29)
 
+- 사용자 지적으로 expanded 시간의 90pt 고정 폭을 제거하고 가변 폭·배치 우선순위·
+  오른쪽 내부 4pt 여유로 바꿨다. iPhone 17 Pro Canvas에서 규칙명·시간·거리·배지가
+  보이고 대상 Simulator 테스트 2건이 통과했다. 서명 빌드의 iPhone 17 데이터 보존
+  설치는 성공했다. 기기 잠금으로 앱 자동 실행이 거부돼 실제 화면은 미검증이다.
+- iPhone 17 사진에서 `fixedSize` 적용 후 expanded의 규칙명만 남는 회귀가 드러났다.
+  `fixedSize`를 제거하고 trailing 90pt 폭을 지정하니 Xcode Canvas에서 시간·거리·
+  `More rules`가 다시 표시됐다. compact 타이머도 오른쪽으로 12pt 옮겼다. 대상
+  Simulator 테스트 2건이 통과했고 수정본의 실기기 검증은 진행 중이다.
 - 사용자가 iPhone 17에서 `More rules` 배지를 확인했다. 이후 사진에서 compact 타이머의
   오른쪽 공백과 expanded 상단 타이머 끝 글자 잘림이 남아 DEC-123으로 정렬·여백과
   가로 고정 크기를 보정했다. 대상 Simulator 테스트 2건 통과 후 iPhone 17에 설치·실행했다.
