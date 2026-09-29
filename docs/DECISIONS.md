@@ -1,5 +1,14 @@
 # 결정 사항
 
+## DEC-125 — T119 expanded 다중 제한 배지 오른쪽 안전 여백 (2026-09-29)
+
+사용자가 iPhone 17 expanded 사진에서 오른쪽 아래 `More rules` 캡슐의 끝 잘림만
+지적했다. 배지·거리 행의 내용과 위쪽 규칙명·타이머 배치는 유지하고, expanded bottom
+영역의 leading 여백은 14pt, trailing 여백은 24pt로 둔다. 이는 DEC-121의 bottom
+좌우 14pt보다 뒤의 실기기 보정이며 둥근 마스크 안쪽으로 배지만 10pt 옮긴다.
+Xcode Canvas에서 배지 끝이 보이고 대상 Simulator 테스트 2건이 통과했다. 실기기
+재확인 전까지 T119는 진행 중이다.
+
 ## DEC-124 — T119 AX5 Figma 샘플과 Live Activity 크기 제한 확인 (2026-09-29)
 
 사용자가 최대 Dynamic Type 구현과 Figma AX5 디자인이 다른 이유를 확인해 달라고 요청했다.

@@ -45,7 +45,8 @@ struct RestrictionLiveActivity: Widget {
                     .font(.system(size: 15, weight: .regular))
                     .padding(.top, 8)
                 }
-                .contentMargins(.horizontal, 14)
+                .contentMargins(.leading, 14)
+                .contentMargins(.trailing, 24)
             } compactLeading: {
                 RestrictionDistanceLabel(
                     distance: context.state.remainingDistance,

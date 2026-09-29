@@ -7,6 +7,15 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-29 T119 expanded 배지 끝 잘림 수정: 사용자가 iPhone 17 확대 화면의
+오른쪽 아래 `More rules` 잘림만 남았다고 확인했다. DEC-125에 따라 bottom 영역
+trailing 여백을 14pt에서 24pt로 늘리고 leading은 14pt로 유지했다. Xcode Canvas
+iPhone 17 Pro expanded에서 배지 글자와 캡슐 끝을 확인했고 대상 Simulator
+`LiveActivityPresentationTests` 2건이 통과했다. 서명 Debug 빌드를 iPhone 17에
+데이터 보존 설치하고 앱을 실행했다. 확대 배지의 최종
+실기기 표시 결과는 사용자 확인을 기다린다.
+현재 phase는 002 Phase 9, 마지막 완료 task는 T118, 진행 중·다음 task는 T119다.
+
 2026-09-29 T119 AX5 시안 차이 원인 확인: Figma `395:2277`의 AX5 카드는
 968×371pt, 텍스트 61/75/53/53pt로 그려졌다. Apple HIG의 iPhone 17 Live Activity
 잠금화면·expanded는 너비 371pt, 높이 최대 160pt이고 ActivityKit은 초과 높이의
