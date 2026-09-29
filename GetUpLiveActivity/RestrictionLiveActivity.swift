@@ -22,14 +22,14 @@ struct RestrictionLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.leading) {
                     RestrictionRuleLabel(name: context.state.ruleDisplayName)
                 }
-                .contentMargins(.leading, 14)
+                .contentMargins(.leading, 24)
 
                 DynamicIslandExpandedRegion(.trailing) {
                     RestrictionCountdown(endsAt: context.state.endsAt)
                         .font(.system(size: 17, weight: .bold).monospacedDigit())
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
-                .contentMargins(.trailing, 14)
+                .contentMargins(.trailing, 24)
 
                 DynamicIslandExpandedRegion(.bottom) {
                     HStack(spacing: 12) {
@@ -52,13 +52,15 @@ struct RestrictionLiveActivity: Widget {
             } compactTrailing: {
                 RestrictionCountdown(endsAt: context.state.endsAt, compact: true)
                     .font(.system(size: 12, weight: .bold).monospacedDigit())
-                    .frame(maxWidth: 66, alignment: .trailing)
+                    .frame(maxWidth: 66, alignment: .leading)
             } minimal: {
                 RestrictionCountdown(endsAt: context.state.endsAt, minimal: true)
                     .font(.system(size: 9, weight: .bold).monospacedDigit())
             }
-            .contentMargins(.horizontal, 10, for: .compactLeading)
-            .contentMargins(.horizontal, 10, for: .compactTrailing)
+            .contentMargins(.leading, 10, for: .compactLeading)
+            .contentMargins(.trailing, 0, for: .compactLeading)
+            .contentMargins(.leading, 0, for: .compactTrailing)
+            .contentMargins(.trailing, 10, for: .compactTrailing)
             .keylineTint(LiveActivityColor.accent)
         }
     }
@@ -140,7 +142,7 @@ private struct RestrictionCountdown: View {
                 Text(timerInterval: interval, countsDown: true, showsHours: true)
             }
         }
-        .multilineTextAlignment(.trailing)
+        .multilineTextAlignment(compact ? .leading : .trailing)
         .lineLimit(1)
         .minimumScaleFactor(0.72)
         .foregroundStyle(LiveActivityColor.accent)

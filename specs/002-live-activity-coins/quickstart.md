@@ -80,6 +80,13 @@ xcodebuild test \
 
 ## T119 Live Activity 시각·접근성 인수 기록 (진행 중, 2026-09-29)
 
+- 같은 날 추가 실기기 사진에서 compact 시간과 카메라 사이의 과도한 공백, expanded 상단
+  규칙명·시간의 양쪽 잘림이 드러났다. DEC-121에 따라 compact의 카메라 쪽 여백을 0으로,
+  숫자 타이머를 leading 정렬하고 expanded 상단 바깥 여백을 24pt로 늘렸다. Xcode Canvas
+  compact 다중 규칙·expanded preview와 Simulator 대상 테스트 2건은 통과했다. 기기 연결
+  시간 초과 후 사용자가 잠금 해제·재연결해 iPhone 17에 최종 빌드를 데이터 보존 설치했다.
+  앱 실행 뒤 compact `250 m`·숫자 타이머가 카메라 양옆에 가까워진 것을 미러링에서 확인했다.
+  expanded 길게 누르기의 상단 양쪽 잘림 해소는 사용자 실기기 확인을 기다린다.
 - 2026-09-29 사용자가 iPhone 17 스크린샷에서 좌우 여백·글자 잘림, 잠금화면 타이머 위치와
   compact 거리 오른쪽 `+`를 지적했다. DEC-120에 따라 expanded 14pt/compact 10pt 영역
   여백을 적용하고 compact 거리의 `+`를 제거했다. 다중 규칙 정보는 compact

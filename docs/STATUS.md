@@ -7,6 +7,17 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-09-29 T119 추가 실기기 피드백: 사용자가 compact 시간과 카메라 사이의 큰 공백 및
+expanded 상단 양쪽 글자 잘림 사진을 제공했다. DEC-121에 따라 compact 카메라 쪽 여백을
+0으로, 타이머 텍스트를 왼쪽 정렬하고 expanded 상단 양쪽 바깥 여백을 24pt로 늘렸다.
+Xcode Canvas의 compact 다중 규칙·expanded 표시와 iPhone 17 Pro Simulator
+`LiveActivityPresentationTests` 2건은 통과했다. 처음에는 iPhone 17 연결 시간 초과와
+iPhone Mirroring Mac 로그인 잠금이 발생했으나 사용자가 해결했다. 서명 빌드를 데이터 보존
+설치하고 앱을 실행한 뒤 compact `250 m`·숫자 타이머가 카메라 양옆에 가까워진 것을
+미러링에서 확인했다. expanded 실기기 길게 누르기·글자 잘림은 사용자 확인을 기다린다.
+현재 phase는 002 Phase 9, 마지막 완료 task는 T118,
+진행 중·다음 task는 T119이며 BLK-017은 별도 미해결이다.
+
 2026-09-29 T119 실기기 피드백 반영 중: 사용자가 전달한 스크린샷의 Dynamic Island
 여백·글자 잘림, 잠금화면 카운트다운 위치, compact 거리 오른쪽 `+`를 수정했다. compact의
 기존 compact `+`를 제거하고 expanded/compact 영역 여백을 조정했다. 잠금화면은

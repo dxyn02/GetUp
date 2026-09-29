@@ -1,5 +1,14 @@
 # 결정 사항
 
+## DEC-121 — T119 Dynamic Island 카메라 주변 및 확대 상단 안전 여백 (2026-09-29)
+
+사용자가 iPhone 17 실기기 사진에서 compact 카운트다운과 카메라 사이의 큰 공백, expanded
+상단 규칙명·카운트다운의 양쪽 잘림을 확인했다. Apple Live Activities HIG의 compact 지침에
+맞춰 카메라 쪽 `contentMargins`를 0으로 하고, compact 타이머 텍스트를 leading 정렬한다.
+상태 막대 쪽 바깥 여백은 10pt를 유지한다. expanded 상단의 실제 둥근 마스크가 14pt
+여백의 첫·끝 글자를 가리므로 leading·trailing 바깥 여백을 24pt로 늘린다. expanded 아래
+거리 행의 14pt 여백은 유지한다. 최종 실기기 빌드 대조 전까지 T119는 미완료로 둔다.
+
 ## DEC-120 — T119 Live Activity 실기기 여백·배치 보정 (2026-09-29)
 
 사용자가 iPhone 17 화면에서 Dynamic Island의 좌우 여백과 글자 잘림을 지적하고,
