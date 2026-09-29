@@ -1,5 +1,21 @@
 # 결정 사항
 
+## DEC-124 — T119 AX5 Figma 샘플과 Live Activity 크기 제한 확인 (2026-09-29)
+
+사용자가 최대 Dynamic Type 구현과 Figma AX5 디자인이 다른 이유를 확인해 달라고 요청했다.
+Figma node `395:2277`의 `AX5 Lock Screen Sample`은 968×371pt 설명용 카드이며
+규칙명·시간·거리·다른 제한에 각각 61/75/53/53pt 글자를 사용한다. Apple Live Activities
+HIG의 iPhone 17 잠금화면·expanded 가용 크기는 371pt 너비, 84~160pt 높이이고,
+ActivityKit 문서는 160pt를 넘는 Live Activity를 시스템이 자를 수 있다고 명시한다.
+근거: [Apple Live Activities HIG](https://developer.apple.com/design/human-interface-guidelines/live-activities),
+[Displaying live data with Live Activities](https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities).
+시안의 371pt 높이뿐 아니라 네 텍스트의 줄 높이 합 269pt도 상한을 넘으므로 네 정보를
+시안 크기 그대로 동시에 표시할 수 없다. 현재 AX5의 24/22/18pt 상한은 시스템의 자동
+글자 제한이 아니라 DEC-120에서 정한 앱의 축소 전략이다. 타이머 오른쪽 위 배치도
+플랫폼 강제가 아닌 같은 사용자 실기기 피드백에 따른 결정이다. Xcode Canvas의 AX5
+다중 규칙 잠금화면에서 네 정보가 표시되고 잘림은 보이지 않았다. T119는 실기기 최종
+확인 전까지 진행 중이다.
+
 ## DEC-123 — T119 compact 오른쪽 여백과 expanded 시간 잘림 재보정 (2026-09-29)
 
 사용자가 iPhone 17 사진에서 다중 제한 `More rules` 배지는 정상이라고 확인했으나,

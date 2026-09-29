@@ -80,6 +80,11 @@ xcodebuild test \
 
 ## T119 Live Activity 시각·접근성 인수 기록 (진행 중, 2026-09-29)
 
+- AX5 Figma node `395:2277`은 968×371pt 샘플과 61/75/53/53pt 글자를 사용한다.
+  Apple HIG의 iPhone 17 Live Activity 잠금화면·expanded는 너비 371pt, 높이 최대
+  160pt라 시안 네 줄의 동일 크기 구현은 불가능하다. 24/22/18pt 상한은 DEC-120의 앱
+  배치 선택이다. iPhone 17 Pro Canvas AX5 다중 규칙 잠금화면에서 네 정보가 잘림 없이
+  표시됐다. 실기기 AX5 최종 대조는 남았다.
 - 사용자 지적으로 expanded 시간의 90pt 고정 폭을 제거하고 가변 폭·배치 우선순위·
   오른쪽 내부 4pt 여유로 바꿨다. iPhone 17 Pro Canvas에서 규칙명·시간·거리·배지가
   보이고 대상 Simulator 테스트 2건이 통과했다. 서명 빌드의 iPhone 17 데이터 보존
