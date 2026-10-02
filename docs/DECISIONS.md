@@ -1,5 +1,19 @@
 # 결정 사항
 
+## DEC-127 — 대표 규칙 변경 시 Live Activity 재요청 (2026-10-03)
+
+**결정**: foreground 조정에서 선택된 대표 규칙의 `activityID`가 현재 Activity의 ID와
+다르면 이전 Activity를 `.immediate`로 종료하고 새 대표 Activity를 요청한다. 같은 규칙의
+거리·종료 시각 등 content state 변경은 기존 Activity를 갱신한다. 두 Activity를 동시에
+남기지 않는다.
+
+**근거**: iPhone 17에서 첫 규칙의 시간이 끝나고 두 번째 규칙은 홈에서 활성이고 대상 앱도
+차단됐지만 Live Activity에는 첫 규칙이 남았다. 새 조정 경로의 진단 로그는 활성 snapshot
+1개, 원하는 대표 존재, 기존 Activity와 다른 `activityID`를 보였고, 종료 1건과 요청 1건이
+오류 없이 수행됐다. 사용자는 이어서 Dynamic Island에 두 번째 규칙이 표시됨을 확인했다.
+`RestrictionLiveActivityAttributes`의 규칙 ID는 생성 후 바꿀 수 없으므로 대표 ID가 달라질
+때는 새 Activity를 요청한다. 화면에는 대표 하나만 표시한다.
+
 ## DEC-125 — T119 expanded 다중 제한 배지 오른쪽 안전 여백 (2026-09-29)
 
 사용자의 후속 iPhone 17 사진에서 24pt 영역 여백을 적용한 뒤에도 캡슐 오른쪽 끝이

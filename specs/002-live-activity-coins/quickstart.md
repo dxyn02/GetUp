@@ -67,6 +67,11 @@ xcodebuild test \
 
 ## Preview와 지역화
 
+2026-10-03 T119 추가 관찰: iPhone 17의 마지막 1분에서 초 단위 VoiceOver
+갱신은 읽는 중 초점이 이동한다. 분 단위 표현은 안정적으로 읽히지만 `0분`만
+발표하므로 정확한 초 안내는 BLK-024로 미해결이다. 대표 규칙 교체는 두 규칙
+겹침 후 첫 규칙 종료 시 실기기에서 확인했다. 전체 종료는 아직 확인이 필요하다.
+
 1. Widget Extension의 Lock Screen, Dynamic Island minimal·compact·expanded preview를 연다.
 2. 거리 known, unavailable, 다른 규칙 존재, 종료 임박 상태를 한국어·영어로 확인한다.
 3. 앱의 활성 제한·코인 구매·내역·확인 dialog와 Shield configuration fixture를 두 언어로 확인한다.
@@ -79,6 +84,24 @@ xcodebuild test \
 - 위치 좌표나 Family Controls token이 preview·접근성 label·로그에 나타나지 않는다.
 
 ## T119 Live Activity 시각·접근성 인수 기록 (진행 중, 2026-09-29)
+
+- 2026-10-03 iPhone 17에서 잠금화면·Dynamic Island의 잘림 없음과 Light/Dark·Reduce
+  Motion 표시를 사용자가 확인했다. 첫 규칙이 시간 종료된 뒤 홈에는 두 번째 규칙이
+  활성이고 대상 앱도 Shield로 차단됐으나 기존 Live Activity가 첫 규칙을 보였다.
+  진단 로그에서 활성 snapshot 1개, 원하는 대표와 기존 Activity의 ID 불일치를 확인했다.
+  이전 Activity 종료·새 대표 요청이 오류 없이 실행된 뒤 사용자는 Dynamic Island의
+  두 번째 규칙 표시를 확인했다. 전체 종료의 실기기 확인은 남았다.
+- iPhone 17 Pro Xcode Canvas AX5에서 known 거리 `320 m`, unavailable·stale의
+  `거리 확인 불가`와 접근성 거리 문구를 직접 확인했다. `LiveActivityPresentationTests`의
+  128개 표면·상태·언어·외관·글자 크기 조합 및 상태·4KB fixture 테스트가 통과했다.
+  영어·한국어 문구는 Widget String Catalog에 존재하지만 한국어 Canvas 화면 대조는
+  아직 끝나지 않았다.
+- 실제 VoiceOver는 초 단위 시스템 타이머, 상대 시간, 고정 문구, 기본 타이머에서
+  값을 읽다 다른 요소로 초점이 이동했다. 초 없는 `SystemFormatStyle.DateOffset`의
+  시·분 대체 표현은 끝까지 읽히고 분 단위로 갱신된다. 다만 종료 50초 전에는
+  `0분`으로만 안내돼 마지막 1분의 초 정확도가 미해결이다. 고정 분 문구는 시간이
+  지나도 줄지 않아 제외했고, 종료 시각 문구는 남은 시간 요구를 충족하지 못했다.
+  이 결함을 해결하기 전에는 VoiceOver와 T119를 통과 처리하지 않는다.
 
 - iPhone 17 확대 화면에서 오른쪽 아래 `More rules` 배지 끝 잘림이 남아 bottom
   trailing 여백만 14pt→24pt로 늘렸다. Xcode Canvas iPhone 17 Pro 확대 화면에서

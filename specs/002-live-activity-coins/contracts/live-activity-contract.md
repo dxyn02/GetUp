@@ -17,7 +17,9 @@
 
 - 활성 occurrence를 `activatedAt`, `startAt`, `ruleID` 순으로 정렬해 첫 항목을 대표로 사용한다.
 - 동시에 여러 규칙이 있으면 `hasAdditionalRestrictions == true`를 표시한다.
-- 대표 occurrence가 끝나고 다른 occurrence가 남으면 기존 Activity의 content state를 갱신한다.
+- 대표 occurrence가 끝나고 다른 occurrence가 남으면 화면의 대표 정보를 다음 규칙으로 교체한다.
+  `activityID`가 다른 규칙으로 바뀌면 기존 Activity를 즉시 종료한 뒤 새 대표 Activity를 하나
+  요청한다. 같은 규칙의 상태만 바뀌면 기존 Activity의 content state를 갱신한다.
 - 앱이 다시 foreground가 되면 `Activity.activities`와 현재 snapshot을 비교해 중복 활동을 즉시
   종료하고 대표 활동 하나만 남긴다.
 - 활성 occurrence가 있는데 `Activity.activities`가 비어 있으면 사용자가 같은 occurrence의 활동을

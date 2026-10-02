@@ -158,11 +158,18 @@ private struct RestrictionCountdown: View {
         .lineLimit(1)
         .minimumScaleFactor(0.72)
         .foregroundStyle(LiveActivityColor.accent)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("남은 시간")
-        .accessibilityValue(
-            Text(timerInterval: interval, countsDown: true, showsHours: true)
-        )
+        .accessibilityRepresentation {
+            HStack {
+                Text("남은 시간")
+                Text(.currentDate, format: .offset(
+                    to: endsAt,
+                    allowedFields: [.hour, .minute],
+                    maxFieldCount: 2,
+                    sign: .never
+                ))
+            }
+            .accessibilityElement(children: .combine)
+        }
     }
 }
 

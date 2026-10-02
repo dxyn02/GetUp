@@ -52,9 +52,23 @@ actor LiveActivityCoordinator {
             return await request(desiredActivity, now: now)
         }
 
+        if !activities.contains(where: {
+            $0.attributes.activityID == desiredActivity.attributes.activityID
+        }) {
+            let ended = await endAll(activities, now: now)
+            guard ended.failureCodes.isEmpty else {
+                return ended
+            }
+            let started = await request(desiredActivity, now: now)
+            return LiveActivityCoordinationResult(
+                actions: ended.actions + started.actions,
+                failureCodes: started.failureCodes
+            )
+        }
+
         let keeper = activities.first(where: {
             $0.attributes.activityID == desiredActivity.attributes.activityID
-        }) ?? activities[0]
+        })!
         var actions: [LiveActivityCoordinationAction] = []
         var failureCodes: [LiveActivityCoinErrorCode] = []
 

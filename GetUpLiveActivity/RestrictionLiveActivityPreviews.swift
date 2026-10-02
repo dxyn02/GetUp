@@ -151,6 +151,16 @@ enum RestrictionLiveActivityPreviewFixtures {
 
 #if DEBUG && !GETUP_PRESENTATION_TESTS
 #Preview(
+    "Lock Screen · Unavailable",
+    as: .content,
+    using: RestrictionLiveActivityPreviewFixtures.attributes
+) {
+    RestrictionLiveActivity()
+} contentStates: {
+    RestrictionLiveActivityPreviewFixtures.unavailable
+}
+
+#Preview(
     "Lock Screen · Stale",
     as: .content,
     using: RestrictionLiveActivityPreviewFixtures.attributes

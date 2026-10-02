@@ -339,6 +339,46 @@ struct AppLifecycleCoordinatorTests {
         #expect(!snapshot.contentState.hasAdditionalRestrictions)
     }
 
+    @Test("Recovery selects the second rule after the first occurrence expires")
+    func buildsNextRepresentativeAfterExpiry() throws {
+        let first = TestFixtures.makeRule(name: "첫 규칙")
+        let second = TestFixtures.makeRule(
+            id: UUID(uuidString: "00000000-0000-4000-8000-000000000303")!,
+            name: "두 번째 규칙"
+        )
+        let firstOccurrence = try RestrictionOccurrence(
+            ruleID: first.id,
+            ruleRevision: first.revision,
+            startAt: TestFixtures.now.addingTimeInterval(-3_600),
+            endAt: TestFixtures.now.addingTimeInterval(-1),
+            activatedAt: TestFixtures.now.addingTimeInterval(-3_600)
+        )
+        let secondOccurrence = try RestrictionOccurrence(
+            ruleID: second.id,
+            ruleRevision: second.revision,
+            startAt: TestFixtures.now.addingTimeInterval(-1_800),
+            endAt: TestFixtures.now.addingTimeInterval(3_600),
+            activatedAt: TestFixtures.now.addingTimeInterval(-1_800)
+        )
+        let activeSnapshot = try ActiveRestrictionSnapshot(
+            revision: 1,
+            occurrences: [firstOccurrence, secondOccurrence],
+            observedAt: TestFixtures.now.addingTimeInterval(-1_800)
+        )
+
+        let desired = try #require(try AppLiveActivityRecovery.makeSnapshot(
+            rules: [first, second],
+            savedPlaces: [],
+            activeSnapshot: activeSnapshot,
+            locationConditions: [],
+            now: TestFixtures.now
+        ))
+
+        #expect(desired.attributes.activityID == second.id)
+        #expect(desired.contentState.ruleDisplayName == "두 번째 규칙")
+        #expect(!desired.contentState.hasAdditionalRestrictions)
+    }
+
     private func restrictionResult(
         for rule: RestrictionRuleSnapshot,
         presentationState: RestrictionPresentationState
