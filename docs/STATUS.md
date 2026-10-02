@@ -7,6 +7,13 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-10-03 T113 후속 Release Handoff 문구 정리: 사용자 사진에서 상단 노란 문구와
+흰색 제목, 잔액 부족 카드의 노란·흰색 잔액 제목이 중복됨을 확인했다. DEC-126에
+따라 상단 노란 문구를 제거하고 잔액 부족 카드의 흰색 제목만 제거했으며, 남은
+노란 카드 문구를 한국어로 지역화했다. iPhone 17 Pro Simulator의 잔액 부족
+한국어·네 상태 영어 UI 테스트 2건이 통과했다.
+현재 phase는 002 Phase 9, 마지막 완료 task는 T118, T119는 별도 브랜치에서 진행 중이다.
+
 2026-09-28 T118 완료: 병합된 PR #34의 최신 `main`에서 `codex/live-activity-t118` 브랜치를
 만들고 승인된 Live Activity 잠금화면·Dynamic Island minimal·compact·expanded UI를 구현했다.
 앱의 dark surface·accent 색상, 아이콘 없는 규칙명, `location.fill`, 접근성 읽기 순서와 AX5 세로

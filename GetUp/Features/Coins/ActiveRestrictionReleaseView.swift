@@ -648,9 +648,6 @@ struct ActiveRestrictionReleaseHandoffView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
                         statusIcon
-                        Text(eyebrow)
-                            .font(.caption2.weight(.bold))
-                            .foregroundStyle(HomeColor.accent)
                         Text(title)
                             .font(.largeTitle.weight(.bold))
                             .foregroundStyle(HomeColor.textPrimary)
@@ -726,16 +723,6 @@ struct ActiveRestrictionReleaseHandoffView: View {
             : "releaseHandoff.\(stateName).icon")
     }
 
-    private var eyebrow: String {
-        switch outcome {
-        case .completed: AppLocalizedCopy.string("releaseHandoff.completed.eyebrow")
-        case .retryable: AppLocalizedCopy.string("releaseHandoff.retryable.eyebrow")
-        case .insufficient: AppLocalizedCopy.string("releaseHandoff.insufficient.eyebrow")
-        case .recoveryRequired: ""
-        case nil: AppLocalizedCopy.string("releaseHandoff.processing.eyebrow")
-        }
-    }
-
     private var title: String {
         switch outcome {
         case .completed: AppLocalizedCopy.string("releaseHandoff.completed.title")
@@ -780,12 +767,15 @@ struct ActiveRestrictionReleaseHandoffView: View {
             Text(cardEyebrow)
                 .font(.caption2.weight(.bold))
                 .foregroundStyle(HomeColor.accent)
-            Text(cardTitle)
-                .font(.body.weight(.semibold))
-                .foregroundStyle(HomeColor.textPrimary)
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityIdentifier(outcome == .retryable
-                    ? "releaseHandoff.fundingResult" : "releaseHandoff.cardTitle")
+                .accessibilityIdentifier("releaseHandoff.cardEyebrow")
+            if outcome != .insufficient {
+                Text(cardTitle)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(HomeColor.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier(outcome == .retryable
+                        ? "releaseHandoff.fundingResult" : "releaseHandoff.cardTitle")
+            }
             if outcome == .insufficient {
                 HStack(spacing: 6) {
                     Text(AppLocalizedCopy.string("releaseHandoff.balance.freeLabel"))

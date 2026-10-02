@@ -65,6 +65,8 @@ final class UserStory2ReleaseResultUITests: XCTestCase {
 
         XCTAssertTrue(app.otherElements["releaseHandoff.insufficient.screen"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.staticTexts["releaseHandoff.statusTitle"].label, "사용할 수 있는 해제권이 없어요")
+        XCTAssertEqual(app.staticTexts["releaseHandoff.cardEyebrow"].label, "현재 잔액")
+        XCTAssertFalse(app.staticTexts["releaseHandoff.cardTitle"].exists)
         XCTAssertEqual(app.images["releaseHandoff.insufficient.icon"].label, "사용할 수 없음")
         XCTAssertEqual(app.staticTexts["releaseHandoff.balance.free"].label, "0회")
         XCTAssertEqual(app.staticTexts["releaseHandoff.balance.purchased"].label, "0개")
@@ -121,6 +123,8 @@ final class UserStory2ReleaseResultUITests: XCTestCase {
             XCTAssertEqual(app.staticTexts["releaseHandoff.statusTitle"].label, title)
             XCTAssertTrue(app.staticTexts[detail].exists, "Missing English detail for \(state)")
             if state == "insufficient" {
+                XCTAssertEqual(app.staticTexts["releaseHandoff.cardEyebrow"].label, "CURRENT BALANCE")
+                XCTAssertFalse(app.staticTexts["releaseHandoff.cardTitle"].exists)
                 let purchase = app.buttons["releaseHandoff.primaryAction"]
                 XCTAssertEqual(purchase.label, "Buy Coins")
                 purchase.tap()
