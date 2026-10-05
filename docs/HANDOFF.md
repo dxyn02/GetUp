@@ -8,6 +8,17 @@
 - 다음 작업: T119 마지막 1분 VoiceOver 정확도와 전체 종료 실기기 검증
 - 차단: BLK-024 마지막 1분의 초 단위 안내와 VoiceOver 초점 안정성을 함께 충족하지 못함
 
+## 2026-10-05 T119 Home 기본 규칙명 지역화
+
+규칙 이름이 없으면 Live Activity 스냅샷이 지역화 전 장소명 `집`을 전달했다.
+홈에서 사용하는 `AppLocalizedCopy.savedPlaceName`을 동일하게 적용했다. 저장된
+장소나 사용자 지정 규칙명은 변경하지 않는다. 영어 리소스를 실제로 읽어 `Home`
+전달을 확인하고 한국어 기본명·사용자 지정 이름 보존을 함께 검증했다.
+관련 Simulator 테스트 26건은 실패·skip 없이 통과했다. 실제 영어 Live Activity
+표시와 BLK-024 마지막 1분 VoiceOver, 전체 종료는 아직 확인이 필요하다.
+서명 Debug 빌드와 서명 검증은 통과했다. `devicectl`은 기기를 찾지 못해 설치하지
+못했으며 재연결을 요청했다. 빌드는 `/private/tmp/getup-t119-device/Build/Products/Debug-iphoneos/GetUp.app`에 있다.
+
 ## 2026-10-03 T119 마지막 1분 접근성 추가 확인
 
 사용자는 초 단위 상대 시간을 읽을 때 1분 미만에서 종종 규칙 이름으로 초점이

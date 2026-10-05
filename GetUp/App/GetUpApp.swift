@@ -1294,7 +1294,8 @@ enum AppLiveActivityRecovery {
         savedPlaces: [SavedPlaceSnapshot],
         activeSnapshot: ActiveRestrictionSnapshot?,
         locationConditions: [LocationConditionSnapshot],
-        now: Date
+        now: Date,
+        localizedPlaceName: (String) -> String = AppLocalizedCopy.savedPlaceName
     ) throws -> RestrictionLiveActivitySnapshot? {
         let enabledRules = rules.filter(\.isEnabled)
         let currentRuleRevisions = enabledRules.reduce(into: [UUID: Int]()) {
@@ -1319,7 +1320,8 @@ enum AppLiveActivityRecovery {
             place.id == rule.savedPlaceID
         }).map { SavedPlaceNamePolicy.normalized($0.name) }
         let ruleName = rule.name.map(SavedPlaceNamePolicy.normalized)
-        guard let displayName = [ruleName, placeName]
+        let displayPlaceName = placeName.map(localizedPlaceName)
+        guard let displayName = [ruleName, displayPlaceName]
             .compactMap({ $0 })
             .first(where: { !$0.isEmpty })
         else {
