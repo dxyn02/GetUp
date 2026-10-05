@@ -3,13 +3,20 @@
 ## 현재 작업
 
 - 기능: `002-live-activity-coins` Phase 9
-- 마지막 완료 작업: T118
+- 마지막 완료 작업: T119a
 - 진행 중 작업: T119 Live Activity 시각·접근성 실기기 검증
-- 다음 작업: T119a Device Activity Monitor 종료 callback의 ActivityKit 조회 실기기 증적
-- 경로 결정: BLK-025는 DEC-129의 서버 없는 DEBUG probe 승인으로 해결, 가능성은 조사 중
+- 다음 작업: T119 한국어 unavailable/stale 실기기 대조와 미확인 항목 정리
+- 경로 결정: BLK-025 해결, DEC-130에 따라 기존 foreground 대표 교체·종료 유지
 - 알려진 문제: 남은 시간 VoiceOver 결함은 DEC-128 사용자 결정으로 수정·수동 인수 보류
 
 ## 2026-10-05 T119a Monitor 조회 probe
+
+조사 완료: iPhone 17 / iOS 26.7.1(23H30)의 14:30:01 callback에서 활성 규칙
+2→1 재평가와 ActivityKit 조회 0개, `fileWritten` 단계를 확인했다. 사용자도
+종료 전 활동 표시·앱 미진입·종료 뒤 첫 규칙 활동 잔류를 확인했다. Monitor 직접
+조정 경로는 이 조합에서 채택하지 않는다. 사용자는 APNs 설명 뒤 기존 방식 유지를
+결정했다(DEC-130). T119a 완료, T119는 한국어 unavailable/stale 미확인으로 진행 중이다.
+두 번째 시험의 14:35 전체 종료 증적은 결정 시점에 아직 수집하지 않았다.
 
 첫 시험의 종료 시각은 14:10·14:15였다. 공유 제한 재평가 진단의 14:10:02
 활성 2→1, 14:15:02 활성 1→0을 확인했다. 사용자는 앱을 열지 않고 다른 앱을

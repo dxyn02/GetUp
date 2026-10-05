@@ -2,7 +2,18 @@
 
 ## BLK-025 — 앱 진입 없는 Live Activity 대표 교체·종료 경로
 
-**상태**: 결정 해결됨(RESOLVED), 실기기 조사 중 — 2026-10-05
+**상태**: 결정 해결됨(RESOLVED), 자동 반영 보류 — 2026-10-05
+
+사용자는 APNs 설명을 받은 뒤 기존 방식 유지를 선택했다. DEC-130에 따라
+대표 교체·전체 종료는 앱 foreground 진입 시 반영하며 서버 도입과 자동 반영은
+이번 T119 범위에서 보류한다. 미구현 동작을 수정 완료로 표시하지 않는다.
+
+서버 없는 Monitor 조사 승인은 이행했다. iPhone 17 / iOS 26.7.1(23H30)의
+14:30:01 callback은 활성 규칙 2→1을 재평가했지만 ActivityKit 활동을 0개 조회했다.
+사용자가 종료 전·후 활동 표시와 앱 미진입을 확인했고 진단 저장도 완료됐다.
+이 조합에서는 앱 활동을 직접 조정할 수 없어 production 경로를 채택하지 않는다.
+기존 foreground 조정은 유지되며 자동 대표 교체·종료 요구는 미해결이다.
+후속 선택은 DEC-130의 자동 반영 보류로 확정했다. 서버·전송 데이터·비용은 선택하지 않았다.
 
 사용자는 서버 없이 Device Activity 확장 실기기 시험부터 진행하도록 승인했다.
 DEC-129에 따라 DEBUG 조회 probe를 먼저 실행한다. 조회가 가능할 때만 갱신·종료
@@ -13,7 +24,7 @@ Live Activity 대표 교체·종료가 반영됨을 확인하고 앱 진입 없�
 현재 `LiveActivityCoordinator`는 foreground만 처리하며 Device Activity callback은
 Shield와 공유 snapshot만 재평가한다. `staleDate`는 활동을 종료하는 명령이 아니다.
 Apple은 실행 중인 앱의 background 갱신·종료와 서버의 ActivityKit push를 문서화한다.
-Device Activity Monitor 확장에서 앱 활동을 조회할 수 있는지는 아직 실기기 미검증이다.
+Device Activity Monitor 확장의 조회 결과는 위 실기기 시험에서 0개로 확인됐다.
 기존 Shield Action probe는 앱 활동을 발견하지 못했다. 종료 callback은 기기를 사용할 때
 전달되므로 종료 정각 실행도 보장하지 않는다.
 
