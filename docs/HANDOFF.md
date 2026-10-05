@@ -16,8 +16,9 @@
 전달을 확인하고 한국어 기본명·사용자 지정 이름 보존을 함께 검증했다.
 관련 Simulator 테스트 26건은 실패·skip 없이 통과했다. 실제 영어 Live Activity
 표시와 BLK-024 마지막 1분 VoiceOver, 전체 종료는 아직 확인이 필요하다.
-서명 Debug 빌드와 서명 검증은 통과했다. `devicectl`은 기기를 찾지 못해 설치하지
-못했으며 재연결을 요청했다. 빌드는 `/private/tmp/getup-t119-device/Build/Products/Debug-iphoneos/GetUp.app`에 있다.
+서명 Debug 빌드와 서명 검증은 통과했다. 처음에는 기기를 찾지 못했으나
+CoreDeviceService 재시작 후 연결이 복구돼 iPhone 17에 데이터 보존 설치·실행했다.
+iPhone Mirroring은 Mac 로그인 잠금 상태여서 실제 영어 표시를 사용자에게 확인 요청했다.
 
 ## 2026-10-03 T119 마지막 1분 접근성 추가 확인
 
