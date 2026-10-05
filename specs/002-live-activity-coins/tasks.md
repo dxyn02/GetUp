@@ -393,6 +393,7 @@ foreground에서 확인된 중단 command는 차감 없이 동일 command 재시
 - [X] T117 [P] [US1] 승인된 하이파이의 known·unavailable·stale·다중 규칙, 한국어·영어, Light/Dark, 최대 Dynamic Type 상태를 고정하는 preview·snapshot fixture를 `GetUpLiveActivity/RestrictionLiveActivityPreviews.swift`, `GetUpTests/Integration/LiveActivityPresentationTests.swift`에 먼저 작성한다.
 - [X] T118 [US1] T116에서 승인된 하이파이만 기준으로 잠금화면과 Dynamic Island minimal·compact·expanded UI를 `GetUpLiveActivity/RestrictionLiveActivity.swift`, `GetUpLiveActivity/GetUpLiveActivityBundle.swift`, `GetUpLiveActivity/Resources/Localizable.xcstrings`에 구현하고 4KB payload·60초 시간 정확도 계약을 보존한다.
 - [ ] T119 [US1] 잠금화면·Dynamic Island 각 영역의 승인 하이파이 대조, VoiceOver·최대 Dynamic Type·Light/Dark·Reduce Motion·대표 교체·종료를 preview와 지원 실기기에서 검증하고 결과를 `specs/002-live-activity-coins/quickstart.md`, `docs/STATUS.md`, `docs/HANDOFF.md`에 기록한다.
+  - 2026-10-05 DEC-128 사용자 결정: 남은 시간 VoiceOver 추가 수정·실기기 인수는 이번 완료 게이트에서 제외하고 알려진 문제·skip으로 기록한다. 다른 검증은 계속 진행한다.
 
 **체크포인트**: Live Activity 하이파이 승인과 preview·실기기 대조가 끝나기 전에는 시각 개편을
 완료로 표시하지 않는다.
