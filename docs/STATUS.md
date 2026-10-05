@@ -7,6 +7,17 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-10-05 T119a 첫 종료 시험: 앱 미진입 상태에서 14:10:02 제한 재평가의
+활성 규칙 2→1, 14:15:02의 1→0을 공유 진단으로 확인했다. 사용자는 첫 종료 뒤에도
+첫 규칙의 Live Activity가 남았다고 확인했다. ActivityKit 조회 파일은 생성되지 않아
+조회 개수·지원 여부는 아직 판단할 수 없다. Debug 코드는 실행 stub이 아닌 확장의
+`debug.dylib`에 정상 포함돼 있다. 조회 전·후 및 파일 기록 성공·실패 단계를 기존 공유
+UserDefaults 경로에도 기록하도록 보강했고, 새 Debug 빌드·서명 검증·기기 설치가
+통과했다. 제한 재평가 회귀 테스트 30건을 다시 실행해 실패·skip 없이 통과했고
+Release 빌드·진단 문자열 제외도 확인했다. production 변경은 없다.
+현재 T119/T119a 진행 중, 마지막 완료 T118, 다음 작업은 사용자 준비 후 두 번째
+종료 시험이다. BLK-025 조사와 한국어 unavailable/stale 실기기 검증이 남아 있다.
+
 2026-10-05 T119a Monitor probe: 사용자가 서버 없이 Device Activity 확장 실기기
 시험을 승인했다. DEC-129를 기록하고 BLK-025의 경로 선택 차단을 해제했다.
 DEBUG `intervalDidEnd` 반환 전 ActivityKit 활동 조회 개수·권한·OS를 App Group

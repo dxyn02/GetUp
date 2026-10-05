@@ -11,6 +11,17 @@
 
 ## 2026-10-05 T119a Monitor 조회 probe
 
+첫 시험의 종료 시각은 14:10·14:15였다. 공유 제한 재평가 진단의 14:10:02
+활성 2→1, 14:15:02 활성 1→0을 확인했다. 사용자는 앱을 열지 않고 다른 앱을
+사용했고 첫 규칙 Live Activity가 남았다고 확인했다. 조회 파일은 없으며 이 결과로
+ActivityKit 조회 미지원이라고 판단하지 않는다. 새 빌드는 조회 전·후와 파일 쓰기
+성공·실패 단계를 `getup.debug.monitor-live-activity-probe` 공유 UserDefaults에도
+기록한다. Debug 빌드·서명 검증·iPhone 17 설치가 성공했고 두 번째 규칙 준비를
+요청했다. `debug.dylib`의 진단 문자열 포함을 확인했으며 실행 stub만 검사하면 안 된다.
+진단 보강 뒤 제한 재평가 테스트 30건 재실행 통과(실패·skip 0), Release 빌드 및
+진단 문자열 제외 검사가 통과했다.
+
+
 사용자 승인에 따라 DEBUG `intervalDidEnd`의 defer에서 ActivityKit 활동 개수를
 동기 조회해 App Group의 `device-activity-live-activity-probe.json`에 최대 12건을
 기록한다. 기존 Shield 재평가·snapshot 경로는 먼저 실행하며 활동을 변경하지 않는다.

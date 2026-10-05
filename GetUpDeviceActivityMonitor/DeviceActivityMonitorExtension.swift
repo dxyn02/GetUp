@@ -84,7 +84,24 @@ private enum DeviceActivityLiveActivityDiscoveryProbe {
     }
 
     static func record() {
-        guard let identifier = SharedIdentifiers.appGroupIdentifier(),
+        guard let identifier = SharedIdentifiers.appGroupIdentifier() else { return }
+        let defaults = UserDefaults(suiteName: identifier)
+        let diagnosticKey = "getup.debug.monitor-live-activity-probe"
+        func recordStage(_ stage: String, count: Int? = nil) {
+            var values: [String: Any] = [
+                "stage": stage,
+                "recordedAt": Date().timeIntervalSince1970,
+                "operatingSystemVersion": ProcessInfo.processInfo.operatingSystemVersionString
+            ]
+            if let count { values["discoveredActivityCount"] = count }
+            defaults?.set(values, forKey: diagnosticKey)
+            // DEBUG-only checkpoint survives an extension returning immediately.
+            defaults?.synchronize()
+        }
+        recordStage("beforeDiscovery")
+        let count = Activity<RestrictionLiveActivityAttributes>.activities.count
+        recordStage("discoveryCompleted", count: count)
+        guard
               let containerURL = FileManager.default.containerURL(
                 forSecurityApplicationGroupIdentifier: identifier
               )
@@ -94,7 +111,7 @@ private enum DeviceActivityLiveActivityDiscoveryProbe {
             recordedAt: Date(),
             operatingSystemVersion: ProcessInfo.processInfo.operatingSystemVersionString,
             liveActivitiesEnabled: ActivityAuthorizationInfo().areActivitiesEnabled,
-            discoveredActivityCount: Activity<RestrictionLiveActivityAttributes>.activities.count
+            discoveredActivityCount: count
         )
         let fileURL = containerURL.appendingPathComponent("device-activity-live-activity-probe.json")
         let decoder = JSONDecoder()
@@ -106,7 +123,12 @@ private enum DeviceActivityLiveActivityDiscoveryProbe {
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         guard let data = try? encoder.encode(Array(history.suffix(12))) else { return }
-        try? data.write(to: fileURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        do {
+            try data.write(to: fileURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            recordStage("fileWritten", count: count)
+        } catch {
+            recordStage("fileWriteFailed", count: count)
+        }
     }
 }
 #endif

@@ -67,8 +67,16 @@ xcodebuild test \
 
 ## Preview와 지역화
 
-2026-10-05 T119a 실기기 시험 준비: DEC-129에 따라 DEBUG Monitor 종료 callback에서
-ActivityKit 조회 개수·권한·OS·시각만 기록한다. 진단 빌드는 iPhone 17에 설치됐고,
+2026-10-05 T119a 실기기 시험: 첫 14:10·14:15 시험은 공유 진단에서 활성 규칙
+2→1→0 재평가가 확인됐지만
+조회 파일이 생성되지 않았다. 사용자도 앱 미진입과 첫 규칙 표시 잔류를 확인했다.
+조회 지원 여부는 미확인이다. 다음 빌드는 공유 UserDefaults의
+`getup.debug.monitor-live-activity-probe`에 `beforeDiscovery`, `discoveryCompleted`,
+`fileWritten` 또는 `fileWriteFailed`를 기록한다. 종료 뒤 이 키의 기록 시각·단계·개수와
+파일을 함께 확인하며 기록 부재를 조회 개수 0으로 해석하지 않는다.
+
+DEC-129에 따라 DEBUG Monitor 종료 callback에서 ActivityKit 조회 개수·권한·OS·시각만
+기록한다. 진단 빌드는 iPhone 17에 설치됐고,
 제한 재평가 테스트 30건과 Release 빌드·probe 제외 검사는 통과했다. 두 활성 규칙 중
 첫 규칙 종료 전에 GetUp에서 Live Activity가 표시됐는지 확인한다. 이후 GetUp을 열지
 않고 다른 앱을 사용한 뒤 App Group `device-activity-live-activity-probe.json`을 읽는다.
