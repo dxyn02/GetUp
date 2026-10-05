@@ -121,7 +121,14 @@ Live Activity도 `Home`을 표시해야 한다. 한국어에서는 `집`을 표�
 - 가격·무료분·구매 코인·대상 규칙·남을 제한의 의미가 두 언어에서 같다.
 - 위치 좌표나 Family Controls token이 preview·접근성 label·로그에 나타나지 않는다.
 
-## T119 Live Activity 시각·접근성 인수 기록 (진행 중, 2026-09-29)
+## T119 Live Activity 시각·접근성 인수 기록 (승인된 예외 포함 완료, 2026-10-05)
+
+- DEC-131 사용자 요청으로 한국어 unavailable/stale 최종 실기기 대조는 skip·미확인이다.
+  DEC-128의 남은 시간 VoiceOver 보류, DEC-130의 기존 foreground 교체·종료 유지와 함께
+  승인된 범위로 T119를 마감한다. 실기기에서 미확인 상태를 통과로 간주하지 않는다.
+- 최종 Simulator 표시·대표 조정·시간 정책 테스트 17건 및 앱 수명주기 테스트 14건,
+  합계 31건이 실패·자동 skip 없이 통과했다. AX5의 시안 차이·앱 전반 개선 필요는 남긴다.
+  다음 task는 T089 월 경계·다기기 검증이다.
 
 - 2026-10-03 iPhone 17에서 잠금화면·Dynamic Island의 잘림 없음과 Light/Dark·Reduce
   Motion 표시를 사용자가 확인했다. 첫 규칙이 시간 종료된 뒤 홈에는 두 번째 규칙이

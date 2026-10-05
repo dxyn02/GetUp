@@ -392,7 +392,8 @@ foreground에서 확인된 중단 command는 차감 없이 동일 command 재시
 - [X] T116 [US1] T115의 잠금화면·Dynamic Island 전체 하이파이를 사용자에게 제시해 명시적 구현 승인을 받고 결과·의견·승인일을 `design/high-fidelity/US1-live-activity-refresh.md`, `docs/DECISIONS.md`, `docs/STATUS.md`에 기록한다. 승인 전에는 T117~T119를 시작하지 않는다.
 - [X] T117 [P] [US1] 승인된 하이파이의 known·unavailable·stale·다중 규칙, 한국어·영어, Light/Dark, 최대 Dynamic Type 상태를 고정하는 preview·snapshot fixture를 `GetUpLiveActivity/RestrictionLiveActivityPreviews.swift`, `GetUpTests/Integration/LiveActivityPresentationTests.swift`에 먼저 작성한다.
 - [X] T118 [US1] T116에서 승인된 하이파이만 기준으로 잠금화면과 Dynamic Island minimal·compact·expanded UI를 `GetUpLiveActivity/RestrictionLiveActivity.swift`, `GetUpLiveActivity/GetUpLiveActivityBundle.swift`, `GetUpLiveActivity/Resources/Localizable.xcstrings`에 구현하고 4KB payload·60초 시간 정확도 계약을 보존한다.
-- [ ] T119 [US1] 잠금화면·Dynamic Island 각 영역의 승인 하이파이 대조, VoiceOver·최대 Dynamic Type·Light/Dark·Reduce Motion·대표 교체·종료를 preview와 지원 실기기에서 검증하고 결과를 `specs/002-live-activity-coins/quickstart.md`, `docs/STATUS.md`, `docs/HANDOFF.md`에 기록한다.
+- [X] T119 [US1] 잠금화면·Dynamic Island 각 영역의 승인 하이파이 대조, VoiceOver·최대 Dynamic Type·Light/Dark·Reduce Motion·대표 교체·종료를 preview와 지원 실기기에서 검증하고 결과를 `specs/002-live-activity-coins/quickstart.md`, `docs/STATUS.md`, `docs/HANDOFF.md`에 기록한다.
+  - 2026-10-05 DEC-131 사용자 요청: 한국어 unavailable/stale 최종 실기기 대조는 skip·미확인으로 기록한다. DEC-130에 따라 기존 foreground 대표 교체·종료를 유지한다. 승인된 예외 범위로 완료하며 다음 task는 T089다.
   - 2026-10-05 DEC-128 사용자 결정: 남은 시간 VoiceOver 추가 수정·실기기 인수는 이번 완료 게이트에서 제외하고 알려진 문제·skip으로 기록한다. 다른 검증은 계속 진행한다.
 - [X] T119a [US1] DEC-129에 따라 Device Activity Monitor 종료 callback에서 앱 생성 ActivityKit 활동을 조회하는 DEBUG probe를 지원 실기기에서 실행하고, 조회 성공 시 갱신·종료 시험을 이어가 결과와 production 경로 채택 가능성을 `quickstart.md`, `docs/STATUS.md`, `docs/HANDOFF.md`에 기록한다.
   - 2026-10-05 iPhone 17 / iOS 26.7.1 조회 0개 확인. DEC-130 사용자 결정으로 기존 foreground 조정을 유지하며 자동 교체·종료는 보류한다.

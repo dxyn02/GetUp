@@ -7,6 +7,16 @@
 001은 Phase 7 마무리 및 교차 관심사 진행 중, 002는 Phase 9 release handoff 구현 진행 중
 
 ## 진행 중
+2026-10-05 T119 마감: 사용자가 한국어 unavailable/stale 실기기 대조를 건너뛰도록
+요청해 DEC-131에 수동 인수 skip·미확인으로 기록했다. DEC-128의 VoiceOver 보류와
+DEC-130의 기존 foreground 교체·종료 유지 결정을 포함해 승인된 범위의 T119를 완료했다.
+LiveActivityPresentationTests·LiveActivityCoordinatorTests·LiveActivityTimePolicyTests
+17건과 AppLifecycleCoordinatorTests 14건, 합계 31건이 실패·자동 skip 없이 통과했다.
+최대 Dynamic Type의 ActivityKit 크기 제약과 앱 전반 개선 필요는 알려진 사항으로 유지한다.
+현재 단계는 002 Phase 9 마감, 마지막 완료 T119, 다음 task T089다. PR #36을
+병합한 최신 main의 새 브랜치에서 T089를 재개해야 한다. BLK-017 월 경계·다기기
+실기기 증적은 미해결이며 T089는 아직 시작하지 않았다.
+
 2026-10-05 DEC-130 기존 방식 유지: 사용자가 APNs 설명 뒤 기존 foreground 조정을
 유지하도록 결정했다. BLK-025 경로 결정은 해결됐으며 앱 진입 없는 자동 교체·종료는
 보류한다. T119a는 iPhone 17 / iOS 26.7.1의 14:30:01 callback 조회 0개와
@@ -650,19 +660,18 @@ setup/reset/recovery/reconciliation과 5초 Shield 응답 상한을 live 경로�
 001의 T083·T085 실기기 후속 확인은 여전히 남아 있음
 
 ## 마지막 완료 작업
-T116 — Live Activity 잠금화면·Dynamic Island 하이파이 구현 승인
+T119 — 승인된 보류·skip 범위를 포함한 Live Activity 실기기 검증 마감
 
 ## 다음 작업
-T117 — 승인된 하이파이의 known·unavailable·stale·다중 규칙, 한국어·영어, Light/Dark, 최대
-Dynamic Type 상태를 고정하는 preview·snapshot fixture와 presentation test를 먼저 작성한다.
+PR #36 병합 후 최신 main에서 T089 기능 브랜치를 만든다.
 T089 — T103~T113의 승인된 handoff 구현과 두 실기기 첫 탭 검증 결과를 기준으로 월 경계 allowance
 지연 생성·비이월 인수를 별도로 재개한다.
 T094·T095의 Shield/StoreKit 실기기 인수도 이어서 수행한다.
 001은 T083·T085 실기기 재검증과 T086 구현·하이파이 편차 대조가 남아 있음
 
 ## 차단 상태
-BLK-025 결정 해결됨: 서버 없이 Device Activity Monitor 실기기 probe를 먼저 진행한다.
-조회 가능성과 자동 반영은 아직 검증되지 않았다. 서버 도입은 별도 결정 사항이다.
+BLK-025 결정 해결됨: Monitor 조회 결과 0개. DEC-130에 따라 기존 foreground 조정을 유지하고
+자동 교체·종료를 보류한다.
 
 BLK-024 결정 해결됨: 사용자 승인으로 VoiceOver 결함 수정·수동 인수를 보류했다.
 마지막 1분의 `0분` 안내와 초 단위 초점 이동은 알려진 문제로 남아 있다.
