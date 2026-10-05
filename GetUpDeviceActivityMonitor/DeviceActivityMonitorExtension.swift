@@ -1,5 +1,8 @@
 @preconcurrency import DeviceActivity
 import Foundation
+#if DEBUG
+import ActivityKit
+#endif
 
 final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     override func intervalDidStart(for activity: DeviceActivityName) {
@@ -31,6 +34,10 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
 
     override func intervalDidEnd(for activity: DeviceActivityName) {
         super.intervalDidEnd(for: activity)
+
+        #if DEBUG
+        defer { DeviceActivityLiveActivityDiscoveryProbe.record() }
+        #endif
 
         // 종료 callback도 최신 규칙·예외 전체를 동기 재평가하고 만료 예외를 정리한다.
         // ActivityKit에는 접근하지 않는다.
@@ -64,3 +71,42 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         }
     }
 }
+
+#if DEBUG
+// Discoverability is the first gate: do not mutate an activity before verifying
+// that this extension can see the activity created by the containing app.
+private enum DeviceActivityLiveActivityDiscoveryProbe {
+    private struct Report: Codable {
+        let recordedAt: Date
+        let operatingSystemVersion: String
+        let liveActivitiesEnabled: Bool
+        let discoveredActivityCount: Int
+    }
+
+    static func record() {
+        guard let identifier = SharedIdentifiers.appGroupIdentifier(),
+              let containerURL = FileManager.default.containerURL(
+                forSecurityApplicationGroupIdentifier: identifier
+              )
+        else { return }
+
+        let report = Report(
+            recordedAt: Date(),
+            operatingSystemVersion: ProcessInfo.processInfo.operatingSystemVersionString,
+            liveActivitiesEnabled: ActivityAuthorizationInfo().areActivitiesEnabled,
+            discoveredActivityCount: Activity<RestrictionLiveActivityAttributes>.activities.count
+        )
+        let fileURL = containerURL.appendingPathComponent("device-activity-live-activity-probe.json")
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        var history = (try? Data(contentsOf: fileURL))
+            .flatMap { try? decoder.decode([Report].self, from: $0) } ?? []
+        history.append(report)
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        guard let data = try? encoder.encode(Array(history.suffix(12))) else { return }
+        try? data.write(to: fileURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+    }
+}
+#endif

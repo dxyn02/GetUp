@@ -1,5 +1,32 @@
 # 차단 사항
 
+## BLK-025 — 앱 진입 없는 Live Activity 대표 교체·종료 경로
+
+**상태**: 결정 해결됨(RESOLVED), 실기기 조사 중 — 2026-10-05
+
+사용자는 서버 없이 Device Activity 확장 실기기 시험부터 진행하도록 승인했다.
+DEC-129에 따라 DEBUG 조회 probe를 먼저 실행한다. 조회가 가능할 때만 갱신·종료
+시험으로 진행한다. 서버 도입과 production 자동 전환 경로는 아직 승인·검증되지 않았다.
+
+사용자는 여러 규칙 중 첫 규칙이 끝났을 때와 모든 규칙이 끝났을 때 앱을 열어야
+Live Activity 대표 교체·종료가 반영됨을 확인하고 앱 진입 없는 자동 반영을 요청했다.
+현재 `LiveActivityCoordinator`는 foreground만 처리하며 Device Activity callback은
+Shield와 공유 snapshot만 재평가한다. `staleDate`는 활동을 종료하는 명령이 아니다.
+Apple은 실행 중인 앱의 background 갱신·종료와 서버의 ActivityKit push를 문서화한다.
+Device Activity Monitor 확장에서 앱 활동을 조회할 수 있는지는 아직 실기기 미검증이다.
+기존 Shield Action probe는 앱 활동을 발견하지 못했다. 종료 callback은 기기를 사용할 때
+전달되므로 종료 정각 실행도 보장하지 않는다.
+
+현재 서버·APNs 없는 명세 및 foreground 조정 계획과 제품 요구가 달라져 AGENTS.md의
+핵심 동작·외부 서비스 결정 규칙에 따라 production 경로 변경을 보류한다.
+권장안은 서버 없이 Device Activity Monitor의 앱 활동 조회·갱신·종료 가능성을 DEBUG
+실기기 probe로 먼저 확인하고, 실패하면 서버 도입 여부를 별도로 결정하는 것이다.
+대안은 ActivityKit APNs 서버 경로를 설계하는 것이며 서비스·비용·전송 데이터 결정을
+선행해야 한다. 실기기 결과 전에는 자동 전환·종료를 가능하다고 확정하지 않는다.
+
+근거: [Apple ActivityKit](https://developer.apple.com/documentation/activitykit/activity),
+[Device Activity 종료 callback](https://developer.apple.com/documentation/deviceactivity/deviceactivitymonitor/intervaldidend(for:)).
+
 ## BLK-024 — T119 마지막 1분 VoiceOver 초 단위 안내
 
 **상태**: 결정 해결됨(RESOLVED), 결함 수정 보류 — 2026-10-05

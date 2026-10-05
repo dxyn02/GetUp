@@ -5,8 +5,30 @@
 - 기능: `002-live-activity-coins` Phase 9
 - 마지막 완료 작업: T118
 - 진행 중 작업: T119 Live Activity 시각·접근성 실기기 검증
-- 다음 작업: T119 영어 Home 이름·전체 종료 실기기 검증과 한국어 unavailable/stale 대조
+- 다음 작업: T119a Device Activity Monitor 종료 callback의 ActivityKit 조회 실기기 증적
+- 경로 결정: BLK-025는 DEC-129의 서버 없는 DEBUG probe 승인으로 해결, 가능성은 조사 중
 - 알려진 문제: 남은 시간 VoiceOver 결함은 DEC-128 사용자 결정으로 수정·수동 인수 보류
+
+## 2026-10-05 T119a Monitor 조회 probe
+
+사용자 승인에 따라 DEBUG `intervalDidEnd`의 defer에서 ActivityKit 활동 개수를
+동기 조회해 App Group의 `device-activity-live-activity-probe.json`에 최대 12건을
+기록한다. 기존 Shield 재평가·snapshot 경로는 먼저 실행하며 활동을 변경하지 않는다.
+첫 규칙 종료 전에 메인 앱 생성 Live Activity가 표시됐다는 사용자 확인과 함께
+callback 뒤 이 파일을 읽어 조회 가능성을 판단한다. 성공하면 실제 갱신·종료 시험을
+이어간다. 이 진단 코드는 Release에서 제외한다.
+Debug 서명 빌드·iPhone 17 설치 성공, 관련 제한 재평가 테스트 30건 실패·skip 없이
+통과, Release 빌드·진단 문자열 및 심볼 제외 확인. 사용자에게 두 규칙의 종료 시각을
+요청했다. 첫 종료 후에는 GetUp을 열지 않고 다른 앱을 사용해야 foreground 결과와
+Monitor callback 결과를 구분할 수 있다.
+## 2026-10-05 T119 Home 완료·자동 종료 요구
+
+사용자가 영어 Home 기본 규칙명 실기기 표시를 완료로 확인했다. 대표 규칙 교체와
+모든 규칙 종료 뒤 Live Activity 제거는 앱을 열어야 반영된다. 현재 구현은
+foreground만 ActivityKit을 조정하므로 이 관찰과 일치한다. 앱 진입 없는 자동 반영은
+BLK-025로 경로 결정을 요청했다. Device Activity Monitor 실기기 probe는 아직 하지
+않았으며 Shield Action의 기존 앱 활동 조회 실패를 Monitor의 불가 증적으로 단정하지 않는다.
+한국어 거리 확인 불가 실기기 표시는 사용자가 확인하지 못했다. T119는 미완료다.
 
 ## 2026-10-05 T119 VoiceOver 보류
 

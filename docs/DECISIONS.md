@@ -1,5 +1,15 @@
 # 결정 사항
 
+## DEC-129 — Device Activity Monitor의 ActivityKit 실기기 조사 (2026-10-05)
+
+사용자가 앱 진입 없이 Live Activity 대표 교체·종료가 반영되길 요청했고, 서버 없이
+Device Activity 확장 실기기 시험부터 진행하도록 선택했다. 기존 production
+foreground 경로를 유지하면서 DEBUG 종료 callback에서 앱 생성 활동의 조회 가능성을
+먼저 기록한다. 조회가 재현되면 갱신·종료 시험을 이어간다. 조회 실패는 Monitor
+직접 조정 경로의 미지원 증적으로 기록하며 서버 도입은 별도 결정한다.
+종료 callback은 기기 사용 시 전달될 수 있으므로 정각 반영을 보장한다고 표현하지 않는다.
+진단 기록에는 시각·OS·활동 개수·권한 상태만 포함하고 규칙명·위치·앱 token은 기록하지 않는다.
+
 ## DEC-128 — T119 남은 시간 VoiceOver 문제 보류 (2026-10-05)
 
 사용자가 “Voice Over 문제는 일단 스킵하자”라고 지시했다. 남은 시간 VoiceOver의
