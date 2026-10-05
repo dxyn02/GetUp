@@ -1,5 +1,74 @@
 # 차단 사항
 
+## BLK-025 — 앱 진입 없는 Live Activity 대표 교체·종료 경로
+
+**상태**: 결정 해결됨(RESOLVED), 자동 반영 보류 — 2026-10-05
+
+사용자는 APNs 설명을 받은 뒤 기존 방식 유지를 선택했다. DEC-130에 따라
+대표 교체·전체 종료는 앱 foreground 진입 시 반영하며 서버 도입과 자동 반영은
+이번 T119 범위에서 보류한다. 미구현 동작을 수정 완료로 표시하지 않는다.
+
+서버 없는 Monitor 조사 승인은 이행했다. iPhone 17 / iOS 26.7.1(23H30)의
+14:30:01 callback은 활성 규칙 2→1을 재평가했지만 ActivityKit 활동을 0개 조회했다.
+사용자가 종료 전·후 활동 표시와 앱 미진입을 확인했고 진단 저장도 완료됐다.
+이 조합에서는 앱 활동을 직접 조정할 수 없어 production 경로를 채택하지 않는다.
+기존 foreground 조정은 유지되며 자동 대표 교체·종료 요구는 미해결이다.
+후속 선택은 DEC-130의 자동 반영 보류로 확정했다. 서버·전송 데이터·비용은 선택하지 않았다.
+
+사용자는 서버 없이 Device Activity 확장 실기기 시험부터 진행하도록 승인했다.
+DEC-129에 따라 DEBUG 조회 probe를 먼저 실행한다. 조회가 가능할 때만 갱신·종료
+시험으로 진행한다. 서버 도입과 production 자동 전환 경로는 아직 승인·검증되지 않았다.
+
+사용자는 여러 규칙 중 첫 규칙이 끝났을 때와 모든 규칙이 끝났을 때 앱을 열어야
+Live Activity 대표 교체·종료가 반영됨을 확인하고 앱 진입 없는 자동 반영을 요청했다.
+현재 `LiveActivityCoordinator`는 foreground만 처리하며 Device Activity callback은
+Shield와 공유 snapshot만 재평가한다. `staleDate`는 활동을 종료하는 명령이 아니다.
+Apple은 실행 중인 앱의 background 갱신·종료와 서버의 ActivityKit push를 문서화한다.
+Device Activity Monitor 확장의 조회 결과는 위 실기기 시험에서 0개로 확인됐다.
+기존 Shield Action probe는 앱 활동을 발견하지 못했다. 종료 callback은 기기를 사용할 때
+전달되므로 종료 정각 실행도 보장하지 않는다.
+
+현재 서버·APNs 없는 명세 및 foreground 조정 계획과 제품 요구가 달라져 AGENTS.md의
+핵심 동작·외부 서비스 결정 규칙에 따라 production 경로 변경을 보류한다.
+권장안은 서버 없이 Device Activity Monitor의 앱 활동 조회·갱신·종료 가능성을 DEBUG
+실기기 probe로 먼저 확인하고, 실패하면 서버 도입 여부를 별도로 결정하는 것이다.
+대안은 ActivityKit APNs 서버 경로를 설계하는 것이며 서비스·비용·전송 데이터 결정을
+선행해야 한다. 실기기 결과 전에는 자동 전환·종료를 가능하다고 확정하지 않는다.
+
+근거: [Apple ActivityKit](https://developer.apple.com/documentation/activitykit/activity),
+[Device Activity 종료 callback](https://developer.apple.com/documentation/deviceactivity/deviceactivitymonitor/intervaldidend(for:)).
+
+## BLK-024 — T119 마지막 1분 VoiceOver 초 단위 안내
+
+**상태**: 결정 해결됨(RESOLVED), 결함 수정 보류 — 2026-10-05
+
+사용자가 2026-10-05 VoiceOver 문제를 일단 건너뛰도록 지시했다. DEC-128에 따라
+남은 시간 VoiceOver의 추가 수정·실기기 인수를 이번 T119 완료 게이트에서 제외한다.
+기술 결함은 알려진 문제로 남기며 통과 또는 수정 완료로 기록하지 않는다.
+
+iPhone 17 잠금화면 Live Activity에서 남은 시간을 초 단위로 갱신하면 VoiceOver가 값을
+읽는 중 규칙 이름 또는 앞선 알람으로 초점을 옮긴다. 시스템 타이머, 상대 시간, 접근성
+대체 표현의 초 단위 갱신을 각각 실기기에서 확인했다. 시·분 단위 대체 표현은 끝까지
+읽히고 분 단위로 갱신되지만, 1분 미만에는 `0분`만 읽어 실제 남은 초를 알 수 없다.
+사용자가 마지막 1분의 초 단위 안내를 필요하다고 확인했으므로 이를 완료로 간주하지
+않는다. 안정적으로 읽히는 분 단위 빌드로 되돌리고, 정확한 초 안내와 초점 유지가
+함께 가능한 구현 또는 제품 표현의 사용자 결정을 요청했다. 이후 사용자의 보류 결정으로
+이 차단은 해제됐으며 T119의 다른 미확인 항목은 계속 검증한다.
+
+## BLK-023 — T119 Dynamic Island 축약 시간 단위 결정
+
+**상태**: 해결됨(RESOLVED) — 2026-09-28
+
+T116 승인 시안은 한국어 `분`, 영어 `min`을 compact·minimal에 지정했다. T118의 사용자 정의
+`DiscreteFormatStyle`는 Xcode Canvas와 iPhone 17(iOS 26.7)의 compact 시간 영역에서 숫자를
+표시하지 않았다. 시스템 `SystemFormatStyle.Timer`로 교체하자 실기기에서 `144 minutes`가 표시되고
+자동 갱신되지만, 영어 `min`과 달라진다. minimal에서는 전체 `minutes`가 `44...`로 잘린다.
+Apple의 시스템 포맷은 영어 전체 단위를 사용하며 Live Activity의 사용자 정의 포맷은 실기기에서
+렌더되지 않았다. 사용자에게 compact의 `minutes` 허용 여부와 minimal의 숫자 타이머 대안을
+각각 요청했다. 사용자는 compact 영어 `minutes`와 minimal 숫자 타이머(`44:30` 형태)를 승인했다.
+`SystemFormatStyle.Timer`와 `Text(timerInterval:)`로 각각 표시하고 Canvas에서 minimal 잘림이
+사라진 것을 확인했다. BLK-023을 해결했으며 T119의 남은 실기기·접근성 검증은 계속한다.
+
 ## BLK-022 — T113 복구 화면 VoiceOver 수정 빌드 재확인
 
 **상태**: 해결됨(RESOLVED) — 2026-09-25

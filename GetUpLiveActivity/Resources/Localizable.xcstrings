@@ -1,7 +1,21 @@
 {
   "sourceLanguage" : "ko",
   "strings" : {
+    "?" : {
+
+    },
+    "%@ m" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ m"
+          }
+        }
+      }
+    },
     "%lld m" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -21,7 +35,39 @@
         }
       }
     },
+    "남은 거리 %@ m" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ m remaining"
+          }
+        }
+      }
+    },
+    "남은 거리 %@미터" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ meters remaining"
+          }
+        }
+      }
+    },
+    "남은 거리 %lld m" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld m remaining"
+          }
+        }
+      }
+    },
     "남은 거리 %lld미터" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -32,6 +78,7 @@
       }
     },
     "남은 거리 확인 불가" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -42,6 +89,7 @@
       }
     },
     "남은 시간" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -51,7 +99,18 @@
         }
       }
     },
+    "다른 제한 있음" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More rules"
+          }
+        }
+      }
+    },
     "다른 제한도 활성화되어 있어요" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -72,31 +131,12 @@
       }
     },
     "추가 제한 있음" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "More restrictions active"
-          }
-        }
-      }
-    },
-    "남은 거리 %lld m" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld m remaining"
-          }
-        }
-      }
-    },
-    "다른 제한 있음" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Other restrictions active"
           }
         }
       }

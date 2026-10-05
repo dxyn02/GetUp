@@ -3,9 +3,200 @@
 ## 현재 작업
 
 - 기능: `002-live-activity-coins` Phase 9
-- 마지막 완료 작업: T116
-- 진행 중 작업: 없음
-- 다음 작업: T117 Live Activity preview·snapshot fixture 선행 작성
+- 마지막 완료 작업: T119
+- 진행 중 작업: T119 마감 및 PR #36 병합 준비
+- 다음 작업: PR #36 병합 후 최신 main의 새 브랜치에서 T089 월 경계·다기기 인수
+- 경로 결정: BLK-025 해결, DEC-130에 따라 기존 foreground 대표 교체·종료 유지
+- 알려진 문제: 남은 시간 VoiceOver 결함은 DEC-128 사용자 결정으로 수정·수동 인수 보류
+- 수동 검증 skip: 한국어 unavailable/stale 실기기 대조는 DEC-131 사용자 요청으로 보류
+
+## 2026-10-05 T119 마감 및 다음 작업
+
+한국어 거리 확인 불가 실기기 대조는 사용자 요청으로 skip하며 실제 통과로 기록하지 않는다.
+T119 관련 표시·대표 조정·시간 정책 테스트 17건과 앱 수명주기 테스트 14건이
+실패·자동 skip 없이 통과했다. 기존 실기기 시각·Light/Dark·Reduce Motion·Home 이름과
+foreground 교체·종료 확인, AX5 Canvas 증적 및 DEC-128/130/131 예외를 합쳐 T119를 마감한다.
+최대 Dynamic Type의 시안 차이와 앱 전반 개선 필요는 유지한다.
+다음 task T089는 기존에 승인된 격리 namespace·서울 5분 경계 DEBUG 시험으로
+월 무료분 지연 생성·비이월·두 기기 수렴을 확인한다. 기존 장부를 reset하지 않는다.
+PR #36은 최신 조회·결정·skip 문서를 포함한 병합 대상이며 main 병합 전 후속 구현을 시작하지 않는다.
+
+## 2026-10-05 T119a Monitor 조회 probe
+
+조사 완료: iPhone 17 / iOS 26.7.1(23H30)의 14:30:01 callback에서 활성 규칙
+2→1 재평가와 ActivityKit 조회 0개, `fileWritten` 단계를 확인했다. 사용자도
+종료 전 활동 표시·앱 미진입·종료 뒤 첫 규칙 활동 잔류를 확인했다. Monitor 직접
+조정 경로는 이 조합에서 채택하지 않는다. 사용자는 APNs 설명 뒤 기존 방식 유지를
+결정했다(DEC-130). T119a 완료, T119는 한국어 unavailable/stale 미확인으로 진행 중이다.
+두 번째 시험의 14:35 전체 종료 증적은 결정 시점에 아직 수집하지 않았다.
+
+첫 시험의 종료 시각은 14:10·14:15였다. 공유 제한 재평가 진단의 14:10:02
+활성 2→1, 14:15:02 활성 1→0을 확인했다. 사용자는 앱을 열지 않고 다른 앱을
+사용했고 첫 규칙 Live Activity가 남았다고 확인했다. 조회 파일은 없으며 이 결과로
+ActivityKit 조회 미지원이라고 판단하지 않는다. 새 빌드는 조회 전·후와 파일 쓰기
+성공·실패 단계를 `getup.debug.monitor-live-activity-probe` 공유 UserDefaults에도
+기록한다. Debug 빌드·서명 검증·iPhone 17 설치가 성공했고 두 번째 규칙 준비를
+요청했다. `debug.dylib`의 진단 문자열 포함을 확인했으며 실행 stub만 검사하면 안 된다.
+진단 보강 뒤 제한 재평가 테스트 30건 재실행 통과(실패·skip 0), Release 빌드 및
+진단 문자열 제외 검사가 통과했다.
+
+
+사용자 승인에 따라 DEBUG `intervalDidEnd`의 defer에서 ActivityKit 활동 개수를
+동기 조회해 App Group의 `device-activity-live-activity-probe.json`에 최대 12건을
+기록한다. 기존 Shield 재평가·snapshot 경로는 먼저 실행하며 활동을 변경하지 않는다.
+첫 규칙 종료 전에 메인 앱 생성 Live Activity가 표시됐다는 사용자 확인과 함께
+callback 뒤 이 파일을 읽어 조회 가능성을 판단한다. 성공하면 실제 갱신·종료 시험을
+이어간다. 이 진단 코드는 Release에서 제외한다.
+Debug 서명 빌드·iPhone 17 설치 성공, 관련 제한 재평가 테스트 30건 실패·skip 없이
+통과, Release 빌드·진단 문자열 및 심볼 제외 확인. 사용자에게 두 규칙의 종료 시각을
+요청했다. 첫 종료 후에는 GetUp을 열지 않고 다른 앱을 사용해야 foreground 결과와
+Monitor callback 결과를 구분할 수 있다.
+## 2026-10-05 T119 Home 완료·자동 종료 요구
+
+사용자가 영어 Home 기본 규칙명 실기기 표시를 완료로 확인했다. 대표 규칙 교체와
+모든 규칙 종료 뒤 Live Activity 제거는 앱을 열어야 반영된다. 현재 구현은
+foreground만 ActivityKit을 조정하므로 이 관찰과 일치한다. 앱 진입 없는 자동 반영은
+BLK-025로 경로 결정을 요청했다. Device Activity Monitor 실기기 probe는 아직 하지
+않았으며 Shield Action의 기존 앱 활동 조회 실패를 Monitor의 불가 증적으로 단정하지 않는다.
+한국어 거리 확인 불가 실기기 표시는 사용자가 확인하지 못했다. T119는 미완료다.
+
+## 2026-10-05 T119 VoiceOver 보류
+
+사용자가 VoiceOver 문제를 일단 건너뛰도록 지시했다. DEC-128에 기록하고 BLK-024의
+결정 차단을 해제했다. 남은 시간 VoiceOver는 통과 처리하지 않으며 이번 T119 완료
+게이트에서 제외한다. 시·분 단위 표현을 유지하고 마지막 1분의 `0분` 안내를 알려진
+문제로 남긴다. 코드 변경은 없고 기존 자동 테스트 26건 통과 결과를 유지한다.
+영어 Home 이름과 전체 종료 실기기 결과, 한국어 unavailable/stale 대조가 남았다.
+
+## 2026-10-05 T119 Home 기본 규칙명 지역화
+
+규칙 이름이 없으면 Live Activity 스냅샷이 지역화 전 장소명 `집`을 전달했다.
+홈에서 사용하는 `AppLocalizedCopy.savedPlaceName`을 동일하게 적용했다. 저장된
+장소나 사용자 지정 규칙명은 변경하지 않는다. 영어 리소스를 실제로 읽어 `Home`
+전달을 확인하고 한국어 기본명·사용자 지정 이름 보존을 함께 검증했다.
+관련 Simulator 테스트 26건은 실패·skip 없이 통과했다. 실제 영어 Live Activity
+표시와 BLK-024 마지막 1분 VoiceOver, 전체 종료는 아직 확인이 필요하다.
+서명 Debug 빌드와 서명 검증은 통과했다. 처음에는 기기를 찾지 못했으나
+CoreDeviceService 재시작 후 연결이 복구돼 iPhone 17에 데이터 보존 설치·실행했다.
+iPhone Mirroring은 Mac 로그인 잠금 상태여서 실제 영어 표시를 사용자에게 확인 요청했다.
+
+## 2026-10-03 T119 마지막 1분 접근성 추가 확인
+
+사용자는 초 단위 상대 시간을 읽을 때 1분 미만에서 종종 규칙 이름으로 초점이
+이동한다고 확인했다. 앞선 시스템 타이머·상대 시간·정적 접근성 문구 실험도 각각
+초점 이동 또는 값 정체가 있었다. 현재 소스는 끝까지 읽히고 갱신되는 시·분 단위
+대체 표현으로 되돌렸다. 마지막 1분에는 `0분`만 읽어 정확한 초를 알 수 없어
+BLK-024를 열었고 T119를 완료 처리하지 않는다. 관련 Simulator 테스트 3개
+묶음과 iPhone 17 서명 Debug 빌드가 통과했고, 안정 분 단위 빌드를 데이터
+보존 방식으로 다시 설치했다.
+
+## 2026-10-03 T119 대표 교체·VoiceOver 진단
+
+iPhone 17의 첫 규칙 시간 종료 뒤 홈·Shield에는 두 번째 규칙이 활성으로 보였지만
+Live Activity는 첫 규칙을 유지했다. foreground 진단에서 원하는 규칙과 기존 Activity의
+`activityID`가 다른 것을 확인했고, 이전 Activity 종료 후 새 대표 요청으로 두 번째 규칙
+표시를 실기기에서 확인했다. DEC-127과 관련 자동 테스트를 반영했다.
+
+잠금화면·Dynamic Island 잘림 없음, Light/Dark, Reduce Motion은 사용자 확인을 받았다.
+known·unavailable·stale의 Xcode Canvas AX5 정보·접근성 거리 문구를 확인했고
+대상 Simulator 테스트는 통과했다. 한국어 Canvas 대조, 전체 종료 실기기 관찰이 남았다.
+VoiceOver의 초 단위 안내는 읽는 중 초점이 이동한다. 초를 제외한 시·분 안내는
+끝까지 읽히고 갱신되지만 마지막 1분에 `0분`으로만 읽혀 미완료다. T119를 체크하지
+않는다. iPhone 17에는 시·분 안내 빌드를 다시 설치했다.
+
+## 2026-09-29 T119 expanded 배지 재보정
+
+사용자 사진에서 영역 trailing 24pt 적용 후에도 배지 캡슐 오른쪽 끝이 잘렸다.
+배지 뷰에 trailing 12pt를 직접 추가한 뒤 대상 Simulator 테스트 2건과 실기기
+서명 빌드·데이터 보존 설치·실행이 성공했다. 사용자가 iPhone 17 expanded
+화면에서 배지 잘림이 없다고 확인했다.
+
+## 2026-09-29 T119 expanded 배지 안전 여백
+
+사용자가 확대 화면의 오른쪽 아래 `More rules` 끝 잘림만 지적했다. bottom 영역의
+leading 14pt는 유지하고 trailing만 24pt로 늘렸다. Xcode Canvas에서 배지 글자·캡슐
+끝 표시와 대상 Simulator 테스트 2건 통과를 확인했다. 최신 수정본의 iPhone 17 확대
+화면을 다시 확인해야 한다. 서명 빌드는 데이터 보존 설치·앱 실행까지 성공했다.
+
+## 2026-09-29 T119 AX5 시안·플랫폼 한계 확인
+
+Figma AX5 샘플 `395:2277`은 968×371pt이고 61/75/53/53pt 서체를 사용한다. Apple의
+iPhone 17 Live Activity 잠금화면·expanded 높이는 최대 160pt라 네 줄을 시안 크기로
+동시에 표시할 수 없다. 현재 24/22/18pt 상한과 시간 오른쪽 위 배치는 DEC-120의 앱
+선택이며 시스템이 글자 크기를 자동 제한한 결과는 아니다. Xcode Canvas iPhone 17 Pro
+AX5 다중 규칙 잠금화면에서 네 정보의 표시·잘림 없음 확인. 실기기 최종 인수는 남았다.
+
+## 2026-09-29 T119 기기별 적응형 보정
+
+사용자 지적에 따라 expanded 시간의 90pt 고정 폭을 제거하고 가변 폭·우선순위·오른쪽
+4pt 내부 여유로 수정했다. iPhone 17 Pro Canvas에서 네 요소가 표시되고 대상 Simulator
+테스트 2건이 통과했다. 서명 빌드의 iPhone 17 데이터 보존 설치는 성공했으나 기기 잠금으로
+자동 실행은 거부됐다. 최종 빌드의 실기기 화면 확인이 남았다.
+
+## 2026-09-29 T119 expanded 표시 회귀 수정
+
+최신 iPhone 17 사진에서 `fixedSize` 적용 뒤 expanded의 시간·거리 행이 사라진 회귀가
+확인됐다. 해당 설정을 제거하고 90pt trailing 영역으로 변경했으며, compact 타이머는
+추가로 오른쪽 12pt 이동했다. Xcode Canvas에서 expanded 네 요소가 다시 보이고 대상
+Simulator 테스트 2건이 통과했다. 새 빌드의 실기기 화면 확인이 남았다.
+
+## 2026-09-29 T119 compact·expanded 시간 재보정
+
+사용자는 iPhone 17에서 다중 제한 `More rules` 배지는 통과했다고 확인했다. 같은 사진에서
+compact 타이머 오른쪽 공백과 expanded 상단 시간 끝 글자 잘림이 남아 DEC-123을 적용했다.
+compactTrailing 텍스트를 오른쪽 정렬하고 추가 오른쪽 여백을 제거했으며, expanded 시간은
+가로 고정 크기로 압축을 막았다. 대상 Simulator 테스트 2건 통과 후 서명 빌드를 iPhone 17에
+데이터 보존 설치·실행했다. 두 영역 실기기 재확인과 T119 나머지 인수가 필요하다.
+
+## 2026-09-29 T119 Figma 다중 제한 정합화
+
+사용자의 추가 피드백으로 Figma node `395:2142`·`395:2214`의 다중 제한 상태를
+재확인했다. 일반 잠금화면과 expanded에서는 거리 오른쪽에 elevated surface 캡슐 배지를
+같은 행에 표시하고, 잠금화면 테두리·모서리·간격·거리 글자 크기도 맞췄다. AX5 잠금화면
+별도 줄과 compact `+` 제거는 이전 실기기 피드백에 따른다. Xcode Canvas 기본 크기 두
+표면에서 배지가 보이고 Simulator 대상 테스트 2건이 통과했다. 최종 서명 빌드를 iPhone 17에
+데이터 보존 설치하고 앱을 실행했다. 겹친 활성 규칙의 잠금화면·expanded 배지는 사용자
+실기기 확인을 기다린다. T119 나머지 인수도 이어서 확인한다.
+
+## 2026-09-29 T119 추가 사진 피드백
+
+compact의 카메라와 시간 사이가 멀고 expanded 상단 양쪽 글자가 잘린다는 실기기 사진에
+따라 DEC-121을 기록했다. compact의 카메라 쪽 여백을 0으로, 시간 텍스트를 왼쪽 정렬하고
+expanded 상단의 바깥 여백을 24pt로 늘렸다. Xcode Canvas와 Simulator 대상 테스트 2건은
+통과했다. 처음에는 iPhone 17 연결 시간 초과와 iPhone Mirroring의 Mac 로그인 잠금이
+발생했으나 사용자가 잠금 해제·연결했다. 최종 빌드를 데이터 보존 설치하고 앱을 실행한 뒤
+compact `250 m`와 숫자 타이머가 카메라 양옆에 가까워진 것을 미러링에서 확인했다.
+expanded의 길게 누르기와 양쪽 글자 잘림은 사용자 실기기 확인을 기다린다.
+잠금화면·VoiceOver·대표 교체·전체 종료 인수도 계속 필요하다.
+
+## 2026-09-29 T119 실기기 피드백 수정
+
+사용자가 전달한 Dynamic Island 스크린샷의 여백·잘림과 잠금화면 타이머 위치를 수정하고
+compact 거리 오른쪽 `+`를 제거했다. 다중 규칙 정보는 VoiceOver에서 유지한다. Xcode Canvas
+iPhone 17 Pro AX5의 잠금화면 known·다중 규칙, 2시간 compact 다중 규칙에서 정보가 모두
+보이고 시간이 오른쪽 위에 있으며 `+`가 없음을 확인했다. 타이머 텍스트를 오른쪽 정렬해
+잠금화면과 expanded의 오른쪽 여백도 맞췄다. 실기기 compact의 긴 영어
+`minutes`는 사용자 승인으로 숫자 타이머로 교체하고 trailing 최대 너비를 66pt로 제한했다.
+영어 다중 규칙 VoiceOver 문구도 Canvas에서 확인했다. iPhone 17에 서명 Debug 빌드를 데이터
+보존 설치해 compact `500 m`·`59:39`의 잘림 없는 표시와 폭 축소를 확인했다. Simulator
+presentation 테스트 2건은 최종 수정 뒤 통과했다. 최종 빌드의 실기기 잠금화면·VoiceOver와
+대표 교체·전체 종료는 확인해야 한다. 변경 기준은 DEC-120과 Live Activity 하이파이 문서의
+T119 추가 기록에 있다.
+
+## 2026-09-28 BLK-023 결정 반영
+
+사용자가 compact 영어 `minutes`, minimal 숫자 타이머를 승인했다. DEC-119에 근거를 기록했고
+BLK-023을 해결했다. Xcode Canvas에서 minimal `44:47`이 잘림 없이 표시된다. T119의 실제
+잠금화면·VoiceOver·Reduce Motion·대표 교체·종료 검증은 계속 필요하다.
+
+## 2026-09-28 T119 진행 및 차단
+
+PR #35를 병합한 `codex/live-activity-t119`에서 Xcode Canvas Debug `-Onone`, 만료된 preview
+fixture를 고쳤다. iPhone 17에 데이터 보존 설치 후 expanded의 대표 규칙·시간·거리와 compact
+거리 표시를 확인했다. 기존 사용자 정의 분 포맷은 시간이 빈칸이었고 시스템 분 포맷은
+`144 minutes`를 정상 표시했다. 영어 `min` 승인 시안과의 차이 및 minimal의 `44...` 잘림을
+BLK-023에 기록하고 사용자 결정을 요청했다. `LiveActivityPresentationTests` 2건은 통과했다.
+실기기 잠금화면, VoiceOver, Reduce Motion, 대표 교체·종료는 미검증이다. BLK-017은 별도다.
 
 ## 2026-09-26 T116 구현 승인
 

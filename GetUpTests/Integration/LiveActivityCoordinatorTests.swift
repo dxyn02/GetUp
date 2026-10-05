@@ -81,6 +81,21 @@ struct LiveActivityCoordinatorTests {
         #expect(await manager.activities.first?.contentState == desired.contentState)
     }
 
+    @Test("A different representative rule replaces the expired activity")
+    func differentRepresentativeRuleStartsNewActivity() async throws {
+        let current = try snapshot(activityID: Self.activityID)
+        let desired = try snapshot(activityID: Self.duplicateActivityID)
+        let manager = LiveActivityManagerFake(activities: [current])
+        let result = await makeCoordinator(manager: manager).reconcile(
+            context: .foreground,
+            desiredActivity: desired
+        )
+
+        #expect(result.actions == [.end(Self.activityID), .request])
+        #expect(result.failureCodes.isEmpty)
+        #expect(await manager.activities == [desired])
+    }
+
     @Test("A manually removed activity is recreated without suppression")
     func manualRemovalIsRecreated() async throws {
         let desired = try snapshot()
